@@ -1,0 +1,242 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Professional SaaS Light Theme */
+    --background: 0 0% 98%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    /* Refined Primary - Deep charcoal with subtle warmth */
+    --primary: 220 13% 18%;
+    --primary-foreground: 210 40% 98%;
+
+    /* Subtle secondary */
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 220 13% 18%;
+
+    /* Muted tones */
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
+
+    /* Accent - Professional blue */
+    --accent: 217 91% 60%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 217 91% 60%;
+    --radius: 0.5rem;
+
+    /* Chart colors */
+    --chart-1: 158 64% 52%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+
+    /* Sidebar */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 220 9% 46%;
+    --sidebar-primary: 220 13% 18%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 220 14% 96%;
+    --sidebar-accent-foreground: 220 13% 18%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217 91% 60%;
+
+    /* Workflow Canvas Specific */
+    --canvas-bg: 220 14% 96%;
+    --canvas-dots: 220 9% 80%;
+    --node-shadow: 220 13% 18%;
+    --handle-color: 217 91% 60%;
+    --edge-color: 220 9% 70%;
+    --edge-selected: 217 91% 60%;
+  }
+
+  .dark {
+    --background: 222 47% 6%;
+    --foreground: 210 40% 98%;
+    --card: 222 47% 8%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222 47% 8%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 158 64% 52%;
+    --primary-foreground: 222 47% 6%;
+
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 217 91% 60%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
+    --ring: 217 91% 60%;
+
+    /* Chart colors for dark */
+    --chart-1: 158 64% 52%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+
+    /* Sidebar dark */
+    --sidebar-background: 222 47% 6%;
+    --sidebar-foreground: 215 20% 65%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 217 33% 12%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217 33% 17%;
+    --sidebar-ring: 217 91% 60%;
+
+    /* Workflow Canvas Specific - Dark */
+    --canvas-bg: 222 47% 5%;
+    --canvas-dots: 217 33% 20%;
+    --node-shadow: 0 0% 0%;
+    --handle-color: 217 91% 60%;
+    --edge-color: 217 33% 30%;
+    --edge-selected: 217 91% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* React Flow Canvas Overrides */
+@layer components {
+  .react-flow__background {
+    background-color: hsl(var(--canvas-bg)) !important;
+  }
+
+  .react-flow__background-pattern {
+    fill: hsl(var(--canvas-dots)) !important;
+  }
+
+  /* Edges */
+  .react-flow__edge-path {
+    stroke: hsl(var(--edge-color)) !important;
+    stroke-width: 1.5px;
+  }
+
+  .react-flow__edge.selected .react-flow__edge-path {
+    stroke: hsl(var(--accent)) !important;
+    stroke-width: 2px;
+  }
+
+  .react-flow__edge:hover .react-flow__edge-path {
+    stroke: hsl(var(--muted-foreground)) !important;
+  }
+
+  /* Controls */
+  .react-flow__controls {
+    @apply rounded-xl border bg-background/95 shadow-lg backdrop-blur;
+    border-color: hsl(var(--border));
+  }
+
+  .react-flow__controls-button {
+    @apply border-0 bg-transparent text-muted-foreground transition-colors;
+  }
+
+  .react-flow__controls-button:hover {
+    @apply bg-accent/10 text-accent;
+  }
+
+  .react-flow__controls-button svg {
+    fill: currentColor;
+  }
+
+  /* MiniMap */
+  .react-flow__minimap {
+    @apply rounded-xl border bg-background/95 shadow-lg backdrop-blur;
+    border-color: hsl(var(--border));
+  }
+
+  /* Attribution */
+  .react-flow__attribution {
+    @apply hidden;
+  }
+
+  /* Handles */
+  .react-flow__handle {
+    @apply border-2 transition-colors;
+    width: 12px;
+    height: 12px;
+    border-color: hsl(var(--background));
+    background-color: hsl(var(--muted-foreground));
+  }
+
+  .react-flow__handle:hover {
+    background-color: hsl(var(--accent));
+  }
+
+  .react-flow__handle.connecting {
+    background-color: hsl(var(--accent));
+  }
+
+  /* Selection Box */
+  .react-flow__selection {
+    @apply bg-accent/10 border-accent;
+  }
+
+  /* Connection Line */
+  .react-flow__connection-line {
+    stroke: hsl(var(--accent)) !important;
+    stroke-width: 2px;
+  }
+}
+
+/* Custom scrollbar */
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted-foreground) / 0.3);
+    border-radius: 3px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted-foreground) / 0.5);
+  }
+}
