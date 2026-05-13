@@ -1,6 +1,7 @@
 package com.app.core.rule;
 
 import com.app.common.model.task.parameters.ConditionalTaskParameters.Branch;
+import com.app.common.model.rule.EvaluationResult;
 import com.app.common.model.rule.LogicalOperator;
 import com.app.common.model.rule.Operator;
 import com.app.common.model.rule.RuleCondition;
@@ -9,12 +10,10 @@ import com.app.core.model.ExecutionContext;
 import com.app.core.service.VariableResolver;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.expression.EvaluationException;
 import org.springframework.expression.Expression;
 import org.springframework.expression.ExpressionParser;
-import org.springframework.expression.ParseException;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
-import org.springframework.expression.spel.support.StandardEvaluationContext;
+import org.springframework.expression.spel.support.SimpleEvaluationContext;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -59,9 +58,9 @@ public class RuleEvaluator {
      * @param context The evaluation context with task outputs and variables
      * @return true if the branch conditions are met
      */
-    public boolean evaluate(Branch branch, ExecutionContext context) {
+    public EvaluationResult evaluate(Branch branch, ExecutionContext context) {
         if (branch == null) {
-            return false;
+            return new EvaluationResult(false, new HashMap<>());
         }
 
         // Priority 1: Structured rules
@@ -77,69 +76,75 @@ public class RuleEvaluator {
         // No conditions defined - consider it always true (passthrough)
         log.warn("Branch '{}' has no rules or expression defined, defaulting to true",
                 branch.getName());
-        return true;
+        return new EvaluationResult(true, new HashMap<>());
     }
 
     /**
      * Evaluate a rule group (AND/OR combination of conditions).
      */
-    public boolean evaluateRuleGroup(RuleGroup group, ExecutionContext context) {
+    public EvaluationResult evaluateRuleGroup(RuleGroup group, ExecutionContext context) {
         if (group == null || group.isEmpty()) {
-            return true; // Empty group = no constraints
+            return new EvaluationResult(true, new HashMap<>());
         }
 
         LogicalOperator operator = group.getOperator() != null
                 ? group.getOperator()
                 : LogicalOperator.AND;
 
-        // Evaluate direct conditions
         boolean hasConditions = group.getConditions() != null && !group.getConditions().isEmpty();
         boolean hasNestedGroups = group.getNestedGroups() != null && !group.getNestedGroups().isEmpty();
 
+        Map<String, Object> evaluatedFields = new HashMap<>();
+
         if (operator == LogicalOperator.AND) {
-            // AND: All must be true, short-circuit on first false
             if (hasConditions) {
                 for (RuleCondition condition : group.getConditions()) {
-                    if (!evaluateCondition(condition, context)) {
-                        return false;
+                    EvaluationResult res = evaluateCondition(condition, context);
+                    evaluatedFields.putAll(res.evaluatedFields());
+                    if (!res.matched()) {
+                        return new EvaluationResult(false, evaluatedFields);
                     }
                 }
             }
             if (hasNestedGroups) {
                 for (RuleGroup nested : group.getNestedGroups()) {
-                    if (!evaluateRuleGroup(nested, context)) {
-                        return false;
+                    EvaluationResult res = evaluateRuleGroup(nested, context);
+                    evaluatedFields.putAll(res.evaluatedFields());
+                    if (!res.matched()) {
+                        return new EvaluationResult(false, evaluatedFields);
                     }
                 }
             }
-            return true;
+            return new EvaluationResult(true, evaluatedFields);
         } else {
-            // OR: At least one must be true, short-circuit on first true
             if (hasConditions) {
                 for (RuleCondition condition : group.getConditions()) {
-                    if (evaluateCondition(condition, context)) {
-                        return true;
+                    EvaluationResult res = evaluateCondition(condition, context);
+                    evaluatedFields.putAll(res.evaluatedFields());
+                    if (res.matched()) {
+                        return new EvaluationResult(true, evaluatedFields);
                     }
                 }
             }
             if (hasNestedGroups) {
                 for (RuleGroup nested : group.getNestedGroups()) {
-                    if (evaluateRuleGroup(nested, context)) {
-                        return true;
+                    EvaluationResult res = evaluateRuleGroup(nested, context);
+                    evaluatedFields.putAll(res.evaluatedFields());
+                    if (res.matched()) {
+                        return new EvaluationResult(true, evaluatedFields);
                     }
                 }
             }
-            // For OR, if we have no conditions at all, return true (empty = no constraints)
-            return !hasConditions && !hasNestedGroups;
+            return new EvaluationResult(!hasConditions && !hasNestedGroups, evaluatedFields);
         }
     }
 
     /**
      * Evaluate a single condition.
      */
-    public boolean evaluateCondition(RuleCondition condition, ExecutionContext context) {
+    public EvaluationResult evaluateCondition(RuleCondition condition, ExecutionContext context) {
         if (condition == null) {
-            return true;
+            return new EvaluationResult(true, new HashMap<>());
         }
 
         // 1. Resolve the Field (LHS)
@@ -162,35 +167,39 @@ public class RuleEvaluator {
         log.debug("Condition: {} ({}) {} {} = {} (negated: {})",
                 condition.getField(), fieldValue, operator, expectedValue, result, condition.isNegated());
 
-        return result;
+        Map<String, Object> fields = new HashMap<>();
+        fields.put(String.valueOf(condition.getField()), fieldValue);
+        if (condition.getValue() != null && !String.valueOf(condition.getValue()).isEmpty()) {
+            fields.put(String.valueOf(condition.getValue()), expectedValue);
+        }
+
+        return new EvaluationResult(result, fields);
     }
 
     /**
      * Evaluate a raw SpEL expression.
      */
-    public boolean evaluateExpression(String expressionStr, ExecutionContext context) {
+    public EvaluationResult evaluateExpression(String expressionStr, ExecutionContext context) {
         try {
             Expression expression = expressionCache.computeIfAbsent(expressionStr,
                     spelParser::parseExpression);
 
-            StandardEvaluationContext spelContext = createSpelContext(context);
+            SimpleEvaluationContext spelContext = createSpelContext(context);
             Boolean result = expression.getValue(spelContext, Boolean.class);
+            boolean matched = Boolean.TRUE.equals(result);
 
-            return Boolean.TRUE.equals(result);
-        } catch (ParseException e) {
-            log.error("Failed to parse SpEL expression: {}", expressionStr, e);
-            return false;
-        } catch (EvaluationException e) {
+            return new EvaluationResult(matched, Map.of(expressionStr, matched));
+        } catch (Exception e) {
             log.error("Failed to evaluate SpEL expression: {}", expressionStr, e);
-            return false;
+            return new EvaluationResult(false, Map.of(expressionStr, "ERROR: " + e.getMessage()));
         }
     }
 
     /**
      * Create SpEL evaluation context with variables from our context.
      */
-    private StandardEvaluationContext createSpelContext(ExecutionContext context) {
-        StandardEvaluationContext spelContext = new StandardEvaluationContext();
+    private SimpleEvaluationContext createSpelContext(ExecutionContext context) {
+        SimpleEvaluationContext spelContext = SimpleEvaluationContext.forReadOnlyDataBinding().build();
 
         // Add task outputs as variables (accessible via #taskId.field)
         context.getTaskOutputs().forEach(spelContext::setVariable);

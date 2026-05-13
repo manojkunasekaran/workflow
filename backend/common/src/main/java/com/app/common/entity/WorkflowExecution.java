@@ -9,8 +9,12 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.app.common.constant.CollectionNames;
+import com.app.common.constant.ExecutionType;
+import com.app.common.constant.TaskExecutionStatus;
+import com.app.common.constant.WorkflowExecutionStatus;
 import com.app.common.model.base.Auditable;
 import com.app.common.model.variable.VariableValue;
 
@@ -22,7 +26,8 @@ public class WorkflowExecution extends Auditable {
     private String id;
     private String workflowId;
     private String workflowDefinitionId;
-    private String status;
+    private ExecutionType executionType;
+    private WorkflowExecutionStatus status;
     private Instant startTime;
     private Instant endTime;
     private List<TaskExecutionSummary> taskExecutionSummaries;
@@ -45,12 +50,12 @@ public class WorkflowExecution extends Auditable {
      * Used by conditional tasks to reference previous task results.
      * Example: {"task_1": {"statusCode": 200, "body": {...}}}
      */
-    private Map<String, Object> taskOutputs = new HashMap<>();
+    private Map<String, Object> taskOutputs = new ConcurrentHashMap<>();
 
     @Data
     public static class TaskExecutionSummary {
         private String taskExecutionId;
         private String taskDefinitionId;
-        private String status;
+        private TaskExecutionStatus status;
     }
 }

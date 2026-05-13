@@ -22,6 +22,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpStatusCodeException;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.Instant;
@@ -35,7 +37,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class HttpTaskExecutor implements TaskExecutor {
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
     private final CredentialService credentialService;
     private final VariableResolver variableResolver;
     private final ObjectMapper objectMapper;
@@ -106,12 +108,45 @@ public class HttpTaskExecutor implements TaskExecutor {
 
         HttpEntity<Object> requestEntity = new HttpEntity<>(resolvedBody, headers);
 
-        // Execute HTTP request - let exceptions propagate to WorkflowEngine
-        ResponseEntity<String> response = restTemplate.exchange(
-                url,
-                HttpMethod.valueOf(Objects.requireNonNull(method.toUpperCase())),
-                requestEntity,
-                String.class);
+        ResponseEntity<String> response;
+        try {
+            response = restTemplate.exchange(
+                    url,
+                    HttpMethod.valueOf(Objects.requireNonNull(method.toUpperCase())),
+                    requestEntity,
+                    String.class);
+        } catch (HttpStatusCodeException e) {
+            log.error("HTTP request failed with status: {}", e.getStatusCode(), e);
+
+            Object errorBody = parseBody(e.getResponseBodyAsString());
+
+            HttpTaskExecutionData.HttpResponseDetails responseDetails = HttpTaskExecutionData.HttpResponseDetails
+                    .builder()
+                    .statusCode(e.getStatusCode().value())
+                    .statusText(e.getStatusCode().toString())
+                    .headers(headersToMap(e.getResponseHeaders()))
+                    .body(errorBody)
+                    .timestamp(Instant.now())
+                    .build();
+
+            HttpTaskExecutionData executionData = HttpTaskExecutionData.builder()
+                    .request(requestDetails)
+                    .response(responseDetails)
+                    .build();
+
+            return TaskExecutionResult.builder()
+                    .status(TaskExecutionResult.Status.FAILED)
+                    .errorMessage("HTTP request failed: " + e.getStatusCode())
+                    .executionData(executionData)
+                    .output(buildOutput(executionData))
+                    .build();
+        } catch (RestClientException e) {
+            log.error("HTTP request failed: {}", e.getMessage(), e);
+            return TaskExecutionResult.builder()
+                    .status(TaskExecutionResult.Status.FAILED)
+                    .errorMessage("HTTP request failed: " + e.getMessage())
+                    .build();
+        }
 
         // Parse body once for both execution data and output
         Object parsedBody = parseBody(response.getBody());

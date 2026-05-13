@@ -2,11 +2,26 @@ package com.app.common.model.task.execution;
 
 import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+
 /**
  * Base interface for task-specific execution data.
  * Each task type (HTTP, Script, Conditional, etc.) will have its own
  * implementation.
  */
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "taskType")
+@JsonSubTypes({
+        @JsonSubTypes.Type(value = BranchTaskExecutionData.class, name = "BRANCH"),
+        @JsonSubTypes.Type(value = ConditionalTaskExecutionData.class, name = "CONDITIONAL"),
+        @JsonSubTypes.Type(value = DataTransformExecutionData.class, name = "DATA_TRANSFORM"),
+        @JsonSubTypes.Type(value = HttpTaskExecutionData.class, name = "HTTP_TASK"),
+        @JsonSubTypes.Type(value = HumanTaskExecutionData.class, name = "HUMAN_TASK"),
+        @JsonSubTypes.Type(value = IteratorTaskExecutionData.class, name = "ITERATOR"),
+        @JsonSubTypes.Type(value = JoinTaskExecutionData.class, name = "JOIN"),
+        @JsonSubTypes.Type(value = ScriptTaskExecutionData.class, name = "SCRIPT_TASK"),
+        @JsonSubTypes.Type(value = WaitTaskExecutionData.class, name = "WAIT")
+})
 public interface TaskExecutionData {
 
     /**

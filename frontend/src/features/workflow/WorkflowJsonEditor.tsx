@@ -3,9 +3,16 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { workflowApi } from '@/api/workflowApi';
 import { Loader2, Save, Play, RefreshCw, AlertCircle, CheckCircle, FileJson } from 'lucide-react';
-import { SAMPLE_HTTP_CONDITIONAL_WORKFLOW, SAMPLE_ARRAY_ITERATOR_WORKFLOW, SAMPLE_OBJECT_ITERATOR_WORKFLOW } from './sampleWorkflows';
+import {
+    SAMPLE_HTTP_CONDITIONAL_WORKFLOW,
+    SAMPLE_ARRAY_ITERATOR_WORKFLOW,
+    SAMPLE_OBJECT_ITERATOR_WORKFLOW,
+    SAMPLE_SCRIPT_BASIC_WORKFLOW,
+    SAMPLE_SCRIPT_CONTEXT_WORKFLOW,
+    SAMPLE_DATA_TRANSFORM_WORKFLOW
+} from './sampleWorkflows';
 
-const SAMPLE_WORKFLOW = SAMPLE_OBJECT_ITERATOR_WORKFLOW;
+const SAMPLE_WORKFLOW = SAMPLE_DATA_TRANSFORM_WORKFLOW;
 
 interface ExecutionResult {
     id: string;

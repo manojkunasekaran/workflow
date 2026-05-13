@@ -4,7 +4,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import com.app.common.model.task.TaskType;
-import com.app.common.model.variable.VariableValue;
 import lombok.NoArgsConstructor;
 
 import java.util.HashMap;
@@ -20,14 +19,8 @@ import java.util.Map;
 @AllArgsConstructor
 public class ConditionalTaskExecutionData implements TaskExecutionData {
 
-    /** Task outputs available during evaluation (snapshot of $tasks context) */
-    private Map<String, Object> taskOutputsSnapshot;
-
-    /**
-     * Workflow variables available during evaluation (snapshot of $variables
-     * context)
-     */
-    private Map<String, VariableValue> variablesSnapshot;
+    /** Specific fields and their resolved values used during evaluation */
+    private Map<String, Object> evaluatedFields;
 
     /** Name of the branch that matched (or "default" if no condition matched) */
     private String matchedBranch;

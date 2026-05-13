@@ -194,11 +194,101 @@ export const SAMPLE_NUMBER_ITERATOR_WORKFLOW = {
 };
 
 /**
+ * Basic Script Task workflow - returns object and logs
+ */
+export const SAMPLE_SCRIPT_BASIC_WORKFLOW = {
+    name: "Basic Script Execution",
+    tasks: [
+        {
+            taskId: "transform_data",
+            type: "SCRIPT_TASK",
+            parameters: {
+                type: "SCRIPT_TASK",
+                language: "javascript",
+                script: "console.log('Starting data transformation');\nlet result = { message: 'Hello from script!', timestamp: new Date().toISOString(), numbers: [1, 2, 3] };\nconsole.log('Data structure generated');\nreturn result;"
+            }
+        }
+    ],
+    variables: {}
+};
+
+/**
+ * Script Task accessing Context Variables and HTTP Response
+ */
+export const SAMPLE_SCRIPT_CONTEXT_WORKFLOW = {
+    name: "Script Accessing Context & HTTP Data",
+    tasks: [
+        {
+            taskId: "fetch_user",
+            type: "HTTP_TASK",
+            parameters: {
+                type: "HTTP_TASK",
+                url: "{{$variables.api_url}}/users/1",
+                method: "GET",
+                headers: { "Content-Type": "application/json" }
+            }
+        },
+        {
+            taskId: "process_user_data",
+            type: "SCRIPT_TASK",
+            parameters: {
+                type: "SCRIPT_TASK",
+                language: "javascript",
+                script: "console.log('\\n--- Accessing Context Variables ---');\nlet user = $tasks.fetch_user?.result || $tasks.fetch_user?.body;\nlet multiplier = $variables.score_multiplier;\n\nconsole.log('Fetched User:', JSON.stringify(user));\n\nif (!user) {\n  console.error('User data not found in context!');\n  return { success: false, reason: 'No user data' };\n}\n\nlet processedData = {\n  candidateName: user.name,\n  contactInfo: user.email + ' / ' + user.phone,\n  computedScore: Number(user.id) * Number(multiplier),\n  company: user.company?.name || 'Unknown'\n};\n\nconsole.log('Successfully processed user ' + user.id);\nreturn processedData;"
+            }
+        }
+    ],
+    variables: {
+        api_url: {
+            type: "STRING",
+            value: "https://jsonplaceholder.typicode.com"
+        },
+        score_multiplier: {
+            type: "NUMBER",
+            value: 42
+        }
+    }
+};
+
+/**
+ * Data Transform workflow - fetches users and uses JsonPath to extract a specific array
+ */
+export const SAMPLE_DATA_TRANSFORM_WORKFLOW = {
+    name: "Zero-Code Data Transformation",
+    tasks: [
+        {
+            taskId: "fetch_users",
+            type: "HTTP_TASK",
+            parameters: {
+                type: "HTTP_TASK",
+                url: "https://jsonplaceholder.typicode.com/users",
+                method: "GET",
+                headers: { "Content-Type": "application/json" }
+            }
+        },
+        {
+            taskId: "extract_emails",
+            type: "DATA_TRANSFORM",
+            parameters: {
+                type: "DATA_TRANSFORM",
+                operation: "JSON_EXTRACT",
+                inputData: "{{$tasks.fetch_users.body}}",
+                expression: "$[*].email"
+            }
+        }
+    ],
+    variables: {}
+};
+
+/**
  * All sample workflows as an array for easy selection
  */
 export const ALL_SAMPLES = [
     { name: "HTTP + Conditional", workflow: SAMPLE_HTTP_CONDITIONAL_WORKFLOW },
     { name: "Array Iterator", workflow: SAMPLE_ARRAY_ITERATOR_WORKFLOW },
     { name: "Object Iterator", workflow: SAMPLE_OBJECT_ITERATOR_WORKFLOW },
-    { name: "Number Iterator (Retry)", workflow: SAMPLE_NUMBER_ITERATOR_WORKFLOW }
+    { name: "Number Iterator (Retry)", workflow: SAMPLE_NUMBER_ITERATOR_WORKFLOW },
+    { name: "Simple Script Output", workflow: SAMPLE_SCRIPT_BASIC_WORKFLOW },
+    { name: "Script using HTTP & Vars", workflow: SAMPLE_SCRIPT_CONTEXT_WORKFLOW },
+    { name: "JSONPath Data Transform", workflow: SAMPLE_DATA_TRANSFORM_WORKFLOW }
 ];
