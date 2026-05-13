@@ -10,12 +10,15 @@ import com.app.common.model.task.WorkflowTask;
 import com.app.core.model.ExecutionContext;
 import com.app.core.service.TaskExecutor;
 import com.app.core.service.VariableResolver;
+import com.app.core.service.WorkflowEngine;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Executor for WAIT task type.
@@ -24,10 +27,16 @@ import java.time.Instant;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class WaitTaskExecutor implements TaskExecutor {
 
     private final VariableResolver variableResolver;
+    private final WorkflowEngine workflowEngine;
+
+    public WaitTaskExecutor(VariableResolver variableResolver,
+            @Lazy WorkflowEngine workflowEngine) {
+        this.variableResolver = variableResolver;
+        this.workflowEngine = workflowEngine;
+    }
 
     @Override
     public boolean canExecute(TaskType taskType) {
@@ -52,19 +61,10 @@ public class WaitTaskExecutor implements TaskExecutor {
                     .build();
         }
 
-        log.info("Wait task {} sleeping for {} ms", task.getTaskId(), duration);
+        log.info("Wait task {} scheduling continuation in {} ms", task.getTaskId(), duration);
 
         Instant waitStart = Instant.now();
-        try {
-            Thread.sleep(duration);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return TaskExecutionResult.builder()
-                    .status(TaskExecutionResult.Status.FAILED)
-                    .errorMessage("Wait task interrupted: " + e.getMessage())
-                    .build();
-        }
-        Instant waitEnd = Instant.now();
+        Instant waitEnd = waitStart.plusMillis(duration);
 
         // Build execution data for audit trail
         WaitTaskExecutionData executionData = WaitTaskExecutionData.builder()
@@ -73,8 +73,17 @@ public class WaitTaskExecutor implements TaskExecutor {
                 .waitEndTime(waitEnd)
                 .build();
 
+        CompletableFuture.runAsync(() -> {
+            try {
+                log.info("Resuming workflow {} after wait task {}", execution.getId(), task.getTaskId());
+                workflowEngine.resumeWorkflow(execution.getId(), null, null);
+            } catch (Exception e) {
+                log.error("Failed to resume wait task {}: {}", task.getTaskId(), e.getMessage(), e);
+            }
+        }, CompletableFuture.delayedExecutor(duration, TimeUnit.MILLISECONDS));
+
         return TaskExecutionResult.builder()
-                .status(TaskExecutionResult.Status.COMPLETED)
+                .status(TaskExecutionResult.Status.PAUSED)
                 .executionData(executionData)
                 .output(buildOutput(executionData))
                 .build();

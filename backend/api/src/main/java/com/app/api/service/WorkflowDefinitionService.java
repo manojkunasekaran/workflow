@@ -1,4 +1,4 @@
-package com.app.core.service;
+package com.app.api.service;
 
 import com.app.common.entity.WorkflowDefinition;
 import com.app.persistence.repository.WorkflowDefinitionRepository;
@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -16,7 +17,9 @@ public class WorkflowDefinitionService {
     private final WorkflowDefinitionRepository repository;
 
     public WorkflowDefinition createWorkflowDefinition(@NonNull WorkflowDefinition definition) {
-        // Custom logic can be added here before saving
+        if (definition.getId() == null) {
+            definition.setId(UUID.randomUUID().toString());
+        }
         return repository.save(definition);
     }
 

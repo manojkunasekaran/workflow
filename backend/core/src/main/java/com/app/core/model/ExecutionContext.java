@@ -119,6 +119,52 @@ public class ExecutionContext {
         this.loopVariables.clear();
     }
 
+    /**
+     * Consolidates all available variable sources into a single structured map.
+     * This provides a unified context for script engines and expression evaluators.
+     *
+     * @return Map containing all resolved variable values grouped by their source.
+     */
+    public Map<String, Object> getAllVariables() {
+        Map<String, Object> data = new HashMap<>();
+
+        // 1. Trigger inputs ($input)
+        Map<String, Object> inputParams = new HashMap<>();
+        if (triggerInputs != null) {
+            triggerInputs.forEach((k, v) -> inputParams.put(k, v != null ? v.getValue() : null));
+        }
+        data.put("trigger", inputParams);
+
+        // 2. Workflow-level variables ($variables)
+        Map<String, Object> vars = new HashMap<>();
+        if (workflowVariables != null) {
+            workflowVariables.forEach((k, v) -> vars.put(k, v != null ? v.getValue() : null));
+        }
+        data.put("variables", vars);
+
+        // 3. Task outputs ($tasks)
+        data.put("tasks", taskOutputs != null ? new HashMap<>(taskOutputs) : new HashMap<>());
+
+        // 4. Global environment variables ($env)
+        if (environmentVariables != null && !environmentVariables.isEmpty()) {
+            data.put("env", new HashMap<>(environmentVariables));
+        }
+
+        // 5. Loop variables ($loop)
+        if (loopVariables != null && !loopVariables.isEmpty()) {
+            data.put("loop", new HashMap<>(loopVariables));
+        }
+
+        // 6. Branch context context metadata
+        if (branchId != null) {
+            data.put("branch", Map.of(
+                    "id", branchId,
+                    "name", branchName != null ? branchName : "unknown"));
+        }
+
+        return data;
+    }
+
     // ── Branch context support ──
 
     /**

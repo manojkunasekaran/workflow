@@ -2,11 +2,11 @@ package com.app.api.controller;
 
 import com.app.common.entity.WorkflowDefinition;
 import com.app.common.exception.ResourceNotFoundException;
-import com.app.core.service.WorkflowDefinitionService;
+import com.app.api.service.WorkflowDefinitionService;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.lang.NonNull;
-
 import java.util.List;
 
 @RestController

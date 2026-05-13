@@ -1,18 +1,18 @@
 package com.app.api.controller;
 
 import com.app.api.dto.HumanTaskResponse;
-import com.app.common.entity.WorkflowDefinition;
+import com.app.api.service.WorkflowExecutionService;
+import com.app.common.constant.ExecutionType;
 import com.app.common.entity.WorkflowExecution;
 import com.app.common.entity.WorkflowTaskExecution;
-import com.app.common.exception.ResourceNotFoundException;
-import com.app.common.exception.ValidationException;
-import com.app.core.executors.HumanTaskExecutor;
-import com.app.core.service.WorkflowDefinitionService;
-import com.app.core.service.WorkflowEngine;
-import com.app.persistence.repository.WorkflowExecutionRepository;
-import com.app.persistence.repository.WorkflowTaskExecutionRepository;
+import com.app.common.model.variable.VariableValue;
+
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,71 +20,83 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @RestController
 @RequestMapping("/executions")
 @RequiredArgsConstructor
 public class WorkflowExecutionController {
 
-    private final WorkflowEngine workflowEngine;
-    private final HumanTaskExecutor humanTaskExecutor;
-    private final WorkflowDefinitionService definitionService;
-    private final WorkflowExecutionRepository executionRepository;
-    private final WorkflowTaskExecutionRepository taskExecutionRepository;
+    private final WorkflowExecutionService executionService;
 
-    @PostMapping
-    public ResponseEntity<WorkflowExecution> triggerExecution(@RequestBody Map<String, String> request) {
-        String workflowId = request.get("workflowId");
-        if (workflowId == null) {
-            throw new ValidationException("workflowId is required");
-        }
-
-        WorkflowDefinition definition = definitionService.getWorkflowDefinitionById(workflowId)
-                .orElseThrow(() -> new ResourceNotFoundException("WorkflowDefinition", workflowId));
-
-        WorkflowExecution execution = workflowEngine.startWorkflow(definition);
+    /**
+     * Trigger an asynchronous workflow execution.
+     * The execution is queued and processed in the background.
+     *
+     * @param definitionId the workflow definition ID
+     * @param payload      optional trigger inputs
+     * @return the created execution with status QUEUED
+     */
+    @PostMapping("/{definitionId}")
+    public ResponseEntity<WorkflowExecution> triggerAsync(
+            @PathVariable String definitionId,
+            @RequestBody(required = false) Map<String, VariableValue> payload) {
+        WorkflowExecution execution = executionService.triggerExecution(
+                definitionId, ExecutionType.ASYNC, payload);
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(execution);
     }
 
     /**
-     * Get all workflow executions (most recent first)
+     * Trigger a synchronous workflow execution.
+     * The call blocks until the engine accepts the execution.
+     *
+     * @param definitionId the workflow definition ID
+     * @param payload      optional trigger inputs
+     * @return the created execution with status RUNNING
      */
-    @GetMapping
-    public List<WorkflowExecution> getAllExecutions() {
-        return executionRepository.findAll(Sort.by(Sort.Direction.DESC, "_id"));
+    @PostMapping("/{definitionId}/sync")
+    public ResponseEntity<WorkflowExecution> triggerSync(
+            @PathVariable String definitionId,
+            @RequestBody(required = false) Map<String, VariableValue> payload) {
+        WorkflowExecution execution = executionService.triggerExecution(
+                definitionId, ExecutionType.SYNC, payload);
+        return ResponseEntity.ok(execution);
     }
 
     /**
-     * Get workflow execution by ID
+     * Get all workflow executions (paginated, most recent first).
+     */
+    @GetMapping
+    public Page<WorkflowExecution> getAllExecutions(
+            @PageableDefault(sort = "_id", direction = Sort.Direction.DESC) Pageable pageable) {
+        return executionService.getAllExecutions(pageable);
+    }
+
+    /**
+     * Get workflow execution by ID.
      */
     @GetMapping("/{id}")
     public WorkflowExecution getExecutionById(@PathVariable String id) {
-        return executionRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("WorkflowExecution", id));
+        return executionService.getExecutionById(id);
     }
 
     /**
-     * Get all task executions for a workflow execution
+     * Get all task executions for a workflow execution.
      */
     @GetMapping("/{id}/tasks")
     public List<WorkflowTaskExecution> getTaskExecutions(@PathVariable String id) {
-        return taskExecutionRepository.findAllByWorkflowExecutionId(id);
+        return executionService.getTaskExecutions(id);
     }
 
     /**
      * Respond to a pending human task.
-     * Delegates all validation and processing to HumanTaskService.
      */
     @PostMapping("/{executionId}/tasks/{taskExecutionId}/respond")
     public ResponseEntity<WorkflowTaskExecution> respondToHumanTask(
             @PathVariable String executionId,
             @PathVariable String taskExecutionId,
             @RequestBody HumanTaskResponse response) {
-
-        WorkflowTaskExecution updated = humanTaskExecutor.respond(
-                executionId, taskExecutionId,
-                response.getActionId(), response.getRespondedBy(),
-                response.getFormData());
-
+        WorkflowTaskExecution updated = executionService.respondToHumanTask(
+                executionId, taskExecutionId, response);
         return ResponseEntity.ok(updated);
     }
 }

@@ -13,54 +13,61 @@ The project follows a modular monorepo architecture:
   - **`common`**: Shared domain models, DTOs, and utility classes.
 - **frontend**: React application (Coming Soon).
 
-## ⚙️ Setup & Running
+## ⚙️ Development Setup
 
-### 1. Environment Configuration
+### Prerequisites
 
-- The application requires a MongoDB connection string.
+- **Java 21** (Temurin/OpenJDK)
+- **Maven 3.9+**
+- **Docker Desktop** (for RabbitMQ)
 
-### 2. Build the Backend
+### 1. Start Infrastructure
 
-Navigate to the backend directory and build the project:
+RabbitMQ is the only Docker dependency. Start it with:
+
+```bash
+docker compose up -d
+```
+
+| Service     | URL                      | Credentials   |
+|-------------|--------------------------|---------------|
+| RabbitMQ    | http://localhost:15672    | guest / guest |
+
+### 2. Build Shared Modules
+
+Before running either service, install the shared modules to your local Maven repository:
 
 ```bash
 cd backend
-mvn clean install
+mvn clean install -pl common,persistence -am -DskipTests
 ```
 
-### 3. Run the Application
-
-Start the API server:
+### 3. Run the Core Service
 
 ```bash
-mvn -pl api spring-boot:run
+mvn spring-boot:run -pl core
 ```
 
-The application will start on **port 8080**.
+Core starts on **port 8081** (HTTP) and **port 9090** (gRPC).
 
-## 🐳 Docker Setup
+### 4. Run the API Service
 
-The project is configured for a seamless development experience using Docker.
-
-### 1. Prerequisites
-
-- **Docker Desktop** installed and running.
-
-### 2. Run with Docker Compose
-
-To start the application in development mode with **hot reloading** enabled:
+In a separate terminal:
 
 ```bash
-docker compose up --build
+mvn spring-boot:run -pl api
 ```
 
-- **App URL**: `http://localhost:8080`
-- **Debug Port**: `8000` (Attach your IDE's remote debugger here)
+API starts on **port 8080**.
 
-### 3. Features
+### Hot Reload
 
-- **Hot Reloading**: Changes to the source code in `backend/` are automatically detected, and the application restarts.
-- **Cloud Database**: The application is configured to connect to your cloud MongoDB instance.
+Both services use Spring DevTools — source changes trigger automatic restarts when running via `mvn spring-boot:run`.
+
+### Debugging
+
+Attach your IDE debugger to the Spring Boot process directly — no remote debug setup needed.
+
 
 ## ✨ Features Implemented
 
@@ -75,6 +82,7 @@ docker compose up --build
     - **JOIN**: Gather parallel branches with configurable failure strategy (FAIL_FAST, WAIT_FOR_ALL, REQUIRE_ALL).
     - **WAIT**: Delay execution for a configurable duration (supports variable substitution).
   - Extensible `TaskExecutor` strategy pattern.
+- **Async Execution**: Queue-based workflow triggering via RabbitMQ with dead-letter exchange for failed messages.
 - **Execution Tracking**:
   - Trigger workflow executions.
   - Track status (`PENDING`, `IN_PROGRESS`, `COMPLETED`, `FAILED`).

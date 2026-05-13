@@ -1,5 +1,6 @@
 package com.app.core.service;
 
+import com.app.common.constant.TaskExecutionStatus;
 import com.app.common.constant.WorkflowExecutionStatus;
 import com.app.common.entity.WorkflowDefinition;
 import com.app.common.entity.WorkflowExecution;
@@ -12,6 +13,7 @@ import com.app.common.model.task.parameters.BranchTaskParameters;
 import com.app.common.model.variable.VariableValue;
 
 import com.app.core.model.ExecutionContext;
+import com.app.persistence.repository.WorkflowDefinitionRepository;
 import com.app.persistence.repository.WorkflowExecutionRepository;
 import com.app.persistence.repository.WorkflowTaskExecutionRepository;
 
@@ -25,7 +27,6 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 /**
  * Core workflow orchestration engine.
@@ -35,17 +36,28 @@ import java.util.concurrent.Executors;
 public class WorkflowEngine {
 
     private final List<TaskExecutor> taskExecutors;
+
+    private final WorkflowDefinitionRepository definitionRepository;
     private final WorkflowExecutionRepository executionRepository;
     private final WorkflowTaskExecutionRepository taskExecutionRepository;
+
     private final ExecutorService executor;
 
     public WorkflowEngine(List<TaskExecutor> taskExecutors,
             WorkflowExecutionRepository executionRepository,
-            WorkflowTaskExecutionRepository taskExecutionRepository) {
+            WorkflowTaskExecutionRepository taskExecutionRepository,
+            WorkflowDefinitionRepository definitionRepository,
+            @org.springframework.beans.factory.annotation.Value("${workflow.engine.core-pool-size:10}") int corePoolSize,
+            @org.springframework.beans.factory.annotation.Value("${workflow.engine.max-pool-size:50}") int maxPoolSize,
+            @org.springframework.beans.factory.annotation.Value("${workflow.engine.queue-capacity:200}") int queueCapacity) {
         this.taskExecutors = taskExecutors;
+        this.definitionRepository = definitionRepository;
         this.executionRepository = executionRepository;
         this.taskExecutionRepository = taskExecutionRepository;
-        this.executor = Executors.newCachedThreadPool();
+        this.executor = new java.util.concurrent.ThreadPoolExecutor(
+                corePoolSize, maxPoolSize, 60L, java.util.concurrent.TimeUnit.SECONDS,
+                new java.util.concurrent.LinkedBlockingQueue<>(queueCapacity),
+                new java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy());
     }
 
     @PreDestroy
@@ -54,21 +66,62 @@ public class WorkflowEngine {
     }
 
     /**
-     * Start a workflow. Creates the execution record and runs the workflow
-     * asynchronously in the background. Returns the execution immediately.
+     * Unified entry point to trigger a workflow execution.
+     * Performs definition lookup, creates or updates the execution record, 
+     * handles state transitions to RUNNING, and starts the background engine.
+     *
+     * @param definitionId  The workflow definition to run
+     * @param executionId   Optional execution ID (for async QUEUED executions). 
+     *                      If null, a new execution is created (sync flow).
+     * @param triggerInputs Optional variables to seed the execution context.
+     * @return The RUNNING execution record.
      */
-    public WorkflowExecution startWorkflow(WorkflowDefinition definition,
-            Map<String, VariableValue> triggerInputs) {
-        WorkflowExecution execution = initializeExecution(definition, triggerInputs);
+    public WorkflowExecution triggerWorkflow(String definitionId, String executionId, Map<String, VariableValue> triggerInputs) {
+        log.info("Triggering workflow: definitionId={}, executionId={}", definitionId, executionId);
+        
+        try {
+            WorkflowDefinition definition = definitionRepository.findById(definitionId)
+                    .orElseThrow(() -> new com.app.common.exception.ResourceNotFoundException(
+                            "WorkflowDefinition", definitionId));
 
-        CompletableFuture.runAsync(
-                () -> executeWorkflow(definition, execution.getId()), executor);
+            WorkflowExecution execution;
+            if (executionId != null) {
+                // Async case: execution created by API as QUEUED
+                execution = executionRepository.findById(executionId)
+                        .orElseThrow(() -> new com.app.common.exception.ResourceNotFoundException(
+                                "WorkflowExecution", executionId));
+                
+                execution.setStatus(WorkflowExecutionStatus.RUNNING);
+                if (triggerInputs != null && !triggerInputs.isEmpty()) {
+                    execution.setTriggerInputs(triggerInputs);
+                }
+                execution = executionRepository.save(execution);
+            } else {
+                // Sync case: no pre-existing execution
+                execution = initializeExecution(definition, triggerInputs);
+            }
 
-        return execution;
-    }
+            final String finalExecutionId = execution.getId();
 
-    public WorkflowExecution startWorkflow(WorkflowDefinition definition) {
-        return startWorkflow(definition, null);
+            CompletableFuture.runAsync(
+                    () -> executeWorkflow(definition, finalExecutionId), executor);
+
+            log.info("Workflow started: executionId={}", finalExecutionId);
+            return execution;
+
+        } catch (Exception e) {
+            log.error("Failed to trigger workflow: definitionId={}, executionId={}, error={}", 
+                    definitionId, executionId, e.getMessage(), e);
+
+            // Mark execution as FAILED if it exists and failed during trigger
+            if (executionId != null) {
+                executionRepository.findById(executionId).ifPresent(exec -> {
+                    exec.setStatus(WorkflowExecutionStatus.FAILED);
+                    executionRepository.save(exec);
+                });
+            }
+            throw e; 
+        }
     }
 
     /**
@@ -85,6 +138,10 @@ public class WorkflowEngine {
                     + " — status is " + execution.getStatus() + ", expected PAUSED");
         }
 
+        final WorkflowDefinition resolvedDefinition = definition != null ? definition
+                : definitionRepository.findById(execution.getWorkflowDefinitionId())
+                        .orElseThrow(() -> new IllegalStateException("Workflow Definition not found"));
+
         if (taskOutputs != null) {
             execution.getTaskOutputs().putAll(taskOutputs);
         }
@@ -95,7 +152,7 @@ public class WorkflowEngine {
         log.info("Resuming workflow {} from task '{}'", executionId, execution.getCurrentTaskId());
 
         CompletableFuture.runAsync(
-                () -> executeWorkflow(definition, executionId), executor);
+                () -> executeWorkflow(resolvedDefinition, executionId), executor);
     }
 
     private WorkflowExecution initializeExecution(WorkflowDefinition definition,
@@ -240,7 +297,7 @@ public class WorkflowEngine {
         taskExecution.setWorkflowDefinitionId(execution.getWorkflowId());
         taskExecution.setTaskDefinitionId(task.getTaskId());
         taskExecution.setTaskType(task.getType().name());
-        taskExecution.setStatus(result.getStatus().name());
+        taskExecution.setStatus(TaskExecutionStatus.valueOf(result.getStatus().name()));
         taskExecution.setStartTime(Instant.now());
         taskExecution.setEndTime(Instant.now());
         taskExecution.setExecutionData(result.getExecutionData());
@@ -255,7 +312,7 @@ public class WorkflowEngine {
         WorkflowExecution.TaskExecutionSummary summary = new WorkflowExecution.TaskExecutionSummary();
         summary.setTaskExecutionId(taskExecution.getId());
         summary.setTaskDefinitionId(task.getTaskId());
-        summary.setStatus(result.getStatus().name());
+        summary.setStatus(TaskExecutionStatus.valueOf(result.getStatus().name()));
         execution.getTaskExecutionSummaries().add(summary);
     }
 
@@ -397,7 +454,7 @@ public class WorkflowEngine {
                 if (result.getStatus() == TaskExecutionResult.Status.FAILED) {
                     return JoinTaskExecutionData.BranchResult.builder()
                             .branchName(branch.getBranchName())
-                            .status("FAILED")
+                            .status(TaskExecutionStatus.FAILED)
                             .tasksExecuted(tasksExecuted)
                             .lastTaskId(lastTaskId)
                             .errorMessage(result.getErrorMessage())
@@ -412,7 +469,7 @@ public class WorkflowEngine {
 
             return JoinTaskExecutionData.BranchResult.builder()
                     .branchName(branch.getBranchName())
-                    .status("COMPLETED")
+                    .status(TaskExecutionStatus.COMPLETED)
                     .tasksExecuted(tasksExecuted)
                     .lastTaskId(lastTaskId)
                     .output(branchOutputs)
@@ -422,7 +479,7 @@ public class WorkflowEngine {
             log.error("Branch '{}' failed: {}", branch.getBranchName(), e.getMessage(), e);
             return JoinTaskExecutionData.BranchResult.builder()
                     .branchName(branch.getBranchName())
-                    .status("FAILED")
+                    .status(TaskExecutionStatus.FAILED)
                     .tasksExecuted(tasksExecuted)
                     .lastTaskId(lastTaskId)
                     .errorMessage(e.getMessage())

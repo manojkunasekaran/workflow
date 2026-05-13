@@ -1,6 +1,7 @@
 package com.app.common.entity;
 
 import com.app.common.constant.CollectionNames;
+import com.app.common.constant.TaskExecutionStatus;
 import com.app.common.model.base.Auditable;
 import com.app.common.model.task.execution.TaskExecutionData;
 import lombok.Data;
@@ -20,7 +21,7 @@ public class WorkflowTaskExecution extends Auditable {
     private String workflowDefinitionId;
     private String taskDefinitionId;
     private String taskType;
-    private String status;
+    private TaskExecutionStatus status;
     private Instant startTime;
     private Instant endTime;
     private String errorMessage;

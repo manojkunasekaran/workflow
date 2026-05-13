@@ -8,5 +8,6 @@ public enum TaskType {
     HUMAN_TASK,
     BRANCH,
     WAIT,
+    DATA_TRANSFORM,
     JOIN;
 }

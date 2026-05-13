@@ -3,6 +3,7 @@ package com.app.core.executors;
 import com.app.common.entity.WorkflowExecution;
 import com.app.common.model.task.execution.JoinTaskExecutionData;
 import com.app.common.model.task.parameters.JoinTaskParameters;
+import com.app.common.constant.TaskExecutionStatus;
 import com.app.common.model.task.execution.TaskExecutionResult;
 import com.app.common.model.task.TaskType;
 import com.app.common.model.task.WorkflowTask;
@@ -63,7 +64,7 @@ public class JoinTaskExecutor implements TaskExecutor {
         int failedBranches = 0;
 
         for (JoinTaskExecutionData.BranchResult result : branchResults.values()) {
-            if ("COMPLETED".equals(result.getStatus())) {
+            if (TaskExecutionStatus.COMPLETED.equals(result.getStatus())) {
                 successfulBranches++;
             } else {
                 failedBranches++;
