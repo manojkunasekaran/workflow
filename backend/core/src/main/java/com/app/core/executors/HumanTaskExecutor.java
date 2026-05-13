@@ -1,5 +1,6 @@
 package com.app.core.executors;
 
+import com.app.common.constant.TaskExecutionStatus;
 import com.app.common.constant.WorkflowExecutionStatus;
 import com.app.common.entity.WorkflowDefinition;
 import com.app.common.entity.WorkflowExecution;
@@ -15,7 +16,7 @@ import com.app.common.model.task.execution.TaskExecutionResult;
 import com.app.common.model.task.parameters.HumanTaskParameters;
 import com.app.core.model.ExecutionContext;
 import com.app.core.service.TaskExecutor;
-import com.app.core.service.WorkflowDefinitionService;
+import com.app.persistence.repository.WorkflowDefinitionRepository;
 import com.app.core.service.WorkflowEngine;
 import com.app.persistence.repository.WorkflowExecutionRepository;
 import com.app.persistence.repository.WorkflowTaskExecutionRepository;
@@ -37,16 +38,16 @@ import java.util.Map;
 public class HumanTaskExecutor implements TaskExecutor {
 
     private final WorkflowEngine workflowEngine;
-    private final WorkflowDefinitionService definitionService;
+    private final WorkflowDefinitionRepository definitionRepository;
     private final WorkflowExecutionRepository executionRepository;
     private final WorkflowTaskExecutionRepository taskExecutionRepository;
 
     public HumanTaskExecutor(@Lazy WorkflowEngine workflowEngine,
-            WorkflowDefinitionService definitionService,
+            WorkflowDefinitionRepository definitionRepository,
             WorkflowExecutionRepository executionRepository,
             WorkflowTaskExecutionRepository taskExecutionRepository) {
         this.workflowEngine = workflowEngine;
-        this.definitionService = definitionService;
+        this.definitionRepository = definitionRepository;
         this.executionRepository = executionRepository;
         this.taskExecutionRepository = taskExecutionRepository;
     }
@@ -101,7 +102,7 @@ public class HumanTaskExecutor implements TaskExecutor {
         if (!"HUMAN_TASK".equals(taskExecution.getTaskType())) {
             throw new ValidationException("Task is not a HUMAN_TASK");
         }
-        if (!"PAUSED".equals(taskExecution.getStatus())) {
+        if (!TaskExecutionStatus.PAUSED.equals(taskExecution.getStatus())) {
             throw new ValidationException(
                     "Task is not in PAUSED status, current: " + taskExecution.getStatus());
         }
@@ -151,8 +152,8 @@ public class HumanTaskExecutor implements TaskExecutor {
         WorkflowExecution execution = executionRepository
                 .findById(taskExecution.getWorkflowExecutionId()).orElseThrow();
 
-        WorkflowDefinition definition = definitionService
-                .getWorkflowDefinitionById(execution.getWorkflowDefinitionId())
+        WorkflowDefinition definition = definitionRepository
+                .findById(execution.getWorkflowDefinitionId())
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "WorkflowDefinition", execution.getWorkflowDefinitionId()));
 
@@ -203,11 +204,11 @@ public class HumanTaskExecutor implements TaskExecutor {
         return null;
     }
 
-    private String mapOutcomeToStatus(HumanTaskOutcome outcome) {
+    private TaskExecutionStatus mapOutcomeToStatus(HumanTaskOutcome outcome) {
         return switch (outcome) {
-            case APPROVED -> TaskExecutionResult.Status.COMPLETED.name();
-            case REJECTED -> TaskExecutionResult.Status.FAILED.name();
-            case PENDING -> TaskExecutionResult.Status.PAUSED.name();
+            case APPROVED -> TaskExecutionStatus.COMPLETED;
+            case REJECTED -> TaskExecutionStatus.FAILED;
+            case PENDING -> TaskExecutionStatus.PAUSED;
         };
     }
 }

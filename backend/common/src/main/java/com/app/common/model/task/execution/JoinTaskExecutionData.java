@@ -3,6 +3,7 @@ package com.app.common.model.task.execution;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import com.app.common.constant.TaskExecutionStatus;
 import com.app.common.model.task.TaskType;
 import lombok.NoArgsConstructor;
 
@@ -78,8 +79,8 @@ public class JoinTaskExecutionData implements TaskExecutionData {
     @AllArgsConstructor
     public static class BranchResult {
         private String branchName;
-        /** COMPLETED or FAILED */
-        private String status;
+        /** Status of the branch execution. */
+        private TaskExecutionStatus status;
         /** Number of tasks executed in this branch. */
         private int tasksExecuted;
         /** Last task ID that was executed. */

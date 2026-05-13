@@ -1,6 +1,7 @@
 package com.app.core.executors;
 
 import com.app.common.entity.WorkflowExecution;
+import com.app.common.model.rule.EvaluationResult;
 import com.app.common.model.task.execution.ConditionalTaskExecutionData;
 import com.app.common.model.task.parameters.ConditionalTaskParameters;
 import com.app.common.model.task.parameters.ConditionalTaskParameters.Branch;
@@ -17,6 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Executor for CONDITIONAL task type.
@@ -50,11 +52,15 @@ public class ConditionalTaskExecutor implements TaskExecutor {
         String matchedBranch = "default";
         int branchesEvaluated = 0;
 
+        Map<String, Object> allEvaluatedFields = new HashMap<>();
+
         if (params.getBranches() != null) {
             for (Branch branch : params.getBranches()) {
                 branchesEvaluated++;
                 try {
-                    if (ruleEvaluator.evaluate(branch, context)) {
+                    EvaluationResult res = ruleEvaluator.evaluate(branch, context);
+                    allEvaluatedFields.putAll(res.evaluatedFields());
+                    if (res.matched()) {
                         nextTaskId = branch.getNextTaskId();
                         matchedBranch = branch.getName() != null ? branch.getName() : "unnamed";
                         log.info("Branch '{}' matched for task {}", matchedBranch, task.getTaskId());
@@ -72,9 +78,7 @@ public class ConditionalTaskExecutor implements TaskExecutor {
 
         // Build execution data for audit trail (stores input + output + metrics)
         ConditionalTaskExecutionData executionData = ConditionalTaskExecutionData.builder()
-                // INPUT: Snapshot of what was available during evaluation
-                .taskOutputsSnapshot(new java.util.HashMap<>(context.getTaskOutputs()))
-                .variablesSnapshot(new HashMap<>(context.getWorkflowVariables()))
+                .evaluatedFields(allEvaluatedFields)
                 // OUTPUT: The result
                 .matchedBranch(matchedBranch)
                 .nextTaskId(nextTaskId)
