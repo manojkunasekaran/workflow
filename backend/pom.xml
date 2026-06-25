@@ -38,6 +38,16 @@
                 <scope>import</scope>
             </dependency>
             
+            <!-- gRPC BOM — forces ALL io.grpc:* artifacts to 1.68.0,
+                 including transitive deps pulled by grpc-*-spring-boot-starter -->
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-bom</artifactId>
+                <version>1.68.0</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
             <!-- gRPC / Protobuf version definitions -->
             <dependency>
                 <groupId>net.devh</groupId>
@@ -48,16 +58,6 @@
                 <groupId>net.devh</groupId>
                 <artifactId>grpc-client-spring-boot-starter</artifactId>
                 <version>3.1.0.RELEASE</version>
-            </dependency>
-            <dependency>
-                <groupId>io.grpc</groupId>
-                <artifactId>grpc-stub</artifactId>
-                <version>1.68.0</version>
-            </dependency>
-            <dependency>
-                <groupId>io.grpc</groupId>
-                <artifactId>grpc-protobuf</artifactId>
-                <version>1.68.0</version>
             </dependency>
 
             <!-- Internal Modules -->
