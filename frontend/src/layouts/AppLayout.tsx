@@ -1,18 +1,16 @@
-import { SidebarProvider } from "@/components/ui/sidebar"
-import { AppSidebar } from "@/layouts/AppSidebar"
-import { Header } from "@/layouts/Header"
-import { Outlet } from "react-router-dom"
+import { SidebarProvider } from '@/components/ui/sidebar';
+import { AppSidebar } from '@/layouts/AppSidebar';
+import { Outlet } from 'react-router-dom';
 
 export default function AppLayout() {
     return (
         <SidebarProvider>
             <AppSidebar />
-            <main className="flex-1 flex flex-col min-h-screen transition-all duration-300 ease-in-out w-full">
-                <Header />
-                <div className="flex-1 w-full">
+            <main className="flex min-h-screen w-full flex-1 flex-col transition-all duration-300 ease-in-out">
+                <div className="flex min-h-0 w-full flex-1 flex-col">
                     <Outlet />
                 </div>
             </main>
         </SidebarProvider>
-    )
+    );
 }

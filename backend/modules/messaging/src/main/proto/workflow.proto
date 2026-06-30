@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+option java_package = "com.app.messaging.grpc";
+option java_multiple_files = true;
+option java_outer_classname = "WorkflowServiceProto";
+
+service WorkflowService {
+    rpc TriggerExecution(TriggerExecutionRequest) returns (WorkflowExecutionResponse);
+    rpc RespondToHumanTask(HumanTaskResponseRequest) returns (EmptyResponse);
+}
+
+message TriggerExecutionRequest {
+    string workflow_id = 1;
+}
+
+message WorkflowExecutionResponse {
+    string execution_id = 1;
+    string status = 2;
+    string execution_json = 3;
+}
+
+message HumanTaskResponseRequest {
+    string execution_id = 1;
+    string task_execution_id = 2;
+    string action_id = 3;
+    string responded_by = 4;
+    string form_data_json = 5;
+}
+
+message EmptyResponse {}

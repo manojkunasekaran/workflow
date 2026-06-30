@@ -1,0 +1,18 @@
+export {
+    applyGraphConnection,
+    applyRouteEdgeRemoval,
+    buildRouteEdgesFromNodes,
+    clearTaskWireReferences,
+    isValidPluginConnection,
+    listRoutingEndpoints,
+    mergeDisplayEdges,
+    resolveOutputStubBehavior,
+    resolvePluginHandles,
+    resolveTaskOutputViews,
+    resolveWireTargetHandle,
+    terminatesMainSpine,
+    type RouteEdgeData,
+    type RoutingEndpoint,
+    type TaskInputView,
+    type TaskOutputView,
+} from './pluginWiringRuntime';
