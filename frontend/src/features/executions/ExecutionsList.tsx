@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { executionApi, type WorkflowExecution } from '@/api/executionApi';
+import { PageHeader } from '@/layouts/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Loader2, RefreshCw, ArrowRight } from 'lucide-react';
 
@@ -35,6 +36,7 @@ export default function ExecutionsList() {
             case 'FAILED':
                 return 'text-red-600 bg-red-50 border-red-200';
             case 'RUNNING':
+            case 'QUEUED':
                 return 'text-yellow-600 bg-yellow-50 border-yellow-200';
             default:
                 return 'text-gray-600 bg-gray-50 border-gray-200';
@@ -47,26 +49,29 @@ export default function ExecutionsList() {
 
     if (isLoading) {
         return (
-            <div className="h-full flex items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <div className="flex h-full flex-col bg-background">
+                <PageHeader
+                    title={<h1 className="text-sm font-semibold">Executions</h1>}
+                />
+                <div className="flex flex-1 items-center justify-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
             </div>
         );
     }
 
     return (
-        <div className="h-full flex flex-col bg-background">
-            {/* Header */}
-            <div className="border-b border-border/60 bg-card/50 backdrop-blur-sm px-6 py-4">
-                <div className="flex items-center justify-between">
-                    <h1 className="text-lg font-bold text-foreground">Workflow Executions</h1>
+        <div className="flex h-full flex-col bg-background">
+            <PageHeader
+                title={<h1 className="text-sm font-semibold">Executions</h1>}
+                actions={
                     <Button variant="outline" size="sm" onClick={loadExecutions}>
-                        <RefreshCw className="h-4 w-4 mr-1.5" />
+                        <RefreshCw className="h-4 w-4" />
                         Refresh
                     </Button>
-                </div>
-            </div>
+                }
+            />
 
-            {/* Content */}
             <div className="flex-1 overflow-auto p-6">
                 {error && (
                     <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-600 rounded-lg">

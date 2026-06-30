@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { executionApi, type WorkflowExecution, type WorkflowTaskExecution } from '@/api/executionApi';
+import { PageHeader } from '@/layouts/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, ArrowLeft, CheckCircle, XCircle } from 'lucide-react';
+import { Loader2, ArrowLeft, XCircle } from 'lucide-react';
 
 export default function ExecutionDetail() {
     const { id } = useParams<{ id: string }>();
@@ -53,43 +54,49 @@ export default function ExecutionDetail() {
 
     if (isLoading) {
         return (
-            <div className="h-full flex items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <div className="flex h-full flex-col bg-background">
+                <PageHeader title={<h1 className="text-sm font-semibold">Execution</h1>} />
+                <div className="flex flex-1 items-center justify-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
             </div>
         );
     }
 
     if (error || !execution) {
         return (
-            <div className="h-full flex items-center justify-center">
-                <div className="text-center">
-                    <XCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-                    <p className="text-muted-foreground">{error || 'Execution not found'}</p>
-                    <Button className="mt-4" onClick={() => navigate('/executions')}>
-                        Back to List
-                    </Button>
+            <div className="flex h-full flex-col bg-background">
+                <PageHeader title={<h1 className="text-sm font-semibold">Execution</h1>} />
+                <div className="flex flex-1 items-center justify-center">
+                    <div className="text-center">
+                        <XCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+                        <p className="text-muted-foreground">{error || 'Execution not found'}</p>
+                        <Button className="mt-4" onClick={() => navigate('/executions')}>
+                            Back to List
+                        </Button>
+                    </div>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="h-full flex flex-col bg-background">
-            {/* Header */}
-            <div className="border-b border-border/60 bg-card/50 backdrop-blur-sm px-6 py-4">
-                <div className="flex items-center gap-4">
-                    <Button variant="ghost" size="sm" onClick={() => navigate('/executions')}>
-                        <ArrowLeft className="h-4 w-4 mr-1.5" />
+        <div className="flex h-full flex-col bg-background">
+            <PageHeader
+                title={
+                    <div>
+                        <h1 className="text-sm font-semibold">Execution</h1>
+                        <p className="truncate font-mono text-xs text-muted-foreground">{execution.id}</p>
+                    </div>
+                }
+                actions={
+                    <Button variant="outline" size="sm" onClick={() => navigate('/executions')}>
+                        <ArrowLeft className="h-4 w-4" />
                         Back
                     </Button>
-                    <div>
-                        <h1 className="text-lg font-bold text-foreground">Execution Details</h1>
-                        <p className="text-xs text-muted-foreground font-mono">ID: {execution.id}</p>
-                    </div>
-                </div>
-            </div>
+                }
+            />
 
-            {/* Content */}
             <div className="flex-1 overflow-auto p-6">
                 <div className="max-w-6xl mx-auto space-y-6">
                     {/* Execution Overview */}

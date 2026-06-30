@@ -16,10 +16,8 @@
     <description>Workflow Automation Platform</description>
 
     <modules>
-        <module>common</module>
-        <module>persistence</module>
-        <module>core</module>
-        <module>api</module>
+        <module>modules</module>
+        <module>services</module>
     </modules>
 
     <properties>
@@ -69,6 +67,11 @@
             <dependency>
                 <groupId>com.app</groupId>
                 <artifactId>persistence</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.app</groupId>
+                <artifactId>messaging</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

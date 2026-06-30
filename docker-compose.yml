@@ -3,6 +3,7 @@
 # =============================================================================
 # Services
 #   rabbitmq      — message broker (infrastructure)
+#   frontend      — React frontend  (development)
 #   core          — workflow engine  (gRPC server + RabbitMQ consumer)
 #   api           — REST gateway    (gRPC client + HTTP API)
 # =============================================================================
@@ -20,45 +21,49 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
-    healthcheck:
-      test: [ "CMD", "rabbitmq-diagnostics", "-q", "ping" ]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 60s
     restart: unless-stopped
     networks:
-      - backend-net
+      - workflow-network
 
-  # ── Backend: Core ───────────────────────────────────────────────────────────
-  # Workflow engine — exposes a gRPC server (9090) and consumes RabbitMQ.
-  # The Spring Boot HTTP management port is 8081.
+  # ── Frontend ──────────────────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+    restart: unless-stopped
+
+  # ── Backend ──────────────────────────────────────────────────────────
+  # Build the shared modules into the Maven local repository.
+  build-libs:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.build-libs
+    volumes:
+      - ./backend:/app
+      - maven-repo:/root/.m2
+    restart: "no"
+    networks:
+      - workflow-network
 
   core:
     build:
       context: ./backend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
       args:
         APP_MODULE: core
     ports:
       - "8081:8081" # Spring Boot HTTP / Actuator
       - "9090:9090" # gRPC server
-      - "9000:9000" # JVM remote debug (attach from IDE → localhost:9000)
+      - "9000:9000" # JVM remote debug
     env_file:
-      - .env
-    environment:
-      SPRING_PROFILES_ACTIVE: dev
-      RABBITMQ_HOST: rabbitmq
-      DEBUG_PORT: "9000"
-    healthcheck:
-      test: [ "CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/localhost/9090' || exit 1" ]
-      interval: 15s
-      timeout: 5s
-      retries: 8
-      start_period: 120s
+      - backend/.env
     depends_on:
-      rabbitmq:
-        condition: service_healthy
+      build-libs:
+        condition: service_completed_successfully
     restart: unless-stopped
     deploy:
       resources:
@@ -67,48 +72,25 @@ services:
         reservations:
           memory: 1G
     networks:
-      - backend-net
+      - workflow-network
     volumes:
-      # Mount the entire backend source so the container sees IDE-compiled classes.
       - ./backend:/app
-      # Shared Maven local repository — deps downloaded once, reused by both services.
       - maven-repo:/root/.m2
-      # Anonymous volumes shadow the module target/ directories on Windows to
-      # prevent the host IDE and Docker daemon competing for file locks.
-      - /app/core/target
-      - /app/common/target
-      - /app/persistence/target
-
-  # ── Backend: API ────────────────────────────────────────────────────────────
-  # REST gateway — HTTP on 8080, calls core via gRPC, publishes to RabbitMQ.
 
   api:
     build:
-      context: ./backend # same multi-module root
-      dockerfile: Dockerfile
+      context: ./backend
+      dockerfile: Dockerfile.dev
       args:
         APP_MODULE: api
     ports:
       - "8080:8080" # Spring Boot HTTP / REST
-      - "8000:8000" # JVM remote debug (attach from IDE → localhost:8000)
+      - "8000:8000" # JVM remote debug
     env_file:
-      - .env
-    environment:
-      SPRING_PROFILES_ACTIVE: dev
-      RABBITMQ_HOST: rabbitmq
-      GRPC_CLIENT_CORE_SERVICE_ADDRESS: "static://core:9090"
-      DEBUG_PORT: "8000"
-    healthcheck:
-      test: [ "CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/localhost/8080' || exit 1" ]
-      interval: 15s
-      timeout: 5s
-      retries: 8
-      start_period: 120s
+      - backend/.env
     depends_on:
-      rabbitmq:
-        condition: service_healthy
-      core:
-        condition: service_healthy # api waits until core's healthcheck (port 8081) passes
+      build-libs:
+        condition: service_completed_successfully
     restart: unless-stopped
     deploy:
       resources:
@@ -117,25 +99,16 @@ services:
         reservations:
           memory: 1G
     networks:
-      - backend-net
+      - workflow-network
     volumes:
-      # Same source mount — IDE compiles on the host, Docker runs.
       - ./backend:/app
       - maven-repo:/root/.m2
-      # Anonymous volumes for Windows file-lock safety.
-      - /app/api/target
-      - /app/common/target
-      - /app/persistence/target
-
-# ── Networks ──────────────────────────────────────────────────────────────────
 
 networks:
-  backend-net:
+  workflow-network:
     driver: bridge
 
 # ── Volumes ───────────────────────────────────────────────────────────────────
 
 volumes:
-  # Persists the Maven local repository between container restarts so
-  # dependencies only need to be downloaded on the very first `docker compose up`.
   maven-repo:

@@ -1,6 +1,5 @@
 import axios from 'axios';
-
-const API_BASE_URL = 'http://localhost:8080/rest';
+import { API_BASE_URL } from '@/api/config';
 
 export interface WorkflowExecution {
     id: string;
@@ -30,13 +29,21 @@ export interface WorkflowTaskExecution {
     errorMessage?: string;
 }
 
+export interface PageResponse<T> {
+    content: T[];
+    totalElements: number;
+    totalPages: number;
+    number: number;
+    size: number;
+}
+
 export const executionApi = {
     /**
-     * Get all workflow executions
+     * Get all workflow executions (paginated API — returns content array)
      */
     getAll: async (): Promise<WorkflowExecution[]> => {
-        const response = await axios.get(`${API_BASE_URL}/executions`);
-        return response.data;
+        const response = await axios.get<PageResponse<WorkflowExecution>>(`${API_BASE_URL}/executions`);
+        return response.data.content ?? [];
     },
 
     /**

@@ -1,0 +1,12 @@
+# =============================================================================
+# One-shot lib build — installs all modules/* jars into the shared .m2 volume.
+# Re-run after editing modules: docker compose run --rm build-libs
+# =============================================================================
+
+FROM maven:3.9.6-eclipse-temurin-21
+
+WORKDIR /app
+
+# Install the parent POM (non-recursive) so module descriptors can resolve their
+# <parent>, then build the modules/* reactor into the shared .m2 volume.
+CMD ["sh", "-c", "mvn -N install -DskipTests && mvn -f modules/pom.xml install -DskipTests"]

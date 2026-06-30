@@ -142,19 +142,24 @@
     fill: hsl(var(--canvas-dots)) !important;
   }
 
-  /* Edges */
-  .react-flow__edge-path {
+  /* Default edges only (legacy / fallback) */
+  .react-flow__edge:not(.studio-edge) .react-flow__edge-path {
     stroke: hsl(var(--edge-color)) !important;
     stroke-width: 1.5px;
   }
 
-  .react-flow__edge.selected .react-flow__edge-path {
+  .react-flow__edge:not(.studio-edge).selected .react-flow__edge-path {
     stroke: hsl(var(--accent)) !important;
     stroke-width: 2px;
   }
 
-  .react-flow__edge:hover .react-flow__edge-path {
+  .react-flow__edge:not(.studio-edge):hover .react-flow__edge-path {
     stroke: hsl(var(--muted-foreground)) !important;
+  }
+
+  /* Studio edges keep colors from custom edge components */
+  .react-flow__edge.studio-edge.selected .react-flow__edge-path {
+    filter: brightness(0.92);
   }
 
   /* Controls */
@@ -238,5 +243,20 @@
 
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
     background-color: hsl(var(--muted-foreground) / 0.5);
+  }
+
+  .studio-dot-grid {
+    background-color: #f8f9ff;
+    background-image: radial-gradient(#cbd5e1 1px, transparent 0);
+    background-size: 24px 24px;
+    background-position: -1px -1px;
+  }
+
+  .studio-dot-grid .react-flow__node {
+    overflow: visible;
+  }
+
+  .studio-canvas-pick-mode .react-flow__pane {
+    cursor: crosshair;
   }
 }

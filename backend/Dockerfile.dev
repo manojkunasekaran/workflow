@@ -1,0 +1,16 @@
+# =============================================================================
+# Development Dockerfile — Workflow Platform
+# =============================================================================
+# Docker-only dev: mvn spring-boot:run with volume-mounted source.
+# =============================================================================
+
+FROM maven:3.9.6-eclipse-temurin-21
+
+ARG APP_MODULE=core
+ENV APP_MODULE=${APP_MODULE}
+
+WORKDIR /app
+
+ENTRYPOINT ["sh", "-c", \
+    "exec mvn spring-boot:run -pl services/${APP_MODULE} \
+    -Dspring-boot.run.jvmArguments=\"-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:${DEBUG_PORT:-9000}\""]
