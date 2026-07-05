@@ -31,4 +31,8 @@ export const workflowApi = {
         const response = await axios.post(`${API_BASE_URL}/executions/${id}`);
         return response.data;
     },
+
+    delete: async (id: string): Promise<void> => {
+        await axios.delete(`${API_BASE_URL}/workflows/${id}`);
+    },
 };

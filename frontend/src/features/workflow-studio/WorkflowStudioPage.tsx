@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useBlocker, useLocation, useNavigate, useParams } from 'react-router-dom';
 import type { Connection, Edge, NodeChange } from '@xyflow/react';
 import { workflowApi } from '@/api/workflowApi';
 import type { WorkflowDefinition } from '@/types/api';
@@ -12,7 +12,6 @@ import { TaskConfigDialog } from '@/features/workflow-studio/TaskConfigDialog';
 import { StudioTaskCatalog } from '@/features/workflow-studio/StudioTaskCatalog';
 import { applyTaskWithBranchJoinSync } from '@/features/workflow-studio/lib/branchJoinSync';
 import {
-    applyGraphConnection,
     applyRouteEdgeRemoval,
 } from '@/features/workflow-studio/lib/graphRouting';
 import {
@@ -25,12 +24,14 @@ import {
     appendBranchChainTask,
     appendJoinAtBranchEnd,
     appendTaskToChain,
+    applyStudioConnection,
     definitionToFlow,
     findFirstTaskValidationError,
     flowToDefinition,
     getOrderedTaskIds,
     getTaskNodes,
     nextTaskId,
+    placeDetachedTask,
     removeTaskFromChain,
     syncWorkflowLayout,
     tidyUpWorkflowGraph,
@@ -41,13 +42,17 @@ import type { TaskParameterErrors } from '@/features/workflow-studio/task-type-s
 import { injectParameterType, validateTaskParameters } from '@/features/workflow-studio/task-type-schema/utils';
 import type { TaskNodeData } from '@/features/workflow-studio/nodes/TaskNode';
 import { Loader2 } from 'lucide-react';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { WORKFLOW_START_ID, ADD_TASK_NODE_ID } from '@/features/workflow-studio/constants/studioCanvas';
 import {
     getMainSpineIdsFromEdges,
     isMainSpineTerminated,
     taskTypeById,
 } from '@/features/workflow-studio/lib/branchFlow';
-import { MAIN_OUT } from '@/features/workflow-studio/lib/graphHandles';
+import { MAIN_OUT, ITER_LOOP_OUT } from '@/features/workflow-studio/lib/graphHandles';
+import { isIteratorLoopHandle, syncAllIteratorLoopBodies } from '@/features/workflow-studio/lib/iteratorLoopSync';
+import { ITERATOR_NESTED_TYPES } from '@/features/workflow-studio/task-type-schema/iteratorTask';
+import { nextTaskDisplayName } from '@/features/workflow-studio/lib/taskDisplayName';
 import {
     deleteStudioEdge,
     insertTaskOnStudioEdge,
@@ -56,6 +61,7 @@ import {
 export default function WorkflowStudioPage() {
     const { id: routeId } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
     const isNew = routeId === 'new';
     const [workflowId, setWorkflowId] = useState<string | null>(isNew ? null : (routeId ?? null));
     const [workflowName, setWorkflowName] = useState(EMPTY_WORKFLOW.name);
@@ -65,7 +71,9 @@ export default function WorkflowStudioPage() {
     const [isRunning, setIsRunning] = useState(false);
     const [isDirty, setIsDirty] = useState(true);
     const [message, setMessage] = useState<string | null>(null);
+    const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
     const [catalogOpen, setCatalogOpen] = useState(false);
+    const [catalogAddIntent, setCatalogAddIntent] = useState(false);
     const [creatingTask, setCreatingTask] = useState<TaskNodeData | null>(null);
     const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
     const [configOpen, setConfigOpen] = useState(false);
@@ -79,6 +87,7 @@ export default function WorkflowStudioPage() {
 
     const skipNextLoadRef = useRef(false);
     const loadGenerationRef = useRef(0);
+    const allowNavigationRef = useRef(false);
 
     const initial = useMemo(() => definitionToFlow(EMPTY_WORKFLOW), []);
     const { nodes, edges, onNodesChange, onEdgesChange, setNodes, setEdges, resetCanvas } =
@@ -125,6 +134,7 @@ export default function WorkflowStudioPage() {
                 }
 
                 if (!routeId) {
+                    allowNavigationRef.current = true;
                     navigate('/workflows', { replace: true });
                     return;
                 }
@@ -136,6 +146,7 @@ export default function WorkflowStudioPage() {
                 if (generation !== loadGenerationRef.current) return;
                 console.error('Failed to load workflow', error);
                 setMessage('Failed to load workflow');
+                allowNavigationRef.current = true;
                 navigate('/workflows', { replace: true });
             } finally {
                 if (generation === loadGenerationRef.current) {
@@ -160,10 +171,19 @@ export default function WorkflowStudioPage() {
             getTaskNodes(nodes).map((node) => ({
                 taskId: node.data.taskId,
                 type: node.data.type,
+                displayName: (node.data as TaskNodeData).displayName,
                 parameters: node.data.parameters,
             })),
         [nodes],
     );
+
+    const catalogAllowedTypes = useMemo((): StudioTaskType[] | undefined => {
+        if (!pendingBranchWire) return undefined;
+        if (isIteratorLoopHandle(pendingBranchWire.sourceHandle)) {
+            return [...ITERATOR_NESTED_TYPES];
+        }
+        return undefined;
+    }, [pendingBranchWire]);
 
     const taskOrderForConfig = useMemo(
         () => getOrderedTaskIds(nodes, edges),
@@ -179,11 +199,17 @@ export default function WorkflowStudioPage() {
     }, [configDraft, configOpen, nodes]);
 
     const taskValidationErrors = useMemo(() => {
-        const workflowTasks = workflowTasksForConfig;
+        const syncedNodes = syncAllIteratorLoopBodies(canvasNodes, edges);
+        const workflowTasks = getTaskNodes(syncedNodes).map((node) => ({
+            taskId: node.data.taskId,
+            type: node.data.type,
+            displayName: (node.data as TaskNodeData).displayName,
+            parameters: node.data.parameters,
+        }));
         const taskOrder = taskOrderForConfig;
         const errorsByTaskId = new Map<string, TaskParameterErrors>();
 
-        for (const node of getTaskNodes(canvasNodes)) {
+        for (const node of getTaskNodes(syncedNodes)) {
             const plugin = getTaskTypePlugin(node.data.type);
             if (!plugin) continue;
             const { errors } = validateTaskParameters(plugin, node.data.parameters, {
@@ -201,6 +227,51 @@ export default function WorkflowStudioPage() {
 
     const markDirty = useCallback(() => setIsDirty(true), []);
 
+    const shouldBlockLeave = useCallback(
+        ({
+            currentLocation,
+            nextLocation,
+        }: {
+            currentLocation: { pathname: string };
+            nextLocation: { pathname: string };
+        }) => {
+            if (!isDirty || allowNavigationRef.current) return false;
+            return currentLocation.pathname !== nextLocation.pathname;
+        },
+        [isDirty],
+    );
+
+    const blocker = useBlocker(shouldBlockLeave);
+
+    useEffect(() => {
+        if (blocker.state === 'blocked') {
+            setLeaveConfirmOpen(true);
+        }
+    }, [blocker.state]);
+
+    useEffect(() => {
+        allowNavigationRef.current = false;
+    }, [location.pathname]);
+
+    useEffect(() => {
+        if (!isDirty) return;
+
+        const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+            event.preventDefault();
+            event.returnValue = '';
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [isDirty]);
+
+    const dismissTaskConfig = useCallback(() => {
+        setConfigOpen(false);
+        setCreatingTask(null);
+        setSelectedTaskId(null);
+        setConfigDraft(null);
+    }, []);
+
     const handleGraphConnect = useCallback(
         (connection: Connection) => {
             const workingNodes: StudioCanvasNode[] = configDraft
@@ -209,14 +280,14 @@ export default function WorkflowStudioPage() {
                       return { ...node, data: configDraft };
                   })
                 : nodes;
-            const nextNodes = applyGraphConnection(connection, workingNodes, edges);
-            if (nextNodes) {
-                const { nodes: laid, edges: chain } = syncWorkflowLayout(nextNodes, edges);
-                setNodes(laid);
-                setEdges(chain);
+            const result = applyStudioConnection(connection, workingNodes, edges);
+            if (result) {
+                const syncedNodes = syncAllIteratorLoopBodies(result.nodes, result.edges);
+                setNodes(syncedNodes);
+                setEdges(result.edges);
                 const wiredSource = connection.source;
                 if (wiredSource && configDraft?.taskId === wiredSource) {
-                    const updated = nextNodes.find((node) => node.id === wiredSource);
+                    const updated = syncedNodes.find((node) => node.id === wiredSource);
                     if (updated?.type === 'task') {
                         setConfigDraft(updated.data as TaskNodeData);
                     }
@@ -238,7 +309,8 @@ export default function WorkflowStudioPage() {
             const nextNodes = applyRouteEdgeRemoval(edge, workingNodes, edges);
             if (nextNodes) {
                 const { nodes: laid, edges: chain } = syncWorkflowLayout(nextNodes, edges);
-                setNodes(laid);
+                const synced = syncAllIteratorLoopBodies(laid, chain);
+                setNodes(synced);
                 setEdges(chain);
                 if (edge.source && configDraft?.taskId === edge.source) {
                     const updated = nextNodes.find((node) => node.id === edge.source);
@@ -286,47 +358,69 @@ export default function WorkflowStudioPage() {
         if (mode === 'inspect') return;
         const spineIds = getMainSpineIdsFromEdges(nodes, edges);
         if (isMainSpineTerminated(spineIds, taskTypeById(nodes))) return;
+        dismissTaskConfig();
         setPendingBranchWire(null);
         setPendingEdgeInsert(null);
+        setCatalogAddIntent(true);
         setCatalogOpen(true);
-    }, [edges, mode, nodes]);
+    }, [dismissTaskConfig, edges, mode, nodes]);
 
     const handleBranchAddClick = useCallback(
         (sourceTaskId: string, sourceHandle: string) => {
             if (mode === 'inspect') return;
+            dismissTaskConfig();
             setPendingEdgeInsert(null);
             setPendingBranchWire({ sourceTaskId, sourceHandle });
+            setCatalogAddIntent(true);
             setCatalogOpen(true);
         },
-        [mode],
+        [dismissTaskConfig, mode],
     );
 
     const handleEdgeInsert = useCallback(
         (edge: Edge) => {
             if (mode === 'inspect') return;
+            dismissTaskConfig();
             setPendingBranchWire(null);
             setPendingEdgeInsert(edge);
+            setCatalogAddIntent(true);
             setCatalogOpen(true);
         },
-        [mode],
+        [dismissTaskConfig, mode],
     );
 
     const handleEdgeDelete = useCallback(
         (edge: Edge) => {
             if (mode === 'inspect') return;
-            const result = deleteStudioEdge(edge, nodes, edges);
+            const workingNodes: StudioCanvasNode[] = configDraft
+                ? nodes.map((node) => {
+                      if (node.type !== 'task' || node.id !== configDraft.taskId) return node;
+                      return { ...node, data: configDraft };
+                  })
+                : nodes;
+            const result = deleteStudioEdge(edge, workingNodes, edges);
             if (!result) return;
-            setNodes(result.nodes);
+            const synced = syncAllIteratorLoopBodies(result.nodes, result.edges);
+            setNodes(synced);
             setEdges(result.edges);
+            if (edge.source && configDraft?.taskId === edge.source) {
+                const updated = result.nodes.find((node) => node.id === edge.source);
+                if (updated?.type === 'task') {
+                    setConfigDraft(updated.data as TaskNodeData);
+                }
+            }
             markDirty();
         },
-        [edges, markDirty, nodes, setEdges, setNodes],
+        [configDraft, edges, markDirty, mode, nodes, setEdges, setNodes],
     );
 
-    const handleCatalogSelectType = useCallback(
-        (type: StudioTaskType) => {
+    const handleTaskDrop = useCallback(
+        (type: StudioTaskType, position: { x: number; y: number }) => {
+            if (mode === 'inspect') return;
+
             const paletteItem = TASK_PALETTE.find((item) => item.type === type);
             if (!paletteItem) return;
+            if (catalogAllowedTypes && !catalogAllowedTypes.includes(type)) return;
 
             const existingIds = new Set(getTaskNodes(nodes).map((node) => node.id));
             const taskId = nextTaskId(existingIds, paletteItem.defaultTaskId);
@@ -334,6 +428,7 @@ export default function WorkflowStudioPage() {
 
             const draft: TaskNodeData = {
                 taskId,
+                displayName: nextTaskDisplayName(nodes, paletteItem.type),
                 type: paletteItem.type,
                 parameters: injectParameterType(
                     paletteItem.type,
@@ -341,7 +436,52 @@ export default function WorkflowStudioPage() {
                 ),
             };
 
+            const result = placeDetachedTask(nodes, edges, draft, position);
+            const syncedNodes = applyTaskWithBranchJoinSync(result.nodes, taskId, draft);
+            const withIteratorSync = syncAllIteratorLoopBodies(syncedNodes, result.edges);
+            const configTask =
+                getTaskNodes(withIteratorSync).find((node) => node.id === taskId)?.data ?? draft;
+
+            setNodes(withIteratorSync);
+            setEdges(result.edges);
+            setCreatingTask(configTask as TaskNodeData);
+            setSelectedTaskId(taskId);
+            setConfigOpen(true);
+            setCatalogOpen(false);
+            setPendingBranchWire(null);
+            setPendingEdgeInsert(null);
+            markDirty();
+        },
+        [catalogAllowedTypes, edges, markDirty, mode, nodes, setEdges, setNodes],
+    );
+
+    const handleCatalogSelectType = useCallback(
+        (type: StudioTaskType) => {
+            if (mode === 'inspect' || !catalogAddIntent) return;
+
+            const paletteItem = TASK_PALETTE.find((item) => item.type === type);
+            if (!paletteItem) return;
+
+            const existingIds = new Set(getTaskNodes(nodes).map((node) => node.id));
             const wire = pendingBranchWire;
+            const fromIteratorLoop =
+                wire?.sourceHandle === ITER_LOOP_OUT || isIteratorLoopHandle(wire?.sourceHandle ?? '');
+            const taskId = nextTaskId(
+                existingIds,
+                fromIteratorLoop ? 'loop_action' : paletteItem.defaultTaskId,
+            );
+            const { type: paramType, ...rest } = paletteItem.defaultParameters;
+
+            const draft: TaskNodeData = {
+                taskId,
+                displayName: nextTaskDisplayName(nodes, paletteItem.type),
+                type: paletteItem.type,
+                parameters: injectParameterType(
+                    paletteItem.type,
+                    rest as Record<string, unknown>,
+                ),
+            };
+
             const insertEdge = pendingEdgeInsert;
             let result: { nodes: StudioCanvasNode[]; edges: Edge[] } | null;
             if (insertEdge) {
@@ -362,20 +502,32 @@ export default function WorkflowStudioPage() {
             const taskData = (placed?.data as TaskNodeData | undefined) ?? draft;
             const syncedNodes = applyTaskWithBranchJoinSync(result.nodes, taskId, taskData);
             const laid = syncWorkflowLayout(syncedNodes, result.edges);
+            const withIteratorSync = syncAllIteratorLoopBodies(laid.nodes, laid.edges);
             const configTask =
-                getTaskNodes(laid.nodes).find((node) => node.id === taskId)?.data ?? taskData;
+                getTaskNodes(withIteratorSync).find((node) => node.id === taskId)?.data ?? taskData;
 
-            setNodes(laid.nodes);
+            setNodes(withIteratorSync);
             setEdges(laid.edges);
             setCreatingTask(configTask as TaskNodeData);
             setSelectedTaskId(taskId);
             setConfigOpen(true);
             setCatalogOpen(false);
+            setCatalogAddIntent(false);
             setPendingBranchWire(null);
             setPendingEdgeInsert(null);
             markDirty();
         },
-        [edges, markDirty, nodes, pendingBranchWire, pendingEdgeInsert, setEdges, setNodes],
+        [
+            catalogAddIntent,
+            edges,
+            markDirty,
+            mode,
+            nodes,
+            pendingBranchWire,
+            pendingEdgeInsert,
+            setEdges,
+            setNodes,
+        ],
     );
 
     const handleTaskSelect = useCallback(
@@ -444,7 +596,8 @@ export default function WorkflowStudioPage() {
             }
 
             const synced = syncWorkflowLayout(nextNodes, nextEdges);
-            setNodes(synced.nodes);
+            const withIteratorSync = syncAllIteratorLoopBodies(synced.nodes, synced.edges);
+            setNodes(withIteratorSync);
             setEdges(synced.edges);
             setCreatingTask(null);
             setPendingBranchWire(null);
@@ -477,24 +630,49 @@ export default function WorkflowStudioPage() {
     }, [edges, markDirty, mode, nodes, setEdges, setNodes]);
 
     const buildDefinition = useCallback((): WorkflowDefinition => {
+        const nodesForExport =
+            configOpen && configDraft
+                ? nodes.map((node) => {
+                      if (node.type !== 'task' || node.id !== configDraft.taskId) return node;
+                      return { ...node, data: configDraft };
+                  })
+                : nodes;
         return flowToDefinition(
             workflowName,
-            nodes,
+            nodesForExport,
             edges,
             savedDefinition ?? undefined,
             workflowId,
         );
-    }, [edges, nodes, savedDefinition, workflowId, workflowName]);
-
-    const confirmDiscardChanges = useCallback(() => {
-        if (!isDirty) return true;
-        return window.confirm('You have unsaved changes. Leave without saving?');
-    }, [isDirty]);
+    }, [configDraft, configOpen, edges, nodes, savedDefinition, workflowId, workflowName]);
 
     const handleBack = useCallback(() => {
-        if (!confirmDiscardChanges()) return;
         navigate('/workflows');
-    }, [confirmDiscardChanges, navigate]);
+    }, [navigate]);
+
+    const confirmLeave = useCallback(() => {
+        setLeaveConfirmOpen(false);
+        allowNavigationRef.current = true;
+        if (blocker.state === 'blocked') {
+            blocker.proceed();
+            return;
+        }
+        navigate('/workflows');
+    }, [blocker, navigate]);
+
+    const handleLeaveDialogOpenChange = useCallback(
+        (open: boolean) => {
+            if (open) {
+                setLeaveConfirmOpen(true);
+                return;
+            }
+            setLeaveConfirmOpen(false);
+            if (blocker.state === 'blocked') {
+                blocker.reset();
+            }
+        },
+        [blocker],
+    );
 
     const handleSave = async () => {
         const validationError = findFirstTaskValidationError(nodes, edges);
@@ -513,6 +691,7 @@ export default function WorkflowStudioPage() {
             const savedId = saved.id ?? null;
             setWorkflowId(savedId);
             setSavedDefinition(saved);
+            applyDefinition(saved);
             setIsDirty(false);
             setMessage('Workflow saved');
             if (!workflowId && savedId) {
@@ -568,14 +747,14 @@ export default function WorkflowStudioPage() {
 
     if (isLoading) {
         return (
-            <div className="flex flex-1 items-center justify-center bg-[#f8f9ff]">
+            <div className="flex flex-1 items-center justify-center bg-[#f8fafc]">
                 <Loader2 className="h-8 w-8 animate-spin text-[#45464d]" />
             </div>
         );
     }
 
     return (
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[#f8f9ff] text-[#0b1c30]">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[#f8fafc] text-[#0b1c30]">
             <StudioHeader
                 workflowName={workflowName}
                 onWorkflowNameChange={(name) => {
@@ -593,7 +772,7 @@ export default function WorkflowStudioPage() {
             />
 
             {message && (
-                <div className="border-b border-[#c6c6cd]/60 bg-[#eff4ff] px-6 py-2 text-xs text-[#45464d]">
+                <div className="border-b border-[#c6c6cd]/60 bg-muted/40 px-6 py-2 text-xs text-[#45464d]">
                     {message}
                 </div>
             )}
@@ -615,7 +794,9 @@ export default function WorkflowStudioPage() {
                         onEdgeInsert={handleEdgeInsert}
                         onEdgeDelete={handleEdgeDelete}
                         onTaskSelect={handleTaskSelect}
+                        onTaskDelete={handleDeleteTask}
                         onTidyUp={handleTidyUp}
+                        onTaskDrop={handleTaskDrop}
                     />
                 </div>
 
@@ -626,10 +807,13 @@ export default function WorkflowStudioPage() {
                         if (!open) {
                             setPendingBranchWire(null);
                             setPendingEdgeInsert(null);
+                            setCatalogAddIntent(false);
                         }
                     }}
-                    onSelectType={handleCatalogSelectType}
+                    onBrowseOpen={() => setCatalogAddIntent(false)}
+                    onSelectType={catalogAddIntent ? handleCatalogSelectType : undefined}
                     disabled={mode === 'inspect'}
+                    allowedTypes={catalogAllowedTypes}
                 />
             </div>
 
@@ -643,6 +827,17 @@ export default function WorkflowStudioPage() {
                 onApply={handleTaskApply}
                 onDelete={handleDeleteTask}
                 onDraftChange={handleConfigDraftChange}
+            />
+
+            <ConfirmDialog
+                open={leaveConfirmOpen}
+                onOpenChange={handleLeaveDialogOpenChange}
+                title="Unsaved changes"
+                description="You have unsaved changes. Leave without saving?"
+                confirmLabel="Leave"
+                cancelLabel="Stay"
+                destructive
+                onConfirm={confirmLeave}
             />
         </div>
     );

@@ -1,15 +1,16 @@
 import { Repeat } from 'lucide-react';
 import {
-    defaultIteratorAction,
     ITERATOR_NESTED_TYPES,
     normalizeIteratorActionsForApi,
     normalizeLoopOver,
     parseIteratorActions,
+    validateLoopDonePath,
     type IteratorActionRow,
 } from '../iteratorTask';
 import { defineTaskPlugin, type TaskTypePlugin } from '../pluginTypes';
 import { validateGenericFields } from '../fieldValidation';
 import type { TaskParameterErrors, TaskValidationContext } from '../types';
+import { ITERATOR_TASK_WIRING } from './wiring';
 import { dataTransformTaskPlugin } from './dataTransformTaskPlugin';
 import { httpTaskPlugin } from './httpTaskPlugin';
 import { scriptTaskPlugin } from './scriptTaskPlugin';
@@ -30,7 +31,7 @@ function validateIteratorActions(
 ): void {
     const actions = parseIteratorActions(parameters.actions);
     if (actions.length === 0) {
-        errors.actions = 'At least one sub-task is required';
+        errors.actions = 'Add at least one step from the Loop output on the canvas';
         return;
     }
 
@@ -40,15 +41,15 @@ function validateIteratorActions(
         const taskId = action.taskId.trim();
 
         if (!taskId) {
-            errors[`actions.${i}.taskId`] = 'Sub-task ID is required';
+            errors[`actions.${i}.taskId`] = 'Loop step is missing — reconnect on the canvas';
         } else if (taskIds.has(taskId)) {
-            errors[`actions.${i}.taskId`] = 'Sub-task IDs must be unique';
+            errors[`actions.${i}.taskId`] = 'Duplicate loop steps detected';
         } else {
             taskIds.add(taskId);
         }
 
         if (!ITERATOR_NESTED_TYPES.includes(action.type)) {
-            errors[`actions.${i}.type`] = 'Unsupported sub-task type';
+            errors[`actions.${i}.type`] = 'This task type cannot run inside a loop';
             continue;
         }
 
@@ -67,27 +68,35 @@ function validateIteratorActions(
 
 export const iteratorTaskPlugin = defineTaskPlugin({
     type: 'ITERATOR_TASK',
-    label: 'Iterator',
+    label: 'Loop',
     icon: Repeat,
-    defaultTaskId: 'iterator_task',
+    accentColor: '#0284c7',
+    defaultTaskId: 'loop_task',
+    wiring: ITERATOR_TASK_WIRING,
     fields: [
         {
             key: 'loopOver',
             label: 'Loop over',
             type: 'text',
             required: true,
-            mono: true,
-            placeholder: '{{$input.items}} or ["a","b"] or 5',
+            placeholder: 'e.g. a list from a previous step, or 5',
             description:
-                'Expression, JSON array/object, or number (iterates 0..n-1). Resolved at runtime.',
+                'What to repeat: a list, key/value map, or a number (runs that many times). Use {{ }} only if you need an expression.',
         },
         {
-            key: 'actions',
-            label: 'Sub-tasks per iteration',
-            type: 'iteratorActionList',
-            required: true,
-            defaultValue: [defaultIteratorAction(0)],
-            description: 'Executed in order for each loop item.',
+            key: 'loopBodyStartTaskId',
+            label: 'Loop path',
+            type: 'wiredRef',
+            description:
+                'Wire from the Loop handle — add HTTP, Wait, Script, or Transform steps that run for every item.',
+        },
+        {
+            key: 'doneNextTaskId',
+            label: 'Done path',
+            type: 'wiredRef',
+            defaultValue: '',
+            description:
+                'Wire from the Done handle — runs once after all iterations finish.',
         },
     ],
     validate(parameters, context, errors) {
@@ -96,6 +105,7 @@ export const iteratorTaskPlugin = defineTaskPlugin({
             errors.loopOver = 'Loop source is required';
         }
         validateIteratorActions(parameters, errors, context);
+        validateLoopDonePath(parameters, errors, context);
     },
     normalize(parameters) {
         const next = { ...parameters };
@@ -103,15 +113,18 @@ export const iteratorTaskPlugin = defineTaskPlugin({
         if (Array.isArray(next.actions)) {
             next.actions = normalizeIteratorActionsForApi(next.actions as IteratorActionRow[]);
         }
+        const done = next.doneNextTaskId;
+        if (done == null || String(done).trim() === '') {
+            next.doneNextTaskId = '';
+        }
         return next;
     },
     preview(params) {
-        const actionCount = Array.isArray(params.actions) ? params.actions.length : 0;
-        const loop = params.loopOver != null ? String(params.loopOver) : 'configure loop';
-        const loopPreview = loop.length > 24 ? `${loop.slice(0, 24)}…` : loop;
+        const loopOver = String(params.loopOver ?? '').trim() || '—';
+        const done = String(params.doneNextTaskId ?? '').trim();
         return {
-            primary: loopPreview,
-            secondary: actionCount === 1 ? '1 sub-task' : `${actionCount} sub-tasks`,
+            primary: `Loop over ${loopOver}`,
+            secondary: done ? `done → ${done}` : 'done unwired',
         };
     },
 });

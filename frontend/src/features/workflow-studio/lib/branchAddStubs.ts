@@ -6,7 +6,8 @@ import {
 } from '@/features/workflow-studio/lib/branchFlow';
 import { getTaskNodes, type StudioCanvasNode } from '@/features/workflow-studio/lib/canvasNodeUtils';
 import { isTaskBranchEnd } from '@/features/workflow-studio/lib/joinWiring';
-import { MAIN_OUT, isBranchChainEdgeId, isBranchChainEdgeId } from '@/features/workflow-studio/lib/graphHandles';
+import { MAIN_OUT, isBranchChainEdgeId } from '@/features/workflow-studio/lib/graphHandles';
+import { ADD_TASK_NODE_ID } from '@/features/workflow-studio/constants/studioCanvas';
 import { resolveTaskOutputViews } from '@/features/workflow-studio/lib/graphRouting';
 
 /** Legacy stub-edge id prefix — kept so any stale edges are filtered defensively. */
@@ -28,12 +29,13 @@ function shouldShowInlineAdd(
     taskId: string,
     nodes: StudioCanvasNode[],
     chainEdges: Edge[],
+    outputCount: number,
 ): boolean {
     if (output.handleId === MAIN_OUT) {
-        // Spine main-out is handled separately (end-of-chain append). Here we
-        // only surface off-spine main-out tails that can still grow.
         if (onMainSpine || hasBranchChainOut) return false;
         if (isTaskBranchEnd(nodes, taskId, chainEdges)) return false;
+        // Prefer dedicated branch/loop handles over a dangling flow-out stub.
+        if (outputCount > 1) return false;
         return true;
     }
     return !output.wired && output.stubBehavior === 'add-task';
@@ -59,17 +61,36 @@ export function resolveInlineAddHandles(
         const hasChainOut = branchChainOut.has(node.id);
 
         for (const output of outputs) {
-            if (shouldShowInlineAdd(output, onMainSpine, hasChainOut, node.id, nodes, chainEdges)) {
+            if (
+                shouldShowInlineAdd(
+                    output,
+                    onMainSpine,
+                    hasChainOut,
+                    node.id,
+                    nodes,
+                    chainEdges,
+                    outputs.length,
+                )
+            ) {
                 keys.add(inlineAddKey(node.id, output.handleId));
             }
         }
     }
 
-    // Main-chain end "+": on the last spine task's main-out when the chain can grow.
+    // Main-chain end "+": only when the last spine task has no outgoing main connection.
     const spineIds = getMainSpineIdsFromEdges(nodes, chainEdges);
     const lastSpineId = spineIds[spineIds.length - 1];
     if (lastSpineId && shouldShowMainAddTask(spineIds, taskTypeById(nodes))) {
-        keys.add(inlineAddKey(lastSpineId, MAIN_OUT));
+        const hasOutgoingMain = chainEdges.some(
+            (edge) =>
+                edge.source === lastSpineId &&
+                edge.sourceHandle === MAIN_OUT &&
+                edge.target &&
+                edge.target !== ADD_TASK_NODE_ID,
+        );
+        if (!hasOutgoingMain) {
+            keys.add(inlineAddKey(lastSpineId, MAIN_OUT));
+        }
     }
 
     return keys;

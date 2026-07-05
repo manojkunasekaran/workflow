@@ -26,8 +26,8 @@
     --muted: 220 14% 96%;
     --muted-foreground: 220 9% 46%;
 
-    /* Accent - Professional blue */
-    --accent: 217 91% 60%;
+    /* Accent - neutral slate gray */
+    --accent: 220 9% 46%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
@@ -35,7 +35,7 @@
 
     --border: 220 13% 91%;
     --input: 220 13% 91%;
-    --ring: 217 91% 60%;
+    --ring: 220 9% 46%;
     --radius: 0.5rem;
 
     /* Chart colors */
@@ -53,15 +53,15 @@
     --sidebar-accent: 220 14% 96%;
     --sidebar-accent-foreground: 220 13% 18%;
     --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217 91% 60%;
+    --sidebar-ring: 220 9% 46%;
 
     /* Workflow Canvas Specific */
     --canvas-bg: 220 14% 96%;
     --canvas-dots: 220 9% 80%;
     --node-shadow: 220 13% 18%;
-    --handle-color: 217 91% 60%;
+    --handle-color: 220 9% 46%;
     --edge-color: 220 9% 70%;
-    --edge-selected: 217 91% 60%;
+    --edge-selected: 220 9% 46%;
   }
 
   .dark {
@@ -81,15 +81,15 @@
     --muted: 217 33% 17%;
     --muted-foreground: 215 20% 65%;
 
-    --accent: 217 91% 60%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 215 20% 65%;
+    --accent-foreground: 222 47% 6%;
 
     --destructive: 0 63% 31%;
     --destructive-foreground: 210 40% 98%;
 
     --border: 217 33% 17%;
     --input: 217 33% 17%;
-    --ring: 217 91% 60%;
+    --ring: 215 20% 65%;
 
     /* Chart colors for dark */
     --chart-1: 158 64% 52%;
@@ -101,20 +101,20 @@
     /* Sidebar dark */
     --sidebar-background: 222 47% 6%;
     --sidebar-foreground: 215 20% 65%;
-    --sidebar-primary: 217 91% 60%;
-    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-primary: 215 20% 65%;
+    --sidebar-primary-foreground: 222 47% 6%;
     --sidebar-accent: 217 33% 12%;
     --sidebar-accent-foreground: 210 40% 98%;
     --sidebar-border: 217 33% 17%;
-    --sidebar-ring: 217 91% 60%;
+    --sidebar-ring: 215 20% 65%;
 
     /* Workflow Canvas Specific - Dark */
     --canvas-bg: 222 47% 5%;
     --canvas-dots: 217 33% 20%;
     --node-shadow: 0 0% 0%;
-    --handle-color: 217 91% 60%;
+    --handle-color: 215 20% 65%;
     --edge-color: 217 33% 30%;
-    --edge-selected: 217 91% 60%;
+    --edge-selected: 215 20% 65%;
   }
 }
 
@@ -149,7 +149,7 @@
   }
 
   .react-flow__edge:not(.studio-edge).selected .react-flow__edge-path {
-    stroke: hsl(var(--accent)) !important;
+    stroke: hsl(var(--muted-foreground)) !important;
     stroke-width: 2px;
   }
 
@@ -173,7 +173,7 @@
   }
 
   .react-flow__controls-button:hover {
-    @apply bg-accent/10 text-accent;
+    @apply bg-muted/60 text-foreground;
   }
 
   .react-flow__controls-button svg {
@@ -193,19 +193,18 @@
 
   /* Handles */
   .react-flow__handle {
-    @apply border-2 transition-colors;
-    width: 12px;
-    height: 12px;
-    border-color: hsl(var(--background));
-    background-color: hsl(var(--muted-foreground));
+    @apply border-0 transition-colors;
+    width: 14px;
+    height: 14px;
+    background-color: #94a3b8;
   }
 
   .react-flow__handle:hover {
-    background-color: hsl(var(--accent));
+    background-color: #64748b;
   }
 
   .react-flow__handle.connecting {
-    background-color: hsl(var(--accent));
+    background-color: #64748b;
   }
 
   /* Selection Box */
@@ -215,8 +214,8 @@
 
   /* Connection Line */
   .react-flow__connection-line {
-    stroke: hsl(var(--accent)) !important;
-    stroke-width: 2px;
+    stroke: #94a3b8 !important;
+    stroke-width: 2.5px;
   }
 }
 
@@ -246,7 +245,7 @@
   }
 
   .studio-dot-grid {
-    background-color: #f8f9ff;
+    background-color: #f8fafc;
     background-image: radial-gradient(#cbd5e1 1px, transparent 0);
     background-size: 24px 24px;
     background-position: -1px -1px;
@@ -259,4 +258,31 @@
   .studio-canvas-pick-mode .react-flow__pane {
     cursor: crosshair;
   }
+}
+
+/* Tippy — studio tooltip theme (replaces native title hints) */
+.tippy-box[data-theme~='studio'] {
+  background-color: #1e293b;
+  color: #f8fafc;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.35;
+  border-radius: 6px;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.22);
+}
+
+.tippy-box[data-theme~='studio'][data-placement^='top'] > .tippy-arrow::before {
+  border-top-color: #1e293b;
+}
+
+.tippy-box[data-theme~='studio'][data-placement^='bottom'] > .tippy-arrow::before {
+  border-bottom-color: #1e293b;
+}
+
+.tippy-box[data-theme~='studio'][data-placement^='left'] > .tippy-arrow::before {
+  border-left-color: #1e293b;
+}
+
+.tippy-box[data-theme~='studio'][data-placement^='right'] > .tippy-arrow::before {
+  border-right-color: #1e293b;
 }

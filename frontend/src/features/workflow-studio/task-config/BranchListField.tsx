@@ -5,6 +5,11 @@ import type {
     ParallelBranchRow,
     TaskParameterErrors,
 } from '@/features/workflow-studio/task-type-schema/types';
+import {
+    STUDIO_GHOST_DESTRUCTIVE_CLASS,
+    STUDIO_TEXT_LINK_CLASS,
+} from '@/features/workflow-studio/constants/studioUi';
+import { cn } from '@/lib/utils';
 
 function parseBranches(value: unknown): ParallelBranchRow[] {
     if (!Array.isArray(value) || value.length === 0) {
@@ -64,7 +69,7 @@ export function BranchListField({
                 <button
                     type="button"
                     onClick={addBranch}
-                    className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+                    className={STUDIO_TEXT_LINK_CLASS}
                 >
                     <Plus className="h-3 w-3" />
                     Add branch
@@ -93,7 +98,7 @@ export function BranchListField({
                                         type="button"
                                         variant="ghost"
                                         size="icon"
-                                        className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                                        className={cn('h-7 w-7', STUDIO_GHOST_DESTRUCTIVE_CLASS)}
                                         onClick={() => removeBranch(index)}
                                         aria-label={`Remove branch ${index + 1}`}
                                     >

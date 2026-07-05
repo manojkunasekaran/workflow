@@ -53,6 +53,7 @@ public class IteratorTaskExecutor implements TaskExecutor {
                             : TaskExecutionResult.Status.COMPLETED)
                     .output(buildOutput(executionData))
                     .executionData(executionData)
+                    .nextTaskId(resolveDoneNextTaskId(params))
                     .build();
 
         } catch (Exception e) {
@@ -226,5 +227,22 @@ public class IteratorTaskExecutor implements TaskExecutor {
                 .filter(executor -> executor.canExecute(taskType))
                 .findFirst()
                 .orElse(null);
+    }
+
+    private Map<String, Object> buildOutput(IteratorTaskExecutionData executionData) {
+        Map<String, Object> output = new HashMap<>();
+        output.put("totalIterations", executionData.getTotalIterations());
+        output.put("successfulIterations", executionData.getSuccessfulIterations());
+        output.put("failedIterations", executionData.getFailedIterations());
+        output.put("results", executionData.getResults());
+        return output;
+    }
+
+    private String resolveDoneNextTaskId(IteratorTaskParameters params) {
+        String done = params.getDoneNextTaskId();
+        if (done == null || done.isBlank()) {
+            return null;
+        }
+        return done;
     }
 }

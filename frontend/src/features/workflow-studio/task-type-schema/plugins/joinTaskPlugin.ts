@@ -47,6 +47,7 @@ export const joinTaskPlugin = defineTaskPlugin({
     type: 'JOIN',
     label: 'Join branches',
     icon: Merge,
+    accentColor: '#059669',
     defaultTaskId: 'join_task',
     wiring: JOIN_TASK_WIRING,
     fields: [

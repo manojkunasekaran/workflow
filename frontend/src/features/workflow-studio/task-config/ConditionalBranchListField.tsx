@@ -13,7 +13,13 @@ import {
     type RuleConditionRow,
 } from '@/features/workflow-studio/task-type-schema/conditionalBranch';
 import type { TaskParameterErrors } from '@/features/workflow-studio/task-type-schema/types';
+import {
+    STUDIO_GHOST_DESTRUCTIVE_CLASS,
+    STUDIO_TEXT_LINK_CLASS,
+    STUDIO_TEXT_LINK_INLINE_CLASS,
+} from '@/features/workflow-studio/constants/studioUi';
 import { cn } from '@/lib/utils';
+import { taskLabelById } from '@/features/workflow-studio/task-config/taskRefUtils';
 
 interface ConditionalBranchListFieldProps {
     fieldKey: string;
@@ -22,6 +28,7 @@ interface ConditionalBranchListFieldProps {
     value: unknown;
     onChange: (branches: ConditionalBranchRow[]) => void;
     errors?: TaskParameterErrors;
+    workflowTasks?: Array<{ taskId: string; type: string; displayName?: string }>;
 }
 
 export function ConditionalBranchListField({
@@ -31,6 +38,7 @@ export function ConditionalBranchListField({
     value,
     onChange,
     errors = {},
+    workflowTasks = [],
 }: ConditionalBranchListFieldProps) {
     const branches = parseConditionalBranches(value);
 
@@ -93,7 +101,7 @@ export function ConditionalBranchListField({
                 <button
                     type="button"
                     onClick={addBranch}
-                    className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+                    className={STUDIO_TEXT_LINK_CLASS}
                 >
                     <Plus className="h-3 w-3" />
                     Add branch
@@ -123,7 +131,7 @@ export function ConditionalBranchListField({
                                         type="button"
                                         variant="ghost"
                                         size="icon"
-                                        className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                                        className={cn('h-7 w-7', STUDIO_GHOST_DESTRUCTIVE_CLASS)}
                                         onClick={() => removeBranch(index)}
                                         aria-label={`Remove branch ${index + 1}`}
                                     >
@@ -157,8 +165,8 @@ export function ConditionalBranchListField({
                                     }
                                 >
                                     {branch.nextTaskId.trim()
-                                        ? `→ ${branch.nextTaskId}`
-                                        : 'Drag from this branch output on the canvas'}
+                                        ? `Connected to “${taskLabelById(workflowTasks, branch.nextTaskId)}”`
+                                        : 'Connect from this branch output on the canvas'}
                                 </p>
                                 {nextError && (
                                     <p className="text-xs text-destructive">{nextError}</p>
@@ -239,7 +247,7 @@ export function ConditionalBranchListField({
                                             <button
                                                 type="button"
                                                 onClick={() => addCondition(index)}
-                                                className="ml-auto text-xs font-semibold text-primary hover:underline"
+                                                className={cn('ml-auto', STUDIO_TEXT_LINK_INLINE_CLASS)}
                                             >
                                                 + Add condition
                                             </button>
@@ -316,7 +324,7 @@ export function ConditionalBranchListField({
                                                         type="button"
                                                         variant="ghost"
                                                         size="icon"
-                                                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                                        className={cn('h-8 w-8', STUDIO_GHOST_DESTRUCTIVE_CLASS)}
                                                         onClick={() =>
                                                             removeCondition(index, conditionIndex)
                                                         }

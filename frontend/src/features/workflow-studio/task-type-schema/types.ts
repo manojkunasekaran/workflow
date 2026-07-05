@@ -48,6 +48,7 @@ export interface TaskValidationContext {
     workflowTasks: Array<{
         taskId: string;
         type: string;
+        displayName?: string;
         parameters: Record<string, unknown>;
     }>;
     currentTaskId?: string;

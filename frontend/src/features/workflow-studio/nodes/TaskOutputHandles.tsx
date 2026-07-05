@@ -1,5 +1,6 @@
 import { MAIN_IN, isJoinMergeInput } from '@/features/workflow-studio/lib/graphHandles';
 import type { TaskInputView, TaskOutputView } from '@/features/workflow-studio/lib/graphRouting';
+import { TippyHint } from '@/components/ui/tippy-hint';
 import { EdgePortHandle } from '@/features/workflow-studio/nodes/EdgePortHandle';
 
 export function TaskInputHandle({
@@ -16,7 +17,6 @@ export function TaskInputHandle({
                 type="target"
                 side="left"
                 top={input.top}
-                color="#d97706"
                 label={input.label}
             />
         );
@@ -25,12 +25,13 @@ export function TaskInputHandle({
     return (
         <>
             {showLabel && input.label && (
-                <span
-                    className="pointer-events-none absolute left-2 top-1/2 z-10 max-w-[72px] -translate-y-1/2 truncate text-[10px] font-medium text-[#64748b]"
-                    title={input.label}
-                >
-                    {input.label}
-                </span>
+                <TippyHint content={input.label}>
+                    <span
+                        className="absolute left-2 top-1/2 z-10 max-w-[72px] -translate-y-1/2 truncate text-[10px] font-medium text-[#64748b]"
+                    >
+                        {input.label}
+                    </span>
+                </TippyHint>
             )}
             <EdgePortHandle id={input.id} type="target" side="left" top={input.top} />
         </>

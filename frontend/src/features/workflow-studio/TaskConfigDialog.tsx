@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AlertCircle, Trash2, X } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { TaskConfigContext } from '@/features/workflow-studio/task-config/TaskConfigContext';
 import { TaskParametersForm } from '@/features/workflow-studio/task-config/TaskParametersForm';
 import { getTaskTypePlugin } from '@/features/workflow-studio/task-type-schema/registry';
@@ -15,6 +16,12 @@ import {
 } from '@/features/workflow-studio/task-type-schema/utils';
 import type { TaskValidationContext } from '@/features/workflow-studio/task-type-schema/types';
 import type { TaskNodeData } from '@/features/workflow-studio/nodes/TaskNode';
+import { taskTypeLabel } from '@/features/workflow-studio/lib/taskDisplayName';
+import { cn } from '@/lib/utils';
+import {
+    STUDIO_GHOST_DESTRUCTIVE_CLASS,
+    STUDIO_GHOST_ICON_BUTTON_CLASS,
+} from '@/features/workflow-studio/constants/studioUi';
 
 interface TaskConfigDialogProps {
     open: boolean;
@@ -122,6 +129,14 @@ export function TaskConfigDialog({
         syncDraftToCanvas(nextDraft, nextErrors);
     };
 
+    const handleDisplayNameChange = (displayName: string) => {
+        if (!draft) return;
+        const nextDraft = { ...draft, displayName };
+        setDraft(nextDraft);
+        onApply(nextDraft);
+        onDraftChange?.(nextDraft);
+    };
+
     const handleDelete = () => {
         if (!draft) return;
         onDelete(draft.taskId);
@@ -151,9 +166,6 @@ export function TaskConfigDialog({
                                 <DialogTitle className="text-base font-semibold text-foreground">
                                     {typeLabel}
                                 </DialogTitle>
-                                <p className="truncate font-mono text-[11px] text-muted-foreground">
-                                    {draft.taskId}
-                                </p>
                             </div>
                             <div className="flex shrink-0 items-center gap-2">
                                 {!isNewTask && (
@@ -161,7 +173,7 @@ export function TaskConfigDialog({
                                         type="button"
                                         variant="ghost"
                                         size="icon"
-                                        className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                        className={cn('h-8 w-8', STUDIO_GHOST_DESTRUCTIVE_CLASS)}
                                         onClick={handleDelete}
                                         aria-label="Delete task"
                                     >
@@ -172,7 +184,7 @@ export function TaskConfigDialog({
                                     type="button"
                                     variant="ghost"
                                     size="icon"
-                                    className="h-8 w-8"
+                                    className={cn('h-8 w-8', STUDIO_GHOST_ICON_BUTTON_CLASS)}
                                     onClick={() => onOpenChange(false)}
                                     aria-label="Close"
                                 >
@@ -192,6 +204,20 @@ export function TaskConfigDialog({
                         ) : null}
 
                         <div className="min-h-0 flex-1 overflow-y-auto p-5 scrollbar-thin">
+                            <div className="mb-4 space-y-1.5">
+                                <label className="text-xs font-medium text-foreground" htmlFor="step-name">
+                                    Step name
+                                </label>
+                                <Input
+                                    id="step-name"
+                                    value={draft.displayName ?? ''}
+                                    onChange={(e) => handleDisplayNameChange(e.target.value)}
+                                    placeholder={taskTypeLabel(draft.type)}
+                                />
+                                <p className="text-[11px] text-muted-foreground">
+                                    Shown on the canvas instead of the technical step id.
+                                </p>
+                            </div>
                             {plugin && (
                                 <TaskParametersForm
                                     plugin={plugin}

@@ -6,6 +6,7 @@ export const httpTaskPlugin = defineTaskPlugin({
     type: 'HTTP_TASK',
     label: 'HTTP Request',
     icon: Globe,
+    accentColor: '#7c3aed',
     defaultTaskId: 'http_task',
     fields: [
         {

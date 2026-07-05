@@ -6,6 +6,8 @@ export type CanvasActionsContextValue = {
     onBranchAddClick?: (sourceTaskId: string, sourceHandle: string) => void;
     onEdgeInsert?: (edge: Edge) => void;
     onEdgeDelete?: (edge: Edge) => void;
+    onTaskEdit?: (taskId: string) => void;
+    onTaskDelete?: (taskId: string) => void;
     readOnly?: boolean;
 };
 

@@ -244,6 +244,11 @@ export function validateConditionalParameters(
         const row = entry as ConditionalBranchRow;
         const name = String(row.name ?? '').trim();
         const nextTaskId = String(row.nextTaskId ?? '').trim();
+        const expression = String(row.expression ?? '').trim();
+        const rules = parseRuleGroup(row.rules);
+        const hasRules = row.rules != null && !isRuleGroupEmpty(rules);
+        const conditionMode: ConditionalConditionMode =
+            row.conditionMode ?? (hasRules && !expression ? 'rules' : 'expression');
 
         if (!name) {
             errors[`branches.${i}.name`] = 'Branch name is required';
@@ -261,8 +266,8 @@ export function validateConditionalParameters(
             }
         }
 
-        if (row.conditionMode === 'expression') {
-            if (!String(row.expression ?? '').trim() && !context?.isNewTask) {
+        if (conditionMode === 'expression') {
+            if (!expression && !context?.isNewTask) {
                 errors[`branches.${i}.expression`] = 'SpEL expression is required';
             }
             continue;

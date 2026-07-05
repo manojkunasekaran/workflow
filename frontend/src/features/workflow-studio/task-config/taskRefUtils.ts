@@ -1,13 +1,18 @@
+import { resolveTaskDisplayName } from '@/features/workflow-studio/lib/taskDisplayName';
 import type { TaskValidationContext } from '@/features/workflow-studio/task-type-schema/types';
 
 export type TaskPickCandidate = {
     taskId: string;
     type: string;
+    displayName?: string;
+    parameters?: Record<string, unknown>;
 };
 
 export function formatTaskOptionLabel(task: TaskPickCandidate): string {
-    const typeLabel = task.type.replace(/_TASK$/, '').replace(/_/g, ' ');
-    return `${task.taskId} (${typeLabel})`;
+    return resolveTaskDisplayName({
+        displayName: task.displayName,
+        type: task.type,
+    });
 }
 
 export function filterTaskPickCandidates(
@@ -25,4 +30,13 @@ export function filterTaskPickCandidates(
         }
         return true;
     });
+}
+
+export function taskLabelById(
+    workflowTasks: TaskPickCandidate[],
+    taskId: string,
+): string {
+    const task = workflowTasks.find((item) => item.taskId === taskId);
+    if (!task) return taskId;
+    return formatTaskOptionLabel(task);
 }

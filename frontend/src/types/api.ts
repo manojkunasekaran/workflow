@@ -35,4 +35,11 @@ export interface WorkflowDefinition {
 export interface NodePosition {
     x: number;
     y: number;
+    /** Friendly step name — UI only; engine ignores this. */
+    displayName?: string;
+    /**
+     * Studio-only Loop Done wire (`""` = explicitly unwired).
+     * Mirrors iterator `doneNextTaskId` so routing survives API round-trips.
+     */
+    studioDoneWire?: string;
 }

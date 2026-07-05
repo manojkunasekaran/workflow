@@ -11,13 +11,14 @@ import {
     MAIN_IN,
     MAIN_OUT,
 } from '@/features/workflow-studio/lib/graphHandles';
-import { getMainSpineIdsFromEdges } from '@/features/workflow-studio/lib/branchFlow';
+import { getMainSpineIdsFromEdges, positionForRoutingWire, realignRoutingChildren } from '@/features/workflow-studio/lib/branchFlow';
 import { getTaskNodes, type StudioCanvasNode } from '@/features/workflow-studio/lib/canvasNodeUtils';
 import { isStubEdgeId } from '@/features/workflow-studio/lib/branchAddStubs';
 import {
     applyGraphConnection,
     applyRouteEdgeRemoval,
     resolveWireTargetHandle,
+    terminatesMainSpine,
     type RouteEdgeData,
 } from '@/features/workflow-studio/lib/graphRouting';
 import {
@@ -27,7 +28,8 @@ import {
     writeBranchEndTaskId,
 } from '@/features/workflow-studio/lib/joinWiring';
 import { relayoutWorkflowGraph } from '@/features/workflow-studio/lib/workflowGraph';
-import { STUDIO_EDGE_CLASS } from '@/features/workflow-studio/edges/studioEdgeTheme';
+import { normalizeStudioEdge } from '@/features/workflow-studio/edges/edgeFromProps';
+import { STUDIO_EDGE_CLASS, STUDIO_SEQUENCE_STROKE, studioEdgeMarkerEnd } from '@/features/workflow-studio/edges/studioEdgeTheme';
 
 export type StudioEdgeActionKind =
     | 'spine'
@@ -74,8 +76,12 @@ export function classifyStudioEdge(
 }
 
 export function canInsertOnStudioEdge(kind: StudioEdgeActionKind | undefined): boolean {
-    // The add-task stub at the chain end already handles append; edge insert here duplicates the + UI.
-    return Boolean(kind && kind !== 'stub' && kind !== 'none' && kind !== 'spine-to-add');
+    return Boolean(
+        kind &&
+            kind !== 'stub' &&
+            kind !== 'none' &&
+            kind !== 'spine-to-add',
+    );
 }
 
 export function canDeleteStudioEdge(kind: StudioEdgeActionKind | undefined): boolean {
@@ -132,7 +138,52 @@ function branchChainEdge(source: string, target: string): Edge {
         targetHandle: MAIN_IN,
         type: 'studioChain',
         className: STUDIO_EDGE_CLASS,
+        markerEnd: studioEdgeMarkerEnd(STUDIO_SEQUENCE_STROKE),
     };
+}
+
+function isMainChainEdge(edge: Edge): boolean {
+    return (
+        !isBranchChainEdgeId(edge.id) &&
+        !isRouteEdgeId(edge.id) &&
+        !isStubEdgeId(edge.id) &&
+        edge.sourceHandle === MAIN_OUT &&
+        edge.targetHandle === MAIN_IN &&
+        edge.target !== ADD_TASK_NODE_ID
+    );
+}
+
+/**
+ * After removing one spine link, drop chain edges that will be rebuilt and
+ * demote disconnected downstream chains so they stay wired together.
+ */
+function prepareEdgesAfterSpineRemoval(edges: Edge[], spineIds: string[]): Edge[] {
+    const spineSet = new Set(spineIds);
+    const isOnSpine = (id: string | undefined): boolean =>
+        Boolean(id && (id === WORKFLOW_START_ID || spineSet.has(id)));
+
+    const prepared: Edge[] = [];
+
+    for (const edge of edges) {
+        if (isStubEdgeId(edge.id)) continue;
+        if (isRouteEdgeId(edge.id) || isBranchChainEdgeId(edge.id)) {
+            prepared.push(edge);
+            continue;
+        }
+        if (edge.target === ADD_TASK_NODE_ID || edge.source === WORKFLOW_START_ID) {
+            continue;
+        }
+        if (isMainChainEdge(edge)) {
+            if (isOnSpine(edge.source) && isOnSpine(edge.target)) {
+                continue;
+            }
+            prepared.push(branchChainEdge(edge.source, edge.target));
+            continue;
+        }
+        prepared.push(edge);
+    }
+
+    return prepared;
 }
 
 function insertOnSpineEdge(
@@ -209,7 +260,11 @@ function insertOnRouteEdge(
     if (!sourceNode) return null;
     const sourceType = (sourceNode.data as TaskNodeData).type;
 
-    let baseNodes = addTaskNode(nodes, draft, midpointPosition(nodes, source, target));
+    const placeAt = terminatesMainSpine(sourceType)
+        ? positionForRoutingWire(nodes, source, sourceHandle, draft)
+        : midpointPosition(nodes, source, target);
+
+    let baseNodes = addTaskNode(nodes, draft, placeAt);
     const wired = applyGraphConnection(
         {
             source,
@@ -222,6 +277,10 @@ function insertOnRouteEdge(
     );
     if (!wired) return null;
     baseNodes = wired;
+
+    if (terminatesMainSpine(sourceType)) {
+        baseNodes = realignRoutingChildren(baseNodes, source);
+    }
 
     const targetType = (targetNode.data as TaskNodeData).type;
     if (targetType === 'JOIN') {
@@ -273,18 +332,19 @@ export function insertTaskOnStudioEdge(
     nodes: StudioCanvasNode[],
     edges: Edge[],
 ): { nodes: StudioCanvasNode[]; edges: Edge[] } | null {
-    const kind = classifyStudioEdge(edge, nodes, edges);
+    const normalized = normalizeStudioEdge(edge);
+    const kind = classifyStudioEdge(normalized, nodes, edges);
 
     switch (kind) {
         case 'spine':
         case 'spine-to-add':
-            return insertOnSpineEdge(edge, draft, nodes, edges);
+            return insertOnSpineEdge(normalized, draft, nodes, edges);
         case 'branch-chain':
-            return insertOnBranchChainEdge(edge, draft, nodes, edges);
+            return insertOnBranchChainEdge(normalized, draft, nodes, edges);
         case 'route':
-            return insertOnRouteEdge(edge, draft, nodes, edges);
+            return insertOnRouteEdge(normalized, draft, nodes, edges);
         case 'join-merge':
-            return insertOnJoinMergeEdge(edge, draft, nodes, edges);
+            return insertOnJoinMergeEdge(normalized, draft, nodes, edges);
         default:
             return null;
     }
@@ -295,25 +355,25 @@ export function deleteStudioEdge(
     nodes: StudioCanvasNode[],
     edges: Edge[],
 ): { nodes: StudioCanvasNode[]; edges: Edge[] } | null {
-    const kind = classifyStudioEdge(edge, nodes, edges);
+    const normalized = normalizeStudioEdge(edge);
+    const kind = classifyStudioEdge(normalized, nodes, edges);
 
     if (kind === 'route' || kind === 'join-merge') {
-        const nextNodes = applyRouteEdgeRemoval(edge, nodes, edges);
+        const nextNodes = applyRouteEdgeRemoval(normalized, nodes, edges);
         if (!nextNodes) return null;
         return relayoutWorkflowGraph(nextNodes, edges);
     }
 
     if (kind === 'branch-chain') {
-        const nextEdges = edges.filter((item) => item.id !== edge.id);
+        const nextEdges = edges.filter((item) => item.id !== normalized.id);
         return relayoutWorkflowGraph(nodes, nextEdges);
     }
 
     if (kind === 'spine') {
-        const spineIds = getMainSpineIdsFromEdges(nodes, edges);
-        const targetIdx = edge.target ? spineIds.indexOf(edge.target) : -1;
-        if (targetIdx < 0) return null;
-        const nextSpineIds = spineIds.slice(0, targetIdx);
-        return relayoutWorkflowGraph(nodes, edges, nextSpineIds);
+        const withoutDeleted = edges.filter((item) => item.id !== normalized.id);
+        const spineIds = getMainSpineIdsFromEdges(nodes, withoutDeleted);
+        const prepared = prepareEdgesAfterSpineRemoval(withoutDeleted, spineIds);
+        return relayoutWorkflowGraph(nodes, prepared, spineIds);
     }
 
     return null;

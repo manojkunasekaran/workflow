@@ -6,6 +6,7 @@ export const dataTransformTaskPlugin = defineTaskPlugin({
     type: 'DATA_TRANSFORM',
     label: 'Data Transform',
     icon: Shuffle,
+    accentColor: '#7c3aed',
     defaultTaskId: 'transform_task',
     fields: [
         {

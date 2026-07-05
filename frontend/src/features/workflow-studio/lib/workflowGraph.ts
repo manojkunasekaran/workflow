@@ -1,8 +1,7 @@
-import type { Edge, Node } from '@xyflow/react';
+import type { Connection, Edge, Node } from '@xyflow/react';
 import type { TaskType, WorkflowDefinition, WorkflowTask } from '@/types/api';
 import {
     ADD_TASK_NODE_ID,
-    BRANCH_LAYOUT,
     CHAIN_LAYOUT,
     WORKFLOW_START_ID,
 } from '@/features/workflow-studio/constants/studioCanvas';
@@ -11,13 +10,23 @@ import {
     computeMainSpineIds,
     getMainSpineIdsFromEdges,
     isMainSpineTerminated,
+    positionForRoutingWire,
+    realignRoutingChildren,
     relayoutWorkflow,
     shouldShowMainAddTask,
     taskTypeById,
 } from '@/features/workflow-studio/lib/branchFlow';
+import {
+    buildIteratorLoopChainEdges,
+    collectAllIteratorLoopBodyTaskIds,
+    collectIteratorLoopChainTaskIds,
+    expandDefinitionForCanvas,
+    stripIteratorCanvasParams,
+    syncAllIteratorLoopBodies,
+} from '@/features/workflow-studio/lib/iteratorLoopSync';
+import { resolveTaskDisplayName } from '@/features/workflow-studio/lib/taskDisplayName';
 import { getTaskNodes, type StudioCanvasNode } from '@/features/workflow-studio/lib/canvasNodeUtils';
-import { applyGraphConnection, clearTaskWireReferences, resolveWireTargetHandle } from '@/features/workflow-studio/lib/graphRouting';
-import { resolveTaskOutputViews } from '@/features/workflow-studio/lib/pluginWiringRuntime';
+import { applyGraphConnection, clearTaskWireReferences, resolveWireTargetHandle, terminatesMainSpine } from '@/features/workflow-studio/lib/graphRouting';
 import {
     findBranchTaskForChainTask,
     resolveBranchIndexForEndTask,
@@ -27,10 +36,14 @@ import {
 } from '@/features/workflow-studio/lib/joinWiring';
 import {
     STUDIO_EDGE_CLASS,
+    STUDIO_SEQUENCE_STROKE,
+    studioEdgeMarkerEnd,
 } from '@/features/workflow-studio/edges/studioEdgeTheme';
 import { injectParameterType, summarizeValidationErrors, validateTaskParameters } from '@/features/workflow-studio/task-type-schema/utils';
 import { getTaskTypePlugin } from '@/features/workflow-studio/task-type-schema/registry';
+import { parseIteratorActions, normalizeIteratorParamsForExport } from '@/features/workflow-studio/task-type-schema/iteratorTask';
 import type { TaskNodeData } from '@/features/workflow-studio/nodes/TaskNode';
+import { DEFAULT_TASK_WIRING } from '@/features/workflow-studio/task-type-schema/pluginWiringTypes';
 
 export type { StudioCanvasNode } from '@/features/workflow-studio/lib/canvasNodeUtils';
 export { getTaskNodes } from '@/features/workflow-studio/lib/canvasNodeUtils';
@@ -56,6 +69,7 @@ export function rebuildChainEdges(
             targetHandle: MAIN_IN,
             type: 'studioChain',
             className: STUDIO_EDGE_CLASS,
+            markerEnd: studioEdgeMarkerEnd(STUDIO_SEQUENCE_STROKE),
         });
         previous = taskId;
     }
@@ -164,23 +178,14 @@ function chainContinuationPosition(anchor: { x: number; y: number }): { x: numbe
     return { x: anchor.x + CHAIN_LAYOUT.gap, y: anchor.y };
 }
 
-/** Position for a node wired off a routing output handle (If/Else/branch path). */
+/** Position for a node wired off a routing output handle (If / Else / Approved / Rejected …). */
 function branchOutputPosition(
-    anchor: { x: number; y: number },
-    handleIndex: number,
+    parentTaskId: string,
+    handleId: string,
+    childData: TaskNodeData,
+    nodes: StudioCanvasNode[],
 ): { x: number; y: number } {
-    return {
-        x: anchor.x + BRANCH_LAYOUT.offsetX,
-        y: anchor.y + handleIndex * 120,
-    };
-}
-
-/** Index of a routing output handle on the source node (0 if unknown). */
-function routingHandleIndex(data: TaskNodeData | undefined, handleId: string): number {
-    if (!data) return 0;
-    const { outputs } = resolveTaskOutputViews(data);
-    const index = outputs.findIndex((output) => output.handleId === handleId);
-    return index >= 0 ? index : 0;
+    return positionForRoutingWire(nodes, parentTaskId, handleId, childData);
 }
 
 function nodePositionById(
@@ -238,22 +243,22 @@ function repairJoinBranchChainEdges(
 
 export function definitionToFlow(
     definition: WorkflowDefinition,
-    positions: Record<string, { x: number; y: number }> = {},
+    positions: Record<string, { x: number; y: number; displayName?: string }> = {},
 ): { nodes: StudioCanvasNode[]; edges: Edge[] } {
-    const allTaskIds = definition.tasks.map((task) => task.taskId);
-    const types = new Map(definition.tasks.map((task) => [task.taskId, task.type]));
+    const expanded = expandDefinitionForCanvas(definition);
+    const allTaskIds = expanded.tasks.map((task) => task.taskId);
+    const types = new Map(expanded.tasks.map((task) => [task.taskId, task.type]));
     const spineIds = computeMainSpineIds(allTaskIds, types);
 
-    // Prefer explicitly passed positions, then the persisted layout map.
     const storedLayout = definition.layout ?? {};
     const resolvedPositions = { ...storedLayout, ...positions };
-    const hasStoredLayout = definition.tasks.some(
-        (task) => resolvedPositions[task.taskId] != null,
-    );
+    const hasStoredLayout =
+        Object.keys(storedLayout).length > 0 &&
+        definition.tasks.every((task) => storedLayout[task.taskId] != null);
 
     const startPosition = resolvedPositions[WORKFLOW_START_ID];
 
-    const taskNodes: Node<TaskNodeData>[] = definition.tasks.map((task, index) => ({
+    const taskNodes: Node<TaskNodeData>[] = expanded.tasks.map((task, index) => ({
         id: task.taskId,
         type: 'task',
         position: resolvedPositions[task.taskId] ?? {
@@ -263,6 +268,7 @@ export function definitionToFlow(
         draggable: true,
         data: {
             taskId: task.taskId,
+            displayName: resolvedPositions[task.taskId]?.displayName,
             type: task.type,
             parameters: task.parameters,
         },
@@ -274,35 +280,86 @@ export function definitionToFlow(
         createAddTaskNode({ x: 0, y: 0 }),
     ];
 
-    // With a persisted layout, keep positions as-is; otherwise auto-layout once.
-    return hasStoredLayout
+    const result = hasStoredLayout
         ? rebuildPreserving(baseNodes, spineIds)
         : relayoutAndRebuild(baseNodes, spineIds);
+
+    const loopChainEdges: Edge[] = [];
+    for (const task of expanded.tasks) {
+        if (task.type !== 'ITERATOR_TASK') continue;
+        const chainIds = parseIteratorActions(task.parameters?.actions).map((action) => action.taskId);
+        loopChainEdges.push(...buildIteratorLoopChainEdges(chainIds));
+    }
+
+    const edgeIds = new Set(result.edges.map((edge) => edge.id));
+    const mergedEdges = [
+        ...result.edges,
+        ...loopChainEdges.filter((edge) => !edgeIds.has(edge.id)),
+    ];
+
+    let layoutNodes = result.nodes;
+    for (const node of getTaskNodes(layoutNodes)) {
+        if (terminatesMainSpine(node.data.type)) {
+            layoutNodes = realignRoutingChildren(layoutNodes, node.id);
+        }
+    }
+
+    return { nodes: layoutNodes, edges: mergedEdges };
 }
 
 export function flowToDefinition(
     name: string,
     nodes: StudioCanvasNode[],
-    _edges: Edge[],
+    edges: Edge[],
     existing?: WorkflowDefinition,
     workflowId?: string | null,
 ): WorkflowDefinition {
-    const tasks: WorkflowTask[] = getTaskNodes(nodes).map((node) => ({
-        taskId: node.data.taskId,
-        type: node.data.type as TaskType,
-        parameters: injectParameterType(node.data.type, node.data.parameters),
-    }));
+    const syncedNodes = syncAllIteratorLoopBodies(nodes, edges);
+    const loopBodyIds = collectAllIteratorLoopBodyTaskIds(syncedNodes, edges);
 
-    const layout: Record<string, { x: number; y: number }> = {};
-    const startPosition = nodePositionById(nodes, WORKFLOW_START_ID);
+    const layout: Record<string, { x: number; y: number; displayName?: string }> = {};
+    const startPosition = nodePositionById(syncedNodes, WORKFLOW_START_ID);
     if (startPosition) {
         layout[WORKFLOW_START_ID] = { x: startPosition.x, y: startPosition.y };
     }
-    for (const node of getTaskNodes(nodes)) {
+    for (const node of getTaskNodes(syncedNodes)) {
         if (node.position) {
-            layout[node.id] = { x: node.position.x, y: node.position.y };
+            const data = node.data as TaskNodeData;
+            const entry: {
+                x: number;
+                y: number;
+                displayName?: string;
+                studioDoneWire?: string;
+            } = {
+                x: node.position.x,
+                y: node.position.y,
+                displayName: data.displayName,
+            };
+            if (data.type === 'ITERATOR_TASK') {
+                entry.studioDoneWire = String(data.parameters.doneNextTaskId ?? '').trim();
+            }
+            layout[node.id] = entry;
         }
     }
+
+    const tasks: WorkflowTask[] = getTaskNodes(syncedNodes)
+        .filter((node) => !loopBodyIds.has(node.data.taskId))
+        .map((node) => {
+            const data = node.data as TaskNodeData;
+            const rawParams = injectParameterType(data.type, data.parameters);
+            const parameters =
+                data.type === 'ITERATOR_TASK'
+                    ? injectParameterType(
+                          'ITERATOR_TASK',
+                          normalizeIteratorParamsForExport(stripIteratorCanvasParams(rawParams)),
+                      )
+                    : rawParams;
+            return {
+                taskId: data.taskId,
+                type: data.type as TaskType,
+                parameters,
+            };
+        });
 
     return {
         ...existing,
@@ -349,6 +406,33 @@ export function appendTaskToChain(
     return rebuildPreserving(baseNodes, nextSpineIds, edges);
 }
 
+/** Place a new task at an explicit canvas position without auto-wiring. */
+export function placeDetachedTask(
+    nodes: StudioCanvasNode[],
+    edges: Edge[],
+    updated: TaskNodeData,
+    position: { x: number; y: number },
+): { nodes: StudioCanvasNode[]; edges: Edge[] } {
+    const spineIds = getMainSpineIdsFromEdges(nodes, edges);
+    const start = nodes.find((node) => node.id === WORKFLOW_START_ID);
+    const addTask = nodes.find((node) => node.id === ADD_TASK_NODE_ID);
+    const existingTasks = getTaskNodes(nodes).filter((node) => node.id !== updated.taskId);
+
+    const newNode: Node<TaskNodeData> = {
+        id: updated.taskId,
+        type: 'task',
+        draggable: true,
+        position,
+        data: updated,
+    };
+
+    const baseNodes = [start, ...existingTasks, newNode, addTask].filter(
+        (node): node is StudioCanvasNode => Boolean(node),
+    );
+
+    return rebuildPreserving(baseNodes, spineIds, edges);
+}
+
 /** Wire a new task from a routing output handle (If / Else / branch path). */
 export function addBranchTask(
     nodes: StudioCanvasNode[],
@@ -362,18 +446,14 @@ export function addBranchTask(
     const existingTasks = getTaskNodes(nodes).filter((node) => node.id !== updated.taskId);
 
     const sourceNode = nodes.find((node) => node.id === wire.sourceTaskId && node.type === 'task');
-    const anchor =
-        sourceNode?.position ?? { x: CHAIN_LAYOUT.startX, y: CHAIN_LAYOUT.y };
-    const handleIndex = routingHandleIndex(
-        sourceNode?.type === 'task' ? (sourceNode.data as TaskNodeData) : undefined,
-        wire.sourceHandle,
-    );
+    const sourceData =
+        sourceNode?.type === 'task' ? (sourceNode.data as TaskNodeData) : undefined;
 
     const newNode: Node<TaskNodeData> = {
         id: updated.taskId,
         type: 'task',
         draggable: true,
-        position: branchOutputPosition(anchor, handleIndex),
+        position: branchOutputPosition(wire.sourceTaskId, wire.sourceHandle, updated, nodes),
         data: updated,
     };
 
@@ -381,8 +461,7 @@ export function addBranchTask(
         (node): node is StudioCanvasNode => Boolean(node),
     );
 
-    const sourceType =
-        sourceNode?.type === 'task' ? (sourceNode.data as TaskNodeData).type : '';
+    const sourceType = sourceData?.type ?? '';
 
     const wired = applyGraphConnection(
         {
@@ -394,6 +473,8 @@ export function addBranchTask(
         baseNodes,
     );
     if (wired) baseNodes = wired;
+
+    baseNodes = realignRoutingChildren(baseNodes, wire.sourceTaskId);
 
     return rebuildPreserving(baseNodes, spineIds, edges);
 }
@@ -433,6 +514,7 @@ export function appendBranchChainTask(
         targetHandle: MAIN_IN,
         type: 'studioChain',
         className: STUDIO_EDGE_CLASS,
+        markerEnd: studioEdgeMarkerEnd(STUDIO_SEQUENCE_STROKE),
     };
 
     return rebuildPreserving(baseNodes, spineIds, [...edges, branchEdge]);
@@ -492,11 +574,21 @@ export function removeTaskFromChain(
     edges: Edge[],
     taskId: string,
 ): { nodes: StudioCanvasNode[]; edges: Edge[] } {
-    const spineIds = getMainSpineIdsFromEdges(nodes, edges).filter((id) => id !== taskId);
-    let nextNodes = nodes.filter((node) => node.id !== taskId);
-    nextNodes = clearTaskWireReferences(nextNodes, taskId);
+    const removedNode = nodes.find((node) => node.id === taskId);
+    const idsToRemove = new Set<string>([taskId]);
+    if (removedNode?.type === 'task' && (removedNode.data as TaskNodeData).type === 'ITERATOR_TASK') {
+        for (const loopTaskId of collectIteratorLoopChainTaskIds(taskId, nodes, edges)) {
+            idsToRemove.add(loopTaskId);
+        }
+    }
+
+    const spineIds = getMainSpineIdsFromEdges(nodes, edges).filter((id) => !idsToRemove.has(id));
+    let nextNodes = nodes.filter((node) => !idsToRemove.has(node.id));
+    for (const id of idsToRemove) {
+        nextNodes = clearTaskWireReferences(nextNodes, id);
+    }
     const cleanedEdges = edges.filter(
-        (edge) => edge.source !== taskId && edge.target !== taskId,
+        (edge) => !idsToRemove.has(edge.source) && !idsToRemove.has(edge.target),
     );
 
     const start = nextNodes.find((node) => node.id === WORKFLOW_START_ID);
@@ -507,6 +599,135 @@ export function removeTaskFromChain(
     );
 
     return rebuildPreserving(baseNodes, spineIds, cleanedEdges);
+}
+
+function taskSupportsMainFlowOut(type: string): boolean {
+    const wiring = getTaskTypePlugin(type)?.wiring ?? DEFAULT_TASK_WIRING;
+    if (wiring.mainFlow === false) return false;
+    if (wiring.mainFlowOut === false) return false;
+    return true;
+}
+
+function taskSupportsMainFlowIn(type: string): boolean {
+    const wiring = getTaskTypePlugin(type)?.wiring ?? DEFAULT_TASK_WIRING;
+    if (wiring.mainFlow === false) return false;
+    if (wiring.mainFlowIn === false) return false;
+    return true;
+}
+
+/** Branch-chain tasks wired after `startTaskId` — merged back onto spine on reconnect. */
+function collectOrphanChainTail(
+    startTaskId: string,
+    edges: Edge[],
+    taskIds: Set<string>,
+): string[] {
+    const tail: string[] = [];
+    let current = startTaskId;
+    for (;;) {
+        const link = edges.find(
+            (edge) =>
+                isBranchChainEdgeId(edge.id) &&
+                edge.source === current &&
+                edge.sourceHandle === MAIN_OUT &&
+                edge.targetHandle === MAIN_IN &&
+                edge.target &&
+                taskIds.has(edge.target),
+        );
+        if (!link?.target) break;
+        tail.push(link.target);
+        current = link.target;
+    }
+    return tail;
+}
+
+/** Wire main-out → main-in on the spine or a branch chain (not routing outputs). */
+export function applyMainFlowConnection(
+    connection: Connection,
+    nodes: StudioCanvasNode[],
+    edges: Edge[],
+): { nodes: StudioCanvasNode[]; edges: Edge[] } | null {
+    const { source, target, sourceHandle, targetHandle } = connection;
+    if (!source || !target || !sourceHandle || !targetHandle) return null;
+    if (sourceHandle !== MAIN_OUT || targetHandle !== MAIN_IN) return null;
+    if (source === target || source === WORKFLOW_START_ID || target === WORKFLOW_START_ID) return null;
+    if (source === ADD_TASK_NODE_ID || target === ADD_TASK_NODE_ID) return null;
+
+    const sourceNode = nodes.find((node) => node.id === source && node.type === 'task');
+    const targetNode = nodes.find((node) => node.id === target && node.type === 'task');
+    if (!sourceNode || !targetNode) return null;
+
+    const sourceType = (sourceNode.data as TaskNodeData).type;
+    const targetType = (targetNode.data as TaskNodeData).type;
+    if (!taskSupportsMainFlowOut(sourceType) || !taskSupportsMainFlowIn(targetType)) {
+        return null;
+    }
+
+    const spineIds = getMainSpineIdsFromEdges(nodes, edges);
+    const types = taskTypeById(nodes);
+
+    if (!spineIds.includes(source)) {
+        const alreadyLinked = edges.some(
+            (edge) =>
+                edge.source === source &&
+                edge.target === target &&
+                edge.sourceHandle === MAIN_OUT &&
+                edge.targetHandle === MAIN_IN,
+        );
+        if (alreadyLinked) return null;
+
+        const branchEdge: Edge = {
+            id: `${BRANCH_CHAIN_PREFIX}${source}->${target}`,
+            source,
+            sourceHandle: MAIN_OUT,
+            target,
+            targetHandle: MAIN_IN,
+            type: 'studioChain',
+            className: STUDIO_EDGE_CLASS,
+            markerEnd: studioEdgeMarkerEnd(STUDIO_SEQUENCE_STROKE),
+        };
+        return rebuildPreserving(nodes, spineIds, [...edges, branchEdge]);
+    }
+
+    if (terminatesMainSpine(sourceType)) return null;
+
+    let nextSpine = spineIds.filter((taskId) => taskId !== target);
+    const sourceIdx = nextSpine.indexOf(source);
+    if (sourceIdx < 0) return null;
+
+    const taskIds = new Set(getTaskNodes(nodes).map((node) => node.id));
+    const orphanTail = collectOrphanChainTail(target, edges, taskIds);
+
+    nextSpine = [
+        ...nextSpine.slice(0, sourceIdx + 1),
+        target,
+        ...orphanTail,
+        ...nextSpine.slice(sourceIdx + 1),
+    ];
+    nextSpine = computeMainSpineIds(nextSpine, types);
+
+    return relayoutWorkflowGraph(nodes, edges, nextSpine);
+}
+
+/** Apply a handle drag: main spine/branch chain first, then routing parameter wires. */
+export function applyStudioConnection(
+    connection: Connection,
+    nodes: StudioCanvasNode[],
+    edges: Edge[],
+): { nodes: StudioCanvasNode[]; edges: Edge[] } | null {
+    const mainFlow = applyMainFlowConnection(connection, nodes, edges);
+    if (mainFlow) return mainFlow;
+
+    const wiredNodes = applyGraphConnection(connection, nodes, edges);
+    if (!wiredNodes) return null;
+    return syncWorkflowLayout(wiredNodes, edges);
+}
+
+export function isValidStudioConnection(
+    connection: Connection,
+    nodes: StudioCanvasNode[],
+    edges: Edge[],
+): boolean {
+    return applyStudioConnection(connection, nodes, edges) !== null;
 }
 
 /**
@@ -585,30 +806,34 @@ export function findFirstTaskValidationError(
     nodes: StudioCanvasNode[],
     edges: Edge[],
 ): string | null {
-    const basic = validateWorkflowTasks(nodes);
+    const syncedNodes = syncAllIteratorLoopBodies(nodes, edges);
+    const basic = validateWorkflowTasks(syncedNodes);
     if (basic) return basic;
 
-    const workflowTasks = getTaskNodes(nodes).map((node) => ({
+    const workflowTasks = getTaskNodes(syncedNodes).map((node) => ({
         taskId: node.data.taskId,
         type: node.data.type,
+        displayName: (node.data as TaskNodeData).displayName,
         parameters: node.data.parameters,
     }));
-    const taskOrder = getOrderedTaskIds(nodes, edges);
+    const taskOrder = getOrderedTaskIds(syncedNodes, edges);
 
-    for (const node of getTaskNodes(nodes)) {
-        const plugin = getTaskTypePlugin(node.data.type);
+    for (const node of getTaskNodes(syncedNodes)) {
+        const data = node.data as TaskNodeData;
+        const label = resolveTaskDisplayName(data);
+        const plugin = getTaskTypePlugin(data.type);
         if (!plugin) {
-            return `Unknown task type on "${node.data.taskId}": ${node.data.type}`;
+            return `Unknown task type on "${label}"`;
         }
-        const { errors } = validateTaskParameters(plugin, node.data.parameters, {
+        const { errors } = validateTaskParameters(plugin, data.parameters, {
             workflowTasks,
             taskOrder,
-            currentTaskId: node.data.taskId,
+            currentTaskId: data.taskId,
             isNewTask: false,
         });
         if (Object.keys(errors).length > 0) {
             const summary = summarizeValidationErrors(errors) ?? 'Invalid configuration';
-            return `${node.data.taskId}: ${summary}`;
+            return `${label}: ${summary}`;
         }
     }
     return null;

@@ -6,32 +6,31 @@ import {
     parseHumanActions,
     type HumanActionRow,
 } from '@/features/workflow-studio/task-type-schema/humanTask';
-import type {
-    TaskParameterErrors,
-    TaskValidationContext,
-} from '@/features/workflow-studio/task-type-schema/types';
+import type { TaskParameterErrors } from '@/features/workflow-studio/task-type-schema/types';
+import {
+    STUDIO_GHOST_DESTRUCTIVE_CLASS,
+    STUDIO_TEXT_LINK_CLASS,
+} from '@/features/workflow-studio/constants/studioUi';
+import { cn } from '@/lib/utils';
 
 interface HumanActionListFieldProps {
     fieldKey: string;
     label: string;
+    description?: string;
     value: unknown;
     onChange: (actions: HumanActionRow[]) => void;
     errors?: TaskParameterErrors;
-    workflowTasks?: TaskValidationContext['workflowTasks'];
-    currentTaskId?: string;
 }
 
 export function HumanActionListField({
     fieldKey,
     label,
+    description,
     value,
     onChange,
     errors = {},
-    workflowTasks = [],
-    currentTaskId,
 }: HumanActionListFieldProps) {
     const actions = parseHumanActions(value);
-    const taskCandidates = workflowTasks.filter((task) => task.taskId !== currentTaskId);
 
     const update = (index: number, patch: Partial<HumanActionRow>) => {
         onChange(actions.map((action, i) => (i === index ? { ...action, ...patch } : action)));
@@ -58,23 +57,22 @@ export function HumanActionListField({
         <div className="space-y-3">
             <div className="flex items-center justify-between gap-2">
                 <label className="text-xs font-medium text-foreground">{label}</label>
-                <button
-                    type="button"
-                    onClick={addAction}
-                    className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
-                >
+                <button type="button" onClick={addAction} className={STUDIO_TEXT_LINK_CLASS}>
                     <Plus className="h-3 w-3" />
                     Add action
                 </button>
             </div>
+            {description ? (
+                <p className="text-[11px] text-muted-foreground">{description}</p>
+            ) : null}
 
             <div className="space-y-2">
                 {actions.map((action, index) => (
                     <div
                         key={index}
-                        className="grid gap-2 rounded-md border border-border bg-muted/30 p-3 sm:grid-cols-2"
+                        className="grid gap-2 rounded-md border border-border bg-muted/30 p-3 sm:grid-cols-3"
                     >
-                        <div className="flex items-center justify-between sm:col-span-2">
+                        <div className="flex items-center justify-between sm:col-span-3">
                             <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                                 Action {index + 1}
                             </span>
@@ -83,7 +81,7 @@ export function HumanActionListField({
                                     type="button"
                                     variant="ghost"
                                     size="icon"
-                                    className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                                    className={cn('h-7 w-7', STUDIO_GHOST_DESTRUCTIVE_CLASS)}
                                     onClick={() => removeAction(index)}
                                     aria-label={`Remove action ${index + 1}`}
                                 >
@@ -134,27 +132,6 @@ export function HumanActionListField({
                             {errors[`${fieldKey}.${index}.outcome`] && (
                                 <p className="text-xs text-destructive">
                                     {errors[`${fieldKey}.${index}.outcome`]}
-                                </p>
-                            )}
-                        </div>
-
-                        <div className="space-y-1">
-                            <label className="text-xs font-medium">Override next task</label>
-                            <select
-                                value={action.nextTaskId}
-                                onChange={(e) => update(index, { nextTaskId: e.target.value })}
-                                className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm font-mono"
-                            >
-                                <option value="">— Use default routing —</option>
-                                {taskCandidates.map((task) => (
-                                    <option key={task.taskId} value={task.taskId}>
-                                        {task.taskId}
-                                    </option>
-                                ))}
-                            </select>
-                            {errors[`${fieldKey}.${index}.nextTaskId`] && (
-                                <p className="text-xs text-destructive">
-                                    {errors[`${fieldKey}.${index}.nextTaskId`]}
                                 </p>
                             )}
                         </div>

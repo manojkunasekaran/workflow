@@ -31,4 +31,12 @@ public class WorkflowDefinitionController {
         return service.getWorkflowDefinitionById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("WorkflowDefinition", id));
     }
+
+    @DeleteMapping("/{id}")
+    public void delete(@NonNull @PathVariable String id) {
+        if (service.getWorkflowDefinitionById(id).isEmpty()) {
+            throw new ResourceNotFoundException("WorkflowDefinition", id);
+        }
+        service.deleteWorkflowDefinition(id);
+    }
 }
