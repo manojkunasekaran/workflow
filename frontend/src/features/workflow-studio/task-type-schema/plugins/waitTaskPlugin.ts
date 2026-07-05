@@ -5,6 +5,7 @@ export const waitTaskPlugin = defineTaskPlugin({
     type: 'WAIT',
     label: 'Wait',
     icon: Timer,
+    accentColor: '#2563eb',
     defaultTaskId: 'wait_task',
     fields: [
         {

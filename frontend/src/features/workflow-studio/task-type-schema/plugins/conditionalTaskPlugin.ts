@@ -12,6 +12,7 @@ export const conditionalTaskPlugin = defineTaskPlugin({
     type: 'CONDITIONAL',
     label: 'Conditional',
     icon: GitBranch,
+    accentColor: '#9333ea',
     defaultTaskId: 'conditional_task',
     wiring: CONDITIONAL_TASK_WIRING,
     fields: [

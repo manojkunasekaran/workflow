@@ -1,11 +1,16 @@
-import { ChevronRight, X } from 'lucide-react';
+import { ChevronRight, GripVertical, X } from 'lucide-react';
+import { TippyHint } from '@/components/ui/tippy-hint';
+import { STUDIO_TASK_DRAG_MIME } from '@/features/workflow-studio/constants/studioDrag';
 import { TASK_PALETTE, type StudioTaskType } from '@/features/workflow-studio/constants/taskPalette';
 import { cn } from '@/lib/utils';
 
 interface StudioTaskCatalogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onSelectType: (type: StudioTaskType) => void;
+    /** Opens catalog from sidebar tab — browse/drag only, not wired add-from-+. */
+    onBrowseOpen?: () => void;
+    /** When set (e.g. after + on handle), click adds wired task and opens config. */
+    onSelectType?: (type: StudioTaskType) => void;
     disabled?: boolean;
     /** When set, only these task types are shown (e.g. Join-only from BRANCH Join handle). */
     allowedTypes?: StudioTaskType[];
@@ -14,6 +19,7 @@ interface StudioTaskCatalogProps {
 export function StudioTaskCatalog({
     open,
     onOpenChange,
+    onBrowseOpen,
     onSelectType,
     disabled,
     allowedTypes,
@@ -21,6 +27,8 @@ export function StudioTaskCatalog({
     const catalogItems = allowedTypes
         ? TASK_PALETTE.filter((item) => allowedTypes.includes(item.type))
         : TASK_PALETTE;
+    const clickToAdd = Boolean(onSelectType);
+
     return (
         <div
             className={cn(
@@ -33,12 +41,12 @@ export function StudioTaskCatalog({
                 <>
                     <div className="flex items-center justify-between border-b border-[#c6c6cd]/60 px-3 py-2.5">
                         <p className="text-[11px] font-bold uppercase tracking-wide text-[#45464d]">
-                            Add task
+                            Tasks
                         </p>
                         <button
                             type="button"
                             onClick={() => onOpenChange(false)}
-                            className="flex h-7 w-7 items-center justify-center rounded-md text-[#45464d] hover:bg-[#eff4ff] hover:text-[#0b1c30]"
+                            className="flex h-7 w-7 items-center justify-center rounded-md text-[#45464d] hover:bg-[#f1f5f9] hover:text-[#334155]"
                             aria-label="Close task catalog"
                         >
                             <X className="h-4 w-4" />
@@ -49,17 +57,50 @@ export function StudioTaskCatalog({
                             const Icon = item.icon;
                             return (
                                 <li key={item.type}>
-                                    <button
-                                        type="button"
+                                    <div
+                                        role="button"
+                                        tabIndex={disabled ? -1 : 0}
+                                        draggable={!disabled}
                                         data-testid={`catalog-item-${item.type}`}
-                                        onClick={() => onSelectType(item.type)}
-                                        className="flex w-full items-center gap-2.5 rounded-md px-2 py-2 text-left text-xs text-[#0b1c30] transition-colors hover:bg-[#eff4ff]"
+                                        onDragStart={(event) => {
+                                            if (disabled) {
+                                                event.preventDefault();
+                                                return;
+                                            }
+                                            event.dataTransfer.setData(STUDIO_TASK_DRAG_MIME, item.type);
+                                            event.dataTransfer.effectAllowed = 'copy';
+                                        }}
+                                        onClick={() => {
+                                            if (!disabled && clickToAdd) {
+                                                onSelectType?.(item.type);
+                                            }
+                                        }}
+                                        onKeyDown={(event) => {
+                                            if (
+                                                !disabled &&
+                                                clickToAdd &&
+                                                (event.key === 'Enter' || event.key === ' ')
+                                            ) {
+                                                event.preventDefault();
+                                                onSelectType?.(item.type);
+                                            }
+                                        }}
+                                        className={cn(
+                                            'group flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-xs text-[#0b1c30] transition-colors',
+                                            clickToAdd ? 'cursor-pointer' : 'cursor-grab active:cursor-grabbing',
+                                            'hover:bg-[#f1f5f9]',
+                                            disabled && 'cursor-not-allowed',
+                                        )}
                                     >
-                                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-[#2170e4]/10 text-[#0058be]">
+                                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-[#f1f5f9] text-[#64748b]">
                                             <Icon className="h-3.5 w-3.5" />
                                         </span>
-                                        <span className="font-medium">{item.label}</span>
-                                    </button>
+                                        <span className="min-w-0 flex-1 font-medium">{item.label}</span>
+                                        <GripVertical
+                                            className="h-4 w-0 shrink-0 overflow-hidden text-[#94a3b8] opacity-0 transition-[width,opacity] duration-150 group-hover:w-4 group-hover:opacity-100"
+                                            aria-hidden
+                                        />
+                                    </div>
                                 </li>
                             );
                         })}
@@ -71,21 +112,26 @@ export function StudioTaskCatalog({
                     </ul>
                 </>
             ) : (
-                <button
-                    type="button"
-                    onClick={() => !disabled && onOpenChange(true)}
-                    className="flex h-full min-h-[120px] flex-col items-center justify-center gap-1 px-1 py-4 text-[#45464d] hover:bg-[#f8f9ff] hover:text-[#0058be]"
-                    aria-label="Open task catalog"
-                    title="Task catalog"
-                >
-                    <ChevronRight className="h-4 w-4 rotate-180" />
-                    <span
-                        className="text-[10px] font-bold uppercase tracking-wide [writing-mode:vertical-rl]"
-                        style={{ writingMode: 'vertical-rl' }}
+                <TippyHint content="Task catalog" placement="left">
+                    <button
+                        type="button"
+                        onClick={() => {
+                            if (disabled) return;
+                            onBrowseOpen?.();
+                            onOpenChange(true);
+                        }}
+                        className="flex h-full min-h-[120px] flex-col items-center justify-center gap-1 px-1 py-4 text-[#45464d] hover:bg-[#f1f5f9] hover:text-[#334155]"
+                        aria-label="Open task catalog"
                     >
-                        Tasks
-                    </span>
-                </button>
+                        <ChevronRight className="h-4 w-4 rotate-180" />
+                        <span
+                            className="text-[10px] font-bold uppercase tracking-wide [writing-mode:vertical-rl]"
+                            style={{ writingMode: 'vertical-rl' }}
+                        >
+                            Tasks
+                        </span>
+                    </button>
+                </TippyHint>
             )}
         </div>
     );

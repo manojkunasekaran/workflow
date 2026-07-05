@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { EdgeLabelRenderer } from '@xyflow/react';
 import { Plus, Trash2 } from 'lucide-react';
+import { TippyHint } from '@/components/ui/tippy-hint';
 import { useCanvasActions } from '@/features/workflow-studio/CanvasActionsContext';
 import {
     canDeleteStudioEdge,
@@ -8,13 +9,18 @@ import {
     type StudioEdgeActionKind,
 } from '@/features/workflow-studio/lib/studioEdgeActions';
 import type { Edge } from '@xyflow/react';
+import {
+    STUDIO_EDGE_CONTROL_DESTRUCTIVE_CLASS,
+    STUDIO_EDGE_CONTROL_GROUP_CLASS,
+    STUDIO_EDGE_CONTROL_GROUP_DIVIDER_CLASS,
+    STUDIO_EDGE_CONTROL_GROUP_ITEM_CLASS,
+    STUDIO_EDGE_CONTROL_ICON_CLASS,
+} from '@/features/workflow-studio/edges/studioEdgeTheme';
 import { cn } from '@/lib/utils';
 
-const controlClass = cn(
-    'flex h-5 w-5 items-center justify-center rounded-sm border border-[#c6c6cd] bg-white/95 text-[#64748b]',
-    'opacity-0 shadow-none transition-opacity group-hover/edge:opacity-100 group-focus-within/edge:opacity-100',
-    'hover:border-[#94a3b8] hover:bg-[#f8fafc] hover:text-[#0058be]',
-);
+const HOVER_HIDE_DELAY_MS = 150;
+/** Wide transparent stroke along the edge — must overlap the HTML control hit area. */
+const EDGE_HOVER_STROKE_WIDTH = 48;
 
 export function EdgeHoverControls({
     edge,
@@ -31,9 +37,29 @@ export function EdgeHoverControls({
 }) {
     const { readOnly, onEdgeInsert, onEdgeDelete } = useCanvasActions();
     const [hovered, setHovered] = useState(false);
+    const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const canInsert = !readOnly && canInsertOnStudioEdge(actionKind) && onEdgeInsert;
     const canDelete = !readOnly && canDeleteStudioEdge(actionKind) && onEdgeDelete;
+
+    const setHover = (active: boolean) => {
+        if (hideTimerRef.current) {
+            clearTimeout(hideTimerRef.current);
+            hideTimerRef.current = null;
+        }
+        if (active) {
+            setHovered(true);
+            return;
+        }
+        hideTimerRef.current = setTimeout(() => setHovered(false), HOVER_HIDE_DELAY_MS);
+    };
+
+    useEffect(
+        () => () => {
+            if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+        },
+        [],
+    );
 
     if (!canInsert && !canDelete) return null;
 
@@ -45,56 +71,64 @@ export function EdgeHoverControls({
                 d={edgePath}
                 fill="none"
                 stroke="transparent"
-                strokeWidth={20}
-                onMouseEnter={() => setHovered(true)}
-                onMouseLeave={() => setHovered(false)}
+                strokeWidth={EDGE_HOVER_STROKE_WIDTH}
+                onMouseEnter={() => setHover(true)}
+                onMouseLeave={() => setHover(false)}
             />
-            {showControls ? (
-                <EdgeLabelRenderer>
-                    <div
-                        style={{
-                            position: 'absolute',
-                            transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
-                            pointerEvents: 'all',
-                        }}
-                        className="group/edge flex items-center gap-0.5 opacity-100"
-                        onMouseEnter={() => setHovered(true)}
-                        onMouseLeave={() => setHovered(false)}
-                    >
+            <EdgeLabelRenderer>
+                <div
+                    style={{
+                        position: 'absolute',
+                        transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
+                    }}
+                    className={cn(
+                        'nodrag nopan p-3 transition-opacity duration-100',
+                        showControls ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0',
+                    )}
+                    onMouseEnter={() => setHover(true)}
+                    onMouseLeave={() => setHover(false)}
+                >
+                    <div className={STUDIO_EDGE_CONTROL_GROUP_CLASS}>
                         {canInsert ? (
-                            <button
-                                type="button"
-                                title="Insert task"
-                                aria-label="Insert task on this connection"
-                                className={cn(controlClass, 'opacity-100')}
-                                onClick={(event) => {
-                                    event.stopPropagation();
-                                    onEdgeInsert?.(edge);
-                                }}
-                            >
-                                <Plus className="h-3 w-3" strokeWidth={2} />
-                            </button>
+                            <TippyHint content="Insert task">
+                                <button
+                                    type="button"
+                                    aria-label="Insert task on this connection"
+                                    className={cn('nodrag nopan', STUDIO_EDGE_CONTROL_GROUP_ITEM_CLASS)}
+                                    onPointerDown={(event) => event.stopPropagation()}
+                                    onClick={(event) => {
+                                        event.stopPropagation();
+                                        onEdgeInsert?.(edge);
+                                    }}
+                                >
+                                    <Plus className={STUDIO_EDGE_CONTROL_ICON_CLASS} strokeWidth={2.5} />
+                                </button>
+                            </TippyHint>
                         ) : null}
                         {canDelete ? (
-                            <button
-                                type="button"
-                                title="Remove connection"
-                                aria-label="Remove this connection"
-                                className={cn(
-                                    controlClass,
-                                    'opacity-100 hover:border-[#fca5a5] hover:text-[#dc2626]',
-                                )}
-                                onClick={(event) => {
-                                    event.stopPropagation();
-                                    onEdgeDelete?.(edge);
-                                }}
-                            >
-                                <Trash2 className="h-2.5 w-2.5" strokeWidth={2} />
-                            </button>
+                            <TippyHint content="Remove connection">
+                                <button
+                                    type="button"
+                                    aria-label="Remove this connection"
+                                    className={cn(
+                                        'nodrag nopan',
+                                        STUDIO_EDGE_CONTROL_GROUP_ITEM_CLASS,
+                                        canInsert && STUDIO_EDGE_CONTROL_GROUP_DIVIDER_CLASS,
+                                        STUDIO_EDGE_CONTROL_DESTRUCTIVE_CLASS,
+                                    )}
+                                    onPointerDown={(event) => event.stopPropagation()}
+                                    onClick={(event) => {
+                                        event.stopPropagation();
+                                        onEdgeDelete?.(edge);
+                                    }}
+                                >
+                                    <Trash2 className={STUDIO_EDGE_CONTROL_ICON_CLASS} strokeWidth={2.5} />
+                                </button>
+                            </TippyHint>
                         ) : null}
                     </div>
-                </EdgeLabelRenderer>
-            ) : null}
+                </div>
+            </EdgeLabelRenderer>
         </>
     );
 }

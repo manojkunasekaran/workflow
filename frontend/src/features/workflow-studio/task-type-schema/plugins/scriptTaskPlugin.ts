@@ -5,6 +5,7 @@ export const scriptTaskPlugin = defineTaskPlugin({
     type: 'SCRIPT_TASK',
     label: 'Script',
     icon: Code2,
+    accentColor: '#ea580c',
     defaultTaskId: 'script_task',
     fields: [
         {

@@ -1,4 +1,6 @@
 import type { TaskParameterErrors, TaskValidationContext } from './types';
+import type { WorkflowDefinition, WorkflowTask } from '@/types/api';
+import { injectParameterType } from './utils';
 
 export const HUMAN_OUTCOMES = [
     { value: 'APPROVED', label: 'Approved' },
@@ -60,7 +62,6 @@ export function validateHumanTaskParameters(
         const action = actions[i];
         const id = action.id.trim();
         const label = action.label.trim();
-        const nextTaskId = action.nextTaskId.trim();
 
         if (!id) {
             errors[`actions.${i}.id`] = 'Action ID is required';
@@ -76,14 +77,6 @@ export function validateHumanTaskParameters(
 
         if (!OUTCOME_SET.has(action.outcome)) {
             errors[`actions.${i}.outcome`] = 'Invalid outcome';
-        }
-
-        if (nextTaskId && context) {
-            if (nextTaskId === context.currentTaskId) {
-                errors[`actions.${i}.nextTaskId`] = 'Cannot route to this task';
-            } else if (!findWorkflowTask(context, nextTaskId)) {
-                errors[`actions.${i}.nextTaskId`] = 'Task not found in this workflow';
-            }
         }
     }
 
@@ -104,6 +97,31 @@ export function normalizeHumanActionsForApi(actions: HumanActionRow[]): Array<Re
         id: action.id.trim(),
         label: action.label.trim(),
         outcome: action.outcome,
-        nextTaskId: action.nextTaskId.trim() || null,
+        nextTaskId: null,
     }));
+}
+
+/** Legacy linear workflows: infer approved wire from the next task in the saved list. */
+export function migrateHumanTasksForCanvas(definition: WorkflowDefinition): WorkflowDefinition {
+    let changed = false;
+    const tasks: WorkflowTask[] = definition.tasks.map((task, index, all) => {
+        if (task.type !== 'HUMAN_TASK') return task;
+        const params = { ...(task.parameters as Record<string, unknown>) };
+        const approved = String(params.approvedNextTaskId ?? '').trim();
+        if (approved) return task;
+
+        const next = all[index + 1];
+        if (!next) return task;
+
+        changed = true;
+        return {
+            ...task,
+            parameters: injectParameterType('HUMAN_TASK', {
+                ...params,
+                approvedNextTaskId: next.taskId,
+            }),
+        };
+    });
+
+    return changed ? { ...definition, tasks } : definition;
 }

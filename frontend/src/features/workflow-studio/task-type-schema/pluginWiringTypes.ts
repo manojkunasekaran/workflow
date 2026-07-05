@@ -1,7 +1,14 @@
 import type { StudioTaskType } from './pluginTypes';
 import { MAIN_IN, MAIN_OUT } from '@/features/workflow-studio/lib/graphHandles';
 
-export type WireRouteKind = 'conditional' | 'parallel' | 'join' | 'join-next';
+export type WireRouteKind =
+    | 'conditional'
+    | 'parallel'
+    | 'join'
+    | 'join-next'
+    | 'loop'
+    | 'loop-done'
+    | 'human';
 
 /** How an unwired routing output is shown on the canvas. */
 export type WireStubBehavior = 'add-task' | 'connect-only';

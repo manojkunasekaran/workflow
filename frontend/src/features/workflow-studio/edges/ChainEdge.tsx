@@ -1,10 +1,12 @@
-import { BaseEdge, getSmoothStepPath, type Edge, type EdgeProps } from '@xyflow/react';
+import { BaseEdge, type EdgeProps } from '@xyflow/react';
 import { EdgeHoverControls } from '@/features/workflow-studio/edges/EdgeHoverControls';
+import { edgeFromEdgeProps } from '@/features/workflow-studio/edges/edgeFromProps';
 import type { StudioEdgeData } from '@/features/workflow-studio/lib/studioEdgeActions';
 import {
     STUDIO_SEQUENCE_STROKE,
     STUDIO_SEQUENCE_WIDTH,
     STUDIO_SEQUENCE_WIDTH_SELECTED,
+    getStudioEdgePath,
 } from '@/features/workflow-studio/edges/studioEdgeTheme';
 
 export function ChainEdge(props: EdgeProps) {
@@ -18,11 +20,12 @@ export function ChainEdge(props: EdgeProps) {
         targetPosition,
         data,
         selected,
+        markerEnd,
     } = props;
 
     const edgeData = data as StudioEdgeData | undefined;
     const isStub = edgeData?.studioActionKind === 'stub';
-    const [edgePath, labelX, labelY] = getSmoothStepPath({
+    const [edgePath, labelX, labelY] = getStudioEdgePath({
         sourceX,
         sourceY,
         targetX,
@@ -31,7 +34,7 @@ export function ChainEdge(props: EdgeProps) {
         targetPosition,
     });
 
-    const edge = props as Edge;
+    const edge = edgeFromEdgeProps(props);
 
     return (
         <>
@@ -39,6 +42,7 @@ export function ChainEdge(props: EdgeProps) {
                 id={id}
                 path={edgePath}
                 interactionWidth={20}
+                markerEnd={isStub ? undefined : markerEnd}
                 style={{
                     stroke: STUDIO_SEQUENCE_STROKE,
                     strokeWidth: selected ? STUDIO_SEQUENCE_WIDTH_SELECTED : STUDIO_SEQUENCE_WIDTH,

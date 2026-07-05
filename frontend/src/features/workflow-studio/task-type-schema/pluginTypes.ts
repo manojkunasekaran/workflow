@@ -26,6 +26,8 @@ export interface TaskTypePlugin {
     type: StudioTaskType;
     label: string;
     icon: LucideIcon;
+    /** Icon tile background on the canvas (n8n-style). */
+    accentColor: string;
     defaultTaskId: string;
     fields: TaskFieldSchema[];
     /** Type-specific validation — mutate `errors` in place. */

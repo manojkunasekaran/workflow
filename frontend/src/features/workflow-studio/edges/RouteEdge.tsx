@@ -1,12 +1,14 @@
-import { BaseEdge, EdgeLabelRenderer, getSmoothStepPath, type Edge, type EdgeProps } from '@xyflow/react';
+import { BaseEdge, EdgeLabelRenderer, type EdgeProps } from '@xyflow/react';
 import { EdgeHoverControls } from '@/features/workflow-studio/edges/EdgeHoverControls';
+import { edgeFromEdgeProps } from '@/features/workflow-studio/edges/edgeFromProps';
 import type { StudioEdgeData } from '@/features/workflow-studio/lib/studioEdgeActions';
 import {
-    STUDIO_FORK_STROKE,
-    STUDIO_JOIN_NEXT_STROKE,
-    STUDIO_MERGE_STROKE,
+    STUDIO_SEQUENCE_STROKE,
     STUDIO_SEQUENCE_WIDTH,
     STUDIO_SEQUENCE_WIDTH_SELECTED,
+    getStudioEdgePath,
+    isRouteForkKind,
+    routeEdgeLabelAnchor,
 } from '@/features/workflow-studio/edges/studioEdgeTheme';
 
 export function RouteEdge(props: EdgeProps) {
@@ -20,10 +22,11 @@ export function RouteEdge(props: EdgeProps) {
         targetPosition,
         data,
         selected,
+        markerEnd,
     } = props;
 
     const routeData = data as StudioEdgeData | undefined;
-    const [edgePath, labelX, labelY] = getSmoothStepPath({
+    const [edgePath, labelX, labelY] = getStudioEdgePath({
         sourceX,
         sourceY,
         targetX,
@@ -32,24 +35,11 @@ export function RouteEdge(props: EdgeProps) {
         targetPosition,
     });
 
-    const isFork = routeData?.routeKind === 'parallel';
     const isMerge = routeData?.routeKind === 'join';
-    const isJoinNext = routeData?.routeKind === 'join-next';
+    const showEdgeLabel = isRouteForkKind(routeData?.routeKind) && Boolean(routeData?.label);
+    const labelAnchor = routeEdgeLabelAnchor(sourceX, sourceY, sourcePosition);
 
-    const stroke = isFork
-        ? STUDIO_FORK_STROKE
-        : isMerge
-          ? STUDIO_MERGE_STROKE
-          : isJoinNext
-            ? STUDIO_JOIN_NEXT_STROKE
-            : '#94a3b8';
-
-    const showEdgeLabel =
-        Boolean(routeData?.label) &&
-        routeData?.routeKind !== 'join' &&
-        routeData?.routeKind !== 'join-next';
-
-    const edge = props as Edge;
+    const edge = edgeFromEdgeProps(props);
 
     return (
         <>
@@ -57,8 +47,9 @@ export function RouteEdge(props: EdgeProps) {
                 id={id}
                 path={edgePath}
                 interactionWidth={20}
+                markerEnd={markerEnd}
                 style={{
-                    stroke,
+                    stroke: STUDIO_SEQUENCE_STROKE,
                     strokeWidth: selected ? STUDIO_SEQUENCE_WIDTH_SELECTED : STUDIO_SEQUENCE_WIDTH,
                     strokeDasharray: isMerge ? '6 4' : undefined,
                 }}
@@ -75,12 +66,12 @@ export function RouteEdge(props: EdgeProps) {
                     <div
                         style={{
                             position: 'absolute',
-                            transform: `translate(-50%, -50%) translate(${labelX}px,${labelY - 14}px)`,
+                            transform: `${labelAnchor.transform} translate(${labelAnchor.x}px,${labelAnchor.y}px)`,
                             pointerEvents: 'none',
                         }}
-                        className="rounded border border-white/80 bg-white px-1.5 py-0.5 text-[10px] font-semibold shadow-sm"
+                        className="rounded border border-white/80 bg-white px-1.5 py-0.5 text-[10px] font-semibold text-[#64748b] shadow-sm"
                     >
-                        <span style={{ color: stroke }}>{routeData.label}</span>
+                        {routeData.label}
                     </div>
                 </EdgeLabelRenderer>
             )}

@@ -285,9 +285,9 @@ export const SAMPLE_DATA_TRANSFORM_WORKFLOW = {
  */
 export const ALL_SAMPLES = [
     { name: "HTTP + Conditional", workflow: SAMPLE_HTTP_CONDITIONAL_WORKFLOW },
-    { name: "Array Iterator", workflow: SAMPLE_ARRAY_ITERATOR_WORKFLOW },
-    { name: "Object Iterator", workflow: SAMPLE_OBJECT_ITERATOR_WORKFLOW },
-    { name: "Number Iterator (Retry)", workflow: SAMPLE_NUMBER_ITERATOR_WORKFLOW },
+    { name: "Array Loop", workflow: SAMPLE_ARRAY_ITERATOR_WORKFLOW },
+    { name: "Object Loop", workflow: SAMPLE_OBJECT_ITERATOR_WORKFLOW },
+    { name: "Number Loop (Retry)", workflow: SAMPLE_NUMBER_ITERATOR_WORKFLOW },
     { name: "Simple Script Output", workflow: SAMPLE_SCRIPT_BASIC_WORKFLOW },
     { name: "Script using HTTP & Vars", workflow: SAMPLE_SCRIPT_CONTEXT_WORKFLOW },
     { name: "JSONPath Data Transform", workflow: SAMPLE_DATA_TRANSFORM_WORKFLOW }

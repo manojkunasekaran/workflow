@@ -26,4 +26,10 @@ public class IteratorTaskParameters implements TaskParameters {
      * Sub-tasks to execute for each iteration.
      */
     private List<WorkflowTask> actions;
+
+    /**
+     * Task to run after all iterations complete (canvas "Done" wire).
+     * Null or blank means no Done path.
+     */
+    private String doneNextTaskId;
 }

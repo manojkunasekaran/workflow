@@ -6,12 +6,15 @@ import {
 } from '../humanTask';
 import { defineTaskPlugin } from '../pluginTypes';
 import type { HumanActionRow } from '../humanTask';
+import { HUMAN_TASK_WIRING } from './wiring';
 
 export const humanTaskPlugin = defineTaskPlugin({
     type: 'HUMAN_TASK',
     label: 'Human Approval',
     icon: UserCheck,
+    accentColor: '#db2777',
     defaultTaskId: 'human_task',
+    wiring: HUMAN_TASK_WIRING,
     fields: [
         {
             key: 'title',
@@ -36,17 +39,16 @@ export const humanTaskPlugin = defineTaskPlugin({
         },
         {
             key: 'approvedNextTaskId',
-            label: 'Approved next task',
-            type: 'taskRef',
-            excludeSelf: true,
-            description: 'Defaults to next task in chain if empty.',
+            label: 'Approved path',
+            type: 'wiredRef',
+            description: 'Wire from the Approved handle on the canvas.',
         },
         {
             key: 'rejectedNextTaskId',
-            label: 'Rejected next task',
-            type: 'taskRef',
-            excludeSelf: true,
-            description: 'Fails workflow if empty when rejected.',
+            label: 'Rejected path',
+            type: 'wiredRef',
+            description:
+                'Wire from the Rejected handle on the canvas. If empty, rejection fails the workflow.',
         },
         {
             key: 'actions',
@@ -54,6 +56,7 @@ export const humanTaskPlugin = defineTaskPlugin({
             type: 'humanActionList',
             required: true,
             defaultValue: defaultHumanActions(),
+            description: 'Buttons shown to the assignee. Routing uses the Approved/Rejected canvas wires.',
         },
         {
             key: 'formSchema',
@@ -75,10 +78,15 @@ export const humanTaskPlugin = defineTaskPlugin({
     },
     preview(params) {
         const title = String(params.title ?? 'Human task');
-        const actionCount = Array.isArray(params.actions) ? params.actions.length : 0;
+        const approved = String(params.approvedNextTaskId ?? '').trim();
+        const rejected = String(params.rejectedNextTaskId ?? '').trim();
+        const routing = [
+            approved ? `approved → ${approved}` : 'approved unwired',
+            rejected ? `rejected → ${rejected}` : 'reject fails',
+        ].join(' · ');
         return {
             primary: title,
-            secondary: actionCount === 1 ? '1 action' : `${actionCount} actions`,
+            secondary: routing,
         };
     },
 });

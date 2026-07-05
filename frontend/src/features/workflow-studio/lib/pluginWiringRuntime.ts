@@ -32,6 +32,9 @@ import { getTaskNodes, type StudioCanvasNode } from '@/features/workflow-studio/
 import { injectParameterType } from '@/features/workflow-studio/task-type-schema/utils';
 import { handleTopPercent, resolveOutputHandleTop } from '@/features/workflow-studio/constants/taskNodeLayout';
 import { isStubEdgeId } from '@/features/workflow-studio/lib/branchAddStubs';
+import { ITERATOR_NESTED_TYPES } from '@/features/workflow-studio/task-type-schema/iteratorTask';
+import { ITER_LOOP_OUT } from '@/features/workflow-studio/lib/graphHandles';
+import { studioRouteMarkerEnd } from '@/features/workflow-studio/edges/studioEdgeTheme';
 import {
     findBranchTaskForChainTask,
     readBranchEndTaskId,
@@ -47,6 +50,8 @@ export type { WireGraphContext };
 export type RouteEdgeData = {
     label?: string;
     routeKind: WireRouteKind;
+    /** Matches the source handle color from plugin wiring. */
+    strokeColor?: string;
 };
 
 function workflowContextFromNodes(nodes: StudioCanvasNode[]): WireGraphContext {
@@ -89,8 +94,6 @@ export type RoutingEndpoint = {
 
 export function listRoutingEndpoints(data: TaskNodeData): RoutingEndpoint[] {
     const wiring = getWiring(data.type);
-    if (hasMainFlowOut(wiring)) return [];
-
     const endpoints: RoutingEndpoint[] = [];
 
     for (const output of wiring.outputs) {
@@ -308,7 +311,7 @@ function writeTargetId(
     if (def.kind === 'param') {
         return injectParameterType(taskType, {
             ...parameters,
-            [def.paramKey]: targetTaskId,
+            [def.paramKey]: targetTaskId ?? '',
         });
     }
     const rows = listRows(parameters, def.listParam);
@@ -398,7 +401,8 @@ function makeRouteEdge(
         targetHandle,
         type: 'route',
         className: 'studio-edge',
-        animated: data.routeKind === 'parallel',
+        animated: false,
+        markerEnd: studioRouteMarkerEnd(data.routeKind),
         data,
     };
 }
@@ -493,14 +497,33 @@ export function buildJoinConvergeEdges(nodes: StudioCanvasNode[]): Edge[] {
 }
 
 export function mergeDisplayEdges(chainEdges: Edge[], nodes: StudioCanvasNode[]): Edge[] {
-    const spineEdges = chainEdges.filter(
-        (edge) => !isRouteEdgeId(edge.id) && !isStubEdgeId(edge.id),
+    const routeEdges = buildRouteEdgesFromNodes(nodes);
+    const routeTargetsBySource = new Map<string, Set<string>>();
+    for (const edge of routeEdges) {
+        if (!edge.target) continue;
+        const targets = routeTargetsBySource.get(edge.source) ?? new Set<string>();
+        targets.add(edge.target);
+        routeTargetsBySource.set(edge.source, targets);
+    }
+
+    const types = new Map(
+        getTaskNodes(nodes).map((node) => [node.id, (node.data as TaskNodeData).type]),
     );
-    return [
-        ...spineEdges,
-        ...buildRouteEdgesFromNodes(nodes),
-        ...buildJoinConvergeEdges(nodes),
-    ];
+
+    const spineEdges = chainEdges.filter((edge) => {
+        if (isRouteEdgeId(edge.id) || isStubEdgeId(edge.id)) return false;
+        if (edge.target?.startsWith('__')) return false;
+
+        const sourceType = types.get(edge.source ?? '');
+        if (sourceType && terminatesMainSpine(sourceType)) return false;
+
+        const routeTargets = routeTargetsBySource.get(edge.source ?? '');
+        if (routeTargets?.has(edge.target ?? '')) return false;
+
+        return true;
+    });
+
+    return [...spineEdges, ...routeEdges, ...buildJoinConvergeEdges(nodes)];
 }
 
 function updateTaskNode(
@@ -572,6 +595,13 @@ export function applyGraphConnection(
 
     const sourceData = sourceNode.data as TaskNodeData;
     const targetData = targetNode.data as TaskNodeData;
+
+    if (
+        sourceHandle === ITER_LOOP_OUT &&
+        !ITERATOR_NESTED_TYPES.includes(targetData.type as (typeof ITERATOR_NESTED_TYPES)[number])
+    ) {
+        return null;
+    }
 
     if (targetData.type === 'JOIN' && isJoinMergeInput(targetHandle) && sourceHandle === MAIN_OUT) {
         const context = workflowContextFromNodes(nodes);

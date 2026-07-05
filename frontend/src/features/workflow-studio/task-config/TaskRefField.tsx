@@ -33,7 +33,7 @@ export function TaskRefField({
                 id={id}
                 value={value}
                 onChange={(e) => onChange(e.target.value || null)}
-                className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm font-mono shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             >
                 {!required && <option value="">{emptyOptionLabel}</option>}
                 {candidates.map((task) => (

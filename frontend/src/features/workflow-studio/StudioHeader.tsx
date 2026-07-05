@@ -1,7 +1,12 @@
-import { ArrowLeft, History, MoreVertical, Play, Save } from 'lucide-react';
+import { ArrowLeft, History, MoreVertical, Play } from 'lucide-react';
 import { PageHeader } from '@/layouts/PageHeader';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import {
+    STUDIO_GHOST_ICON_BUTTON_CLASS,
+    STUDIO_INPUT_FOCUS_CLASS,
+    STUDIO_OUTLINE_BUTTON_CLASS,
+} from '@/features/workflow-studio/constants/studioUi';
 
 export type StudioMode = 'design' | 'inspect';
 
@@ -38,21 +43,33 @@ export function StudioHeader({
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 shrink-0"
+                        className={cn('h-8 w-8 shrink-0', STUDIO_GHOST_ICON_BUTTON_CLASS)}
                         onClick={onBack}
                         aria-label="Back to workflows"
                     >
                         <ArrowLeft className="h-4 w-4" />
                     </Button>
-                    <input
-                        value={workflowName}
-                        onChange={(e) => onWorkflowNameChange(e.target.value)}
-                        className="min-w-0 border-0 bg-transparent p-0 text-sm font-semibold text-foreground outline-none focus:ring-0"
-                        aria-label="Workflow name"
-                    />
-                    <span className="shrink-0 rounded border border-border bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                        {isDirty ? 'Draft' : 'Saved'}
-                    </span>
+                    <div className="flex min-w-0 items-center gap-2">
+                        <input
+                            value={workflowName}
+                            onChange={(e) => onWorkflowNameChange(e.target.value)}
+                            placeholder="Workflow name"
+                            size={Math.min(Math.max(workflowName.length || 15, 12), 40)}
+                            className={cn(
+                                'w-auto min-w-[10ch] max-w-[22rem] rounded-md border border-transparent bg-transparent px-2.5 py-1.5',
+                                'text-sm font-semibold text-foreground outline-none transition-colors [field-sizing:content]',
+                                'placeholder:font-normal placeholder:text-muted-foreground',
+                                'hover:border-border hover:bg-muted/45',
+                                STUDIO_INPUT_FOCUS_CLASS,
+                            )}
+                            aria-label="Workflow name"
+                        />
+                        {isDirty ? (
+                            <span className="shrink-0 rounded-md border border-border/70 bg-muted/60 px-2 py-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                                Draft
+                            </span>
+                        ) : null}
+                    </div>
                 </div>
             }
             actions={
@@ -89,18 +106,18 @@ export function StudioHeader({
                         size="sm"
                         onClick={onSave}
                         disabled={isSaving || !isDirty}
+                        className={cn(STUDIO_OUTLINE_BUTTON_CLASS)}
                     >
-                        <Save className="h-4 w-4" />
                         {isSaving ? 'Saving…' : 'Save'}
                     </Button>
                     <Button size="sm" onClick={onRun} disabled={isRunning || mode === 'inspect'}>
                         <Play className="h-4 w-4 fill-current" />
                         {isRunning ? 'Running…' : 'Run Workflow'}
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" disabled>
+                    <Button variant="ghost" size="icon" className={cn('h-8 w-8', STUDIO_GHOST_ICON_BUTTON_CLASS)} disabled>
                         <History className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" disabled>
+                    <Button variant="ghost" size="icon" className={cn('h-8 w-8', STUDIO_GHOST_ICON_BUTTON_CLASS)} disabled>
                         <MoreVertical className="h-4 w-4" />
                     </Button>
                 </>

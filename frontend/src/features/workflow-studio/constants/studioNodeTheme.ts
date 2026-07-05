@@ -1,0 +1,21 @@
+import type { StudioTaskType } from '@/features/workflow-studio/task-type-schema/pluginTypes';
+
+/** Per-type icon tile colors (n8n-style, light canvas). */
+export const TASK_ACCENT_COLORS: Record<StudioTaskType, string> = {
+    HTTP_TASK: '#7c3aed',
+    SCRIPT_TASK: '#ea580c',
+    CONDITIONAL: '#9333ea',
+    ITERATOR_TASK: '#0284c7',
+    HUMAN_TASK: '#db2777',
+    BRANCH: '#d97706',
+    JOIN: '#059669',
+    WAIT: '#2563eb',
+    DATA_TRANSFORM: '#7c3aed',
+};
+
+export const TRIGGER_ACCENT_COLOR = '#0d9488';
+export const DEFAULT_TASK_ACCENT_COLOR = '#6366f1';
+
+export function resolveTaskAccentColor(type: string): string {
+    return TASK_ACCENT_COLORS[type as StudioTaskType] ?? DEFAULT_TASK_ACCENT_COLOR;
+}

@@ -61,5 +61,12 @@ public class WorkflowDefinition extends Auditable {
     public static class NodePosition {
         private double x;
         private double y;
+        /** Studio-only display label; engine ignores. */
+        private String displayName;
+        /**
+         * Studio-only Loop Done wire ({@code ""} = explicitly unwired).
+         * Mirrors {@code ITERATOR_TASK.doneNextTaskId} so canvas routing survives API round-trips.
+         */
+        private String studioDoneWire;
     }
 }

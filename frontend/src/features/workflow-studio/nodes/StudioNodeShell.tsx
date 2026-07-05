@@ -1,0 +1,158 @@
+import type { LucideIcon } from 'lucide-react';
+import { cloneElement, isValidElement, useEffect, useRef, useState, type ReactNode } from 'react';
+import { TippyHint } from '@/components/ui/tippy-hint';
+import { cn } from '@/lib/utils';
+import { N8N_NODE_LAYOUT } from '@/features/workflow-studio/constants/taskNodeLayout';
+
+const HOVER_HIDE_DELAY_MS = 150;
+
+export type StudioNodeShellProps = {
+    width?: number;
+    iconBoxHeight: number;
+    totalHeight: number;
+    accentColor: string;
+    icon: LucideIcon;
+    label: string;
+    iconClassName?: string;
+    selected?: boolean;
+    invalid?: boolean;
+    errorMessage?: string;
+    children?: ReactNode;
+    hoverActions?: ReactNode;
+};
+
+function tileOffset() {
+    // Pin the tile to the top — extra column height is for handles below the card, not padding.
+    return {
+        top: 0,
+        transform: 'translateX(-50%)',
+    };
+}
+
+function labelOffset(iconBoxHeight: number, iconSize: number) {
+    const belowTile = Math.max(0, iconBoxHeight - iconSize);
+    return N8N_NODE_LAYOUT.labelGap - belowTile;
+}
+
+export function StudioNodeShell({
+    width = N8N_NODE_LAYOUT.width,
+    iconBoxHeight,
+    totalHeight,
+    accentColor,
+    icon: Icon,
+    label,
+    iconClassName,
+    selected = false,
+    invalid = false,
+    errorMessage,
+    children,
+    hoverActions,
+}: StudioNodeShellProps) {
+    const { iconSize, iconGlyphSize } = N8N_NODE_LAYOUT;
+    const [hovered, setHovered] = useState(false);
+    const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const tilePosition = tileOffset();
+    const labelMarginTop = labelOffset(iconBoxHeight, iconSize);
+
+    const setNodeHover = (active: boolean) => {
+        if (hideTimerRef.current) {
+            clearTimeout(hideTimerRef.current);
+            hideTimerRef.current = null;
+        }
+        if (active) {
+            setHovered(true);
+            return;
+        }
+        hideTimerRef.current = setTimeout(() => setHovered(false), HOVER_HIDE_DELAY_MS);
+    };
+
+    useEffect(
+        () => () => {
+            if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+        },
+        [],
+    );
+
+    const showHoverChrome = hovered || selected;
+
+    const resolvedHoverActions =
+        hoverActions && isValidElement<{ visible?: boolean; onHoverChange?: (active: boolean) => void }>(hoverActions)
+            ? cloneElement(hoverActions, {
+                  visible: showHoverChrome,
+                  onHoverChange: setNodeHover,
+              })
+            : hoverActions;
+
+    return (
+        <div
+            className="relative flex flex-col items-center overflow-visible"
+            style={{ width, minHeight: totalHeight }}
+        >
+            {/* Full-node drag surface — sits behind handles; no nodrag so React Flow can move the node. */}
+            <div className="absolute inset-0 z-0" aria-hidden />
+            {/* Handles align to the icon tile — not the wider label column. */}
+            <div
+                className="relative z-[1] shrink-0"
+                style={{ width: iconSize, height: iconBoxHeight }}
+            >
+                {resolvedHoverActions}
+                {children}
+                <div
+                    className={cn(
+                        'pointer-events-auto absolute left-1/2 z-[2] flex -translate-x-1/2 items-center justify-center rounded-[16px] border-2 border-[#94a3b8] bg-white shadow-sm transition-[background-color,box-shadow] duration-150',
+                        showHoverChrome && 'bg-[#f1f5f9] shadow-[0_8px_24px_rgba(15,23,42,0.14)]',
+                        invalid
+                            ? 'ring-2 ring-destructive ring-offset-2 ring-offset-[#f8fafc]'
+                            : selected
+                              ? 'ring-2 ring-offset-2 ring-offset-[#f8fafc]'
+                              : '',
+                    )}
+                    style={{
+                        width: iconSize,
+                        height: iconSize,
+                        top: tilePosition.top,
+                        transform: tilePosition.transform,
+                        ...(selected && !invalid
+                            ? ({
+                                  borderColor: accentColor,
+                                  ['--tw-ring-color' as string]: accentColor,
+                              } as React.CSSProperties)
+                            : {}),
+                    }}
+                    onMouseEnter={() => setNodeHover(true)}
+                    onMouseLeave={() => setNodeHover(false)}
+                    aria-hidden
+                >
+                    <Icon
+                        className={cn('text-current', iconClassName)}
+                        style={{ color: accentColor, width: iconGlyphSize, height: iconGlyphSize }}
+                        strokeWidth={2.25}
+                    />
+                </div>
+            </div>
+
+            <TippyHint content={label}>
+                <p
+                    className="relative z-[1] line-clamp-2 w-full px-0.5 text-center text-[11px] font-normal leading-[14px] text-[#64748b]"
+                    style={{ marginTop: labelMarginTop }}
+                    onMouseEnter={() => setNodeHover(true)}
+                    onMouseLeave={() => setNodeHover(false)}
+                >
+                    {label}
+                </p>
+            </TippyHint>
+
+            {errorMessage ? (
+                <TippyHint content={errorMessage}>
+                    <p
+                        className="relative z-[1] mt-0.5 w-full truncate px-0.5 text-center text-[10px] font-medium leading-tight text-destructive"
+                        onMouseEnter={() => setNodeHover(true)}
+                        onMouseLeave={() => setNodeHover(false)}
+                    >
+                        {errorMessage}
+                    </p>
+                </TippyHint>
+            ) : null}
+        </div>
+    );
+}

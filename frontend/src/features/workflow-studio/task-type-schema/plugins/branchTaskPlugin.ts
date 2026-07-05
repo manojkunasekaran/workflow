@@ -83,6 +83,7 @@ export const branchTaskPlugin = defineTaskPlugin({
     type: 'BRANCH',
     label: 'Split into branches',
     icon: Split,
+    accentColor: '#d97706',
     defaultTaskId: 'branch_task',
     wiring: BRANCH_TASK_WIRING,
     fields: [

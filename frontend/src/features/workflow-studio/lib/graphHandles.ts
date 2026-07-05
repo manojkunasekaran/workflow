@@ -13,9 +13,16 @@ export const parBranchHandle = (index: number) => `par-${index}` as const;
 export const JOIN_MERGE_IN = 'join-merge';
 export const JOIN_OUT = 'join-out';
 
+/** Human approval outputs — approved / rejected paths. */
+export const HUMAN_APPROVED_OUT = 'human-approved';
+export const HUMAN_REJECTED_OUT = 'human-rejected';
+
 export function isJoinMergeInput(handleId: string): boolean {
     return handleId === JOIN_MERGE_IN;
 }
+
+export const ITER_LOOP_OUT = 'iter-loop';
+export const LOOP_DONE_OUT = 'loop-done';
 
 export const ROUTE_EDGE_PREFIX = 'route:';
 export const BRANCH_CHAIN_PREFIX = 'branch-chain:';

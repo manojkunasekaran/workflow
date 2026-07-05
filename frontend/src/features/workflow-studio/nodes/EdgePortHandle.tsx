@@ -1,10 +1,20 @@
 import { Handle, Position } from '@xyflow/react';
 import type { MouseEvent } from 'react';
 import { Plus } from 'lucide-react';
+import { TippyHint } from '@/components/ui/tippy-hint';
 import { cn } from '@/lib/utils';
-import { STUDIO_HANDLE_SIZE } from '@/features/workflow-studio/nodes/StudioHandle';
+import {
+    STUDIO_EDGE_CONTROL_BUTTON_CLASS,
+    STUDIO_EDGE_CONTROL_ICON_CLASS,
+} from '@/features/workflow-studio/edges/studioEdgeTheme';
+import {
+    STUDIO_HANDLE_BORDER_OVERLAP,
+    STUDIO_HANDLE_COLOR,
+    STUDIO_HANDLE_SIZE,
+} from '@/features/workflow-studio/nodes/StudioHandle';
 
 const HANDLE_RADIUS = STUDIO_HANDLE_SIZE / 2;
+const HANDLE_CENTER_NUDGE = HANDLE_RADIUS - STUDIO_HANDLE_BORDER_OVERLAP;
 
 /**
  * Handle centered on the node border; label sits outside the card (n8n-style).
@@ -17,7 +27,6 @@ export function EdgePortHandle({
     type,
     side,
     top = '50%',
-    color = '#94a3b8',
     label,
     onAddClick,
     addTitle = 'Add task',
@@ -26,6 +35,7 @@ export function EdgePortHandle({
     type: 'source' | 'target';
     side: 'left' | 'right';
     top?: string | number;
+    /** @deprecated Handle color is unified — kept for call-site compatibility. */
     color?: string;
     label?: string;
     onAddClick?: (event: MouseEvent) => void;
@@ -49,36 +59,42 @@ export function EdgePortHandle({
                 type={type}
                 position={isRight ? Position.Right : Position.Left}
                 id={id}
-                className="pointer-events-auto !relative !left-auto !right-auto !top-auto !border-[2.5px] !bg-white !shadow-sm"
+                className="pointer-events-auto !relative !left-auto !right-auto !top-auto !border-0"
                 style={{
                     width: STUDIO_HANDLE_SIZE,
                     height: STUDIO_HANDLE_SIZE,
-                    borderColor: color,
+                    backgroundColor: STUDIO_HANDLE_COLOR,
                     position: 'relative',
-                    transform: isRight ? `translateX(-${HANDLE_RADIUS}px)` : `translateX(${HANDLE_RADIUS}px)`,
+                    transform: isRight
+                        ? `translateX(-${HANDLE_CENTER_NUDGE}px)`
+                        : `translateX(${HANDLE_CENTER_NUDGE}px)`,
                 }}
             />
             {onAddClick ? (
                 <>
-                    <span
-                        className="pointer-events-none h-0 w-6 border-t-2 border-dashed"
-                        style={{ borderColor: color }}
-                        aria-hidden
-                    />
-                    <button
-                        type="button"
-                        title={addTitle}
-                        aria-label={addTitle}
-                        onClick={onAddClick}
-                        className="nodrag nopan pointer-events-auto flex h-6 w-6 items-center justify-center rounded-md border-2 border-dashed border-[#c6c6cd] bg-white text-[#0058be] shadow-sm transition-colors hover:border-[#0058be] hover:bg-[#eff4ff]"
-                    >
-                        <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
-                    </button>
                     {label ? (
-                        <span className="pointer-events-none ml-1.5 whitespace-nowrap text-[11px] font-medium text-[#64748b]">
+                        <span className="pointer-events-none mr-1 whitespace-nowrap text-[11px] font-medium text-[#64748b]">
                             {label}
                         </span>
                     ) : null}
+                    <span
+                        className="pointer-events-none h-0 w-5 border-t-2 border-dashed border-[#94a3b8] opacity-80"
+                        aria-hidden
+                    />
+                    <TippyHint content={addTitle}>
+                        <button
+                            type="button"
+                            aria-label={addTitle}
+                            onPointerDown={(event) => event.stopPropagation()}
+                            onClick={(event) => {
+                                event.stopPropagation();
+                                onAddClick?.(event);
+                            }}
+                            className={cn('nodrag nopan pointer-events-auto', STUDIO_EDGE_CONTROL_BUTTON_CLASS)}
+                        >
+                            <Plus className={STUDIO_EDGE_CONTROL_ICON_CLASS} strokeWidth={2.5} />
+                        </button>
+                    </TippyHint>
                 </>
             ) : label ? (
                 <span

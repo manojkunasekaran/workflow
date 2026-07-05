@@ -2,9 +2,8 @@ import { Trash2 } from 'lucide-react';
 import { BranchListField } from '@/features/workflow-studio/task-config/BranchListField';
 import { ConditionalBranchListField } from '@/features/workflow-studio/task-config/ConditionalBranchListField';
 import { HumanActionListField } from '@/features/workflow-studio/task-config/HumanActionListField';
-import { IteratorActionListField } from '@/features/workflow-studio/task-config/IteratorActionListField';
 import { TaskRefField } from '@/features/workflow-studio/task-config/TaskRefField';
-import { filterTaskPickCandidates } from '@/features/workflow-studio/task-config/taskRefUtils';
+import { filterTaskPickCandidates, taskLabelById } from '@/features/workflow-studio/task-config/taskRefUtils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -16,6 +15,10 @@ import {
     rowsToKeyValue,
     writeFieldValue,
 } from '@/features/workflow-studio/task-type-schema/utils';
+import {
+    STUDIO_GHOST_DESTRUCTIVE_CLASS,
+    STUDIO_TEXT_LINK_INLINE_CLASS,
+} from '@/features/workflow-studio/constants/studioUi';
 import { cn } from '@/lib/utils';
 
 interface TaskFieldRendererProps {
@@ -106,17 +109,21 @@ export function TaskFieldRenderer({
 
     if (field.type === 'wiredRef') {
         const wired = String(value ?? '').trim();
+        const wiredLabel = wired ? taskLabelById(workflowTasks, wired) : '';
         return (
             <div className="space-y-1.5">
                 {label}
                 <p
                     className={
                         wired
-                            ? 'rounded-md border border-emerald-500/30 bg-emerald-50 px-3 py-2 font-mono text-xs text-emerald-800'
+                            ? 'rounded-md border border-sky-500/30 bg-sky-50 px-3 py-2 text-xs text-sky-900'
                             : 'rounded-md border border-dashed border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground'
                     }
                 >
-                    {wired ? `→ ${wired}` : 'Not connected — drag from an output handle on the canvas'}
+                    {wired
+                        ? `Connected to “${wiredLabel}” — add more steps with + on the canvas`
+                        : (field.description ??
+                          'Not connected yet — wire from an output handle on the canvas')}
                 </p>
                 {field.description && (
                     <p className="text-[11px] text-muted-foreground">{field.description}</p>
@@ -170,6 +177,7 @@ export function TaskFieldRenderer({
                 value={value}
                 onChange={(branches) => update(branches)}
                 errors={fieldErrors}
+                workflowTasks={workflowTasks}
             />
         );
     }
@@ -177,20 +185,6 @@ export function TaskFieldRenderer({
     if (field.type === 'humanActionList') {
         return (
             <HumanActionListField
-                fieldKey={field.key}
-                label={field.label}
-                value={value}
-                onChange={(actions) => update(actions)}
-                errors={fieldErrors}
-                workflowTasks={workflowTasks}
-                currentTaskId={currentTaskId}
-            />
-        );
-    }
-
-    if (field.type === 'iteratorActionList') {
-        return (
-            <IteratorActionListField
                 fieldKey={field.key}
                 label={field.label}
                 description={field.description}
@@ -252,7 +246,7 @@ export function TaskFieldRenderer({
                     <button
                         type="button"
                         onClick={() => update(rowsToKeyValue([...rows, { key: '', value: '' }]))}
-                        className="text-xs font-semibold text-primary hover:underline"
+                        className={STUDIO_TEXT_LINK_INLINE_CLASS}
                     >
                         + Add row
                     </button>
@@ -284,7 +278,7 @@ export function TaskFieldRenderer({
                                 type="button"
                                 variant="ghost"
                                 size="icon"
-                                className="shrink-0 text-muted-foreground hover:text-destructive"
+                                className={cn('shrink-0', STUDIO_GHOST_DESTRUCTIVE_CLASS)}
                                 onClick={() => update(rowsToKeyValue(rows.filter((_, i) => i !== index)))}
                                 aria-label="Remove row"
                             >
