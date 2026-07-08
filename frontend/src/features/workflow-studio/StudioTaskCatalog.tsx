@@ -1,5 +1,5 @@
 import { ChevronRight, GripVertical, X } from 'lucide-react';
-import { TippyHint } from '@/components/ui/tippy-hint';
+import { Hint } from '@/components/ui/hint';
 import { STUDIO_TASK_DRAG_MIME } from '@/features/workflow-studio/constants/studioDrag';
 import { TASK_PALETTE, type StudioTaskType } from '@/features/workflow-studio/constants/taskPalette';
 import { cn } from '@/lib/utils';
@@ -112,7 +112,7 @@ export function StudioTaskCatalog({
                     </ul>
                 </>
             ) : (
-                <TippyHint content="Task catalog" placement="left">
+                <Hint content="Task catalog" side="left">
                     <button
                         type="button"
                         onClick={() => {
@@ -131,7 +131,7 @@ export function StudioTaskCatalog({
                             Tasks
                         </span>
                     </button>
-                </TippyHint>
+                </Hint>
             )}
         </div>
     );

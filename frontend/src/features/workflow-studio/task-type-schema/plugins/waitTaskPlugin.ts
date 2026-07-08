@@ -1,4 +1,5 @@
 import { Timer } from 'lucide-react';
+import { formatWaitPreview } from '@/features/workflow-studio/task-config/waitDuration';
 import { defineTaskPlugin } from '../pluginTypes';
 
 export const waitTaskPlugin = defineTaskPlugin({
@@ -10,16 +11,20 @@ export const waitTaskPlugin = defineTaskPlugin({
     fields: [
         {
             key: 'duration',
-            label: 'Duration (ms)',
-            type: 'text',
+            label: 'Duration',
+            type: 'waitDuration',
             required: true,
-            mono: true,
-            defaultValue: '1000',
-            placeholder: '1000 or {{$variables.delay}}',
-            description: 'Milliseconds, or an expression the backend can resolve.',
+            defaultValue: 1_000,
         },
     ],
+    validate(parameters, _context, errors) {
+        const duration = parameters.duration;
+        const ms = typeof duration === 'number' ? duration : Number(duration);
+        if (!Number.isFinite(ms) || ms < 1_000) {
+            errors.duration = 'Enter a duration of at least 1 second';
+        }
+    },
     preview(params) {
-        return { primary: `${params.duration ?? '?'} ms` };
+        return { primary: formatWaitPreview(params.duration) };
     },
 });

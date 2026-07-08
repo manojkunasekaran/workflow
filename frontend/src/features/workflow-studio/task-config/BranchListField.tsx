@@ -1,10 +1,7 @@
 import { Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import type {
-    ParallelBranchRow,
-    TaskParameterErrors,
-} from '@/features/workflow-studio/task-type-schema/types';
+import type { ParallelBranchRow, TaskParameterErrors } from '@/features/workflow-studio/task-type-schema/types';
 import {
     STUDIO_GHOST_DESTRUCTIVE_CLASS,
     STUDIO_TEXT_LINK_CLASS,
@@ -82,7 +79,6 @@ export function BranchListField({
                 {branches.map((branch, index) => {
                     const nameError = errors[`${fieldKey}.${index}.branchName`];
                     const startError = errors[`${fieldKey}.${index}.startTaskId`];
-                    const wired = Boolean(branch.startTaskId.trim());
 
                     return (
                         <div
@@ -126,17 +122,6 @@ export function BranchListField({
                                 )}
                             </div>
 
-                            <p
-                                className={
-                                    wired
-                                        ? 'text-[11px] font-mono text-emerald-700'
-                                        : 'text-[11px] text-muted-foreground'
-                                }
-                            >
-                                {wired
-                                    ? `→ ${branch.startTaskId}`
-                                    : 'Drag from this branch’s output handle on the canvas'}
-                            </p>
                             {startError && (
                                 <p className="text-xs text-destructive">{startError}</p>
                             )}

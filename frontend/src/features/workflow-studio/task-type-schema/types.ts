@@ -18,7 +18,8 @@ export type TaskFieldType =
     | 'conditionalBranchList'
     | 'humanActionList'
     | 'iteratorActionList'
-    | 'wiredRef';
+    | 'wiredRef'
+    | 'waitDuration';
 
 /** One parallel path in a BRANCH task — matches backend ParallelBranch. */
 export interface ParallelBranchRow {

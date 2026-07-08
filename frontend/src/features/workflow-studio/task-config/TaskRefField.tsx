@@ -1,5 +1,6 @@
 import type { TaskPickCandidate } from '@/features/workflow-studio/task-config/taskRefUtils';
 import { formatTaskOptionLabel } from '@/features/workflow-studio/task-config/taskRefUtils';
+import { SimpleSelect } from '@/components/ui/select';
 
 interface TaskRefFieldProps {
     id: string;
@@ -29,19 +30,18 @@ export function TaskRefField({
             <label className="text-xs font-medium text-foreground" htmlFor={id}>
                 {label}
             </label>
-            <select
+            <SimpleSelect
                 id={id}
                 value={value}
-                onChange={(e) => onChange(e.target.value || null)}
-                className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-            >
-                {!required && <option value="">{emptyOptionLabel}</option>}
-                {candidates.map((task) => (
-                    <option key={task.taskId} value={task.taskId}>
-                        {formatTaskOptionLabel(task)}
-                    </option>
-                ))}
-            </select>
+                onValueChange={(next) => onChange(next || null)}
+                options={candidates.map((task) => ({
+                    value: task.taskId,
+                    label: formatTaskOptionLabel(task),
+                }))}
+                allowEmpty={!required}
+                emptyLabel={emptyOptionLabel}
+                placeholder={emptyOptionLabel}
+            />
             {description && <p className="text-[11px] text-muted-foreground">{description}</p>}
             {required && candidates.length === 0 && (
                 <p className="text-[11px] text-amber-700">No matching tasks in this workflow yet.</p>

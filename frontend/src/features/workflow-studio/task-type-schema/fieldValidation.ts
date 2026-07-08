@@ -7,6 +7,7 @@ const COMPOSITE_FIELD_TYPES = new Set([
     'humanActionList',
     'iteratorActionList',
     'wiredRef',
+    'waitDuration',
 ]);
 
 function isEmptyValue(value: unknown): boolean {

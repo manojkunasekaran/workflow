@@ -1,5 +1,5 @@
 import { Settings2, Trash2 } from 'lucide-react';
-import { TippyHint } from '@/components/ui/tippy-hint';
+import { Hint } from '@/components/ui/hint';
 import { cn } from '@/lib/utils';
 import { N8N_NODE_LAYOUT } from '@/features/workflow-studio/constants/taskNodeLayout';
 import {
@@ -35,7 +35,7 @@ export function StudioNodeHoverActions({
         >
             <div className={STUDIO_EDGE_CONTROL_GROUP_CLASS}>
                 {onEdit ? (
-                    <TippyHint content="Configure task">
+                    <Hint content="Configure task">
                         <button
                             type="button"
                             aria-label="Configure task"
@@ -48,10 +48,10 @@ export function StudioNodeHoverActions({
                         >
                             <Settings2 className={STUDIO_EDGE_CONTROL_ICON_CLASS} strokeWidth={2.25} />
                         </button>
-                    </TippyHint>
+                    </Hint>
                 ) : null}
                 {onDelete ? (
-                    <TippyHint content="Delete task">
+                    <Hint content="Delete task">
                         <button
                             type="button"
                             aria-label="Delete task"
@@ -69,7 +69,7 @@ export function StudioNodeHoverActions({
                         >
                             <Trash2 className={STUDIO_EDGE_CONTROL_ICON_CLASS} strokeWidth={2.25} />
                         </button>
-                    </TippyHint>
+                    </Hint>
                 ) : null}
             </div>
             {/* Narrow bridge from buttons down to the tile — not wider than the icon. */}

@@ -2,10 +2,12 @@ import { Trash2 } from 'lucide-react';
 import { BranchListField } from '@/features/workflow-studio/task-config/BranchListField';
 import { ConditionalBranchListField } from '@/features/workflow-studio/task-config/ConditionalBranchListField';
 import { HumanActionListField } from '@/features/workflow-studio/task-config/HumanActionListField';
+import { WaitDurationField } from '@/features/workflow-studio/task-config/WaitDurationField';
 import { TaskRefField } from '@/features/workflow-studio/task-config/TaskRefField';
 import { filterTaskPickCandidates, taskLabelById } from '@/features/workflow-studio/task-config/taskRefUtils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { SimpleSelect } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import type { TaskFieldSchema, TaskParameterErrors } from '@/features/workflow-studio/task-type-schema/types';
 import { useTaskConfigContext } from '@/features/workflow-studio/task-config/TaskConfigContext';
@@ -85,18 +87,16 @@ export function TaskFieldRenderer({
         return (
             <div className="space-y-1.5">
                 {label}
-                <select
+                <SimpleSelect
                     id={field.key}
                     value={current}
-                    onChange={(e) => update(e.target.value)}
-                    className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                >
-                    {field.options.map((option) => (
-                        <option key={option.value} value={option.value}>
-                            {option.label}
-                        </option>
-                    ))}
-                </select>
+                    onValueChange={(next) => update(next)}
+                    options={field.options.map((option) => ({
+                        value: option.value,
+                        label: option.label,
+                    }))}
+                    placeholder="Select…"
+                />
                 {(selectedOption?.description || field.description) && (
                     <p className="text-[11px] text-muted-foreground">
                         {selectedOption?.description ?? field.description}
@@ -104,6 +104,18 @@ export function TaskFieldRenderer({
                 )}
                 {error && <p className="text-xs text-destructive">{error}</p>}
             </div>
+        );
+    }
+
+    if (field.type === 'waitDuration') {
+        return (
+            <WaitDurationField
+                id={field.key}
+                label={label}
+                valueMs={value}
+                onChange={(durationMs) => update(durationMs)}
+                error={error}
+            />
         );
     }
 
@@ -177,7 +189,6 @@ export function TaskFieldRenderer({
                 value={value}
                 onChange={(branches) => update(branches)}
                 errors={fieldErrors}
-                workflowTasks={workflowTasks}
             />
         );
     }

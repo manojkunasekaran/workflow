@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { EdgeLabelRenderer } from '@xyflow/react';
 import { Plus, Trash2 } from 'lucide-react';
-import { TippyHint } from '@/components/ui/tippy-hint';
+import { Hint } from '@/components/ui/hint';
 import { useCanvasActions } from '@/features/workflow-studio/CanvasActionsContext';
 import {
     canDeleteStudioEdge,
@@ -90,7 +90,7 @@ export function EdgeHoverControls({
                 >
                     <div className={STUDIO_EDGE_CONTROL_GROUP_CLASS}>
                         {canInsert ? (
-                            <TippyHint content="Insert task">
+                            <Hint content="Insert task">
                                 <button
                                     type="button"
                                     aria-label="Insert task on this connection"
@@ -103,10 +103,10 @@ export function EdgeHoverControls({
                                 >
                                     <Plus className={STUDIO_EDGE_CONTROL_ICON_CLASS} strokeWidth={2.5} />
                                 </button>
-                            </TippyHint>
+                            </Hint>
                         ) : null}
                         {canDelete ? (
-                            <TippyHint content="Remove connection">
+                            <Hint content="Remove connection">
                                 <button
                                     type="button"
                                     aria-label="Remove this connection"
@@ -124,7 +124,7 @@ export function EdgeHoverControls({
                                 >
                                     <Trash2 className={STUDIO_EDGE_CONTROL_ICON_CLASS} strokeWidth={2.5} />
                                 </button>
-                            </TippyHint>
+                            </Hint>
                         ) : null}
                     </div>
                 </div>

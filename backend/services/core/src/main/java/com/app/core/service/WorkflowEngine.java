@@ -373,7 +373,7 @@ public class WorkflowEngine {
                         parentContext, branchId, branch.getBranchName());
 
                 JoinTaskExecutionData.BranchResult result = executeBranch(
-                        branch, branchId, tasks, execution, branchContext, joinTaskId);
+                        branchParams, branch, branchId, tasks, execution, branchContext, joinTaskId);
 
                 branchResults.put(branch.getBranchName(), result);
             }, executor);
@@ -411,6 +411,7 @@ public class WorkflowEngine {
      * Execute a single branch sequentially until it reaches the join task or ends.
      */
     private JoinTaskExecutionData.BranchResult executeBranch(
+            BranchTaskParameters branchParams,
             BranchTaskParameters.ParallelBranch branch,
             String branchId,
             List<WorkflowTask> tasks,
@@ -463,9 +464,20 @@ public class WorkflowEngine {
                             .build();
                 }
 
-                currentTaskId = result.getNextTaskId() != null
+                if (branch.getEndTaskId() != null && !branch.getEndTaskId().isBlank()
+                        && currentTaskId.equals(branch.getEndTaskId().trim())) {
+                    break;
+                }
+
+                String nextTaskId = result.getNextTaskId() != null
                         ? result.getNextTaskId()
                         : getNextTaskId(tasks, currentTask.getTaskId());
+
+                if (nextTaskId != null && isSiblingBranchStart(branchParams, branch, nextTaskId)) {
+                    break;
+                }
+
+                currentTaskId = nextTaskId;
             }
 
             return JoinTaskExecutionData.BranchResult.builder()
@@ -487,5 +499,24 @@ public class WorkflowEngine {
                     .output(branchOutputs)
                     .build();
         }
+    }
+
+    private boolean isSiblingBranchStart(
+            BranchTaskParameters branchParams,
+            BranchTaskParameters.ParallelBranch currentBranch,
+            String taskId) {
+        if (branchParams.getBranches() == null || taskId == null) {
+            return false;
+        }
+        String currentStart = currentBranch.getStartTaskId();
+        for (BranchTaskParameters.ParallelBranch sibling : branchParams.getBranches()) {
+            if (Objects.equals(sibling.getStartTaskId(), currentStart)) {
+                continue;
+            }
+            if (taskId.equals(sibling.getStartTaskId())) {
+                return true;
+            }
+        }
+        return false;
     }
 }

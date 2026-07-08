@@ -1,6 +1,6 @@
 import type { LucideIcon } from 'lucide-react';
 import { cloneElement, isValidElement, useEffect, useRef, useState, type ReactNode } from 'react';
-import { TippyHint } from '@/components/ui/tippy-hint';
+import { Hint } from '@/components/ui/hint';
 import { cn } from '@/lib/utils';
 import { N8N_NODE_LAYOUT } from '@/features/workflow-studio/constants/taskNodeLayout';
 
@@ -19,6 +19,8 @@ export type StudioNodeShellProps = {
     errorMessage?: string;
     children?: ReactNode;
     hoverActions?: ReactNode;
+    /** Stretch the visible card to the full handle column (parallel splits with 3+ branches). */
+    stretchIconTile?: boolean;
 };
 
 function tileOffset() {
@@ -47,12 +49,16 @@ export function StudioNodeShell({
     errorMessage,
     children,
     hoverActions,
+    stretchIconTile = false,
 }: StudioNodeShellProps) {
     const { iconSize, iconGlyphSize } = N8N_NODE_LAYOUT;
     const [hovered, setHovered] = useState(false);
     const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const tilePosition = tileOffset();
-    const labelMarginTop = labelOffset(iconBoxHeight, iconSize);
+    const tileHeight = stretchIconTile ? iconBoxHeight : iconSize;
+    const labelMarginTop = stretchIconTile
+        ? N8N_NODE_LAYOUT.labelGap
+        : labelOffset(iconBoxHeight, iconSize);
 
     const setNodeHover = (active: boolean) => {
         if (hideTimerRef.current) {
@@ -109,7 +115,7 @@ export function StudioNodeShell({
                     )}
                     style={{
                         width: iconSize,
-                        height: iconSize,
+                        height: tileHeight,
                         top: tilePosition.top,
                         transform: tilePosition.transform,
                         ...(selected && !invalid
@@ -131,7 +137,7 @@ export function StudioNodeShell({
                 </div>
             </div>
 
-            <TippyHint content={label}>
+            <Hint content={label}>
                 <p
                     className="relative z-[1] line-clamp-2 w-full px-0.5 text-center text-[11px] font-normal leading-[14px] text-[#64748b]"
                     style={{ marginTop: labelMarginTop }}
@@ -140,10 +146,10 @@ export function StudioNodeShell({
                 >
                     {label}
                 </p>
-            </TippyHint>
+            </Hint>
 
             {errorMessage ? (
-                <TippyHint content={errorMessage}>
+                <Hint content={errorMessage}>
                     <p
                         className="relative z-[1] mt-0.5 w-full truncate px-0.5 text-center text-[10px] font-medium leading-tight text-destructive"
                         onMouseEnter={() => setNodeHover(true)}
@@ -151,7 +157,7 @@ export function StudioNodeShell({
                     >
                         {errorMessage}
                     </p>
-                </TippyHint>
+                </Hint>
             ) : null}
         </div>
     );

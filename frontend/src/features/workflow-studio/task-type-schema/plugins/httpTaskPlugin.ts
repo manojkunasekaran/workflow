@@ -39,13 +39,6 @@ export const httpTaskPlugin = defineTaskPlugin({
             rows: 6,
             placeholder: '{"key": "value"} or plain text',
         },
-        {
-            key: 'credentialId',
-            label: 'Credential ID',
-            type: 'text',
-            mono: true,
-            placeholder: 'Optional — stored credential reference',
-        },
     ],
     normalize(parameters) {
         const next = { ...parameters };

@@ -83,21 +83,6 @@ export const iteratorTaskPlugin = defineTaskPlugin({
             description:
                 'What to repeat: a list, key/value map, or a number (runs that many times). Use {{ }} only if you need an expression.',
         },
-        {
-            key: 'loopBodyStartTaskId',
-            label: 'Loop path',
-            type: 'wiredRef',
-            description:
-                'Wire from the Loop handle — add HTTP, Wait, Script, or Transform steps that run for every item.',
-        },
-        {
-            key: 'doneNextTaskId',
-            label: 'Done path',
-            type: 'wiredRef',
-            defaultValue: '',
-            description:
-                'Wire from the Done handle — runs once after all iterations finish.',
-        },
     ],
     validate(parameters, context, errors) {
         const loopOver = parameters.loopOver;
@@ -124,7 +109,7 @@ export const iteratorTaskPlugin = defineTaskPlugin({
         const done = String(params.doneNextTaskId ?? '').trim();
         return {
             primary: `Loop over ${loopOver}`,
-            secondary: done ? `done → ${done}` : 'done unwired',
+            secondary: done ? 'Done path connected' : 'Done path not connected',
         };
     },
 });

@@ -3,10 +3,12 @@ import { type NodeProps } from '@xyflow/react';
 import { Code2 } from 'lucide-react';
 import { TASK_TYPE_LABELS, type StudioTaskType } from '@/features/workflow-studio/constants/taskPalette';
 import {
-    resolveOutputHandleTop,
     studioIconBoxHeight,
+    studioParallelBranchIconBoxHeight,
+    studioParallelBranchTaskNodeHeight,
     studioMainInputHandleTop,
     studioTaskNodeHeight,
+    usesParallelBranchStretchedTile,
 } from '@/features/workflow-studio/constants/taskNodeLayout';
 import { resolveTaskAccentColor } from '@/features/workflow-studio/constants/studioNodeTheme';
 import { getTaskTypePlugin } from '@/features/workflow-studio/task-type-schema/registry';
@@ -82,16 +84,21 @@ function TaskNodeComponent({ data, selected }: NodeProps & { data: TaskNodeData 
 
     const validationSummary = summarizeValidationErrors(data.studioGraph?.validationErrors ?? {});
     const hasValidationError = Boolean(validationSummary);
-    const iconBoxHeight = studioIconBoxHeight(
-        visibleOutputs.length,
-        isRoutingTerminator,
-        hasValidationError,
-    );
-    const totalHeight = studioTaskNodeHeight(
-        visibleOutputs.length,
-        isRoutingTerminator,
-        hasValidationError,
-    );
+    const branchOutputCount = visibleOutputs.length;
+    const stretchIconTile =
+        data.type === 'BRANCH' && usesParallelBranchStretchedTile(branchOutputCount);
+    const iconBoxHeight =
+        data.type === 'BRANCH'
+            ? studioParallelBranchIconBoxHeight(branchOutputCount)
+            : studioIconBoxHeight(
+                  branchOutputCount,
+                  isRoutingTerminator,
+                  hasValidationError,
+              );
+    const totalHeight =
+        data.type === 'BRANCH'
+            ? studioParallelBranchTaskNodeHeight(branchOutputCount, hasValidationError)
+            : studioTaskNodeHeight(branchOutputCount, isRoutingTerminator, hasValidationError);
 
     const title = resolveTaskDisplayName(data);
     const typeLabel = TASK_TYPE_LABELS[data.type as StudioTaskType] ?? data.type;
@@ -101,6 +108,7 @@ function TaskNodeComponent({ data, selected }: NodeProps & { data: TaskNodeData 
         <StudioNodeShell
             iconBoxHeight={iconBoxHeight}
             totalHeight={totalHeight}
+            stretchIconTile={stretchIconTile}
             accentColor={accentColor}
             icon={Icon}
             label={label}
@@ -121,22 +129,20 @@ function TaskNodeComponent({ data, selected }: NodeProps & { data: TaskNodeData 
                     key={input.id}
                     input={{
                         ...input,
-                        top: inputs.length === 1 ? studioMainInputHandleTop() : input.top,
+                        top:
+                            inputs.length === 1
+                                ? studioMainInputHandleTop(iconBoxHeight)
+                                : input.top,
                     }}
                     showLabel={shouldShowInputLabel(input.id)}
                 />
             ))}
 
-            {visibleOutputs.map((output, index) => (
+            {visibleOutputs.map((output) => (
                 <TaskOutputHandle
                     key={output.handleId}
                     output={{
                         ...output,
-                        top: resolveOutputHandleTop(
-                            index,
-                            visibleOutputs.length,
-                            isRoutingTerminator,
-                        ),
                         label:
                             output.handleId === MAIN_OUT || output.wired
                                 ? ''

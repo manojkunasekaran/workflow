@@ -1,6 +1,7 @@
 import { Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { SimpleSelect } from '@/components/ui/select';
 import {
     HUMAN_OUTCOMES,
     parseHumanActions,
@@ -118,17 +119,14 @@ export function HumanActionListField({
 
                         <div className="space-y-1">
                             <label className="text-xs font-medium">Outcome</label>
-                            <select
+                            <SimpleSelect
                                 value={action.outcome}
-                                onChange={(e) => update(index, { outcome: e.target.value })}
-                                className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
-                            >
-                                {HUMAN_OUTCOMES.map((outcome) => (
-                                    <option key={outcome.value} value={outcome.value}>
-                                        {outcome.label}
-                                    </option>
-                                ))}
-                            </select>
+                                onValueChange={(next) => update(index, { outcome: next })}
+                                options={HUMAN_OUTCOMES.map((outcome) => ({
+                                    value: outcome.value,
+                                    label: outcome.label,
+                                }))}
+                            />
                             {errors[`${fieldKey}.${index}.outcome`] && (
                                 <p className="text-xs text-destructive">
                                     {errors[`${fieldKey}.${index}.outcome`]}

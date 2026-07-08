@@ -1,7 +1,7 @@
 import { Handle, Position } from '@xyflow/react';
 import type { MouseEvent } from 'react';
 import { Plus } from 'lucide-react';
-import { TippyHint } from '@/components/ui/tippy-hint';
+import { Hint } from '@/components/ui/hint';
 import { cn } from '@/lib/utils';
 import {
     STUDIO_EDGE_CONTROL_BUTTON_CLASS,
@@ -81,7 +81,7 @@ export function EdgePortHandle({
                         className="pointer-events-none h-0 w-5 border-t-2 border-dashed border-[#94a3b8] opacity-80"
                         aria-hidden
                     />
-                    <TippyHint content={addTitle}>
+                    <Hint content={addTitle}>
                         <button
                             type="button"
                             aria-label={addTitle}
@@ -94,7 +94,7 @@ export function EdgePortHandle({
                         >
                             <Plus className={STUDIO_EDGE_CONTROL_ICON_CLASS} strokeWidth={2.5} />
                         </button>
-                    </TippyHint>
+                    </Hint>
                 </>
             ) : label ? (
                 <span
