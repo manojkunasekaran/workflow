@@ -35,7 +35,6 @@ export function RouteEdge(props: EdgeProps) {
         targetPosition,
     });
 
-    const isMerge = routeData?.routeKind === 'join';
     const showEdgeLabel = isRouteForkKind(routeData?.routeKind) && Boolean(routeData?.label);
     const labelAnchor = routeEdgeLabelAnchor(sourceX, sourceY, sourcePosition);
 
@@ -51,7 +50,6 @@ export function RouteEdge(props: EdgeProps) {
                 style={{
                     stroke: STUDIO_SEQUENCE_STROKE,
                     strokeWidth: selected ? STUDIO_SEQUENCE_WIDTH_SELECTED : STUDIO_SEQUENCE_WIDTH,
-                    strokeDasharray: isMerge ? '6 4' : undefined,
                 }}
             />
             <EdgeHoverControls

@@ -37,6 +37,6 @@ export function taskLabelById(
     taskId: string,
 ): string {
     const task = workflowTasks.find((item) => item.taskId === taskId);
-    if (!task) return taskId;
+    if (!task) return 'Unknown step';
     return formatTaskOptionLabel(task);
 }

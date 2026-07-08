@@ -21,6 +21,7 @@ import {
     MAIN_OUT,
     ROUTE_EDGE_PREFIX,
     isRouteEdgeId,
+    isBranchChainEdgeId,
     isJoinMergeInput,
     JOIN_MERGE_IN,
 } from '@/features/workflow-studio/lib/graphHandles';
@@ -30,7 +31,7 @@ import {
 } from '@/features/workflow-studio/constants/studioCanvas';
 import { getTaskNodes, type StudioCanvasNode } from '@/features/workflow-studio/lib/canvasNodeUtils';
 import { injectParameterType } from '@/features/workflow-studio/task-type-schema/utils';
-import { handleTopPercent, resolveOutputHandleTop } from '@/features/workflow-studio/constants/taskNodeLayout';
+import { handleTopPercent, resolveOutputHandleTop, resolveParallelBranchHandleTop } from '@/features/workflow-studio/constants/taskNodeLayout';
 import { isStubEdgeId } from '@/features/workflow-studio/lib/branchAddStubs';
 import { ITERATOR_NESTED_TYPES } from '@/features/workflow-studio/task-type-schema/iteratorTask';
 import { ITER_LOOP_OUT } from '@/features/workflow-studio/lib/graphHandles';
@@ -42,6 +43,8 @@ import {
     resolveBranchIndexForEndTask,
     syncBranchJoinPair,
     writeBranchEndTaskId,
+    isInvalidParallelBranchTarget,
+    collectOffSpineTaskIds,
     type WireGraphContext,
 } from '@/features/workflow-studio/lib/joinWiring';
 
@@ -123,6 +126,20 @@ export function listRoutingEndpoints(data: TaskNodeData): RoutingEndpoint[] {
     return endpoints;
 }
 
+/** Task ids reached only via routing outputs (branch paths, If/Else, loop body, etc.). */
+export function collectRoutingReferencedTaskIds(
+    tasks: Array<{ taskId: string; type: string; parameters: Record<string, unknown> }>,
+): Set<string> {
+    const refs = new Set<string>();
+    for (const task of tasks) {
+        const data = task as TaskNodeData;
+        for (const endpoint of listRoutingEndpoints(data)) {
+            if (endpoint.targetTaskId) refs.add(endpoint.targetTaskId);
+        }
+    }
+    return refs;
+}
+
 export function resolveOutputStubBehavior(def: WireOutputDef): WireStubBehavior {
     if (def.stubBehavior) return def.stubBehavior;
     return def.routeKind === 'join' ? 'connect-only' : 'add-task';
@@ -158,11 +175,16 @@ export function resolveTaskOutputViews(data: TaskNodeData): {
     const outputs: TaskOutputView[] = sources.map((source, index) => {
         const endpoint = endpointMap.get(source.id);
         const match = findOutputDef(wiring, source.id);
+        const isParallelList =
+            match?.def.kind === 'list' && match.def.routeKind === 'parallel';
+        const top = isParallelList
+            ? resolveParallelBranchHandleTop(index, sources.length, isRoutingTerminator)
+            : resolveOutputHandleTop(index, sources.length, isRoutingTerminator);
         return {
             handleId: source.id,
             label: source.label,
             color: source.color,
-            top: resolveOutputHandleTop(index, sources.length, isRoutingTerminator),
+            top,
             wired: Boolean(endpoint?.targetTaskId?.trim()),
             stubBehavior: match ? resolveOutputStubBehavior(match.def) : 'connect-only',
         };
@@ -301,6 +323,60 @@ function readTargetId(
     return String(row[def.targetParam] ?? '').trim();
 }
 
+function defaultListRow(def: ListWireOutput, rowIndex: number): Record<string, unknown> {
+    if (def.listParam === 'branches') {
+        return {
+            branchName: def.fallbackLabel(rowIndex),
+            startTaskId: '',
+            endTaskId: '',
+        };
+    }
+    return {
+        name: def.fallbackLabel(rowIndex),
+        nextTaskId: '',
+    };
+}
+
+function growListRows(
+    def: ListWireOutput,
+    parameters: Record<string, unknown>,
+    index: number,
+): Record<string, unknown>[] {
+    const rows = listRows(parameters, def.listParam);
+    const next = [...rows];
+    while (next.length <= index) {
+        next.push(defaultListRow(def, next.length));
+    }
+    return next;
+}
+
+/** Ensure list-based routing outputs (Split branches, etc.) have a row for the handle index. */
+export function ensureRoutingListRows(
+    nodes: StudioCanvasNode[],
+    sourceTaskId: string,
+    sourceHandle: string,
+): StudioCanvasNode[] {
+    const sourceNode = nodes.find((node) => node.id === sourceTaskId && node.type === 'task');
+    if (!sourceNode) return nodes;
+
+    const sourceData = sourceNode.data as TaskNodeData;
+    const match = findOutputDef(getWiring(sourceData.type), sourceHandle);
+    if (!match || match.def.kind !== 'list' || match.index === undefined) return nodes;
+
+    const grown = growListRows(match.def, sourceData.parameters, match.index);
+    const current = listRows(sourceData.parameters, match.def.listParam);
+    if (grown.length === current.length) return nodes;
+
+    return updateTaskNode(
+        nodes,
+        sourceTaskId,
+        injectParameterType(sourceData.type, {
+            ...sourceData.parameters,
+            [match.def.listParam]: grown,
+        }),
+    );
+}
+
 function writeTargetId(
     taskType: string,
     def: ListWireOutput | ParamWireOutput,
@@ -314,9 +390,10 @@ function writeTargetId(
             [def.paramKey]: targetTaskId ?? '',
         });
     }
-    const rows = listRows(parameters, def.listParam);
-    const nextRows = rows.map((row, i) =>
-        i === index ? { ...row, [def.targetParam]: targetTaskId ?? '' } : row,
+    const indexValue = index ?? 0;
+    const grown = growListRows(def, parameters, indexValue);
+    const nextRows = grown.map((row, i) =>
+        i === indexValue ? { ...row, [def.targetParam]: targetTaskId ?? '' } : row,
     );
     return injectParameterType(taskType, { ...parameters, [def.listParam]: nextRows });
 }
@@ -506,13 +583,25 @@ export function mergeDisplayEdges(chainEdges: Edge[], nodes: StudioCanvasNode[])
         routeTargetsBySource.set(edge.source, targets);
     }
 
+    const routingReferenced = collectOffSpineTaskIds(nodes, chainEdges);
+
     const types = new Map(
         getTaskNodes(nodes).map((node) => [node.id, (node.data as TaskNodeData).type]),
     );
 
+    const branchChainEdges = chainEdges.filter((edge) => {
+        if (!isBranchChainEdgeId(edge.id)) return false;
+        if (edge.target?.startsWith('__')) return false;
+        const targetType = types.get(edge.target ?? '');
+        if (targetType === 'JOIN') return false;
+        return true;
+    });
+
     const spineEdges = chainEdges.filter((edge) => {
         if (isRouteEdgeId(edge.id) || isStubEdgeId(edge.id)) return false;
+        if (isBranchChainEdgeId(edge.id)) return false;
         if (edge.target?.startsWith('__')) return false;
+        if (routingReferenced.has(edge.target ?? '')) return false;
 
         const sourceType = types.get(edge.source ?? '');
         if (sourceType && terminatesMainSpine(sourceType)) return false;
@@ -523,7 +612,7 @@ export function mergeDisplayEdges(chainEdges: Edge[], nodes: StudioCanvasNode[])
         return true;
     });
 
-    return [...spineEdges, ...routeEdges, ...buildJoinConvergeEdges(nodes)];
+    return [...spineEdges, ...branchChainEdges, ...routeEdges, ...buildJoinConvergeEdges(nodes)];
 }
 
 function updateTaskNode(
@@ -593,7 +682,11 @@ export function applyGraphConnection(
     const targetNode = nodes.find((n) => n.id === target && n.type === 'task');
     if (!sourceNode || !targetNode) return null;
 
-    const sourceData = sourceNode.data as TaskNodeData;
+    const preparedNodes = ensureRoutingListRows(nodes, source, sourceHandle);
+    const wiredSource = preparedNodes.find((n) => n.id === source && n.type === 'task');
+    if (!wiredSource) return null;
+
+    const sourceData = wiredSource.data as TaskNodeData;
     const targetData = targetNode.data as TaskNodeData;
 
     if (
@@ -642,6 +735,15 @@ export function applyGraphConnection(
     const match = findOutputDef(wiring, sourceHandle);
     if (!match || match.def.targetHandle !== targetHandle) return null;
 
+    if (
+        sourceData.type === 'BRANCH' &&
+        match.def.kind === 'list' &&
+        match.def.routeKind === 'parallel' &&
+        isInvalidParallelBranchTarget(nodes, chainEdges, source, target)
+    ) {
+        return null;
+    }
+
     const nextParams = writeTargetId(
         sourceData.type,
         match.def,
@@ -649,7 +751,7 @@ export function applyGraphConnection(
         target,
         match.index,
     );
-    return updateTaskNode(nodes, source, nextParams);
+    return updateTaskNode(preparedNodes, source, nextParams);
 }
 
 export function applyRouteEdgeRemoval(

@@ -16,7 +16,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { BrushCleaning, Minus, Plus } from 'lucide-react';
-import { TippyHint } from '@/components/ui/tippy-hint';
+import { Hint } from '@/components/ui/hint';
 import { TaskNode } from '@/features/workflow-studio/nodes/TaskNode';
 import { StartNode } from '@/features/workflow-studio/nodes/StartNode';
 import { RouteEdge } from '@/features/workflow-studio/edges/RouteEdge';
@@ -357,7 +357,7 @@ function WorkflowCanvasInner({
             >
                 <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="#cbd5e1" />
                 <Panel position="bottom-left" className="m-6 flex items-center gap-2">
-                    <TippyHint content="Zoom in">
+                    <Hint content="Zoom in">
                         <button
                             type="button"
                             onClick={() => reactFlowInstance.current?.zoomIn()}
@@ -366,8 +366,8 @@ function WorkflowCanvasInner({
                         >
                             <Plus className="h-4 w-4" strokeWidth={2.25} />
                         </button>
-                    </TippyHint>
-                    <TippyHint content="Zoom out">
+                    </Hint>
+                    <Hint content="Zoom out">
                         <button
                             type="button"
                             onClick={() => reactFlowInstance.current?.zoomOut()}
@@ -376,8 +376,8 @@ function WorkflowCanvasInner({
                         >
                             <Minus className="h-4 w-4" strokeWidth={2.25} />
                         </button>
-                    </TippyHint>
-                    <TippyHint content="Fit view">
+                    </Hint>
+                    <Hint content="Fit view">
                         <button
                             type="button"
                             onClick={() => reactFlowInstance.current?.fitView({ padding: 0.2 })}
@@ -386,9 +386,9 @@ function WorkflowCanvasInner({
                         >
                             <FitViewIcon className="h-3.5 w-4" />
                         </button>
-                    </TippyHint>
+                    </Hint>
                     {!readOnly ? (
-                        <TippyHint content="Tidy up — auto-arrange the canvas">
+                        <Hint content="Tidy up — auto-arrange the canvas">
                             <button
                                 type="button"
                                 onClick={onTidyUp}
@@ -397,7 +397,7 @@ function WorkflowCanvasInner({
                             >
                                 <BrushCleaning className="h-4 w-4" strokeWidth={2.25} />
                             </button>
-                        </TippyHint>
+                        </Hint>
                     ) : null}
                 </Panel>
                 </ReactFlow>

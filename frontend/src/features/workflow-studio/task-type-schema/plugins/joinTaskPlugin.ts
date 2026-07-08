@@ -52,13 +52,6 @@ export const joinTaskPlugin = defineTaskPlugin({
     wiring: JOIN_TASK_WIRING,
     fields: [
         {
-            key: 'branchTaskId',
-            label: 'Split node',
-            type: 'wiredRef',
-            required: true,
-            description: 'The Split into branches task whose parallel paths merge here.',
-        },
-        {
             key: 'failureStrategy',
             label: 'When branches fail',
             type: 'select',
@@ -67,19 +60,13 @@ export const joinTaskPlugin = defineTaskPlugin({
             description:
                 'Drag from each branch’s last task (Next / main-out) into the Branches input on this node.',
         },
-        {
-            key: 'nextTaskId',
-            label: 'Next step',
-            type: 'wiredRef',
-            description: 'Drag from the Next handle after branches complete.',
-        },
     ],
     validate(parameters, context, errors) {
         validateJoinParameters(parameters, errors, context);
     },
     preview(params) {
-        const branch = params.branchTaskId ? String(params.branchTaskId) : 'select split';
+        const branch = params.branchTaskId ? 'connected' : 'not connected';
         const strategy = String(params.failureStrategy ?? 'FAIL_FAST').replace(/_/g, ' ').toLowerCase();
-        return { primary: `← ${branch}`, secondary: strategy };
+        return { primary: `Split ${branch}`, secondary: strategy };
     },
 });

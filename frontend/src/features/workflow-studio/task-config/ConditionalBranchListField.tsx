@@ -1,6 +1,7 @@
 import { Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { SimpleSelect } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import {
     defaultConditionalBranch,
@@ -19,8 +20,6 @@ import {
     STUDIO_TEXT_LINK_INLINE_CLASS,
 } from '@/features/workflow-studio/constants/studioUi';
 import { cn } from '@/lib/utils';
-import { taskLabelById } from '@/features/workflow-studio/task-config/taskRefUtils';
-
 interface ConditionalBranchListFieldProps {
     fieldKey: string;
     label: string;
@@ -28,7 +27,6 @@ interface ConditionalBranchListFieldProps {
     value: unknown;
     onChange: (branches: ConditionalBranchRow[]) => void;
     errors?: TaskParameterErrors;
-    workflowTasks?: Array<{ taskId: string; type: string; displayName?: string }>;
 }
 
 export function ConditionalBranchListField({
@@ -38,7 +36,6 @@ export function ConditionalBranchListField({
     value,
     onChange,
     errors = {},
-    workflowTasks = [],
 }: ConditionalBranchListFieldProps) {
     const branches = parseConditionalBranches(value);
 
@@ -157,17 +154,6 @@ export function ConditionalBranchListField({
                                 {nameError && (
                                     <p className="text-xs text-destructive">{nameError}</p>
                                 )}
-                                <p
-                                    className={
-                                        branch.nextTaskId.trim()
-                                            ? 'text-[11px] font-mono text-violet-700'
-                                            : 'text-[11px] text-muted-foreground'
-                                    }
-                                >
-                                    {branch.nextTaskId.trim()
-                                        ? `Connected to “${taskLabelById(workflowTasks, branch.nextTaskId)}”`
-                                        : 'Connect from this branch output on the canvas'}
-                                </p>
                                 {nextError && (
                                     <p className="text-xs text-destructive">{nextError}</p>
                                 )}
@@ -227,23 +213,23 @@ export function ConditionalBranchListField({
                                             >
                                                 Match
                                             </label>
-                                            <select
+                                            <SimpleSelect
                                                 id={`${fieldKey}-${index}-operator`}
                                                 value={branch.rules.operator}
-                                                onChange={(e) =>
+                                                onValueChange={(next) =>
                                                     updateBranch(index, {
                                                         rules: {
                                                             ...branch.rules,
-                                                            operator:
-                                                                e.target.value === 'OR' ? 'OR' : 'AND',
+                                                            operator: next === 'OR' ? 'OR' : 'AND',
                                                         },
                                                     })
                                                 }
-                                                className="h-8 rounded-md border border-input bg-background px-2 text-xs"
-                                            >
-                                                <option value="AND">all conditions (AND)</option>
-                                                <option value="OR">any condition (OR)</option>
-                                            </select>
+                                                options={[
+                                                    { value: 'AND', label: 'all conditions (AND)' },
+                                                    { value: 'OR', label: 'any condition (OR)' },
+                                                ]}
+                                                triggerClassName="h-8 w-auto min-w-[10rem] text-xs"
+                                            />
                                             <button
                                                 type="button"
                                                 onClick={() => addCondition(index)}
@@ -274,21 +260,19 @@ export function ConditionalBranchListField({
                                                         placeholder="{{$tasks.fetch.body.status}}"
                                                         className="font-mono text-xs"
                                                     />
-                                                    <select
+                                                    <SimpleSelect
                                                         value={condition.operator}
-                                                        onChange={(e) =>
+                                                        onValueChange={(next) =>
                                                             updateCondition(index, conditionIndex, {
-                                                                operator: e.target.value,
+                                                                operator: next,
                                                             })
                                                         }
-                                                        className="h-9 rounded-md border border-input bg-background px-2 text-xs"
-                                                    >
-                                                        {RULE_OPERATORS.map((op) => (
-                                                            <option key={op.value} value={op.value}>
-                                                                {op.label}
-                                                            </option>
-                                                        ))}
-                                                    </select>
+                                                        options={RULE_OPERATORS.map((op) => ({
+                                                            value: op.value,
+                                                            label: op.label,
+                                                        }))}
+                                                        triggerClassName="h-9 min-w-[8.5rem] text-xs"
+                                                    />
                                                     <label className="flex items-center gap-1 text-[11px] text-muted-foreground">
                                                         <input
                                                             type="checkbox"

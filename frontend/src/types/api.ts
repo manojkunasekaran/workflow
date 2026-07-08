@@ -42,4 +42,9 @@ export interface NodePosition {
      * Mirrors iterator `doneNextTaskId` so routing survives API round-trips.
      */
     studioDoneWire?: string;
+    /**
+     * Studio-only branch-path successor (off-spine MAIN_OUT → MAIN_IN).
+     * Persists nested branch chains across save/load.
+     */
+    studioChainOut?: string;
 }

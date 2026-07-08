@@ -12,7 +12,10 @@ import {
     isMainSpineTerminated,
     positionForRoutingWire,
     realignRoutingChildren,
+    repositionLinkedJoinNodes,
     relayoutWorkflow,
+    repairOrphanBranchSplitLayout,
+    resolveMainSpineIds,
     shouldShowMainAddTask,
     taskTypeById,
 } from '@/features/workflow-studio/lib/branchFlow';
@@ -24,13 +27,23 @@ import {
     stripIteratorCanvasParams,
     syncAllIteratorLoopBodies,
 } from '@/features/workflow-studio/lib/iteratorLoopSync';
+import {
+    applyStudioChainOutToLayout,
+    orderTaskIdsForExport,
+    restoreBranchChainEdges,
+    syncBranchEndTaskIdsFromChains,
+} from '@/features/workflow-studio/lib/branchChainPersistence';
 import { resolveTaskDisplayName } from '@/features/workflow-studio/lib/taskDisplayName';
 import { getTaskNodes, type StudioCanvasNode } from '@/features/workflow-studio/lib/canvasNodeUtils';
-import { applyGraphConnection, clearTaskWireReferences, resolveWireTargetHandle, terminatesMainSpine } from '@/features/workflow-studio/lib/graphRouting';
+import { applyGraphConnection, clearTaskWireReferences, ensureRoutingListRows, listRoutingEndpoints, resolveWireTargetHandle, terminatesMainSpine } from '@/features/workflow-studio/lib/graphRouting';
 import {
     findBranchTaskForChainTask,
     resolveBranchIndexForEndTask,
+    isAllowedBranchChainEdge,
     sanitizeDanglingBranchJoinReferences,
+    sanitizeBranchSpineConflicts,
+    sanitizeInvalidBranchChainEdges,
+    stripLegacyBranchNextTaskId,
     syncBranchJoinPair,
     writeBranchEndTaskId,
 } from '@/features/workflow-studio/lib/joinWiring';
@@ -114,7 +127,7 @@ export function createAddTaskNode(position: { x: number; y: number }): StudioCan
 }
 
 export function getOrderedTaskIds(nodes: StudioCanvasNode[], edges: Edge[]): string[] {
-    return getMainSpineIdsFromEdges(nodes, edges);
+    return resolveMainSpineIds(nodes, edges);
 }
 
 function relayoutAndRebuild(
@@ -142,17 +155,22 @@ function relayoutAndRebuild(
  */
 function rebuildPreserving(
     nodes: StudioCanvasNode[],
-    spineIds: string[],
+    _spineIds: string[],
     existingEdges: Edge[] = [],
 ): { nodes: StudioCanvasNode[]; edges: Edge[] } {
     const repaired = repairJoinBranchChainEdges(nodes, existingEdges);
     const sanitized = sanitizeDanglingBranchJoinReferences(repaired.nodes);
-    const withAddTask = sanitized.some((node) => node.id === ADD_TASK_NODE_ID)
-        ? sanitized
-        : [...sanitized, createAddTaskNode({ x: 0, y: 0 })];
+    const stripped = stripLegacyBranchNextTaskId(sanitized);
+    const branchSanitized = sanitizeBranchSpineConflicts(stripped, repaired.edges);
+    const layoutNodes = repairOrphanBranchSplitLayout(branchSanitized, repaired.edges);
+    const chainEdges = sanitizeInvalidBranchChainEdges(layoutNodes, repaired.edges);
+    const resolvedSpine = resolveMainSpineIds(layoutNodes, chainEdges);
+    const withAddTask = layoutNodes.some((node) => node.id === ADD_TASK_NODE_ID)
+        ? layoutNodes
+        : [...layoutNodes, createAddTaskNode({ x: 0, y: 0 })];
     const types = taskTypeById(withAddTask);
-    const positioned = positionAddTaskStub(withAddTask, spineIds);
-    return { nodes: positioned, edges: rebuildChainEdges(spineIds, types, repaired.edges) };
+    const positioned = positionAddTaskStub(withAddTask, resolvedSpine);
+    return { nodes: positioned, edges: rebuildChainEdges(resolvedSpine, types, chainEdges) };
 }
 
 /** Keep the trailing add-task node parked one slot past the last main-chain task. */
@@ -246,9 +264,6 @@ export function definitionToFlow(
     positions: Record<string, { x: number; y: number; displayName?: string }> = {},
 ): { nodes: StudioCanvasNode[]; edges: Edge[] } {
     const expanded = expandDefinitionForCanvas(definition);
-    const allTaskIds = expanded.tasks.map((task) => task.taskId);
-    const types = new Map(expanded.tasks.map((task) => [task.taskId, task.type]));
-    const spineIds = computeMainSpineIds(allTaskIds, types);
 
     const storedLayout = definition.layout ?? {};
     const resolvedPositions = { ...storedLayout, ...positions };
@@ -280,9 +295,14 @@ export function definitionToFlow(
         createAddTaskNode({ x: 0, y: 0 }),
     ];
 
+    const stripped = stripLegacyBranchNextTaskId(baseNodes);
+    const restoredBranchChains = restoreBranchChainEdges(definition);
+    const sanitizedNodes = sanitizeBranchSpineConflicts(stripped, restoredBranchChains);
+    const spineIds = resolveMainSpineIds(sanitizedNodes, restoredBranchChains);
+
     const result = hasStoredLayout
-        ? rebuildPreserving(baseNodes, spineIds)
-        : relayoutAndRebuild(baseNodes, spineIds);
+        ? rebuildPreserving(sanitizedNodes, spineIds, restoredBranchChains)
+        : relayoutAndRebuild(sanitizedNodes, spineIds, restoredBranchChains);
 
     const loopChainEdges: Edge[] = [];
     for (const task of expanded.tasks) {
@@ -297,14 +317,14 @@ export function definitionToFlow(
         ...loopChainEdges.filter((edge) => !edgeIds.has(edge.id)),
     ];
 
-    let layoutNodes = result.nodes;
-    for (const node of getTaskNodes(layoutNodes)) {
+    let finalNodes = result.nodes;
+    for (const node of getTaskNodes(finalNodes)) {
         if (terminatesMainSpine(node.data.type)) {
-            layoutNodes = realignRoutingChildren(layoutNodes, node.id);
+            finalNodes = realignRoutingChildren(finalNodes, node.id);
         }
     }
 
-    return { nodes: layoutNodes, edges: mergedEdges };
+    return { nodes: finalNodes, edges: mergedEdges };
 }
 
 export function flowToDefinition(
@@ -315,14 +335,15 @@ export function flowToDefinition(
     workflowId?: string | null,
 ): WorkflowDefinition {
     const syncedNodes = syncAllIteratorLoopBodies(nodes, edges);
-    const loopBodyIds = collectAllIteratorLoopBodyTaskIds(syncedNodes, edges);
+    const withEndTasks = syncBranchEndTaskIdsFromChains(syncedNodes, edges);
+    const loopBodyIds = collectAllIteratorLoopBodyTaskIds(withEndTasks, edges);
 
     const layout: Record<string, { x: number; y: number; displayName?: string }> = {};
-    const startPosition = nodePositionById(syncedNodes, WORKFLOW_START_ID);
+    const startPosition = nodePositionById(withEndTasks, WORKFLOW_START_ID);
     if (startPosition) {
         layout[WORKFLOW_START_ID] = { x: startPosition.x, y: startPosition.y };
     }
-    for (const node of getTaskNodes(syncedNodes)) {
+    for (const node of getTaskNodes(withEndTasks)) {
         if (node.position) {
             const data = node.data as TaskNodeData;
             const entry: {
@@ -342,31 +363,38 @@ export function flowToDefinition(
         }
     }
 
-    const tasks: WorkflowTask[] = getTaskNodes(syncedNodes)
-        .filter((node) => !loopBodyIds.has(node.data.taskId))
-        .map((node) => {
-            const data = node.data as TaskNodeData;
-            const rawParams = injectParameterType(data.type, data.parameters);
-            const parameters =
-                data.type === 'ITERATOR_TASK'
-                    ? injectParameterType(
-                          'ITERATOR_TASK',
-                          normalizeIteratorParamsForExport(stripIteratorCanvasParams(rawParams)),
-                      )
-                    : rawParams;
-            return {
-                taskId: data.taskId,
-                type: data.type as TaskType,
-                parameters,
-            };
+    const layoutWithChains = applyStudioChainOutToLayout(layout, edges);
+
+    const taskPayloadById = new Map<string, WorkflowTask>();
+    for (const node of getTaskNodes(withEndTasks)) {
+        if (loopBodyIds.has(node.data.taskId)) continue;
+        const data = node.data as TaskNodeData;
+        const rawParams = injectParameterType(data.type, data.parameters);
+        const parameters =
+            data.type === 'ITERATOR_TASK'
+                ? injectParameterType(
+                      'ITERATOR_TASK',
+                      normalizeIteratorParamsForExport(stripIteratorCanvasParams(rawParams)),
+                  )
+                : rawParams;
+        taskPayloadById.set(data.taskId, {
+            taskId: data.taskId,
+            type: data.type as TaskType,
+            parameters,
         });
+    }
+
+    const orderedIds = orderTaskIdsForExport(withEndTasks, edges);
+    const tasks: WorkflowTask[] = orderedIds
+        .map((taskId) => taskPayloadById.get(taskId))
+        .filter((task): task is WorkflowTask => Boolean(task));
 
     return {
         ...existing,
         id: workflowId ?? existing?.id,
         name,
         tasks,
-        layout,
+        layout: layoutWithChains,
     };
 }
 
@@ -406,6 +434,33 @@ export function appendTaskToChain(
     return rebuildPreserving(baseNodes, nextSpineIds, edges);
 }
 
+/** Append to the main chain, or to the next free branch handle when the spine ends at Split. */
+export function appendTaskToChainOrBranch(
+    nodes: StudioCanvasNode[],
+    edges: Edge[],
+    updated: TaskNodeData,
+): { nodes: StudioCanvasNode[]; edges: Edge[] } | null {
+    const onSpine = appendTaskToChain(nodes, edges, updated);
+    if (onSpine) return onSpine;
+
+    const spineIds = resolveMainSpineIds(nodes, edges);
+    const lastId = spineIds[spineIds.length - 1];
+    if (!lastId) return null;
+
+    const lastNode = nodes.find((node) => node.id === lastId && node.type === 'task');
+    if (!lastNode) return null;
+    const lastData = lastNode.data as TaskNodeData;
+    if (!terminatesMainSpine(lastData.type)) return null;
+
+    const unwired = listRoutingEndpoints(lastData).find((endpoint) => !endpoint.targetTaskId?.trim());
+    if (!unwired) return null;
+
+    return addBranchTask(nodes, edges, updated, {
+        sourceTaskId: lastId,
+        sourceHandle: unwired.handleId,
+    });
+}
+
 /** Place a new task at an explicit canvas position without auto-wiring. */
 export function placeDetachedTask(
     nodes: StudioCanvasNode[],
@@ -443,9 +498,9 @@ export function addBranchTask(
     const spineIds = getMainSpineIdsFromEdges(nodes, edges);
     const start = nodes.find((node) => node.id === WORKFLOW_START_ID);
     const addTask = nodes.find((node) => node.id === ADD_TASK_NODE_ID);
-    const existingTasks = getTaskNodes(nodes).filter((node) => node.id !== updated.taskId);
 
-    const sourceNode = nodes.find((node) => node.id === wire.sourceTaskId && node.type === 'task');
+    const preparedNodes = ensureRoutingListRows(nodes, wire.sourceTaskId, wire.sourceHandle);
+    const sourceNode = preparedNodes.find((node) => node.id === wire.sourceTaskId && node.type === 'task');
     const sourceData =
         sourceNode?.type === 'task' ? (sourceNode.data as TaskNodeData) : undefined;
 
@@ -453,11 +508,11 @@ export function addBranchTask(
         id: updated.taskId,
         type: 'task',
         draggable: true,
-        position: branchOutputPosition(wire.sourceTaskId, wire.sourceHandle, updated, nodes),
+        position: branchOutputPosition(wire.sourceTaskId, wire.sourceHandle, updated, preparedNodes),
         data: updated,
     };
 
-    let baseNodes = [start, ...existingTasks, newNode, addTask].filter(
+    let baseNodes = [start, ...getTaskNodes(preparedNodes).filter((node) => node.id !== updated.taskId), newNode, addTask].filter(
         (node): node is StudioCanvasNode => Boolean(node),
     );
 
@@ -485,7 +540,9 @@ export function appendBranchChainTask(
     edges: Edge[],
     updated: TaskNodeData,
     sourceTaskId: string,
-): { nodes: StudioCanvasNode[]; edges: Edge[] } {
+): { nodes: StudioCanvasNode[]; edges: Edge[] } | null {
+    if (updated.type === 'JOIN') return null;
+
     const spineIds = getMainSpineIdsFromEdges(nodes, edges);
     const start = nodes.find((node) => node.id === WORKFLOW_START_ID);
     const addTask = nodes.find((node) => node.id === ADD_TASK_NODE_ID);
@@ -516,6 +573,10 @@ export function appendBranchChainTask(
         className: STUDIO_EDGE_CLASS,
         markerEnd: studioEdgeMarkerEnd(STUDIO_SEQUENCE_STROKE),
     };
+
+    if (!isAllowedBranchChainEdge(nodes, [...edges, branchEdge], sourceTaskId, updated.taskId)) {
+        return null;
+    }
 
     return rebuildPreserving(baseNodes, spineIds, [...edges, branchEdge]);
 }
@@ -666,6 +727,8 @@ export function applyMainFlowConnection(
     const types = taskTypeById(nodes);
 
     if (!spineIds.includes(source)) {
+        if (!isAllowedBranchChainEdge(nodes, edges, source, target)) return null;
+
         const alreadyLinked = edges.some(
             (edge) =>
                 edge.source === source &&
@@ -708,6 +771,31 @@ export function applyMainFlowConnection(
     return relayoutWorkflowGraph(nodes, edges, nextSpine);
 }
 
+function collectConnectionRealignParents(
+    connection: Connection,
+    nodes: StudioCanvasNode[],
+): string[] | undefined {
+    const parents = new Set<string>();
+    const { source, target } = connection;
+
+    if (source) {
+        const sourceNode = nodes.find((node) => node.id === source && node.type === 'task');
+        const sourceType = (sourceNode?.data as TaskNodeData | undefined)?.type ?? '';
+        if (sourceNode && terminatesMainSpine(sourceType)) {
+            parents.add(source);
+        }
+    }
+
+    if (target) {
+        const targetNode = nodes.find((node) => node.id === target && node.type === 'task');
+        if (targetNode && (targetNode.data as TaskNodeData).type === 'BRANCH') {
+            parents.add(target);
+        }
+    }
+
+    return parents.size > 0 ? [...parents] : undefined;
+}
+
 /** Apply a handle drag: main spine/branch chain first, then routing parameter wires. */
 export function applyStudioConnection(
     connection: Connection,
@@ -715,11 +803,21 @@ export function applyStudioConnection(
     edges: Edge[],
 ): { nodes: StudioCanvasNode[]; edges: Edge[] } | null {
     const mainFlow = applyMainFlowConnection(connection, nodes, edges);
-    if (mainFlow) return mainFlow;
+    if (mainFlow) {
+        return syncWorkflowLayout(
+            mainFlow.nodes,
+            mainFlow.edges,
+            collectConnectionRealignParents(connection, mainFlow.nodes),
+        );
+    }
 
     const wiredNodes = applyGraphConnection(connection, nodes, edges);
     if (!wiredNodes) return null;
-    return syncWorkflowLayout(wiredNodes, edges);
+    return syncWorkflowLayout(
+        wiredNodes,
+        edges,
+        collectConnectionRealignParents(connection, wiredNodes),
+    );
 }
 
 export function isValidStudioConnection(
@@ -737,9 +835,29 @@ export function isValidStudioConnection(
 export function syncWorkflowLayout(
     nodes: StudioCanvasNode[],
     edges: Edge[],
+    realignParents?: string[],
 ): { nodes: StudioCanvasNode[]; edges: Edge[] } {
-    const spineIds = getMainSpineIdsFromEdges(nodes, edges);
-    return rebuildPreserving(nodes, spineIds, edges);
+    const repaired = repairJoinBranchChainEdges(nodes, edges);
+    const branchSanitized = sanitizeBranchSpineConflicts(repaired.nodes, repaired.edges);
+    const spineIds = resolveMainSpineIds(branchSanitized, repaired.edges);
+    let nextNodes = branchSanitized;
+
+    if (realignParents && realignParents.length > 0) {
+        for (const parentId of realignParents) {
+            nextNodes = realignRoutingChildren(nextNodes, parentId);
+        }
+    } else {
+        for (const node of getTaskNodes(branchSanitized)) {
+            if (node.data.type === 'BRANCH') {
+                nextNodes = realignRoutingChildren(nextNodes, node.id);
+            }
+        }
+    }
+
+    const withEndTasks = syncBranchEndTaskIdsFromChains(nextNodes, repaired.edges);
+    const withJoinLayout = repositionLinkedJoinNodes(withEndTasks, repaired.edges);
+
+    return rebuildPreserving(withJoinLayout, spineIds, repaired.edges);
 }
 
 /**

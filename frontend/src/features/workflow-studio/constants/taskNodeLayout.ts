@@ -41,6 +41,14 @@ export function handleTopPercentValue(index: number, count: number): number {
 /** Min center-to-center spacing when packing routing handles on the icon tile. */
 const ROUTING_HANDLE_TILE_GAP = 20;
 
+/** Min gap between parallel branch child nodes (matches BRANCH_LAYOUT.siblingGap). */
+const PARALLEL_BRANCH_CHILD_GAP = 24;
+
+/** Center-to-center pitch for parallel branch handles — keeps child tasks from overlapping. */
+export function routingHandleRowPitch(): number {
+    return studioTaskNodeHeight(1, false) + PARALLEL_BRANCH_CHILD_GAP;
+}
+
 /** Height of the icon/handle column (handles align to this box, not the label). */
 export function studioIconBoxHeight(
     outputCount: number,
@@ -59,9 +67,37 @@ export function studioIconBoxHeight(
     return iconSize;
 }
 
-/** Main-in handle — always centered on the visible icon tile. */
-export function studioMainInputHandleTop(): string {
-    return `${N8N_NODE_LAYOUT.iconSize / 2}px`;
+/**
+ * Icon column height for parallel BRANCH splits.
+ * Two-way splits keep the compact tile; 3+ branches grow downward in handleMinGap steps.
+ */
+export function studioParallelBranchIconBoxHeight(branchCount: number): number {
+    const layoutCount = Math.max(branchCount, 2);
+    if (layoutCount <= 2) {
+        return studioIconBoxHeight(layoutCount, true);
+    }
+    const { iconSize, handleMinGap } = N8N_NODE_LAYOUT;
+    return iconSize + (layoutCount - 1) * handleMinGap;
+}
+
+export function parallelBranchHandleTopPx(handleIndex: number, branchCount: number): number {
+    const layoutCount = Math.max(branchCount, 2);
+    const iconHeight = studioParallelBranchIconBoxHeight(layoutCount);
+    const topPct = handleTopPercentValue(handleIndex, layoutCount);
+    return (iconHeight * topPct) / 100;
+}
+
+export function parallelBranchHandleWorldYFromNodeTop(
+    nodeTopY: number,
+    handleIndex: number,
+    branchCount: number,
+): number {
+    return nodeTopY + parallelBranchHandleTopPx(handleIndex, branchCount);
+}
+
+/** Main-in handle — vertically centered on the icon/handle column. */
+export function studioMainInputHandleTop(iconBoxHeight: number = N8N_NODE_LAYOUT.iconSize): string {
+    return `${iconBoxHeight / 2}px`;
 }
 
 /** Full React Flow node height (icon tile + external label + optional error). */
@@ -72,8 +108,22 @@ export function studioTaskNodeHeight(
 ): number {
     const labelH = N8N_NODE_LAYOUT.labelGap + N8N_NODE_LAYOUT.labelLineHeight * 2;
     const errorH = withErrorBody ? N8N_NODE_LAYOUT.errorLineHeight + 2 : 0;
-    // Label sits under the visual tile — not under the extended handle column.
     return N8N_NODE_LAYOUT.iconSize + labelH + errorH;
+}
+
+/** Node footprint when a parallel split stretches its icon tile (3+ branches). */
+export function studioParallelBranchTaskNodeHeight(
+    branchCount: number,
+    withErrorBody = false,
+): number {
+    const iconH = studioParallelBranchIconBoxHeight(branchCount);
+    const labelH = N8N_NODE_LAYOUT.labelGap + N8N_NODE_LAYOUT.labelLineHeight * 2;
+    const errorH = withErrorBody ? N8N_NODE_LAYOUT.errorLineHeight + 2 : 0;
+    return iconH + labelH + errorH;
+}
+
+export function usesParallelBranchStretchedTile(branchCount: number): boolean {
+    return Math.max(branchCount, 2) > 2;
 }
 
 export function usesFixedNodeHeight(outputCount: number, isRoutingTerminator: boolean): boolean {
@@ -95,6 +145,23 @@ export function resolveOutputHandleTop(
         return `${routingHandleTopPx(handleIndex, handleCount)}px`;
     }
     return handleTopPercent(handleIndex, handleCount);
+}
+
+/** Parallel branch handles always use a vertical fork (top / bottom), never a lone center port. */
+export function resolveParallelBranchHandleTop(
+    handleIndex: number,
+    handleCount: number,
+    isRoutingTerminator: boolean,
+): string {
+    const layoutCount = Math.max(handleCount, 2);
+    if (layoutCount <= 2) {
+        return resolveOutputHandleTop(handleIndex, layoutCount, isRoutingTerminator);
+    }
+    return `${parallelBranchHandleTopPx(handleIndex, layoutCount)}px`;
+}
+
+export function parallelBranchLayoutCount(handleCount: number): number {
+    return Math.max(handleCount, 2);
 }
 
 /** Canvas Y of an output handle when node.position.y is the node top edge. */

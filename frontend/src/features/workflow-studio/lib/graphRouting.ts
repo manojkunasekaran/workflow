@@ -1,8 +1,10 @@
 export {
+    ensureRoutingListRows,
     applyGraphConnection,
     applyRouteEdgeRemoval,
     buildRouteEdgesFromNodes,
     clearTaskWireReferences,
+    collectRoutingReferencedTaskIds,
     isValidPluginConnection,
     listRoutingEndpoints,
     mergeDisplayEdges,

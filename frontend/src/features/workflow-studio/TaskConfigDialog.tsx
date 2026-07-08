@@ -1,14 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { AlertCircle, Trash2, X } from 'lucide-react';
+import { AlertCircle, Code2, Trash2, X } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { TaskConfigContext } from '@/features/workflow-studio/task-config/TaskConfigContext';
 import { TaskParametersForm } from '@/features/workflow-studio/task-config/TaskParametersForm';
 import { getTaskTypePlugin } from '@/features/workflow-studio/task-type-schema/registry';
 import type { TaskParameterErrors } from '@/features/workflow-studio/task-type-schema/types';
 import {
-    getTaskTypeLabel,
     injectParameterType,
     normalizeParametersForApply,
     summarizeValidationErrors,
@@ -21,6 +19,7 @@ import { cn } from '@/lib/utils';
 import {
     STUDIO_GHOST_DESTRUCTIVE_CLASS,
     STUDIO_GHOST_ICON_BUTTON_CLASS,
+    STUDIO_INPUT_FOCUS_CLASS,
 } from '@/features/workflow-studio/constants/studioUi';
 
 interface TaskConfigDialogProps {
@@ -114,7 +113,10 @@ export function TaskConfigDialog({
         setErrors(nextErrors);
     }, [open, task, onDraftChange, workflowTasks, taskOrder, isNewTask]);
 
-    const typeLabel = plugin ? getTaskTypeLabel(plugin) : draft?.type ?? '';
+    const stepName = draft?.displayName ?? '';
+    const stepNamePlaceholder = draft ? taskTypeLabel(draft.type) : 'Step name';
+    const TaskIcon = plugin?.icon ?? Code2;
+    const taskAccentColor = plugin?.accentColor ?? '#64748b';
     const errorSummary = summarizeValidationErrors(errors);
 
     const handleParametersChange = (parameters: Record<string, unknown>) => {
@@ -150,6 +152,7 @@ export function TaskConfigDialog({
             <DialogContent
                 blocking={false}
                 className="flex max-h-[90vh] flex-col p-0 sm:max-w-lg"
+                onOpenAutoFocus={(event) => event.preventDefault()}
                 onInteractOutside={(event) => event.preventDefault()}
                 onPointerDownOutside={(event) => event.preventDefault()}
             >
@@ -161,10 +164,45 @@ export function TaskConfigDialog({
                     </div>
                 ) : (
                     <TaskConfigContext.Provider value={validationContext}>
-                        <div className="flex items-start justify-between gap-4 border-b border-border px-5 py-4">
-                            <div className="min-w-0">
-                                <DialogTitle className="text-base font-semibold text-foreground">
-                                    {typeLabel}
+                        <div className="flex items-center justify-between gap-4 border-b border-border px-5 py-4">
+                            <div className="flex min-w-0 flex-1 items-center gap-2.5">
+                                {plugin ? (
+                                    <span
+                                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md"
+                                        style={{
+                                            backgroundColor: `${taskAccentColor}18`,
+                                            color: taskAccentColor,
+                                        }}
+                                        aria-hidden
+                                    >
+                                        <TaskIcon className="h-4 w-4" />
+                                    </span>
+                                ) : (
+                                    <span
+                                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground"
+                                        aria-hidden
+                                    >
+                                        <Code2 className="h-4 w-4" />
+                                    </span>
+                                )}
+                                <DialogTitle asChild>
+                                    <input
+                                        value={stepName}
+                                        onChange={(e) => handleDisplayNameChange(e.target.value)}
+                                        placeholder={stepNamePlaceholder}
+                                        size={Math.min(
+                                            Math.max(stepName.length || stepNamePlaceholder.length, 12),
+                                            40,
+                                        )}
+                                        className={cn(
+                                            'w-auto min-w-[10ch] max-w-[16rem] rounded-md border border-transparent bg-transparent px-2 py-1',
+                                            'text-lg font-bold text-foreground outline-none transition-colors [field-sizing:content]',
+                                            'placeholder:font-bold placeholder:text-foreground/90',
+                                            'hover:border-border hover:bg-muted/45',
+                                            STUDIO_INPUT_FOCUS_CLASS,
+                                        )}
+                                        aria-label="Step name"
+                                    />
                                 </DialogTitle>
                             </div>
                             <div className="flex shrink-0 items-center gap-2">
@@ -204,20 +242,6 @@ export function TaskConfigDialog({
                         ) : null}
 
                         <div className="min-h-0 flex-1 overflow-y-auto p-5 scrollbar-thin">
-                            <div className="mb-4 space-y-1.5">
-                                <label className="text-xs font-medium text-foreground" htmlFor="step-name">
-                                    Step name
-                                </label>
-                                <Input
-                                    id="step-name"
-                                    value={draft.displayName ?? ''}
-                                    onChange={(e) => handleDisplayNameChange(e.target.value)}
-                                    placeholder={taskTypeLabel(draft.type)}
-                                />
-                                <p className="text-[11px] text-muted-foreground">
-                                    Shown on the canvas instead of the technical step id.
-                                </p>
-                            </div>
                             {plugin && (
                                 <TaskParametersForm
                                     plugin={plugin}

@@ -93,14 +93,6 @@ export const branchTaskPlugin = defineTaskPlugin({
             type: 'branchList',
             required: true,
             defaultValue: [{ branchName: 'Branch 1', startTaskId: '' }],
-            description:
-                'Drag from each branch output to its first task. If you add Join branches, wire each branch’s last task into Join’s Branches input.',
-        },
-        {
-            key: 'joinTaskId',
-            label: 'Join branches node',
-            type: 'wiredRef',
-            description: 'Optional. Link a Join branches task when you want paths to merge.',
         },
     ],
     validate(parameters, context, errors) {
@@ -115,15 +107,16 @@ export const branchTaskPlugin = defineTaskPlugin({
                 endTaskId: String(row.endTaskId ?? '').trim(),
             }));
         }
+        delete next.nextTaskId;
         return next;
     },
     preview(params) {
         const branchList = Array.isArray(params.branches) ? params.branches : [];
         const count = branchList.length;
-        const join = params.joinTaskId ? String(params.joinTaskId) : 'no join branches';
+        const join = params.joinTaskId ? 'Join connected' : 'No join';
         return {
             primary: count === 1 ? '1 branch' : `${count} branches`,
-            secondary: join === 'no join branches' ? join : `→ ${join}`,
+            secondary: join,
         };
     },
 });

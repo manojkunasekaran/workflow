@@ -24,20 +24,6 @@ export const scriptTaskPlugin = defineTaskPlugin({
             defaultValue: 'javascript',
             options: [{ label: 'JavaScript', value: 'javascript' }],
         },
-        {
-            key: 'timeoutMs',
-            label: 'Timeout (ms)',
-            type: 'number',
-            min: 1,
-            placeholder: 'Optional — overrides environment default',
-        },
-        {
-            key: 'maxMemoryMb',
-            label: 'Max memory (MB)',
-            type: 'number',
-            min: 1,
-            placeholder: 'Optional — overrides environment default',
-        },
     ],
     preview(params) {
         const script = String(params.script ?? '');

@@ -259,30 +259,3 @@
     cursor: crosshair;
   }
 }
-
-/* Tippy — studio tooltip theme (replaces native title hints) */
-.tippy-box[data-theme~='studio'] {
-  background-color: #1e293b;
-  color: #f8fafc;
-  font-size: 11px;
-  font-weight: 500;
-  line-height: 1.35;
-  border-radius: 6px;
-  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.22);
-}
-
-.tippy-box[data-theme~='studio'][data-placement^='top'] > .tippy-arrow::before {
-  border-top-color: #1e293b;
-}
-
-.tippy-box[data-theme~='studio'][data-placement^='bottom'] > .tippy-arrow::before {
-  border-bottom-color: #1e293b;
-}
-
-.tippy-box[data-theme~='studio'][data-placement^='left'] > .tippy-arrow::before {
-  border-left-color: #1e293b;
-}
-
-.tippy-box[data-theme~='studio'][data-placement^='right'] > .tippy-arrow::before {
-  border-right-color: #1e293b;
-}

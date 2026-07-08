@@ -10,24 +10,109 @@ import {
     N8N_NODE_LAYOUT,
     handleWorldYFromNodeTop,
     nodeTopForAlignedInput,
+    parallelBranchHandleWorldYFromNodeTop,
+    parallelBranchLayoutCount,
     studioIconBoxHeight,
+    studioParallelBranchIconBoxHeight,
     studioTaskNodeHeight,
 } from '@/features/workflow-studio/constants/taskNodeLayout';
 import {
+    collectRoutingReferencedTaskIds,
     listRoutingEndpoints,
     terminatesMainSpine,
 } from '@/features/workflow-studio/lib/pluginWiringRuntime';
+import { readBranchEndTaskId, resolveMainSpineTaskIds } from '@/features/workflow-studio/lib/joinWiring';
 import { resolveTaskOutputViews } from '@/features/workflow-studio/lib/graphRouting';
 import { isBranchChainEdgeId } from '@/features/workflow-studio/lib/graphHandles';
 import type { StudioCanvasNode } from '@/features/workflow-studio/lib/canvasNodeUtils';
+
+function routingParentIconHeight(parentType: string | undefined, outputCount: number): number {
+    if (parentType === 'BRANCH') {
+        return studioParallelBranchIconBoxHeight(outputCount);
+    }
+    return studioIconBoxHeight(outputCount, true);
+}
+
+function branchChainTip(startId: string, edges: Edge[]): string {
+    let current = startId;
+    while (true) {
+        const next = edges.find((edge) => isBranchChainEdgeId(edge.id) && edge.source === current)
+            ?.target;
+        if (!next) return current;
+        current = next;
+    }
+}
+
+function resolveBranchTipTaskId(
+    branchData: TaskNodeData,
+    index: number,
+    edges: Edge[],
+): string {
+    const endId = readBranchEndTaskId(branchData, index);
+    if (endId) return endId;
+
+    const raw = branchData.parameters.branches;
+    if (!Array.isArray(raw)) return '';
+    const row = raw[index];
+    if (!row || typeof row !== 'object') return '';
+    const startId = String((row as { startTaskId?: string }).startTaskId ?? '').trim();
+    if (!startId) return '';
+    return branchChainTip(startId, edges);
+}
+
+function branchRowCount(parameters: Record<string, unknown>): number {
+    const raw = parameters.branches;
+    return Array.isArray(raw) ? raw.length : 0;
+}
 
 function joinContinuationPosition(
     branchTop: { x: number; y: number },
     branchIconHeight: number,
 ): { x: number; y: number } {
     return {
-        x: branchTop.x + BRANCH_LAYOUT.offsetX * 0.55,
+        x: branchTop.x + BRANCH_LAYOUT.offsetX,
         y: branchTop.y + branchIconHeight + 64,
+    };
+}
+
+/** Place join to the right of branch tips, vertically centered between them. */
+function layoutJoinAfterBranchEnds(
+    branchData: TaskNodeData,
+    branchTop: { x: number; y: number },
+    branchIconHeight: number,
+    positions: Map<string, { x: number; y: number }>,
+    taskById: Map<string, Node<TaskNodeData>>,
+    edges: Edge[],
+): { x: number; y: number } {
+    const endMetrics: { x: number; centerY: number }[] = [];
+
+    for (let index = 0; index < branchRowCount(branchData.parameters); index += 1) {
+        const tipId = resolveBranchTipTaskId(branchData, index, edges);
+        const pos = positions.get(tipId);
+        const node = taskById.get(tipId);
+        if (!pos || !node) continue;
+
+        const outputs = resolveTaskOutputViews(node.data).outputs.length;
+        const isRouting = terminatesMainSpine(node.data.type);
+        const iconHeight = studioIconBoxHeight(outputs, isRouting);
+        endMetrics.push({
+            x: pos.x,
+            centerY: pos.y + iconHeight / 2,
+        });
+    }
+
+    if (endMetrics.length === 0) {
+        return joinContinuationPosition(branchTop, branchIconHeight);
+    }
+
+    const maxX = Math.max(...endMetrics.map((entry) => entry.x));
+    const minCenterY = Math.min(...endMetrics.map((entry) => entry.centerY));
+    const maxCenterY = Math.max(...endMetrics.map((entry) => entry.centerY));
+    const joinCenterY = (minCenterY + maxCenterY) / 2;
+
+    return {
+        x: maxX + CHAIN_LAYOUT.gap,
+        y: joinCenterY - N8N_NODE_LAYOUT.iconSize / 2,
     };
 }
 
@@ -36,7 +121,7 @@ function joinNextContinuationPosition(joinTop: { x: number; y: number }): {
     y: number;
 } {
     return {
-        x: joinTop.x + CHAIN_LAYOUT.gap * 0.55,
+        x: joinTop.x + CHAIN_LAYOUT.gap,
         y: joinTop.y,
     };
 }
@@ -53,9 +138,11 @@ export function taskTypeById(nodes: StudioCanvasNode[]): Map<string, string> {
 export function computeMainSpineIds(
     taskIds: string[],
     types: Map<string, string>,
+    excludeTaskIds?: Set<string>,
 ): string[] {
     const spine: string[] = [];
     for (const taskId of taskIds) {
+        if (excludeTaskIds?.has(taskId)) continue;
         spine.push(taskId);
         if (terminatesMainSpine(types.get(taskId) ?? '')) break;
     }
@@ -66,27 +153,12 @@ export function getMainSpineIdsFromEdges(
     nodes: StudioCanvasNode[],
     chainEdges: Edge[],
 ): string[] {
-    const taskIds = new Set(getTaskNodes(nodes).map((node) => node.id));
-    const types = taskTypeById(nodes);
-    const spine: string[] = [];
-    let current: string | undefined = WORKFLOW_START_ID;
+    return resolveMainSpineTaskIds(nodes, chainEdges);
+}
 
-    while (current) {
-        const nextEdge = chainEdges.find(
-            (edge) =>
-                edge.source === current &&
-                !isBranchChainEdgeId(edge.id) &&
-                !edge.id.startsWith('route:'),
-        );
-        const next = nextEdge?.target;
-        if (!next || next === ADD_TASK_NODE_ID) break;
-        if (!taskIds.has(next)) break;
-        spine.push(next);
-        if (terminatesMainSpine(types.get(next) ?? '')) break;
-        current = next;
-    }
-
-    return spine;
+/** Prefer spine derived from routing params — chain edges can be stale after branch wiring. */
+export function resolveMainSpineIds(nodes: StudioCanvasNode[], chainEdges: Edge[]): string[] {
+    return resolveMainSpineTaskIds(nodes, chainEdges);
 }
 
 export function shouldShowMainAddTask(spineIds: string[], types: Map<string, string>): boolean {
@@ -103,6 +175,90 @@ export function isMainSpineTerminated(spineIds: string[], types: Map<string, str
 
 export function isOnMainSpine(taskId: string, spineIds: string[]): boolean {
     return spineIds.includes(taskId);
+}
+
+/**
+ * Move continuation splits off a prior split's branch-child row.
+ * Orphan BRANCH nodes (no incoming route wire) saved at a branch-child Y are
+ * shifted to the parent split row — unless they continue a branch-chain, in
+ * which case they stay horizontally aligned with their chain source (e.g. Wait 2).
+ */
+export function repairOrphanBranchSplitLayout(
+    nodes: StudioCanvasNode[],
+    chainEdges: Edge[] = [],
+): StudioCanvasNode[] {
+    const tasks = getTaskNodes(nodes);
+    const referenced = collectRoutingReferencedTaskIds(
+        tasks.map((node) => ({
+            taskId: node.data.taskId,
+            type: node.data.type,
+            parameters: node.data.parameters,
+        })),
+    );
+    const order = tasks.map((node) => node.id);
+    const positions = new Map(nodes.map((node) => [node.id, { ...node.position }]));
+
+    const chainSourceByTarget = new Map<string, string>();
+    for (const edge of chainEdges) {
+        if (!isBranchChainEdgeId(edge.id)) continue;
+        const source = edge.source ?? '';
+        const target = edge.target ?? '';
+        if (source && target) chainSourceByTarget.set(target, source);
+    }
+
+    for (const node of tasks) {
+        if (node.data.type !== 'BRANCH' || referenced.has(node.id)) continue;
+
+        const chainSourceId = chainSourceByTarget.get(node.id);
+        if (chainSourceId) {
+            const sourcePos = positions.get(chainSourceId);
+            const currentPos = positions.get(node.id);
+            if (sourcePos && currentPos) {
+                positions.set(node.id, {
+                    x: Math.max(currentPos.x, sourcePos.x + CHAIN_LAYOUT.gap),
+                    y: sourcePos.y,
+                });
+            }
+            continue;
+        }
+
+        const idx = order.indexOf(node.id);
+        if (idx <= 0) continue;
+
+        let anchorId: string | undefined;
+        for (let i = idx - 1; i >= 0; i--) {
+            const prior = tasks.find((task) => task.id === order[i]);
+            if (prior?.data.type === 'BRANCH') {
+                anchorId = prior.id;
+                break;
+            }
+        }
+        if (!anchorId) continue;
+
+        const anchorPos = positions.get(anchorId);
+        const currentPos = positions.get(node.id);
+        if (!anchorPos || !currentPos) continue;
+
+        const anchorData = tasks.find((task) => task.id === anchorId)?.data as TaskNodeData;
+        const branchChildRowYs = listRoutingEndpoints(anchorData)
+            .map((endpoint) => endpoint.targetTaskId?.trim())
+            .filter((id): id is string => Boolean(id))
+            .map((id) => positions.get(id)?.y)
+            .filter((y): y is number => y != null);
+
+        const onBranchChildRow = branchChildRowYs.some((y) => Math.abs(y - currentPos.y) < 12);
+        if (!onBranchChildRow) continue;
+
+        positions.set(node.id, {
+            x: Math.max(currentPos.x, anchorPos.x + CHAIN_LAYOUT.gap * 1.5),
+            y: anchorPos.y,
+        });
+    }
+
+    return nodes.map((node) => {
+        const pos = positions.get(node.id);
+        return pos ? { ...node, position: pos } : node;
+    });
 }
 
 export function getBranchReferencedTaskIds(nodes: StudioCanvasNode[]): Set<string> {
@@ -226,6 +382,7 @@ export function layoutBranchChildPosition(
     siblingTops: number[],
     occupied: OccupiedSlot[] = [],
     maxSiblingHeight?: number,
+    parentType?: string,
 ): { x: number; y: number } {
     const childOutputs = resolveTaskOutputViews(childData).outputs.length;
     const childIsRouting = terminatesMainSpine(childData.type);
@@ -235,8 +392,31 @@ export function layoutBranchChildPosition(
     let childTop: number;
 
     if (isRoutingParent) {
-        const maxChildHeight = Math.max(childTotalHeight, maxSiblingHeight ?? childTotalHeight);
-        childTop = symmetricRoutingChildTop(parentTop, handleIndex, handleCount, maxChildHeight);
+        if (parentType === 'BRANCH') {
+            const layoutCount = parallelBranchLayoutCount(handleCount);
+            if (layoutCount <= 2) {
+                const maxChildHeight = Math.max(childTotalHeight, maxSiblingHeight ?? childTotalHeight);
+                childTop = symmetricRoutingChildTop(parentTop, handleIndex, layoutCount, maxChildHeight);
+            } else {
+                const handleY = parallelBranchHandleWorldYFromNodeTop(
+                    parentTop.y,
+                    handleIndex,
+                    layoutCount,
+                );
+                childTop = nodeTopForAlignedInput(handleY, childIconHeight);
+                const minSeparation =
+                    Math.max(childTotalHeight, maxSiblingHeight ?? childTotalHeight) +
+                    BRANCH_LAYOUT.siblingGap;
+                for (const existingTop of siblingTops) {
+                    if (childTop < existingTop + minSeparation) {
+                        childTop = existingTop + minSeparation;
+                    }
+                }
+            }
+        } else {
+            const maxChildHeight = Math.max(childTotalHeight, maxSiblingHeight ?? childTotalHeight);
+            childTop = symmetricRoutingChildTop(parentTop, handleIndex, handleCount, maxChildHeight);
+        }
     } else {
         const handleY = handleWorldYFromNodeTop(
             parentTop.y,
@@ -277,7 +457,7 @@ export function realignRoutingChildren(
 
     const endpoints = listRoutingEndpoints(parentData);
     const endpointCount = Math.max(endpoints.length, 1);
-    const parentIconHeight = studioIconBoxHeight(endpointCount, true);
+    const parentIconHeight = routingParentIconHeight(parentData.type, endpointCount);
     const siblingTops: number[] = [];
     const updates = new Map<string, { x: number; y: number }>();
 
@@ -289,7 +469,12 @@ export function realignRoutingChildren(
             if (!child) return null;
             return { endpoint, child };
         })
-        .filter((entry): entry is NonNullable<typeof entry> => entry !== null);
+        .filter((entry): entry is NonNullable<typeof entry> => entry !== null)
+        .sort((a, b) => {
+            const ai = endpoints.findIndex((e) => e.handleId === a.endpoint.handleId);
+            const bi = endpoints.findIndex((e) => e.handleId === b.endpoint.handleId);
+            return ai - bi;
+        });
 
     const maxChildHeight = wiredChildren.reduce((max, { child }) => {
         const outputs = resolveTaskOutputViews(child.data as TaskNodeData).outputs.length;
@@ -309,6 +494,7 @@ export function realignRoutingChildren(
             siblingTops,
             [],
             maxChildHeight,
+            parentData.type,
         );
         siblingTops.push(pos.y);
         updates.set(child.id, pos);
@@ -340,7 +526,7 @@ export function positionForRoutingWire(
     const endpointCount = Math.max(endpoints.length, 1);
     const handleIndex = endpoints.findIndex((endpoint) => endpoint.handleId === handleId);
     const idx = handleIndex >= 0 ? handleIndex : 0;
-    const parentIconHeight = studioIconBoxHeight(endpointCount, true);
+    const parentIconHeight = routingParentIconHeight(parentData.type, endpointCount);
 
     const siblingTops: number[] = [];
     endpoints.forEach((endpoint, i) => {
@@ -371,7 +557,50 @@ export function positionForRoutingWire(
         siblingTops,
         [],
         maxSiblingHeight,
+        parentData.type,
     );
+}
+
+/** Reposition JOIN (and its continuation) after branch children move or branch count changes. */
+export function repositionLinkedJoinNodes(
+    nodes: StudioCanvasNode[],
+    edges: Edge[] = [],
+): StudioCanvasNode[] {
+    const taskById = new Map(getTaskNodes(nodes).map((node) => [node.id, node]));
+    const positions = new Map(nodes.map((node) => [node.id, { ...node.position }]));
+
+    for (const node of getTaskNodes(nodes)) {
+        if (node.data.type !== 'BRANCH') continue;
+        const joinTaskId = String(node.data.parameters.joinTaskId ?? '').trim();
+        if (!joinTaskId) continue;
+
+        const parentTop = positions.get(node.id);
+        if (!parentTop) continue;
+
+        const branchData = node.data as TaskNodeData;
+        const endpointCount = Math.max(listRoutingEndpoints(branchData).length, 1);
+        const parentIconHeight = routingParentIconHeight(branchData.type, endpointCount);
+        const joinPos = layoutJoinAfterBranchEnds(
+            branchData,
+            parentTop,
+            parentIconHeight,
+            positions,
+            taskById,
+            edges,
+        );
+        positions.set(joinTaskId, joinPos);
+
+        const joinNode = taskById.get(joinTaskId);
+        const nextTaskId = String(joinNode?.data.parameters.nextTaskId ?? '').trim();
+        if (nextTaskId) {
+            positions.set(nextTaskId, joinNextContinuationPosition(joinPos));
+        }
+    }
+
+    return nodes.map((node) => {
+        const pos = positions.get(node.id);
+        return pos ? { ...node, position: pos } : node;
+    });
 }
 
 export function relayoutWorkflow(
@@ -428,7 +657,7 @@ export function relayoutWorkflow(
         const endpoints = listRoutingEndpoints(parentNode.data);
         const endpointCount = Math.max(endpoints.length, 1);
         const isRouting = terminatesMainSpine(parentNode.data.type);
-        const parentIconHeight = studioIconBoxHeight(endpointCount, isRouting);
+        const parentIconHeight = routingParentIconHeight(parentNode.data.type, endpointCount);
 
         const siblingTops: number[] = [];
 
@@ -460,6 +689,7 @@ export function relayoutWorkflow(
                 siblingTops,
                 occupied,
                 maxRoutingChildHeight,
+                parentNode.data.type,
             );
             siblingTops.push(pos.y);
             const childHeight = studioTaskNodeHeight(
@@ -508,18 +738,62 @@ export function relayoutWorkflow(
             placed.add(childId);
             queue.push(childId);
         }
+    }
 
-        if (parentNode.data.type === 'BRANCH') {
-            const joinTaskId = String(parentNode.data.parameters.joinTaskId ?? '').trim();
-            if (joinTaskId && !placed.has(joinTaskId)) {
-                const joinNode = taskById.get(joinTaskId);
-                if (joinNode) {
-                    const joinPos = joinContinuationPosition(parentTop, parentIconHeight);
-                    result.push({ ...joinNode, position: joinPos, draggable: true });
-                    positions.set(joinTaskId, joinPos);
-                    placed.add(joinTaskId);
-                    queue.push(joinTaskId);
+    for (const node of getTaskNodes(nodes)) {
+        if (node.data.type !== 'BRANCH') continue;
+        const joinTaskId = String(node.data.parameters.joinTaskId ?? '').trim();
+        if (!joinTaskId) continue;
+
+        const parentTop = positions.get(node.id);
+        if (!parentTop) continue;
+
+        const branchData = node.data as TaskNodeData;
+        const endpointCount = Math.max(listRoutingEndpoints(branchData).length, 1);
+        const parentIconHeight = routingParentIconHeight(branchData.type, endpointCount);
+        const joinPos = layoutJoinAfterBranchEnds(
+            branchData,
+            parentTop,
+            parentIconHeight,
+            positions,
+            taskById,
+            edges,
+        );
+
+        const joinNode = taskById.get(joinTaskId);
+        if (!joinNode) continue;
+
+        const joinOutputs = resolveTaskOutputViews(joinNode.data).outputs.length;
+        const joinHeight = studioTaskNodeHeight(joinOutputs, terminatesMainSpine(joinNode.data.type));
+        registerOccupied(occupied, joinPos, joinHeight);
+        positions.set(joinTaskId, joinPos);
+        placed.add(joinTaskId);
+
+        if (result.some((entry) => entry.id === joinTaskId)) {
+            for (let i = 0; i < result.length; i += 1) {
+                if (result[i].id === joinTaskId) {
+                    result[i] = { ...result[i], position: joinPos, draggable: true };
+                    break;
                 }
+            }
+        } else {
+            result.push({ ...joinNode, position: joinPos, draggable: true });
+        }
+
+        const nextTaskId = String(joinNode.data.parameters.nextTaskId ?? '').trim();
+        if (nextTaskId && !placed.has(nextTaskId)) {
+            const nextNode = taskById.get(nextTaskId);
+            if (nextNode) {
+                const nextPos = joinNextContinuationPosition(joinPos);
+                const nextOutputs = resolveTaskOutputViews(nextNode.data).outputs.length;
+                const nextHeight = studioTaskNodeHeight(
+                    nextOutputs,
+                    terminatesMainSpine(nextNode.data.type),
+                );
+                registerOccupied(occupied, nextPos, nextHeight);
+                result.push({ ...nextNode, position: nextPos, draggable: true });
+                positions.set(nextTaskId, nextPos);
+                placed.add(nextTaskId);
             }
         }
     }

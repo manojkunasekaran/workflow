@@ -38,32 +38,20 @@ export const humanTaskPlugin = defineTaskPlugin({
             defaultValue: '',
         },
         {
-            key: 'approvedNextTaskId',
-            label: 'Approved path',
-            type: 'wiredRef',
-            description: 'Wire from the Approved handle on the canvas.',
-        },
-        {
-            key: 'rejectedNextTaskId',
-            label: 'Rejected path',
-            type: 'wiredRef',
-            description:
-                'Wire from the Rejected handle on the canvas. If empty, rejection fails the workflow.',
-        },
-        {
             key: 'actions',
             label: 'Actions',
             type: 'humanActionList',
             required: true,
             defaultValue: defaultHumanActions(),
-            description: 'Buttons shown to the assignee. Routing uses the Approved/Rejected canvas wires.',
+            description: 'Buttons the reviewer can click (e.g. Approve, Reject).',
         },
         {
             key: 'formSchema',
-            label: 'Form schema',
+            label: 'Extra fields for reviewer (optional)',
             type: 'json',
             defaultValue: null,
-            description: 'Optional JSON schema for collecting structured input (future).',
+            description:
+                'Ask the reviewer to fill in more than Approve/Reject — e.g. a comment, reason, or dropdown. Leave empty if buttons alone are enough. Advanced users: JSON schema defining those fields.',
         },
     ],
     validate(parameters, context, errors) {
@@ -81,8 +69,8 @@ export const humanTaskPlugin = defineTaskPlugin({
         const approved = String(params.approvedNextTaskId ?? '').trim();
         const rejected = String(params.rejectedNextTaskId ?? '').trim();
         const routing = [
-            approved ? `approved → ${approved}` : 'approved unwired',
-            rejected ? `rejected → ${rejected}` : 'reject fails',
+            approved ? 'Approved path connected' : 'Approved path not connected',
+            rejected ? 'Rejected path connected' : 'Rejection fails workflow',
         ].join(' · ');
         return {
             primary: title,

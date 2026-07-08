@@ -23,7 +23,7 @@ import {
     addBranchTask,
     appendBranchChainTask,
     appendJoinAtBranchEnd,
-    appendTaskToChain,
+    appendTaskToChainOrBranch,
     applyStudioConnection,
     definitionToFlow,
     findFirstTaskValidationError,
@@ -96,11 +96,19 @@ export default function WorkflowStudioPage() {
     const applyDefinition = useCallback(
         (definition: WorkflowDefinition) => {
             const { nodes: nextNodes, edges: nextEdges } = definitionToFlow(definition);
+            const layoutRepaired = nextNodes.some((node) => {
+                const stored = definition.layout?.[node.id];
+                if (!stored?.x || !stored?.y || !node.position) return false;
+                return (
+                    Math.abs(stored.x - node.position.x) > 1 ||
+                    Math.abs(stored.y - node.position.y) > 1
+                );
+            });
             resetCanvas(nextNodes, nextEdges);
             setWorkflowName(definition.name);
             setWorkflowId(definition.id ?? null);
             setSavedDefinition(definition);
-            setIsDirty(false);
+            setIsDirty(layoutRepaired);
         },
         [resetCanvas],
     );
@@ -482,19 +490,26 @@ export default function WorkflowStudioPage() {
                 ),
             };
 
+            const workingNodes: StudioCanvasNode[] = configDraft
+                ? nodes.map((node) => {
+                      if (node.type !== 'task' || node.id !== configDraft.taskId) return node;
+                      return { ...node, data: configDraft };
+                  })
+                : nodes;
+
             const insertEdge = pendingEdgeInsert;
             let result: { nodes: StudioCanvasNode[]; edges: Edge[] } | null;
             if (insertEdge) {
-                result = insertTaskOnStudioEdge(insertEdge, draft, nodes, edges);
+                result = insertTaskOnStudioEdge(insertEdge, draft, workingNodes, edges);
             } else if (wire) {
                 result =
                     wire.sourceHandle === MAIN_OUT
                         ? draft.type === 'JOIN'
-                            ? appendJoinAtBranchEnd(nodes, edges, draft, wire.sourceTaskId)
-                            : appendBranchChainTask(nodes, edges, draft, wire.sourceTaskId)
-                        : addBranchTask(nodes, edges, draft, wire);
+                            ? appendJoinAtBranchEnd(workingNodes, edges, draft, wire.sourceTaskId)
+                            : appendBranchChainTask(workingNodes, edges, draft, wire.sourceTaskId)
+                        : addBranchTask(workingNodes, edges, draft, wire);
             } else {
-                result = appendTaskToChain(nodes, edges, draft);
+                result = appendTaskToChainOrBranch(workingNodes, edges, draft);
             }
             if (!result) return;
 
@@ -519,6 +534,7 @@ export default function WorkflowStudioPage() {
         },
         [
             catalogAddIntent,
+            configDraft,
             edges,
             markDirty,
             mode,
@@ -586,7 +602,7 @@ export default function WorkflowStudioPage() {
                                   )
                             : addBranchTask(nodes, edges, updated, pendingBranchWire);
                 } else {
-                    result = appendTaskToChain(nodes, edges, updated);
+                    result = appendTaskToChainOrBranch(nodes, edges, updated);
                 }
                 if (!result) return;
                 nextNodes = applyTaskWithBranchJoinSync(result.nodes, updated.taskId, updated);

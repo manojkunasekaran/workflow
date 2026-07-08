@@ -22,14 +22,7 @@ export const conditionalTaskPlugin = defineTaskPlugin({
             type: 'conditionalBranchList',
             required: true,
             defaultValue: [defaultConditionalBranch(0)],
-            description:
-                'Evaluated top to bottom — first match wins. Drag from output handles on the canvas to wire each branch.',
-        },
-        {
-            key: 'defaultNextTaskId',
-            label: 'Else output',
-            type: 'wiredRef',
-            description: 'Drag from the Else handle on this node to wire the fallback path.',
+            description: 'Evaluated top to bottom — first match wins.',
         },
     ],
     validate(parameters, context, errors) {
@@ -45,9 +38,7 @@ export const conditionalTaskPlugin = defineTaskPlugin({
     preview(params) {
         const branchList = Array.isArray(params.branches) ? params.branches : [];
         const count = branchList.length;
-        const fallback = params.defaultNextTaskId
-            ? `else → ${params.defaultNextTaskId}`
-            : 'no default';
+        const fallback = params.defaultNextTaskId ? 'Else path connected' : 'Else path not connected';
         return {
             primary: count === 1 ? '1 branch' : `${count} branches`,
             secondary: fallback,
