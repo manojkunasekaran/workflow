@@ -95,11 +95,6 @@ export function parallelBranchHandleWorldYFromNodeTop(
     return nodeTopY + parallelBranchHandleTopPx(handleIndex, branchCount);
 }
 
-/** Main-in handle — vertically centered on the icon/handle column. */
-export function studioMainInputHandleTop(iconBoxHeight: number = N8N_NODE_LAYOUT.iconSize): string {
-    return `${iconBoxHeight / 2}px`;
-}
-
 /** Full React Flow node height (icon tile + external label + optional error). */
 export function studioTaskNodeHeight(
     _outputCount: number,

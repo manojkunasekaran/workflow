@@ -149,7 +149,7 @@ export type TaskOutputView = {
     handleId: string;
     label: string;
     color: string;
-    top: string;
+    top?: string | number;
     wired: boolean;
     stubBehavior: WireStubBehavior;
 };
@@ -157,7 +157,7 @@ export type TaskOutputView = {
 export type TaskInputView = {
     id: string;
     label: string;
-    top: string;
+    top?: string | number;
 };
 
 export function resolveTaskOutputViews(data: TaskNodeData): {
@@ -216,11 +216,11 @@ export function clearTaskWireReferences(
                 changed = true;
                 const rows = listRows(branchParams, 'branches').map((row) => ({
                     ...row,
-                    endTaskId: '',
+                    endTaskId: null,
                 }));
                 nextParams = injectParameterType('BRANCH', {
                     ...branchParams,
-                    joinTaskId: '',
+                    joinTaskId: null,
                     branches: rows,
                 });
             } else {
@@ -254,7 +254,7 @@ export function clearTaskWireReferences(
                     node.id,
                     injectParameterType('JOIN', {
                         ...joinParams,
-                        branchTaskId: '',
+                        branchTaskId: null,
                     }),
                 );
             }

@@ -103,7 +103,7 @@ export function sanitizeDanglingBranchJoinReferences(nodes: StudioCanvasNode[]):
 
         const rows = listBranchRows(branchData.parameters).map((row) => ({
             ...row,
-            endTaskId: '',
+            endTaskId: null,
         }));
         next = next.map((item) => {
             if (item.type !== 'task' || item.id !== branchData.taskId) return item;
@@ -113,7 +113,7 @@ export function sanitizeDanglingBranchJoinReferences(nodes: StudioCanvasNode[]):
                     ...(item.data as TaskNodeData),
                     parameters: injectParameterType('BRANCH', {
                         ...branchData.parameters,
-                        joinTaskId: '',
+                        joinTaskId: null,
                         branches: rows,
                     }),
                 },
@@ -135,7 +135,7 @@ export function sanitizeDanglingBranchJoinReferences(nodes: StudioCanvasNode[]):
                     ...(item.data as TaskNodeData),
                     parameters: injectParameterType('JOIN', {
                         ...joinData.parameters,
-                        branchTaskId: '',
+                        branchTaskId: null,
                     }),
                 },
             };

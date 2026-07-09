@@ -6,7 +6,6 @@ import {
     studioIconBoxHeight,
     studioParallelBranchIconBoxHeight,
     studioParallelBranchTaskNodeHeight,
-    studioMainInputHandleTop,
     studioTaskNodeHeight,
     usesParallelBranchStretchedTile,
 } from '@/features/workflow-studio/constants/taskNodeLayout';
@@ -24,8 +23,11 @@ import {
 import { StudioNodeShell } from '@/features/workflow-studio/nodes/StudioNodeShell';
 import { StudioNodeHoverActions } from '@/features/workflow-studio/nodes/StudioNodeHoverActions';
 import { useCanvasActions } from '@/features/workflow-studio/CanvasActionsContext';
+import { ExecutionStatusBadge } from '@/features/executions/ExecutionStatusBadge';
+import { executionNodeBorderClass } from '@/features/executions/lib/executionNodeStatus';
 
 import type { TaskParameterErrors } from '@/features/workflow-studio/task-type-schema/types';
+import type { ExecutionNodeStatus } from '@/features/executions/lib/executionNodeStatus';
 
 export type TaskNodeStudioGraph = {
     onMainSpine: boolean;
@@ -37,6 +39,7 @@ export type TaskNodeStudioGraph = {
     }>;
     validationErrors?: TaskParameterErrors;
     addHandleIds?: string[];
+    executionStatus?: ExecutionNodeStatus;
 };
 
 export type TaskNodeData = {
@@ -84,6 +87,10 @@ function TaskNodeComponent({ data, selected }: NodeProps & { data: TaskNodeData 
 
     const validationSummary = summarizeValidationErrors(data.studioGraph?.validationErrors ?? {});
     const hasValidationError = Boolean(validationSummary);
+    const executionStatus = data.studioGraph?.executionStatus;
+    const executionBorderClass = executionStatus
+        ? executionNodeBorderClass(executionStatus.status)
+        : undefined;
     const branchOutputCount = visibleOutputs.length;
     const stretchIconTile =
         data.type === 'BRANCH' && usesParallelBranchStretchedTile(branchOutputCount);
@@ -105,7 +112,15 @@ function TaskNodeComponent({ data, selected }: NodeProps & { data: TaskNodeData 
     const label = title === typeLabel ? typeLabel : title;
 
     return (
-        <StudioNodeShell
+        <div className="relative">
+            {executionStatus ? (
+                <ExecutionStatusBadge
+                    status={executionStatus.status}
+                    placement="overlay-top-center"
+                    size="sm"
+                />
+            ) : null}
+            <StudioNodeShell
             iconBoxHeight={iconBoxHeight}
             totalHeight={totalHeight}
             stretchIconTile={stretchIconTile}
@@ -114,7 +129,14 @@ function TaskNodeComponent({ data, selected }: NodeProps & { data: TaskNodeData 
             label={label}
             selected={selected}
             invalid={hasValidationError}
-            errorMessage={hasValidationError ? validationSummary ?? undefined : undefined}
+            errorMessage={
+                hasValidationError
+                    ? validationSummary ?? undefined
+                    : executionStatus?.status === 'FAILED'
+                      ? executionStatus.errorMessage
+                      : undefined
+            }
+            statusBorderClass={executionBorderClass}
             hoverActions={
                 readOnly ? null : (
                     <StudioNodeHoverActions
@@ -127,13 +149,7 @@ function TaskNodeComponent({ data, selected }: NodeProps & { data: TaskNodeData 
             {inputs.map((input) => (
                 <TaskInputHandle
                     key={input.id}
-                    input={{
-                        ...input,
-                        top:
-                            inputs.length === 1
-                                ? studioMainInputHandleTop(iconBoxHeight)
-                                : input.top,
-                    }}
+                    input={input}
                     showLabel={shouldShowInputLabel(input.id)}
                 />
             ))}
@@ -141,17 +157,12 @@ function TaskNodeComponent({ data, selected }: NodeProps & { data: TaskNodeData 
             {visibleOutputs.map((output) => (
                 <TaskOutputHandle
                     key={output.handleId}
-                    output={{
-                        ...output,
-                        label:
-                            output.handleId === MAIN_OUT || output.wired
-                                ? ''
-                                : output.label,
-                    }}
+                    output={output}
                     onAddClick={addClickFor(output.handleId)}
                 />
             ))}
         </StudioNodeShell>
+        </div>
     );
 }
 

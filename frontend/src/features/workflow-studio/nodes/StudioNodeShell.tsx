@@ -1,8 +1,10 @@
+import type { CSSProperties } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import { cloneElement, isValidElement, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Hint } from '@/components/ui/hint';
 import { cn } from '@/lib/utils';
 import { N8N_NODE_LAYOUT } from '@/features/workflow-studio/constants/taskNodeLayout';
+import { resolveStudioNodeBorder } from '@/features/workflow-studio/constants/studioNodeTheme';
 
 const HOVER_HIDE_DELAY_MS = 150;
 
@@ -17,6 +19,8 @@ export type StudioNodeShellProps = {
     selected?: boolean;
     invalid?: boolean;
     errorMessage?: string;
+    /** Execution observability border (does not override validation invalid). */
+    statusBorderClass?: string;
     children?: ReactNode;
     hoverActions?: ReactNode;
     /** Stretch the visible card to the full handle column (parallel splits with 3+ branches). */
@@ -47,6 +51,7 @@ export function StudioNodeShell({
     selected = false,
     invalid = false,
     errorMessage,
+    statusBorderClass,
     children,
     hoverActions,
     stretchIconTile = false,
@@ -81,6 +86,13 @@ export function StudioNodeShell({
 
     const showHoverChrome = hovered || selected;
 
+    const nodeBorder = resolveStudioNodeBorder({
+        invalid,
+        selected,
+        statusBorderClass,
+        accentColor,
+    });
+
     const resolvedHoverActions =
         hoverActions && isValidElement<{ visible?: boolean; onHoverChange?: (active: boolean) => void }>(hoverActions)
             ? cloneElement(hoverActions, {
@@ -102,28 +114,18 @@ export function StudioNodeShell({
                 style={{ width: iconSize, height: iconBoxHeight }}
             >
                 {resolvedHoverActions}
-                {children}
                 <div
                     className={cn(
-                        'pointer-events-auto absolute left-1/2 z-[2] flex -translate-x-1/2 items-center justify-center rounded-[16px] border-2 border-[#94a3b8] bg-white shadow-sm transition-[background-color,box-shadow] duration-150',
+                        'pointer-events-auto absolute left-1/2 z-[1] flex -translate-x-1/2 items-center justify-center rounded-[16px] border-2 bg-white shadow-sm transition-[background-color,box-shadow,border-color] duration-150',
                         showHoverChrome && 'bg-[#f1f5f9] shadow-[0_8px_24px_rgba(15,23,42,0.14)]',
-                        invalid
-                            ? 'ring-2 ring-destructive ring-offset-2 ring-offset-[#f8fafc]'
-                            : selected
-                              ? 'ring-2 ring-offset-2 ring-offset-[#f8fafc]'
-                              : '',
+                        nodeBorder.className,
                     )}
                     style={{
                         width: iconSize,
                         height: tileHeight,
                         top: tilePosition.top,
                         transform: tilePosition.transform,
-                        ...(selected && !invalid
-                            ? ({
-                                  borderColor: accentColor,
-                                  ['--tw-ring-color' as string]: accentColor,
-                              } as React.CSSProperties)
-                            : {}),
+                        ...(nodeBorder.style as CSSProperties),
                     }}
                     onMouseEnter={() => setNodeHover(true)}
                     onMouseLeave={() => setNodeHover(false)}
@@ -135,6 +137,7 @@ export function StudioNodeShell({
                         strokeWidth={2.25}
                     />
                 </div>
+                {children}
             </div>
 
             <Hint content={label}>

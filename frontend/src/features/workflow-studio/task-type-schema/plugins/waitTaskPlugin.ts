@@ -1,6 +1,7 @@
 import { Timer } from 'lucide-react';
 import { formatWaitPreview } from '@/features/workflow-studio/task-config/waitDuration';
 import { defineTaskPlugin } from '../pluginTypes';
+import { formatPrimitive, recordFromUnknown } from '@/features/executions/lib/executionSummaryUtils';
 
 export const waitTaskPlugin = defineTaskPlugin({
     type: 'WAIT',
@@ -26,5 +27,16 @@ export const waitTaskPlugin = defineTaskPlugin({
     },
     preview(params) {
         return { primary: formatWaitPreview(params.duration) };
+    },
+    executionSummary({ parameters, executionData }) {
+        const data = recordFromUnknown(executionData);
+        const durationMs = data?.duration ?? parameters.duration;
+        return {
+            lines: [
+                { label: 'Configured', value: formatWaitPreview(durationMs) },
+                { label: 'Started', value: formatPrimitive(data?.waitStartTime) },
+                { label: 'Ended', value: formatPrimitive(data?.waitEndTime) },
+            ],
+        };
     },
 });

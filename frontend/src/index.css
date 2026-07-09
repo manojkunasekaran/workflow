@@ -191,20 +191,8 @@
     @apply hidden;
   }
 
-  /* Handles */
-  .react-flow__handle {
-    @apply border-0 transition-colors;
-    width: 14px;
-    height: 14px;
-    background-color: #94a3b8;
-  }
-
-  .react-flow__handle:hover {
-    background-color: #64748b;
-  }
-
-  .react-flow__handle.connecting {
-    background-color: #64748b;
+  .studio-dot-grid .react-flow__handle {
+    z-index: 3;
   }
 
   /* Selection Box */
@@ -258,4 +246,25 @@
   .studio-canvas-pick-mode .react-flow__pane {
     cursor: crosshair;
   }
+}
+
+/* Studio canvas handles — unlayered so overrides win over @xyflow/style.css */
+.studio-dot-grid .react-flow {
+  --xy-handle-background-color: #94a3b8;
+  --xy-handle-border-color: transparent;
+}
+
+.studio-dot-grid .react-flow__handle {
+  width: 14px;
+  height: 14px;
+  min-width: 14px;
+  min-height: 14px;
+  background-color: #94a3b8;
+  border: none;
+  transition: background-color 150ms ease;
+}
+
+.studio-dot-grid .react-flow__handle:hover,
+.studio-dot-grid .react-flow__handle.connecting {
+  background-color: #64748b;
 }

@@ -2,6 +2,7 @@ import type { WorkflowDefinition } from '@/types/api';
 import type { StudioTaskType } from '@/features/workflow-studio/task-type-schema/pluginTypes';
 import { httpTaskPlugin } from '@/features/workflow-studio/task-type-schema/plugins/httpTaskPlugin';
 import { buildDefaultParameters, injectParameterType } from '@/features/workflow-studio/task-type-schema/utils';
+import { normalizeOptionalTaskRef } from './taskRefs';
 import type { TaskParameterErrors, TaskValidationContext } from './types';
 
 export const ITERATOR_NESTED_TYPES: StudioTaskType[] = [
@@ -86,9 +87,7 @@ export function normalizeIteratorParamsForExport(
     parameters: Record<string, unknown>,
 ): Record<string, unknown> {
     const next = { ...parameters };
-    const done = next.doneNextTaskId;
-    next.doneNextTaskId =
-        done == null || String(done).trim() === '' ? '' : String(done).trim();
+    next.doneNextTaskId = normalizeOptionalTaskRef(next.doneNextTaskId);
     return next;
 }
 

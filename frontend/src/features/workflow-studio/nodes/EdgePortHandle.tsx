@@ -1,5 +1,5 @@
 import { Handle, Position } from '@xyflow/react';
-import type { MouseEvent } from 'react';
+import type { CSSProperties, MouseEvent } from 'react';
 import { Plus } from 'lucide-react';
 import { Hint } from '@/components/ui/hint';
 import { cn } from '@/lib/utils';
@@ -7,78 +7,71 @@ import {
     STUDIO_EDGE_CONTROL_BUTTON_CLASS,
     STUDIO_EDGE_CONTROL_ICON_CLASS,
 } from '@/features/workflow-studio/edges/studioEdgeTheme';
-import {
-    STUDIO_HANDLE_BORDER_OVERLAP,
-    STUDIO_HANDLE_COLOR,
-    STUDIO_HANDLE_SIZE,
-} from '@/features/workflow-studio/nodes/StudioHandle';
 
-const HANDLE_RADIUS = STUDIO_HANDLE_SIZE / 2;
-const HANDLE_CENTER_NUDGE = HANDLE_RADIUS - STUDIO_HANDLE_BORDER_OVERLAP;
+type EdgePortHandleProps = {
+    id: string;
+    type: 'source' | 'target';
+    side: 'left' | 'right';
+    /** Vertical position within the handle column — omit for React Flow default (50%). */
+    top?: string | number;
+    /** Input-side port name (e.g. join merge). Rendered beside the handle, not on the edge. */
+    label?: string;
+    onAddClick?: (event: MouseEvent) => void;
+    addTitle?: string;
+};
+
+function handleTopStyle(top?: string | number): CSSProperties | undefined {
+    return top !== undefined ? { top } : undefined;
+}
+
+function anchorTop(top?: string | number): string | number {
+    return top ?? '50%';
+}
 
 /**
- * Handle centered on the node border; label sits outside the card (n8n-style).
- * Uses `left/right: 100%` so only the dot straddles the edge — labels never sit inside the card.
- * When `onAddClick` is provided, an inline "+" button is rendered at the end of
- * the stub (replacing the standalone add-task node — n8n's "add node connector").
+ * Port on the node tile border. Always uses React Flow's native Handle positioning.
+ * Labels and "+" stubs are siblings — never wrapped around the handle.
  */
 export function EdgePortHandle({
     id,
     type,
     side,
-    top = '50%',
+    top,
     label,
     onAddClick,
     addTitle = 'Add task',
-}: {
-    id: string;
-    type: 'source' | 'target';
-    side: 'left' | 'right';
-    top?: string | number;
-    /** @deprecated Handle color is unified — kept for call-site compatibility. */
-    color?: string;
-    label?: string;
-    onAddClick?: (event: MouseEvent) => void;
-    addTitle?: string;
-}) {
+}: EdgePortHandleProps) {
     const isRight = side === 'right';
+    const position = isRight ? Position.Right : Position.Left;
+    const y = anchorTop(top);
 
     return (
-        <div
-            className={cn(
-                'pointer-events-none absolute z-20 flex items-center',
-                isRight ? 'flex-row' : 'flex-row-reverse',
-            )}
-            style={{
-                top,
-                transform: 'translateY(-50%)',
-                ...(isRight ? { left: '100%' } : { right: '100%' }),
-            }}
-        >
-            <Handle
-                type={type}
-                position={isRight ? Position.Right : Position.Left}
-                id={id}
-                className="pointer-events-auto !relative !left-auto !right-auto !top-auto !border-0"
-                style={{
-                    width: STUDIO_HANDLE_SIZE,
-                    height: STUDIO_HANDLE_SIZE,
-                    backgroundColor: STUDIO_HANDLE_COLOR,
-                    position: 'relative',
-                    transform: isRight
-                        ? `translateX(-${HANDLE_CENTER_NUDGE}px)`
-                        : `translateX(${HANDLE_CENTER_NUDGE}px)`,
-                }}
-            />
+        <>
+            <Handle type={type} position={position} id={id} style={handleTopStyle(top)} />
+
+            {label ? (
+                <span
+                    className={cn(
+                        'pointer-events-none absolute z-10 max-w-[80px] truncate whitespace-nowrap text-[10px] font-medium text-[#64748b]',
+                        isRight ? 'left-full ml-2' : 'right-full mr-2',
+                    )}
+                    style={{ top: y, transform: 'translateY(-50%)' }}
+                >
+                    {label}
+                </span>
+            ) : null}
+
             {onAddClick ? (
-                <>
-                    {label ? (
-                        <span className="pointer-events-none mr-1 whitespace-nowrap text-[11px] font-medium text-[#64748b]">
-                            {label}
-                        </span>
-                    ) : null}
+                <div
+                    className="nodrag nopan pointer-events-none absolute z-20 flex items-center"
+                    style={{
+                        top: y,
+                        transform: 'translateY(-50%)',
+                        ...(isRight ? { left: '100%', paddingLeft: 6 } : { right: '100%', paddingRight: 6 }),
+                    }}
+                >
                     <span
-                        className="pointer-events-none h-0 w-5 border-t-2 border-dashed border-[#94a3b8] opacity-80"
+                        className="pointer-events-none h-0 w-4 border-t-2 border-dashed border-[#94a3b8] opacity-80"
                         aria-hidden
                     />
                     <Hint content={addTitle}>
@@ -88,24 +81,15 @@ export function EdgePortHandle({
                             onPointerDown={(event) => event.stopPropagation()}
                             onClick={(event) => {
                                 event.stopPropagation();
-                                onAddClick?.(event);
+                                onAddClick(event);
                             }}
-                            className={cn('nodrag nopan pointer-events-auto', STUDIO_EDGE_CONTROL_BUTTON_CLASS)}
+                            className={cn('pointer-events-auto', STUDIO_EDGE_CONTROL_BUTTON_CLASS)}
                         >
                             <Plus className={STUDIO_EDGE_CONTROL_ICON_CLASS} strokeWidth={2.5} />
                         </button>
                     </Hint>
-                </>
-            ) : label ? (
-                <span
-                    className={cn(
-                        'pointer-events-none whitespace-nowrap text-[11px] font-medium text-[#64748b]',
-                        isRight ? 'ml-1.5' : 'mr-1.5',
-                    )}
-                >
-                    {label}
-                </span>
+                </div>
             ) : null}
-        </div>
+        </>
     );
 }

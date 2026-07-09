@@ -1,17 +1,18 @@
 package com.app.common.model.task.execution;
 
+import com.app.common.model.rule.ConditionEvaluation;
+import com.app.common.model.task.TaskType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import com.app.common.model.task.TaskType;
 import lombok.NoArgsConstructor;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
  * Captures conditional task execution details for audit trail.
- * Stores the evaluation input, result, and branch metrics.
  */
 @Data
 @Builder
@@ -19,8 +20,8 @@ import java.util.Map;
 @AllArgsConstructor
 public class ConditionalTaskExecutionData implements TaskExecutionData {
 
-    /** Specific fields and their resolved values used during evaluation */
-    private Map<String, Object> evaluatedFields;
+    /** Ordered trace of condition and expression evaluations. */
+    private List<ConditionEvaluation> evaluations;
 
     /** Name of the branch that matched (or "default" if no condition matched) */
     private String matchedBranch;

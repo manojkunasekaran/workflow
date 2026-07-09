@@ -147,6 +147,7 @@ public class WorkflowEngine {
         }
 
         execution.setStatus(WorkflowExecutionStatus.RUNNING);
+        execution.setEndTime(null);
         executionRepository.save(execution);
 
         log.info("Resuming workflow {} from task '{}'", executionId, execution.getCurrentTaskId());
@@ -188,6 +189,8 @@ public class WorkflowEngine {
                 execution.getTaskOutputs(),
                 execution.getId());
 
+        boolean skipFinallyPersist = false;
+
         try {
             List<WorkflowTask> tasks = definition.getTasks();
             if (tasks == null || tasks.isEmpty()) {
@@ -221,10 +224,17 @@ public class WorkflowEngine {
                 // Record task execution
                 recordTaskExecution(execution, currentTask, result);
 
-                // PAUSED: persist state and exit naturally
+                // PAUSED: persist and exit — do not run finally save (avoids racing resume)
                 if (result.getStatus() == TaskExecutionResult.Status.PAUSED) {
-                    execution.setCurrentTaskId(getNextTaskId(tasks, currentTask.getTaskId()));
+                    if (currentTask.getType() == TaskType.WAIT) {
+                        execution.setCurrentTaskId(getNextTaskId(tasks, currentTask.getTaskId()));
+                    } else {
+                        execution.setCurrentTaskId(null);
+                    }
                     execution.setStatus(WorkflowExecutionStatus.PAUSED);
+                    execution.setEndTime(null);
+                    executionRepository.save(execution);
+                    skipFinallyPersist = true;
                     log.info("Workflow {} paused at task '{}'", execution.getId(), currentTask.getTaskId());
                     return;
                 }
@@ -265,9 +275,12 @@ public class WorkflowEngine {
             log.error("Workflow execution failed: {}", e.getMessage(), e);
             execution.setStatus(WorkflowExecutionStatus.FAILED);
         } finally {
-            // Add any clean up if needed
-            execution.setEndTime(Instant.now());
-            executionRepository.save(execution);
+            if (!skipFinallyPersist) {
+                if (!WorkflowExecutionStatus.PAUSED.equals(execution.getStatus())) {
+                    execution.setEndTime(Instant.now());
+                }
+                executionRepository.save(execution);
+            }
         }
 
     }

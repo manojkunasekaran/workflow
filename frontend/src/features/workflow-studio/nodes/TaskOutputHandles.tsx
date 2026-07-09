@@ -52,8 +52,6 @@ export function TaskOutputHandle({
             type="source"
             side="right"
             top={output.top}
-            color={output.color}
-            label={output.label || undefined}
             onAddClick={onAddClick}
             addTitle={output.label ? `Add ${output.label}` : 'Add task'}
         />

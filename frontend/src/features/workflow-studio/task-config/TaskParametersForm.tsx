@@ -7,6 +7,7 @@ interface TaskParametersFormProps {
     parameters: Record<string, unknown>;
     onChange: (parameters: Record<string, unknown>) => void;
     errors?: TaskParameterErrors;
+    readOnly?: boolean;
 }
 
 export function TaskParametersForm({
@@ -14,6 +15,7 @@ export function TaskParametersForm({
     parameters,
     onChange,
     errors = {},
+    readOnly = false,
 }: TaskParametersFormProps) {
     return (
         <div className="space-y-5">
@@ -25,6 +27,7 @@ export function TaskParametersForm({
                     onChange={onChange}
                     error={errors[field.key]}
                     fieldErrors={errors}
+                    readOnly={readOnly}
                 />
             ))}
         </div>

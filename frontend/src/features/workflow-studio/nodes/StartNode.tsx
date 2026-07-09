@@ -33,7 +33,6 @@ function StartNodeComponent({ data, selected }: NodeProps & { data: StartNodeDat
                 type="source"
                 side="right"
                 id={MAIN_OUT}
-                top="50%"
                 onAddClick={data.showAdd && onAddTaskClick ? () => onAddTaskClick() : undefined}
             />
         </StudioNodeShell>

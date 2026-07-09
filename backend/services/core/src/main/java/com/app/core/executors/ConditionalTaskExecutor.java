@@ -1,29 +1,24 @@
 package com.app.core.executors;
 
 import com.app.common.entity.WorkflowExecution;
+import com.app.common.model.rule.ConditionEvaluation;
 import com.app.common.model.rule.EvaluationResult;
+import com.app.common.model.task.WorkflowTask;
 import com.app.common.model.task.execution.ConditionalTaskExecutionData;
+import com.app.common.model.task.execution.TaskExecutionResult;
 import com.app.common.model.task.parameters.ConditionalTaskParameters;
 import com.app.common.model.task.parameters.ConditionalTaskParameters.Branch;
-import com.app.common.model.task.execution.TaskExecutionResult;
 import com.app.common.model.task.TaskType;
-
-import com.app.common.model.task.WorkflowTask;
 import com.app.core.model.ExecutionContext;
 import com.app.core.rule.RuleEvaluator;
 import com.app.core.service.TaskExecutor;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 
-/**
- * Executor for CONDITIONAL task type.
- * Evaluates branch conditions using RuleEvaluator and determines the next task.
- */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -47,19 +42,20 @@ public class ConditionalTaskExecutor implements TaskExecutor {
                     .build();
         }
 
-        // Evaluate branches in order - first match wins
         String nextTaskId = params.getDefaultNextTaskId();
         String matchedBranch = "default";
         int branchesEvaluated = 0;
-
-        Map<String, Object> allEvaluatedFields = new HashMap<>();
+        List<ConditionEvaluation> allEvaluations = new ArrayList<>();
 
         if (params.getBranches() != null) {
             for (Branch branch : params.getBranches()) {
+                int branchIndex = branchesEvaluated;
                 branchesEvaluated++;
                 try {
                     EvaluationResult res = ruleEvaluator.evaluate(branch, context);
-                    allEvaluatedFields.putAll(res.evaluatedFields());
+                    for (ConditionEvaluation evaluation : res.evaluations()) {
+                        allEvaluations.add(evaluation.toBuilder().branchIndex(branchIndex).build());
+                    }
                     if (res.matched()) {
                         nextTaskId = branch.getNextTaskId();
                         matchedBranch = branch.getName() != null ? branch.getName() : "unnamed";
@@ -68,7 +64,6 @@ public class ConditionalTaskExecutor implements TaskExecutor {
                     }
                 } catch (Exception e) {
                     log.error("Error evaluating branch '{}': {}", branch.getName(), e.getMessage());
-                    // Continue to next branch on error
                 }
             }
         }
@@ -76,13 +71,10 @@ public class ConditionalTaskExecutor implements TaskExecutor {
         log.info("Conditional task {} resolved to branch '{}' -> next task: {}",
                 task.getTaskId(), matchedBranch, nextTaskId);
 
-        // Build execution data for audit trail (stores input + output + metrics)
         ConditionalTaskExecutionData executionData = ConditionalTaskExecutionData.builder()
-                .evaluatedFields(allEvaluatedFields)
-                // OUTPUT: The result
+                .evaluations(allEvaluations)
                 .matchedBranch(matchedBranch)
                 .nextTaskId(nextTaskId)
-                // METRICS
                 .branchesEvaluated(branchesEvaluated)
                 .totalBranches(params.getBranches() != null ? params.getBranches().size() : 0)
                 .build();
@@ -94,5 +86,4 @@ public class ConditionalTaskExecutor implements TaskExecutor {
                 .output(buildOutput(executionData))
                 .build();
     }
-
 }

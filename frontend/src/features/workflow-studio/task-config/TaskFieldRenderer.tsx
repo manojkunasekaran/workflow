@@ -29,6 +29,26 @@ interface TaskFieldRendererProps {
     onChange: (parameters: Record<string, unknown>) => void;
     error?: string;
     fieldErrors?: TaskParameterErrors;
+    readOnly?: boolean;
+}
+
+function formatReadOnlyFieldValue(field: TaskFieldSchema, value: unknown): string {
+    if (value === undefined || value === null || value === '') {
+        return '—';
+    }
+    if (field.type === 'select' || field.type === 'segmented') {
+        const str = String(value);
+        const option = field.options?.find((item) => item.value === str);
+        return option?.label ?? str;
+    }
+    if (typeof value === 'object') {
+        try {
+            return JSON.stringify(value, null, 2);
+        } catch {
+            return String(value);
+        }
+    }
+    return String(value);
 }
 
 export function TaskFieldRenderer({
@@ -37,9 +57,24 @@ export function TaskFieldRenderer({
     onChange,
     error,
     fieldErrors = {},
+    readOnly = false,
 }: TaskFieldRendererProps) {
     const { workflowTasks, currentTaskId } = useTaskConfigContext();
     const value = readFieldValue(parameters, field.key);
+
+    if (readOnly && field.type !== 'wiredRef') {
+        return (
+            <div className="space-y-1.5">
+                <label className="text-xs font-medium text-foreground">{field.label}</label>
+                <div className="rounded-md border border-border bg-muted/30 px-3 py-2 text-xs text-foreground whitespace-pre-wrap">
+                    {formatReadOnlyFieldValue(field, value)}
+                </div>
+                {field.description ? (
+                    <p className="text-[11px] text-muted-foreground">{field.description}</p>
+                ) : null}
+            </div>
+        );
+    }
 
     const update = (nextValue: unknown) => {
         onChange(writeFieldValue(parameters, field.key, nextValue));

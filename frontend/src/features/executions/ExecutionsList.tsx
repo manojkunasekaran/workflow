@@ -1,58 +1,69 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { executionApi, type WorkflowExecution } from '@/api/executionApi';
+import { workflowApi } from '@/api/workflowApi';
 import { PageHeader } from '@/layouts/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Loader2, RefreshCw, ArrowRight } from 'lucide-react';
+import {
+    formatExecutionDuration,
+} from '@/features/executions/lib/executionDisplay';
+import { ExecutionStatusBadge } from '@/features/executions/ExecutionStatusBadge';
+
+function findFailedStepId(execution: WorkflowExecution): string | null {
+    const failed = execution.taskExecutionSummaries?.find(
+        (summary) => summary.status.toUpperCase() === 'FAILED',
+    );
+    return failed?.taskDefinitionId ?? null;
+}
 
 export default function ExecutionsList() {
     const [executions, setExecutions] = useState<WorkflowExecution[]>([]);
+    const [workflowNames, setWorkflowNames] = useState<Record<string, string>>({});
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const navigate = useNavigate();
 
-    useEffect(() => {
-        loadExecutions();
-    }, []);
-
-    const loadExecutions = async () => {
+    const loadExecutions = useCallback(async () => {
         try {
             setIsLoading(true);
             setError(null);
-            const data = await executionApi.getAll();
-            setExecutions(data);
+            const [executionData, workflows] = await Promise.all([
+                executionApi.getAll(),
+                workflowApi.getAll(),
+            ]);
+            setExecutions(executionData);
+            setWorkflowNames(
+                Object.fromEntries(
+                    workflows
+                        .filter((workflow) => workflow.id)
+                        .map((workflow) => [workflow.id as string, workflow.name]),
+                ),
+            );
         } catch (err) {
             console.error('Failed to load executions', err);
             setError('Failed to load executions');
         } finally {
             setIsLoading(false);
         }
-    };
+    }, []);
 
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'COMPLETED':
-                return 'text-green-600 bg-green-50 border-green-200';
-            case 'FAILED':
-                return 'text-red-600 bg-red-50 border-red-200';
-            case 'RUNNING':
-            case 'QUEUED':
-                return 'text-yellow-600 bg-yellow-50 border-yellow-200';
-            default:
-                return 'text-gray-600 bg-gray-50 border-gray-200';
-        }
-    };
+    useEffect(() => {
+        void loadExecutions();
+    }, [loadExecutions]);
 
-    const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleString();
-    };
+    const sortedExecutions = useMemo(
+        () =>
+            [...executions].sort(
+                (a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime(),
+            ),
+        [executions],
+    );
 
     if (isLoading) {
         return (
             <div className="flex h-full flex-col bg-background">
-                <PageHeader
-                    title={<h1 className="text-sm font-semibold">Executions</h1>}
-                />
+                <PageHeader title={<h1 className="text-sm font-semibold">Executions</h1>} />
                 <div className="flex flex-1 items-center justify-center">
                     <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                 </div>
@@ -65,7 +76,7 @@ export default function ExecutionsList() {
             <PageHeader
                 title={<h1 className="text-sm font-semibold">Executions</h1>}
                 actions={
-                    <Button variant="outline" size="sm" onClick={loadExecutions}>
+                    <Button variant="outline" size="sm" onClick={() => void loadExecutions()}>
                         <RefreshCw className="h-4 w-4" />
                         Refresh
                     </Button>
@@ -73,74 +84,91 @@ export default function ExecutionsList() {
             />
 
             <div className="flex-1 overflow-auto p-6">
-                {error && (
-                    <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-600 rounded-lg">
+                {error ? (
+                    <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-red-600">
                         {error}
                     </div>
-                )}
+                ) : null}
 
-                {executions.length === 0 ? (
-                    <div className="text-center text-muted-foreground py-12">
+                {sortedExecutions.length === 0 ? (
+                    <div className="py-12 text-center text-muted-foreground">
                         No executions found. Run a workflow to see executions here.
                     </div>
                 ) : (
-                    <div className="bg-card border border-border rounded-lg overflow-hidden">
+                    <div className="overflow-hidden rounded-lg border border-border bg-card">
                         <table className="w-full">
-                            <thead className="bg-muted/50 border-b border-border">
+                            <thead className="border-b border-border bg-muted/50">
                                 <tr>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
-                                        Execution ID
+                                    <th className="px-4 py-3 text-left text-xs font-medium uppercase text-muted-foreground">
+                                        Workflow
                                     </th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
-                                        Workflow ID
-                                    </th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
+                                    <th className="px-4 py-3 text-left text-xs font-medium uppercase text-muted-foreground">
                                         Status
                                     </th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
-                                        Start Time
+                                    <th className="px-4 py-3 text-left text-xs font-medium uppercase text-muted-foreground">
+                                        Duration
                                     </th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
-                                        Tasks
+                                    <th className="px-4 py-3 text-left text-xs font-medium uppercase text-muted-foreground">
+                                        Started
                                     </th>
-                                    <th className="px-4 py-3"></th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium uppercase text-muted-foreground">
+                                        Failed step
+                                    </th>
+                                    <th className="px-4 py-3" />
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-border">
-                                {executions.map((execution) => (
-                                    <tr
-                                        key={execution.id}
-                                        className="hover:bg-muted/30 cursor-pointer transition-colors"
-                                        onClick={() => navigate(`/executions/${execution.id}`)}
-                                    >
-                                        <td className="px-4 py-3 text-sm font-mono text-foreground">
-                                            {execution.id.substring(0, 8)}...
-                                        </td>
-                                        <td className="px-4 py-3 text-sm font-mono text-muted-foreground">
-                                            {execution.workflowId?.substring(0, 8) || 'N/A'}...
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <span
-                                                className={`inline-flex px-2 py-1 text-xs font-medium rounded border ${getStatusColor(
-                                                    execution.status
-                                                )}`}
-                                            >
-                                                {execution.status}
-                                            </span>
-                                        </td>
-                                        <td className="px-4 py-3 text-sm text-muted-foreground">
-                                            {formatDate(execution.startTime)}
-                                        </td>
-                                        <td className="px-4 py-3 text-sm text-muted-foreground">
-                                            {execution.taskExecutionSummaries?.length || 0}
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <Button variant="ghost" size="sm">
-                                                <ArrowRight className="h-4 w-4" />
-                                            </Button>
-                                        </td>
-                                    </tr>
-                                ))}
+                                {sortedExecutions.map((execution) => {
+                                    const failedStepId = findFailedStepId(execution);
+                                    const workflowName =
+                                        workflowNames[execution.workflowId] ?? execution.workflowId;
+                                    const duration = formatExecutionDuration(
+                                        execution.startTime,
+                                        execution.endTime,
+                                    );
+
+                                    return (
+                                        <tr
+                                            key={execution.id}
+                                            className="cursor-pointer transition-colors hover:bg-muted/30"
+                                            onClick={() => navigate(`/executions/${execution.id}`)}
+                                        >
+                                            <td className="px-4 py-3">
+                                                <div className="text-sm font-medium text-foreground">
+                                                    {workflowName}
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <ExecutionStatusBadge status={execution.status} size="lg" />
+                                            </td>
+                                            <td className="px-4 py-3 text-sm text-muted-foreground">
+                                                {duration}
+                                            </td>
+                                            <td className="px-4 py-3 text-sm text-muted-foreground">
+                                                {new Date(execution.startTime).toLocaleString()}
+                                            </td>
+                                            <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
+                                                {failedStepId ? (
+                                                    <span className="text-destructive">
+                                                        {failedStepId}
+                                                    </span>
+                                                ) : (
+                                                    '—'
+                                                )}
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <Button variant="ghost" size="sm" asChild>
+                                                    <Link
+                                                        to={`/executions/${execution.id}`}
+                                                        onClick={(event) => event.stopPropagation()}
+                                                    >
+                                                        <ArrowRight className="h-4 w-4" />
+                                                    </Link>
+                                                </Button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </div>

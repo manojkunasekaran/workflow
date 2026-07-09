@@ -55,6 +55,21 @@ import {
 import { injectParameterType, summarizeValidationErrors, validateTaskParameters } from '@/features/workflow-studio/task-type-schema/utils';
 import { getTaskTypePlugin } from '@/features/workflow-studio/task-type-schema/registry';
 import { parseIteratorActions, normalizeIteratorParamsForExport } from '@/features/workflow-studio/task-type-schema/iteratorTask';
+import { TASK_PLUGINS } from '@/features/workflow-studio/task-type-schema/plugins';
+
+const pluginByType = new Map(TASK_PLUGINS.map((plugin) => [plugin.type, plugin]));
+
+function normalizeTaskParametersForExport(
+    taskType: TaskType,
+    parameters: Record<string, unknown>,
+): Record<string, unknown> {
+    const plugin = pluginByType.get(taskType);
+    let normalized = { ...parameters };
+    if (plugin?.normalize) {
+        normalized = plugin.normalize(normalized);
+    }
+    return injectParameterType(taskType, normalized);
+}
 import type { TaskNodeData } from '@/features/workflow-studio/nodes/TaskNode';
 import { DEFAULT_TASK_WIRING } from '@/features/workflow-studio/task-type-schema/pluginWiringTypes';
 
@@ -369,14 +384,15 @@ export function flowToDefinition(
     for (const node of getTaskNodes(withEndTasks)) {
         if (loopBodyIds.has(node.data.taskId)) continue;
         const data = node.data as TaskNodeData;
-        const rawParams = injectParameterType(data.type, data.parameters);
-        const parameters =
+        const stripped =
             data.type === 'ITERATOR_TASK'
-                ? injectParameterType(
-                      'ITERATOR_TASK',
-                      normalizeIteratorParamsForExport(stripIteratorCanvasParams(rawParams)),
-                  )
-                : rawParams;
+                ? stripIteratorCanvasParams(data.parameters)
+                : data.parameters;
+        const prepared =
+            data.type === 'ITERATOR_TASK'
+                ? normalizeIteratorParamsForExport(stripped)
+                : stripped;
+        const parameters = normalizeTaskParametersForExport(data.type as TaskType, prepared);
         taskPayloadById.set(data.taskId, {
             taskId: data.taskId,
             type: data.type as TaskType,

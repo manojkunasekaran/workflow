@@ -6,7 +6,9 @@ import {
     type ConditionalBranchRow,
 } from '../conditionalBranch';
 import { defineTaskPlugin } from '../pluginTypes';
+import { normalizeOptionalTaskRef } from '../taskRefs';
 import { CONDITIONAL_TASK_WIRING } from './wiring';
+import { formatPrimitive, recordFromUnknown } from '@/features/executions/lib/executionSummaryUtils';
 
 export const conditionalTaskPlugin = defineTaskPlugin({
     type: 'CONDITIONAL',
@@ -33,6 +35,7 @@ export const conditionalTaskPlugin = defineTaskPlugin({
         if (Array.isArray(next.branches)) {
             next.branches = normalizeConditionalBranchesForApi(next.branches as ConditionalBranchRow[]);
         }
+        next.defaultNextTaskId = normalizeOptionalTaskRef(next.defaultNextTaskId);
         return next;
     },
     preview(params) {
@@ -42,6 +45,23 @@ export const conditionalTaskPlugin = defineTaskPlugin({
         return {
             primary: count === 1 ? '1 branch' : `${count} branches`,
             secondary: fallback,
+        };
+    },
+    executionSummary({ executionData }) {
+        const data = recordFromUnknown(executionData);
+        const matched = formatPrimitive(data?.matchedBranch);
+        return {
+            lines: [
+                { label: 'Matched', value: matched, tone: matched === 'default' ? 'warning' : 'success' },
+                { label: 'Next step', value: formatPrimitive(data?.nextTaskId) },
+                {
+                    label: 'Evaluated',
+                    value:
+                        data?.branchesEvaluated != null && data?.totalBranches != null
+                            ? `${data.branchesEvaluated} / ${data.totalBranches}`
+                            : '—',
+                },
+            ],
         };
     },
 });
