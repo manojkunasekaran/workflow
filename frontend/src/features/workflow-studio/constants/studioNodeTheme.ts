@@ -1,6 +1,8 @@
 import type { StudioTaskType } from '@/features/workflow-studio/task-type-schema/pluginTypes';
 
 /** Per-type icon tile colors (n8n-style, light canvas). */
+import type { CSSProperties } from 'react';
+
 export const TASK_ACCENT_COLORS: Record<StudioTaskType, string> = {
     HTTP_TASK: '#7c3aed',
     SCRIPT_TASK: '#ea580c',
@@ -18,4 +20,29 @@ export const DEFAULT_TASK_ACCENT_COLOR = '#6366f1';
 
 export function resolveTaskAccentColor(type: string): string {
     return TASK_ACCENT_COLORS[type as StudioTaskType] ?? DEFAULT_TASK_ACCENT_COLOR;
+}
+
+export const STUDIO_NODE_DEFAULT_BORDER_CLASS = 'border-[#94a3b8]';
+
+export type StudioNodeBorderState = {
+    invalid?: boolean;
+    selected?: boolean;
+    statusBorderClass?: string;
+    accentColor?: string;
+};
+
+export function resolveStudioNodeBorder(state: StudioNodeBorderState): {
+    className: string;
+    style?: CSSProperties;
+} {
+    if (state.invalid) {
+        return { className: 'border-destructive' };
+    }
+    if (state.statusBorderClass) {
+        return { className: state.statusBorderClass };
+    }
+    if (state.selected && state.accentColor) {
+        return { className: '', style: { borderColor: state.accentColor } };
+    }
+    return { className: STUDIO_NODE_DEFAULT_BORDER_CLASS };
 }

@@ -1,7 +1,9 @@
 import { Split } from 'lucide-react';
 import { defineTaskPlugin } from '../pluginTypes';
 import type { ParallelBranchRow, TaskParameterErrors, TaskValidationContext } from '../types';
+import { normalizeOptionalTaskRef } from '../taskRefs';
 import { BRANCH_TASK_WIRING } from './wiring';
+import { formatPrimitive, recordFromUnknown } from '@/features/executions/lib/executionSummaryUtils';
 
 function findWorkflowTask(context: TaskValidationContext | undefined, taskId: string) {
     return context?.workflowTasks.find((task) => task.taskId === taskId);
@@ -103,10 +105,11 @@ export const branchTaskPlugin = defineTaskPlugin({
         if (Array.isArray(next.branches)) {
             next.branches = (next.branches as ParallelBranchRow[]).map((row) => ({
                 branchName: String(row.branchName ?? '').trim(),
-                startTaskId: String(row.startTaskId ?? '').trim(),
-                endTaskId: String(row.endTaskId ?? '').trim(),
+                startTaskId: normalizeOptionalTaskRef(row.startTaskId),
+                endTaskId: normalizeOptionalTaskRef(row.endTaskId),
             }));
         }
+        next.joinTaskId = normalizeOptionalTaskRef(next.joinTaskId);
         delete next.nextTaskId;
         return next;
     },
@@ -117,6 +120,20 @@ export const branchTaskPlugin = defineTaskPlugin({
         return {
             primary: count === 1 ? '1 branch' : `${count} branches`,
             secondary: join,
+        };
+    },
+    executionSummary({ parameters, executionData }) {
+        const data = recordFromUnknown(executionData);
+        const branchIds = Array.isArray(data?.branchIds) ? data.branchIds : [];
+        return {
+            lines: [
+                {
+                    label: 'Branches',
+                    value: formatPrimitive(data?.branchesCreated ?? branchIds.length),
+                },
+                { label: 'Join step', value: formatPrimitive(data?.joinTaskId ?? parameters.joinTaskId) },
+                { label: 'Started', value: formatPrimitive(data?.branchStartTime) },
+            ],
         };
     },
 });

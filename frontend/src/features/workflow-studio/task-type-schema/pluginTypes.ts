@@ -1,6 +1,10 @@
 import type { LucideIcon } from 'lucide-react';
 import type { TaskFieldSchema, TaskParameterErrors, TaskValidationContext } from './types';
 import type { TaskPluginWiring } from './pluginWiringTypes';
+import type {
+    ExecutionSummaryContext,
+    ExecutionSummaryResult,
+} from '@/features/executions/lib/executionSummaryUtils';
 
 export const STUDIO_TASK_TYPES = [
     'HTTP_TASK',
@@ -39,6 +43,8 @@ export interface TaskTypePlugin {
     /** Type-specific normalization after generic field normalization. */
     normalize?: (parameters: Record<string, unknown>) => Record<string, unknown>;
     preview?: (parameters: Record<string, unknown>) => TaskPreview;
+    /** Read-only execution observability summary for the step panel. */
+    executionSummary?: (context: ExecutionSummaryContext) => ExecutionSummaryResult | null;
     /** Canvas handle + route-edge wiring (n8n-style). Omit for default main-flow only. */
     wiring?: TaskPluginWiring;
 }

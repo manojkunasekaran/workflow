@@ -1,6 +1,12 @@
 import { Globe } from 'lucide-react';
 import { defineTaskPlugin } from '../pluginTypes';
 import { HTTP_METHODS } from './shared';
+import {
+    formatPrimitive,
+    readNested,
+    recordFromUnknown,
+    type ExecutionSummaryLine,
+} from '@/features/executions/lib/executionSummaryUtils';
 
 export const httpTaskPlugin = defineTaskPlugin({
     type: 'HTTP_TASK',
@@ -72,5 +78,33 @@ export const httpTaskPlugin = defineTaskPlugin({
             primary: isWebhook ? 'Slack Webhook' : host,
             secondary: isWebhook ? 'notifications' : undefined,
         };
+    },
+    executionSummary({ parameters, executionData, status }) {
+        const data = recordFromUnknown(executionData);
+        const request = recordFromUnknown(readNested(data, 'request'));
+        const response = recordFromUnknown(readNested(data, 'response'));
+        const method = formatPrimitive(request?.method ?? parameters.method);
+        const url = formatPrimitive(request?.url ?? parameters.url);
+        const statusCode = response?.statusCode;
+        const statusText = response?.statusText;
+        const lines: ExecutionSummaryLine[] = [
+            { label: 'Request', value: `${method} ${url}` },
+            {
+                label: 'Response',
+                value:
+                    statusCode != null
+                        ? `${statusCode}${statusText ? ` ${statusText}` : ''}`
+                        : status.toUpperCase() === 'FAILED'
+                          ? 'Request failed'
+                          : '—',
+                tone:
+                    typeof statusCode === 'number'
+                        ? statusCode >= 400
+                            ? 'danger'
+                            : 'success'
+                        : 'default',
+            },
+        ];
+        return { lines };
     },
 });

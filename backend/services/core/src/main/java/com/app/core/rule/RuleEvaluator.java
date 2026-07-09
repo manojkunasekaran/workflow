@@ -1,6 +1,8 @@
 package com.app.core.rule;
 
 import com.app.common.model.task.parameters.ConditionalTaskParameters.Branch;
+import com.app.common.model.rule.ConditionEvaluation;
+import com.app.common.model.rule.ConditionEvaluationKind;
 import com.app.common.model.rule.EvaluationResult;
 import com.app.common.model.rule.LogicalOperator;
 import com.app.common.model.rule.Operator;
@@ -17,24 +19,17 @@ import org.springframework.expression.spel.support.SimpleEvaluationContext;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
  * Service for evaluating rule conditions against an execution context.
- * 
- * Supports two modes:
- * 1. Structured rules (RuleGroup) - compiled internally to optimized evaluation
- * 2. Raw SpEL expressions - parsed and evaluated directly
- * 
- * Performance optimizations:
- * - Expression caching for frequently used SpEL expressions
- * - Short-circuit evaluation for AND/OR groups
- * - Type coercion with caching
  */
 @Slf4j
 @Service
@@ -44,47 +39,36 @@ public class RuleEvaluator {
     private final VariableResolver variableResolver;
     private final ExpressionParser spelParser = new SpelExpressionParser();
 
-    // Cache for compiled SpEL expressions
     private final Map<String, Expression> expressionCache = new ConcurrentHashMap<>();
-
-    // Cache for compiled regex patterns
     private final Map<String, Pattern> regexCache = new ConcurrentHashMap<>();
 
-    /**
-     * Evaluate a branch's conditions against the given context.
-     * Priority: rules (structured) > expression (raw SpEL)
-     * 
-     * @param branch  The branch to evaluate
-     * @param context The evaluation context with task outputs and variables
-     * @return true if the branch conditions are met
-     */
+    private static final Pattern STRING_COMPARISON_PATTERN = Pattern
+            .compile("^([^'\"\\s=<>!]+)\\s*(==|!=)\\s*'([^']*)'\\s*$");
+    private static final Pattern BOOLEAN_COMPARISON_PATTERN = Pattern
+            .compile("^([^'\"\\s=<>!]+)\\s*(==|!=)\\s*(true|false)\\s*$", Pattern.CASE_INSENSITIVE);
+
     public EvaluationResult evaluate(Branch branch, ExecutionContext context) {
         if (branch == null) {
-            return new EvaluationResult(false, new HashMap<>());
+            return EvaluationResult.notMatched(List.of());
         }
 
-        // Priority 1: Structured rules
+        EvaluationResult result;
         if (branch.getRules() != null && !branch.getRules().isEmpty()) {
-            return evaluateRuleGroup(branch.getRules(), context);
+            result = evaluateRuleGroup(branch.getRules(), context);
+        } else if (branch.getExpression() != null && !branch.getExpression().isBlank()) {
+            result = evaluateExpression(branch.getExpression(), context);
+        } else {
+            log.warn("Branch '{}' has no rules or expression defined, defaulting to true",
+                    branch.getName());
+            result = EvaluationResult.matched(List.of());
         }
 
-        // Priority 2: Raw SpEL expression
-        if (branch.getExpression() != null && !branch.getExpression().isBlank()) {
-            return evaluateExpression(branch.getExpression(), context);
-        }
-
-        // No conditions defined - consider it always true (passthrough)
-        log.warn("Branch '{}' has no rules or expression defined, defaulting to true",
-                branch.getName());
-        return new EvaluationResult(true, new HashMap<>());
+        return result.withBranchName(branch.getName());
     }
 
-    /**
-     * Evaluate a rule group (AND/OR combination of conditions).
-     */
     public EvaluationResult evaluateRuleGroup(RuleGroup group, ExecutionContext context) {
         if (group == null || group.isEmpty()) {
-            return new EvaluationResult(true, new HashMap<>());
+            return EvaluationResult.matched(List.of());
         }
 
         LogicalOperator operator = group.getOperator() != null
@@ -94,72 +78,61 @@ public class RuleEvaluator {
         boolean hasConditions = group.getConditions() != null && !group.getConditions().isEmpty();
         boolean hasNestedGroups = group.getNestedGroups() != null && !group.getNestedGroups().isEmpty();
 
-        Map<String, Object> evaluatedFields = new HashMap<>();
+        List<ConditionEvaluation> trace = new ArrayList<>();
 
         if (operator == LogicalOperator.AND) {
             if (hasConditions) {
                 for (RuleCondition condition : group.getConditions()) {
                     EvaluationResult res = evaluateCondition(condition, context);
-                    evaluatedFields.putAll(res.evaluatedFields());
+                    trace = EvaluationResult.merge(trace, res.evaluations());
                     if (!res.matched()) {
-                        return new EvaluationResult(false, evaluatedFields);
+                        return EvaluationResult.notMatched(trace);
                     }
                 }
             }
             if (hasNestedGroups) {
                 for (RuleGroup nested : group.getNestedGroups()) {
                     EvaluationResult res = evaluateRuleGroup(nested, context);
-                    evaluatedFields.putAll(res.evaluatedFields());
+                    trace = EvaluationResult.merge(trace, res.evaluations());
                     if (!res.matched()) {
-                        return new EvaluationResult(false, evaluatedFields);
+                        return EvaluationResult.notMatched(trace);
                     }
                 }
             }
-            return new EvaluationResult(true, evaluatedFields);
-        } else {
-            if (hasConditions) {
-                for (RuleCondition condition : group.getConditions()) {
-                    EvaluationResult res = evaluateCondition(condition, context);
-                    evaluatedFields.putAll(res.evaluatedFields());
-                    if (res.matched()) {
-                        return new EvaluationResult(true, evaluatedFields);
-                    }
-                }
-            }
-            if (hasNestedGroups) {
-                for (RuleGroup nested : group.getNestedGroups()) {
-                    EvaluationResult res = evaluateRuleGroup(nested, context);
-                    evaluatedFields.putAll(res.evaluatedFields());
-                    if (res.matched()) {
-                        return new EvaluationResult(true, evaluatedFields);
-                    }
-                }
-            }
-            return new EvaluationResult(!hasConditions && !hasNestedGroups, evaluatedFields);
+            return EvaluationResult.matched(trace);
         }
+
+        if (hasConditions) {
+            for (RuleCondition condition : group.getConditions()) {
+                EvaluationResult res = evaluateCondition(condition, context);
+                trace = EvaluationResult.merge(trace, res.evaluations());
+                if (res.matched()) {
+                    return EvaluationResult.matched(trace);
+                }
+            }
+        }
+        if (hasNestedGroups) {
+            for (RuleGroup nested : group.getNestedGroups()) {
+                EvaluationResult res = evaluateRuleGroup(nested, context);
+                trace = EvaluationResult.merge(trace, res.evaluations());
+                if (res.matched()) {
+                    return EvaluationResult.matched(trace);
+                }
+            }
+        }
+        return EvaluationResult.of(!hasConditions && !hasNestedGroups, trace);
     }
 
-    /**
-     * Evaluate a single condition.
-     */
     public EvaluationResult evaluateCondition(RuleCondition condition, ExecutionContext context) {
         if (condition == null) {
-            return new EvaluationResult(true, new HashMap<>());
+            return EvaluationResult.matched(List.of());
         }
 
-        // 1. Resolve the Field (LHS)
-        // STRICT STANDARD APPROACH: Field must be an expression {{...}} if it refers to
-        // a variable
         Object fieldValue = variableResolver.resolveValue(condition.getField(), context);
-
-        // 2. Resolve the Value (RHS)
         Object expectedValue = variableResolver.resolveValue(condition.getValue(), context);
-
         Operator operator = condition.getOperator();
 
         boolean result = evaluateOperator(fieldValue, operator, expectedValue);
-
-        // Apply negation if specified
         if (condition.isNegated()) {
             result = !result;
         }
@@ -167,160 +140,179 @@ public class RuleEvaluator {
         log.debug("Condition: {} ({}) {} {} = {} (negated: {})",
                 condition.getField(), fieldValue, operator, expectedValue, result, condition.isNegated());
 
-        Map<String, Object> fields = new HashMap<>();
-        fields.put(String.valueOf(condition.getField()), fieldValue);
-        if (condition.getValue() != null && !String.valueOf(condition.getValue()).isEmpty()) {
-            fields.put(String.valueOf(condition.getValue()), expectedValue);
-        }
+        ConditionEvaluation evaluation = ConditionEvaluation.builder()
+                .kind(ConditionEvaluationKind.RULE)
+                .source(String.valueOf(condition.getField()))
+                .actual(fieldValue)
+                .expected(expectedValue)
+                .operator(operator != null ? operator.name() : null)
+                .negated(condition.isNegated())
+                .matched(result)
+                .build();
 
-        return new EvaluationResult(result, fields);
+        return EvaluationResult.of(result, List.of(evaluation));
     }
 
-    /**
-     * Evaluate a raw SpEL expression.
-     */
     public EvaluationResult evaluateExpression(String expressionStr, ExecutionContext context) {
+        if (expressionStr == null || expressionStr.isBlank()) {
+            return EvaluationResult.matched(List.of());
+        }
+
+        String original = expressionStr.trim();
+
         try {
-            Expression expression = expressionCache.computeIfAbsent(expressionStr,
-                    spelParser::parseExpression);
+            String evaluable = original.contains("{{")
+                    ? variableResolver.resolveString(original, context).trim()
+                    : original;
 
-            SimpleEvaluationContext spelContext = createSpelContext(context);
-            Boolean result = expression.getValue(spelContext, Boolean.class);
-            boolean matched = Boolean.TRUE.equals(result);
+            boolean matched = resolveToBoolean(evaluable, context);
+            ConditionEvaluation evaluation = ConditionEvaluation.builder()
+                    .kind(ConditionEvaluationKind.EXPRESSION)
+                    .source(original)
+                    .resolved(evaluable)
+                    .matched(matched)
+                    .build();
 
-            return new EvaluationResult(matched, Map.of(expressionStr, matched));
+            return EvaluationResult.of(matched, List.of(evaluation));
         } catch (Exception e) {
-            log.error("Failed to evaluate SpEL expression: {}", expressionStr, e);
-            return new EvaluationResult(false, Map.of(expressionStr, "ERROR: " + e.getMessage()));
+            log.error("Failed to evaluate expression: {}", original, e);
+            ConditionEvaluation evaluation = ConditionEvaluation.builder()
+                    .kind(ConditionEvaluationKind.EXPRESSION)
+                    .source(original)
+                    .matched(false)
+                    .error(e.getMessage())
+                    .build();
+            return EvaluationResult.notMatched(List.of(evaluation));
         }
     }
 
-    /**
-     * Create SpEL evaluation context with variables from our context.
-     */
+    private boolean resolveToBoolean(String resolved, ExecutionContext context) {
+        if (resolved.isEmpty()) {
+            return false;
+        }
+        if ("true".equalsIgnoreCase(resolved)) {
+            return true;
+        }
+        if ("false".equalsIgnoreCase(resolved)) {
+            return false;
+        }
+        return evaluateSpel(prepareSpelExpression(resolved), context);
+    }
+
+    private String prepareSpelExpression(String expr) {
+        String normalized = expr.replace("===", "==").replace("!==", "!=");
+        return quoteBareComparisonOperands(normalized);
+    }
+
+    private String quoteBareComparisonOperands(String expr) {
+        Matcher stringMatch = STRING_COMPARISON_PATTERN.matcher(expr.trim());
+        if (stringMatch.matches()) {
+            String left = escapeSpelString(stringMatch.group(1).trim());
+            String op = stringMatch.group(2);
+            String right = escapeSpelString(stringMatch.group(3));
+            return "'" + left + "' " + op + " '" + right + "'";
+        }
+
+        Matcher boolMatch = BOOLEAN_COMPARISON_PATTERN.matcher(expr.trim());
+        if (boolMatch.matches()) {
+            String left = escapeSpelString(boolMatch.group(1).trim());
+            String op = boolMatch.group(2);
+            String right = boolMatch.group(3).toLowerCase();
+            return "'" + left + "' " + op + " " + right;
+        }
+
+        return expr;
+    }
+
+    private String escapeSpelString(String value) {
+        return value.replace("'", "''");
+    }
+
+    private boolean evaluateSpel(String spelExpr, ExecutionContext context) {
+        Expression expression = expressionCache.computeIfAbsent(spelExpr, spelParser::parseExpression);
+        SimpleEvaluationContext spelContext = createSpelContext(context);
+        Boolean result = expression.getValue(spelContext, Boolean.class);
+        return Boolean.TRUE.equals(result);
+    }
+
     private SimpleEvaluationContext createSpelContext(ExecutionContext context) {
         SimpleEvaluationContext spelContext = SimpleEvaluationContext.forReadOnlyDataBinding().build();
 
-        // Add task outputs as variables (accessible via #taskId.field)
         context.getTaskOutputs().forEach(spelContext::setVariable);
 
-        // Add workflow variables (accessible via #variables.key) -> unwrapped
         Map<String, Object> simpleVars = new HashMap<>();
         context.getWorkflowVariables().forEach((k, v) -> {
-            if (v != null)
+            if (v != null) {
                 simpleVars.put(k, v.getValue());
+            }
         });
         spelContext.setVariable("variables", simpleVars);
 
-        // Add trigger inputs -> unwrapped
         Map<String, Object> simpleInputs = new HashMap<>();
         context.getTriggerInputs().forEach((k, v) -> {
-            if (v != null)
+            if (v != null) {
                 simpleInputs.put(k, v.getValue());
+            }
         });
         spelContext.setVariable("input", simpleInputs);
 
-        // Add execution metadata
         spelContext.setVariable("executionTime", context.getExecutionTime());
         spelContext.setVariable("executionId", context.getWorkflowExecutionId());
 
         return spelContext;
     }
 
-    /**
-     * Core operator evaluation logic with auto type detection.
-     */
     @SuppressWarnings("unchecked")
     private boolean evaluateOperator(Object fieldValue, Operator operator, Object expectedValue) {
         if (operator == null) {
             return true;
         }
 
-        switch (operator) {
-            // Null checks
-            case IS_NULL:
-                return fieldValue == null;
-            case IS_NOT_NULL:
-                return fieldValue != null;
-
-            // Boolean checks
-            case IS_TRUE:
-                return Boolean.TRUE.equals(toBoolean(fieldValue));
-            case IS_FALSE:
-                return Boolean.FALSE.equals(toBoolean(fieldValue));
-
-            // Empty checks (for strings and collections)
-            case IS_EMPTY:
-                return isEmpty(fieldValue);
-            case IS_NOT_EMPTY:
-                return !isEmpty(fieldValue);
-
-            // Equality (works with any type)
-            case EQUALS:
-                return isEquals(fieldValue, expectedValue);
-            case NOT_EQUALS:
-                return !isEquals(fieldValue, expectedValue);
-
-            // String operations
-            case CONTAINS:
-                return stringContains(fieldValue, expectedValue);
-            case NOT_CONTAINS:
-                return !stringContains(fieldValue, expectedValue);
-            case STARTS_WITH:
-                return stringStartsWith(fieldValue, expectedValue);
-            case ENDS_WITH:
-                return stringEndsWith(fieldValue, expectedValue);
-            case MATCHES_REGEX:
-                return matchesRegex(fieldValue, expectedValue);
-
-            // Numeric comparisons
-            case GREATER_THAN:
-                return compareNumbers(fieldValue, expectedValue) > 0;
-            case GREATER_OR_EQUAL:
-                return compareNumbers(fieldValue, expectedValue) >= 0;
-            case LESS_THAN:
-                return compareNumbers(fieldValue, expectedValue) < 0;
-            case LESS_OR_EQUAL:
-                return compareNumbers(fieldValue, expectedValue) <= 0;
-            case BETWEEN:
-                return isBetween(fieldValue, expectedValue);
-            case NOT_BETWEEN:
-                return !isBetween(fieldValue, expectedValue);
-
-            // Collection operations
-            case IN:
-                return isIn(fieldValue, expectedValue);
-            case NOT_IN:
-                return !isIn(fieldValue, expectedValue);
-            case ARRAY_CONTAINS:
-                return arrayContains(fieldValue, expectedValue);
-            case ARRAY_SIZE_EQUALS:
-                return getCollectionSize(fieldValue) == toInt(expectedValue);
-            case ARRAY_SIZE_GREATER_THAN:
-                return getCollectionSize(fieldValue) > toInt(expectedValue);
-            case ARRAY_SIZE_LESS_THAN:
-                return getCollectionSize(fieldValue) < toInt(expectedValue);
-
-            default:
+        return switch (operator) {
+            case IS_NULL -> fieldValue == null;
+            case IS_NOT_NULL -> fieldValue != null;
+            case IS_TRUE -> Boolean.TRUE.equals(toBoolean(fieldValue));
+            case IS_FALSE -> Boolean.FALSE.equals(toBoolean(fieldValue));
+            case IS_EMPTY -> isEmpty(fieldValue);
+            case IS_NOT_EMPTY -> !isEmpty(fieldValue);
+            case EQUALS -> isEquals(fieldValue, expectedValue);
+            case NOT_EQUALS -> !isEquals(fieldValue, expectedValue);
+            case CONTAINS -> stringContains(fieldValue, expectedValue);
+            case NOT_CONTAINS -> !stringContains(fieldValue, expectedValue);
+            case STARTS_WITH -> stringStartsWith(fieldValue, expectedValue);
+            case ENDS_WITH -> stringEndsWith(fieldValue, expectedValue);
+            case MATCHES_REGEX -> matchesRegex(fieldValue, expectedValue);
+            case GREATER_THAN -> compareNumbers(fieldValue, expectedValue) > 0;
+            case GREATER_OR_EQUAL -> compareNumbers(fieldValue, expectedValue) >= 0;
+            case LESS_THAN -> compareNumbers(fieldValue, expectedValue) < 0;
+            case LESS_OR_EQUAL -> compareNumbers(fieldValue, expectedValue) <= 0;
+            case BETWEEN -> isBetween(fieldValue, expectedValue);
+            case NOT_BETWEEN -> !isBetween(fieldValue, expectedValue);
+            case IN -> isIn(fieldValue, expectedValue);
+            case NOT_IN -> !isIn(fieldValue, expectedValue);
+            case ARRAY_CONTAINS -> arrayContains(fieldValue, expectedValue);
+            case ARRAY_SIZE_EQUALS -> getCollectionSize(fieldValue) == toInt(expectedValue);
+            case ARRAY_SIZE_GREATER_THAN -> getCollectionSize(fieldValue) > toInt(expectedValue);
+            case ARRAY_SIZE_LESS_THAN -> getCollectionSize(fieldValue) < toInt(expectedValue);
+            default -> {
                 log.warn("Unsupported operator: {}", operator);
-                return false;
-        }
+                yield false;
+            }
+        };
     }
-
-    // ==================== Helper methods ====================
 
     private boolean isEmpty(Object value) {
         if (value == null) {
             return true;
         }
-        if (value instanceof String) {
-            return ((String) value).isEmpty();
+        if (value instanceof String string) {
+            return string.isEmpty();
         }
-        if (value instanceof Collection) {
-            return ((Collection<?>) value).isEmpty();
+        if (value instanceof Collection<?> collection) {
+            return collection.isEmpty();
         }
-        if (value instanceof Map) {
-            return ((Map<?, ?>) value).isEmpty();
+        if (value instanceof Map<?, ?> map) {
+            return map.isEmpty();
         }
         return false;
     }
@@ -332,7 +324,6 @@ public class RuleEvaluator {
         if (a == null || b == null) {
             return false;
         }
-        // Try numeric comparison for mixed types
         if (isNumeric(a) && isNumeric(b)) {
             return compareNumbers(a, b) == 0;
         }
@@ -380,11 +371,10 @@ public class RuleEvaluator {
 
     @SuppressWarnings("unchecked")
     private boolean isBetween(Object fieldValue, Object range) {
-        if (!(range instanceof List) || ((List<?>) range).size() != 2) {
+        if (!(range instanceof List<?> rangeList) || rangeList.size() != 2) {
             log.warn("BETWEEN operator requires a list with [min, max], got: {}", range);
             return false;
         }
-        List<Object> rangeList = (List<Object>) range;
         int compareMin = compareNumbers(fieldValue, rangeList.get(0));
         int compareMax = compareNumbers(fieldValue, rangeList.get(1));
         return compareMin >= 0 && compareMax <= 0;
@@ -392,46 +382,44 @@ public class RuleEvaluator {
 
     @SuppressWarnings("unchecked")
     private boolean isIn(Object fieldValue, Object collection) {
-        if (collection instanceof Collection) {
-            return ((Collection<Object>) collection).stream()
-                    .anyMatch(item -> isEquals(fieldValue, item));
+        if (collection instanceof Collection<?> values) {
+            return values.stream().anyMatch(item -> isEquals(fieldValue, item));
         }
         return isEquals(fieldValue, collection);
     }
 
     @SuppressWarnings("unchecked")
     private boolean arrayContains(Object array, Object value) {
-        if (array instanceof Collection) {
-            return ((Collection<Object>) array).stream()
-                    .anyMatch(item -> isEquals(item, value));
+        if (array instanceof Collection<?> values) {
+            return values.stream().anyMatch(item -> isEquals(item, value));
         }
         return false;
     }
 
     private int getCollectionSize(Object value) {
-        if (value instanceof Collection) {
-            return ((Collection<?>) value).size();
+        if (value instanceof Collection<?> collection) {
+            return collection.size();
         }
-        if (value instanceof Map) {
-            return ((Map<?, ?>) value).size();
+        if (value instanceof Map<?, ?> map) {
+            return map.size();
         }
         return 0;
     }
 
     private boolean isNumeric(Object value) {
-        return value instanceof Number ||
-                (value instanceof String && ((String) value).matches("-?\\d+(\\.\\d+)?"));
+        return value instanceof Number
+                || (value instanceof String string && string.matches("-?\\d+(\\.\\d+)?"));
     }
 
     private BigDecimal toBigDecimal(Object value) {
         if (value == null) {
             return null;
         }
-        if (value instanceof BigDecimal) {
-            return (BigDecimal) value;
+        if (value instanceof BigDecimal decimal) {
+            return decimal;
         }
-        if (value instanceof Number) {
-            return BigDecimal.valueOf(((Number) value).doubleValue());
+        if (value instanceof Number number) {
+            return BigDecimal.valueOf(number.doubleValue());
         }
         try {
             return new BigDecimal(String.valueOf(value));
@@ -441,8 +429,8 @@ public class RuleEvaluator {
     }
 
     private int toInt(Object value) {
-        if (value instanceof Number) {
-            return ((Number) value).intValue();
+        if (value instanceof Number number) {
+            return number.intValue();
         }
         try {
             return Integer.parseInt(String.valueOf(value));
@@ -452,14 +440,14 @@ public class RuleEvaluator {
     }
 
     private Boolean toBoolean(Object value) {
-        if (value instanceof Boolean) {
-            return (Boolean) value;
+        if (value instanceof Boolean bool) {
+            return bool;
         }
-        if (value instanceof String) {
-            return Boolean.parseBoolean((String) value);
+        if (value instanceof String string) {
+            return Boolean.parseBoolean(string);
         }
-        if (value instanceof Number) {
-            return ((Number) value).intValue() != 0;
+        if (value instanceof Number number) {
+            return number.intValue() != 0;
         }
         return null;
     }

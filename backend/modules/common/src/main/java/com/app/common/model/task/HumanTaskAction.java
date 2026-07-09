@@ -26,4 +26,8 @@ public class HumanTaskAction {
      * HumanTaskParameters.
      */
     private String nextTaskId;
+
+    public void setNextTaskId(String nextTaskId) {
+        this.nextTaskId = TaskRefs.normalize(nextTaskId);
+    }
 }

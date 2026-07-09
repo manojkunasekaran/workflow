@@ -1,6 +1,7 @@
 package com.app.common.model.task.parameters;
 
 import com.app.common.model.task.HumanTaskAction;
+import com.app.common.model.task.TaskRefs;
 import lombok.Data;
 
 import java.util.List;
@@ -33,10 +34,18 @@ public class HumanTaskParameters implements TaskParameters {
     /** Default next task when action outcome is APPROVED (null → sequential) */
     private String approvedNextTaskId;
 
+    public void setApprovedNextTaskId(String approvedNextTaskId) {
+        this.approvedNextTaskId = TaskRefs.normalize(approvedNextTaskId);
+    }
+
     /**
      * Default next task when action outcome is REJECTED (null → fail the workflow)
      */
     private String rejectedNextTaskId;
+
+    public void setRejectedNextTaskId(String rejectedNextTaskId) {
+        this.rejectedNextTaskId = TaskRefs.normalize(rejectedNextTaskId);
+    }
 
     /**
      * Optional: form schema for collecting structured data from the human (future)

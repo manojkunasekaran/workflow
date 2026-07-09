@@ -37,6 +37,12 @@ export interface PageResponse<T> {
     size: number;
 }
 
+export interface HumanTaskRespondRequest {
+    actionId: string;
+    respondedBy: string;
+    formData?: Record<string, unknown>;
+}
+
 export const executionApi = {
     /**
      * Get all workflow executions (paginated API — returns content array)
@@ -60,5 +66,17 @@ export const executionApi = {
     getTaskExecutions: async (executionId: string): Promise<WorkflowTaskExecution[]> => {
         const response = await axios.get(`${API_BASE_URL}/executions/${executionId}/tasks`);
         return response.data;
-    }
+    },
+
+    respondToHumanTask: async (
+        executionId: string,
+        taskExecutionId: string,
+        body: HumanTaskRespondRequest,
+    ): Promise<WorkflowTaskExecution> => {
+        const response = await axios.post<WorkflowTaskExecution>(
+            `${API_BASE_URL}/executions/${executionId}/tasks/${taskExecutionId}/respond`,
+            body,
+        );
+        return response.data;
+    },
 };

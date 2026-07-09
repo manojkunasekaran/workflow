@@ -43,6 +43,7 @@ import { injectParameterType, validateTaskParameters } from '@/features/workflow
 import type { TaskNodeData } from '@/features/workflow-studio/nodes/TaskNode';
 import { Loader2 } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { ExecutionView } from '@/features/executions/ExecutionView';
 import { WORKFLOW_START_ID, ADD_TASK_NODE_ID } from '@/features/workflow-studio/constants/studioCanvas';
 import {
     getMainSpineIdsFromEdges,
@@ -84,6 +85,7 @@ export default function WorkflowStudioPage() {
     } | null>(null);
     const [pendingEdgeInsert, setPendingEdgeInsert] = useState<Edge | null>(null);
     const [savedDefinition, setSavedDefinition] = useState<WorkflowDefinition | null>(null);
+    const [lastExecutionId, setLastExecutionId] = useState<string | null>(null);
 
     const skipNextLoadRef = useRef(false);
     const loadGenerationRef = useRef(0);
@@ -748,7 +750,10 @@ export default function WorkflowStudioPage() {
                 }
             }
             if (!id) throw new Error('No workflow id');
-            await workflowApi.run(id);
+            const execution = await workflowApi.run(id);
+            if (execution.id) {
+                setLastExecutionId(execution.id);
+            }
             setMessage('Workflow run started');
             setMode('inspect');
             setCatalogOpen(false);
@@ -782,6 +787,7 @@ export default function WorkflowStudioPage() {
                 isDirty={isDirty}
                 isSaving={isSaving}
                 isRunning={isRunning}
+                lastExecutionId={lastExecutionId}
                 onSave={handleSave}
                 onRun={handleRun}
                 onBack={handleBack}
@@ -794,8 +800,25 @@ export default function WorkflowStudioPage() {
             )}
 
             <div className="flex min-h-0 flex-1">
-                <div className="relative min-h-0 min-w-0 flex-1">
-                    <WorkflowCanvas
+                {mode === 'inspect' && lastExecutionId ? (
+                    <div className="min-h-0 min-w-0 flex-1">
+                        <ExecutionView
+                            executionId={lastExecutionId}
+                            embedded
+                            showHeader={false}
+                        />
+                    </div>
+                ) : mode === 'inspect' ? (
+                    <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2 p-8 text-center">
+                        <p className="text-sm font-medium text-foreground">No execution to inspect</p>
+                        <p className="max-w-md text-sm text-muted-foreground">
+                            Switch to Design and run the workflow. Inspect will show the latest run here.
+                        </p>
+                    </div>
+                ) : (
+                    <>
+                        <div className="relative min-h-0 min-w-0 flex-1">
+                            <WorkflowCanvas
                         key={workflowId ?? routeId ?? 'studio'}
                         nodes={canvasNodes}
                         chainEdges={edges}
@@ -828,9 +851,11 @@ export default function WorkflowStudioPage() {
                     }}
                     onBrowseOpen={() => setCatalogAddIntent(false)}
                     onSelectType={catalogAddIntent ? handleCatalogSelectType : undefined}
-                    disabled={mode === 'inspect'}
+                    disabled={false}
                     allowedTypes={catalogAllowedTypes}
                 />
+                    </>
+                )}
             </div>
 
             <TaskConfigDialog

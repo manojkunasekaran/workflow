@@ -1,5 +1,6 @@
 package com.app.common.model.task.parameters;
 
+import com.app.common.model.task.TaskRefs;
 import com.app.common.model.rule.RuleGroup;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -28,6 +29,10 @@ public class ConditionalTaskParameters implements TaskParameters {
      * Fallback task ID if no branch conditions match.
      */
     private String defaultNextTaskId;
+
+    public void setDefaultNextTaskId(String defaultNextTaskId) {
+        this.defaultNextTaskId = TaskRefs.normalize(defaultNextTaskId);
+    }
 
     /**
      * Represents a single branch in a conditional task.
@@ -60,5 +65,9 @@ public class ConditionalTaskParameters implements TaskParameters {
          * Task ID to execute if this branch's conditions are met.
          */
         private String nextTaskId;
+
+        public void setNextTaskId(String nextTaskId) {
+            this.nextTaskId = TaskRefs.normalize(nextTaskId);
+        }
     }
 }

@@ -1,5 +1,6 @@
 package com.app.common.model.task.parameters;
 
+import com.app.common.model.task.TaskRefs;
 import com.app.common.model.task.WorkflowTask;
 import lombok.Data;
 
@@ -32,4 +33,8 @@ public class IteratorTaskParameters implements TaskParameters {
      * Null or blank means no Done path.
      */
     private String doneNextTaskId;
+
+    public void setDoneNextTaskId(String doneNextTaskId) {
+        this.doneNextTaskId = TaskRefs.normalize(doneNextTaskId);
+    }
 }

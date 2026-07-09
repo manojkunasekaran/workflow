@@ -1,5 +1,6 @@
 package com.app.common.model.task.parameters;
 
+import com.app.common.model.task.TaskRefs;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -22,6 +23,10 @@ public class JoinTaskParameters implements TaskParameters {
      */
     private String branchTaskId;
 
+    public void setBranchTaskId(String branchTaskId) {
+        this.branchTaskId = TaskRefs.normalize(branchTaskId);
+    }
+
     /**
      * Strategy when a branch fails.
      * Defaults to FAIL_FAST.
@@ -33,6 +38,10 @@ public class JoinTaskParameters implements TaskParameters {
      * Next task ID to execute after all branches complete.
      */
     private String nextTaskId;
+
+    public void setNextTaskId(String nextTaskId) {
+        this.nextTaskId = TaskRefs.normalize(nextTaskId);
+    }
 
     public enum FailureStrategy {
         /** Cancel all running branches and fail immediately on first failure. */

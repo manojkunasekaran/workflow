@@ -8,6 +8,7 @@ import {
     type IteratorActionRow,
 } from '../iteratorTask';
 import { defineTaskPlugin, type TaskTypePlugin } from '../pluginTypes';
+import { normalizeOptionalTaskRef } from '../taskRefs';
 import { validateGenericFields } from '../fieldValidation';
 import type { TaskParameterErrors, TaskValidationContext } from '../types';
 import { ITERATOR_TASK_WIRING } from './wiring';
@@ -99,9 +100,7 @@ export const iteratorTaskPlugin = defineTaskPlugin({
             next.actions = normalizeIteratorActionsForApi(next.actions as IteratorActionRow[]);
         }
         const done = next.doneNextTaskId;
-        if (done == null || String(done).trim() === '') {
-            next.doneNextTaskId = '';
-        }
+        next.doneNextTaskId = normalizeOptionalTaskRef(done);
         return next;
     },
     preview(params) {

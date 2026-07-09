@@ -192,13 +192,14 @@ export function ConditionalBranchListField({
                                             onChange={(e) =>
                                                 updateBranch(index, { expression: e.target.value })
                                             }
-                                            placeholder="#input.status == 'approved'"
+                                            placeholder="{{$tasks.human_task.outcome}} == 'APPROVED'"
                                             rows={3}
                                             className="resize-y font-mono text-xs"
                                         />
                                         <p className="text-[11px] text-muted-foreground">
-                                            SpEL expression. Use #input, #variables, or #taskId for
-                                            task outputs. Evaluated when rules are not set.
+                                            SpEL or template expression. Use{' '}
+                                            <code className="text-[10px]">{'{{$tasks.<id>.field}}'}</code>{' '}
+                                            with <code className="text-[10px]">==</code> (not ===). Evaluated when rules are not set.
                                         </p>
                                         {expressionError && (
                                             <p className="text-xs text-destructive">{expressionError}</p>

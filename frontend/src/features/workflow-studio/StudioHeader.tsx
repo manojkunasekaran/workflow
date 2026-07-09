@@ -1,4 +1,5 @@
-import { ArrowLeft, History, MoreVertical, Play } from 'lucide-react';
+import { ArrowLeft, ExternalLink, History, MoreVertical, Play } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { PageHeader } from '@/layouts/PageHeader';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -18,6 +19,7 @@ interface StudioHeaderProps {
     isDirty: boolean;
     isSaving: boolean;
     isRunning: boolean;
+    lastExecutionId?: string | null;
     onSave: () => void;
     onRun: () => void;
     onBack: () => void;
@@ -31,6 +33,7 @@ export function StudioHeader({
     isDirty,
     isSaving,
     isRunning,
+    lastExecutionId,
     onSave,
     onRun,
     onBack,
@@ -114,6 +117,14 @@ export function StudioHeader({
                         <Play className="h-4 w-4 fill-current" />
                         {isRunning ? 'Running…' : 'Run Workflow'}
                     </Button>
+                    {lastExecutionId ? (
+                        <Button variant="outline" size="sm" asChild className={STUDIO_OUTLINE_BUTTON_CLASS}>
+                            <Link to={`/executions/${lastExecutionId}`}>
+                                <ExternalLink className="h-4 w-4" />
+                                View execution
+                            </Link>
+                        </Button>
+                    ) : null}
                     <Button variant="ghost" size="icon" className={cn('h-8 w-8', STUDIO_GHOST_ICON_BUTTON_CLASS)} disabled>
                         <History className="h-4 w-4" />
                     </Button>

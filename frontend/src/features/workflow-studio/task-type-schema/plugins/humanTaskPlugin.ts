@@ -5,8 +5,10 @@ import {
     validateHumanTaskParameters,
 } from '../humanTask';
 import { defineTaskPlugin } from '../pluginTypes';
+import { normalizeOptionalTaskRef } from '../taskRefs';
 import type { HumanActionRow } from '../humanTask';
 import { HUMAN_TASK_WIRING } from './wiring';
+import { formatPrimitive, recordFromUnknown } from '@/features/executions/lib/executionSummaryUtils';
 
 export const humanTaskPlugin = defineTaskPlugin({
     type: 'HUMAN_TASK',
@@ -62,6 +64,8 @@ export const humanTaskPlugin = defineTaskPlugin({
         if (Array.isArray(next.actions)) {
             next.actions = normalizeHumanActionsForApi(next.actions as HumanActionRow[]);
         }
+        next.approvedNextTaskId = normalizeOptionalTaskRef(next.approvedNextTaskId);
+        next.rejectedNextTaskId = normalizeOptionalTaskRef(next.rejectedNextTaskId);
         return next;
     },
     preview(params) {
@@ -75,6 +79,31 @@ export const humanTaskPlugin = defineTaskPlugin({
         return {
             primary: title,
             secondary: routing,
+        };
+    },
+    executionSummary({ parameters, executionData, status }) {
+        const data = recordFromUnknown(executionData);
+        const outcome = formatPrimitive(data?.currentOutcome);
+        const actionTaken = formatPrimitive(data?.actionTaken);
+        return {
+            lines: [
+                { label: 'Title', value: formatPrimitive(data?.title ?? parameters.title) },
+                { label: 'Assignee', value: formatPrimitive(data?.assignee ?? parameters.assignee) },
+                {
+                    label: 'Outcome',
+                    value: outcome,
+                    tone:
+                        outcome === 'APPROVED'
+                            ? 'success'
+                            : outcome === 'REJECTED'
+                              ? 'danger'
+                              : status === 'PAUSED'
+                                ? 'warning'
+                                : 'default',
+                },
+                { label: 'Action', value: actionTaken },
+                { label: 'Responded by', value: formatPrimitive(data?.respondedBy) },
+            ],
         };
     },
 });

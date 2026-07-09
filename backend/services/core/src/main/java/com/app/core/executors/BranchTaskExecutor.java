@@ -73,7 +73,6 @@ public class BranchTaskExecutor implements TaskExecutor {
                 .executionData(executionData)
                 .output(buildOutput(executionData))
                 .parallelBranchIds(branchIds)
-                // nextTaskId is set to joinTaskId (or null) — the engine handles branching
                 .nextTaskId(params.getJoinTaskId())
                 .build();
     }

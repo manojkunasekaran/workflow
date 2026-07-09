@@ -14,7 +14,6 @@ import {
     type ReactFlowInstance,
     ReactFlowProvider
 } from '@xyflow/react';
-import '@xyflow/react/dist/style.css';
 import { BrushCleaning, Minus, Plus } from 'lucide-react';
 import { Hint } from '@/components/ui/hint';
 import { TaskNode } from '@/features/workflow-studio/nodes/TaskNode';
@@ -55,6 +54,7 @@ import { isRouteEdgeId, isBranchChainEdgeId } from '@/features/workflow-studio/l
 import { classifyStudioEdge } from '@/features/workflow-studio/lib/studioEdgeActions';
 import type { RouteEdgeData } from '@/features/workflow-studio/lib/pluginWiringRuntime';
 import type { TaskParameterErrors } from '@/features/workflow-studio/task-type-schema/types';
+import type { ExecutionNodeStatus } from '@/features/executions/lib/executionNodeStatus';
 import { STUDIO_NODE_ORIGIN } from '@/features/workflow-studio/constants/taskNodeLayout';
 import { cn } from '@/lib/utils';
 
@@ -89,6 +89,9 @@ interface WorkflowCanvasProps {
     nodes: StudioCanvasNode[];
     chainEdges: Edge[];
     mode: StudioMode;
+    /** Allow node click → onTaskSelect while read-only (execution observability). */
+    enableTaskSelection?: boolean;
+    executionNodeStatuses?: Map<string, ExecutionNodeStatus>;
     taskValidationErrors?: Map<string, TaskParameterErrors>;
     onNodesChange: (changes: NodeChange<StudioCanvasNode>[]) => void;
     onChainEdgesChange: (changes: EdgeChange[]) => void;
@@ -108,6 +111,8 @@ function WorkflowCanvasInner({
     nodes,
     chainEdges,
     mode,
+    enableTaskSelection = false,
+    executionNodeStatuses,
     taskValidationErrors,
     onNodesChange,
     onChainEdgesChange,
@@ -162,11 +167,12 @@ function WorkflowCanvasInner({
                             workflowTasks,
                             validationErrors: taskValidationErrors?.get(node.id),
                             addHandleIds,
+                            executionStatus: executionNodeStatuses?.get(node.id),
                         },
                     },
                 };
             });
-    }, [chainEdges, nodes, taskValidationErrors]);
+    }, [chainEdges, executionNodeStatuses, nodes, taskValidationErrors]);
 
     const displayEdges = useMemo((): Edge[] => {
         const merged = mergeDisplayEdges(chainEdges, nodes);
@@ -253,17 +259,18 @@ function WorkflowCanvasInner({
 
     const handleNodeClick = useCallback(
         (_: React.MouseEvent, node: StudioCanvasNode) => {
-            if (readOnly) return;
+            if (readOnly && !enableTaskSelection) return;
             if (node.type === 'task') {
                 onTaskSelect(node.id);
             }
         },
-        [onTaskSelect, readOnly],
+        [enableTaskSelection, onTaskSelect, readOnly],
     );
 
     const handlePaneClick = useCallback(() => {
-        if (!readOnly) onTaskSelect('');
-    }, [onTaskSelect, readOnly]);
+        if (readOnly && !enableTaskSelection) return;
+        onTaskSelect('');
+    }, [enableTaskSelection, onTaskSelect, readOnly]);
 
     const handleNodesChange = useCallback(
         (changes: NodeChange<StudioCanvasNode>[]) => {

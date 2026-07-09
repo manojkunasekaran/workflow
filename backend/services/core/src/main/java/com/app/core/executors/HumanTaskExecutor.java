@@ -26,6 +26,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -157,27 +158,34 @@ public class HumanTaskExecutor implements TaskExecutor {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "WorkflowDefinition", execution.getWorkflowDefinitionId()));
 
-        // Resolve next task: action override > parameter default > engine default
-        // (sequential)
         String nextTaskId = resolveNextTaskId(action, definition, taskExecution.getTaskDefinitionId());
-        if (nextTaskId != null) {
-            execution.setCurrentTaskId(nextTaskId);
-            executionRepository.save(execution);
-        }
 
-        if (action.getOutcome() == HumanTaskOutcome.REJECTED
-                && nextTaskId == null && execution.getCurrentTaskId() == null) {
+        Map<String, Object> taskOutput = Map.of(
+                taskExecution.getTaskDefinitionId(), executionData.toOutputMap());
+        execution.getTaskOutputs().putAll(taskOutput);
+
+        if (action.getOutcome() == HumanTaskOutcome.REJECTED && nextTaskId == null) {
             execution.setStatus(WorkflowExecutionStatus.FAILED);
+            execution.setCurrentTaskId(null);
             execution.setEndTime(Instant.now());
             executionRepository.save(execution);
             log.info("Workflow {} failed: human task rejected with no rejection path", execution.getId());
             return;
         }
 
-        Map<String, Object> taskOutput = Map.of(
-                taskExecution.getTaskDefinitionId(), executionData.toOutputMap());
+        if (nextTaskId == null) {
+            execution.setStatus(WorkflowExecutionStatus.COMPLETED);
+            execution.setCurrentTaskId(null);
+            execution.setEndTime(Instant.now());
+            executionRepository.save(execution);
+            log.info("Workflow {} completed after human task '{}'",
+                    execution.getId(), taskExecution.getTaskDefinitionId());
+            return;
+        }
 
-        // Engine handles async internally
+        execution.setCurrentTaskId(nextTaskId);
+        executionRepository.save(execution);
+
         workflowEngine.resumeWorkflow(execution.getId(), definition, taskOutput);
     }
 
@@ -201,6 +209,18 @@ public class HumanTaskExecutor implements TaskExecutor {
             }
         }
 
+        if (definition.getTasks() != null) {
+            return sequentialNextTaskId(definition.getTasks(), currentTaskId);
+        }
+        return null;
+    }
+
+    private String sequentialNextTaskId(List<WorkflowTask> tasks, String currentTaskId) {
+        for (int i = 0; i < tasks.size() - 1; i++) {
+            if (tasks.get(i).getTaskId().equals(currentTaskId)) {
+                return tasks.get(i + 1).getTaskId();
+            }
+        }
         return null;
     }
 

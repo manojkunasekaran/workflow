@@ -1,5 +1,6 @@
 package com.app.common.model.task.parameters;
 
+import com.app.common.model.task.TaskRefs;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -32,6 +33,10 @@ public class BranchTaskParameters implements TaskParameters {
      */
     private String joinTaskId;
 
+    public void setJoinTaskId(String joinTaskId) {
+        this.joinTaskId = TaskRefs.normalize(joinTaskId);
+    }
+
     @Data
     @Builder
     @NoArgsConstructor
@@ -42,9 +47,17 @@ public class BranchTaskParameters implements TaskParameters {
         /** Task ID of the first task in this branch. */
         private String startTaskId;
 
+        public void setStartTaskId(String startTaskId) {
+            this.startTaskId = TaskRefs.normalize(startTaskId);
+        }
+
         /**
          * OPTIONAL: Task ID of the last task in this branch — wired into Join branches on the canvas.
          */
         private String endTaskId;
+
+        public void setEndTaskId(String endTaskId) {
+            this.endTaskId = TaskRefs.normalize(endTaskId);
+        }
     }
 }
