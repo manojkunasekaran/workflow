@@ -22,56 +22,37 @@ public class RabbitTopologyConfig {
     }
 
     @Bean
-    public Queue triggerQueue() {
-        return QueueBuilder.durable(QueueConstants.TOPIC_WORKFLOW_TRIGGER)
+    public Queue executionQueue() {
+        return QueueBuilder.durable(QueueConstants.TOPIC_WORKFLOW_EXECUTION)
                 .withArgument("x-dead-letter-exchange", RabbitMessagingNames.DLX_EXCHANGE)
-                .withArgument("x-dead-letter-routing-key", QueueConstants.TOPIC_WORKFLOW_TRIGGER + ".dlq")
+                .withArgument("x-dead-letter-routing-key", QueueConstants.TOPIC_WORKFLOW_EXECUTION + ".dlq")
                 .build();
     }
 
     @Bean
-    public Queue resumeQueue() {
-        return QueueBuilder.durable(QueueConstants.TOPIC_WORKFLOW_RESUME)
-                .withArgument("x-dead-letter-exchange", RabbitMessagingNames.DLX_EXCHANGE)
-                .withArgument("x-dead-letter-routing-key", QueueConstants.TOPIC_WORKFLOW_RESUME + ".dlq")
+    public Queue executionDelayQueue() {
+        return QueueBuilder.durable(QueueConstants.TOPIC_WORKFLOW_EXECUTION_DELAY)
+                .withArgument("x-dead-letter-exchange", RabbitMessagingNames.EXCHANGE_WORKFLOW)
+                .withArgument("x-dead-letter-routing-key", QueueConstants.TOPIC_WORKFLOW_EXECUTION)
                 .build();
     }
 
     @Bean
-    public Queue triggerDlq() {
-        return QueueBuilder.durable(QueueConstants.TOPIC_WORKFLOW_TRIGGER + ".dlq").build();
+    public Queue executionDlq() {
+        return QueueBuilder.durable(QueueConstants.TOPIC_WORKFLOW_EXECUTION + ".dlq").build();
     }
 
     @Bean
-    public Queue resumeDlq() {
-        return QueueBuilder.durable(QueueConstants.TOPIC_WORKFLOW_RESUME + ".dlq").build();
-    }
-
-    @Bean
-    public Binding triggerBinding(Queue triggerQueue, TopicExchange workflowExchange) {
-        return BindingBuilder.bind(triggerQueue)
+    public Binding executionBinding(Queue executionQueue, TopicExchange workflowExchange) {
+        return BindingBuilder.bind(executionQueue)
                 .to(workflowExchange)
-                .with(QueueConstants.TOPIC_WORKFLOW_TRIGGER);
+                .with(QueueConstants.TOPIC_WORKFLOW_EXECUTION);
     }
 
     @Bean
-    public Binding resumeBinding(Queue resumeQueue, TopicExchange workflowExchange) {
-        return BindingBuilder.bind(resumeQueue)
-                .to(workflowExchange)
-                .with(QueueConstants.TOPIC_WORKFLOW_RESUME);
-    }
-
-    @Bean
-    public Binding triggerDlqBinding(Queue triggerDlq, TopicExchange deadLetterExchange) {
-        return BindingBuilder.bind(triggerDlq)
+    public Binding executionDlqBinding(Queue executionDlq, TopicExchange deadLetterExchange) {
+        return BindingBuilder.bind(executionDlq)
                 .to(deadLetterExchange)
-                .with(QueueConstants.TOPIC_WORKFLOW_TRIGGER + ".dlq");
-    }
-
-    @Bean
-    public Binding resumeDlqBinding(Queue resumeDlq, TopicExchange deadLetterExchange) {
-        return BindingBuilder.bind(resumeDlq)
-                .to(deadLetterExchange)
-                .with(QueueConstants.TOPIC_WORKFLOW_RESUME + ".dlq");
+                .with(QueueConstants.TOPIC_WORKFLOW_EXECUTION + ".dlq");
     }
 }

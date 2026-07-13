@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Connection, Edge, NodeChange } from '@xyflow/react';
 import { Loader2, RefreshCw, XCircle } from 'lucide-react';
 import { ExecutionHeader } from '@/features/executions/ExecutionHeader';
@@ -17,8 +17,11 @@ import {
 import { TaskExecutionDialog } from '@/features/executions/TaskExecutionDialog';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { executionStreamUrl } from '@/api/executionApi';
 
 const noop = () => {};
+
+const TERMINAL_STATUSES = new Set(['COMPLETED', 'FAILED']);
 
 interface ExecutionViewProps {
     executionId: string;
@@ -39,6 +42,7 @@ export function ExecutionView({
     const [error, setError] = useState<string | null>(null);
     const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
     const [dialogOpen, setDialogOpen] = useState(false);
+    const reconnectAttemptRef = useRef(0);
 
     const { nodes, edges, onNodesChange, resetCanvas } = useWorkflowCanvasState(
         [],
@@ -72,12 +76,61 @@ export function ExecutionView({
     }, [load]);
 
     useEffect(() => {
-        if (!data) return;
-        const active = ['RUNNING', 'QUEUED', 'PAUSED'].includes(data.execution.status);
-        if (!active) return;
-        const timer = window.setInterval(() => void load(true), 3000);
-        return () => window.clearInterval(timer);
-    }, [data?.execution.status, load]);
+        if (!executionId) return;
+
+        let source: EventSource | null = null;
+        let reconnectTimer: number | null = null;
+        let closed = false;
+
+        const connect = () => {
+            source = new EventSource(executionStreamUrl(executionId));
+
+            source.addEventListener('execution', (event) => {
+                try {
+                    const payload = JSON.parse((event as MessageEvent<string>).data) as {
+                        status?: string;
+                    };
+                    if (!payload.status) return;
+
+                    setData((prev) => {
+                        if (!prev) return prev;
+                        return {
+                            ...prev,
+                            execution: { ...prev.execution, status: payload.status! },
+                        };
+                    });
+
+                    if (TERMINAL_STATUSES.has(payload.status) || payload.status === 'PAUSED') {
+                        void load(true);
+                    }
+                } catch (err) {
+                    console.warn('Failed to parse execution SSE event', err);
+                }
+            });
+
+            source.onerror = () => {
+                source?.close();
+                if (closed) return;
+                const delay = Math.min(30_000, 1000 * 2 ** reconnectAttemptRef.current);
+                reconnectAttemptRef.current += 1;
+                reconnectTimer = window.setTimeout(() => {
+                    void load(true).finally(connect);
+                }, delay);
+            };
+
+            source.onopen = () => {
+                reconnectAttemptRef.current = 0;
+            };
+        };
+
+        connect();
+
+        return () => {
+            closed = true;
+            source?.close();
+            if (reconnectTimer) window.clearTimeout(reconnectTimer);
+        };
+    }, [executionId, load]);
 
     useEffect(() => {
         setSelectedTaskId(null);

@@ -1,5 +1,6 @@
 package com.app.core.model;
 
+import com.app.common.entity.WorkflowDefinition;
 import com.app.common.model.variable.VariableValue;
 import lombok.Builder;
 import lombok.Data;
@@ -63,6 +64,11 @@ public class ExecutionContext {
     private String workflowExecutionId;
 
     /**
+     * Active workflow definition for this run (routing, metadata, variables).
+     */
+    private transient WorkflowDefinition workflowDefinition;
+
+    /**
      * Timestamp when execution started.
      */
     private Instant executionTime;
@@ -72,16 +78,36 @@ public class ExecutionContext {
      */
     public static ExecutionContext fromExecution(
             Map<String, VariableValue> triggerInputs,
-            Map<String, VariableValue> workflowVariables,
             Map<String, Object> taskOutputs,
-            String executionId) {
+            String executionId,
+            WorkflowDefinition workflowDefinition) {
+        Map<String, VariableValue> workflowVariables = workflowDefinition != null && workflowDefinition.getVariables() != null
+                ? workflowDefinition.getVariables()
+                : new HashMap<>();
         return ExecutionContext.builder()
                 .triggerInputs(triggerInputs != null ? triggerInputs : new HashMap<>())
-                .workflowVariables(workflowVariables != null ? workflowVariables : new HashMap<>())
+                .workflowVariables(workflowVariables)
                 .taskOutputs(taskOutputs != null ? taskOutputs : new HashMap<>())
                 .workflowExecutionId(executionId)
                 .executionTime(Instant.now())
+                .workflowDefinition(workflowDefinition)
                 .build();
+    }
+
+    /**
+     * Next task in definition order, or null when {@code currentTaskId} is last or unknown.
+     */
+    public String getSequentialNextTaskId(String currentTaskId) {
+        if (workflowDefinition == null || workflowDefinition.getTasks() == null || currentTaskId == null) {
+            return null;
+        }
+        var tasks = workflowDefinition.getTasks();
+        for (int i = 0; i < tasks.size() - 1; i++) {
+            if (tasks.get(i).getTaskId().equals(currentTaskId)) {
+                return tasks.get(i + 1).getTaskId();
+            }
+        }
+        return null;
     }
 
     /**
@@ -202,6 +228,7 @@ public class ExecutionContext {
                 .loopVariables(new HashMap<>())
                 .workflowExecutionId(parent.getWorkflowExecutionId())
                 .executionTime(parent.getExecutionTime())
+                .workflowDefinition(parent.getWorkflowDefinition())
                 .branchId(branchId)
                 .branchName(branchName)
                 .parentContext(parent)

@@ -1,7 +1,6 @@
 package com.app.core.executors;
 
 import com.app.common.constant.TaskExecutionStatus;
-import com.app.common.constant.WorkflowExecutionStatus;
 import com.app.common.entity.WorkflowDefinition;
 import com.app.common.entity.WorkflowExecution;
 import com.app.common.entity.WorkflowTaskExecution;
@@ -17,39 +16,30 @@ import com.app.common.model.task.parameters.HumanTaskParameters;
 import com.app.core.model.ExecutionContext;
 import com.app.core.service.TaskExecutor;
 import com.app.persistence.repository.WorkflowDefinitionRepository;
-import com.app.core.service.WorkflowEngine;
-import com.app.persistence.repository.WorkflowExecutionRepository;
 import com.app.persistence.repository.WorkflowTaskExecutionRepository;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
-import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
+import java.util.Optional;
 
 /**
  * Executor for HUMAN_TASK type.
- * Handles both initial execution (pauses workflow) and response processing
- * (resumes workflow).
+ * Handles both initial execution (pauses workflow) and re-entry after the API
+ * records a human response (returns COMPLETED with resolved routing).
  */
 @Slf4j
 @Component
 public class HumanTaskExecutor implements TaskExecutor {
 
-    private final WorkflowEngine workflowEngine;
     private final WorkflowDefinitionRepository definitionRepository;
-    private final WorkflowExecutionRepository executionRepository;
     private final WorkflowTaskExecutionRepository taskExecutionRepository;
 
-    public HumanTaskExecutor(@Lazy WorkflowEngine workflowEngine,
-            WorkflowDefinitionRepository definitionRepository,
-            WorkflowExecutionRepository executionRepository,
+    public HumanTaskExecutor(WorkflowDefinitionRepository definitionRepository,
             WorkflowTaskExecutionRepository taskExecutionRepository) {
-        this.workflowEngine = workflowEngine;
         this.definitionRepository = definitionRepository;
-        this.executionRepository = executionRepository;
         this.taskExecutionRepository = taskExecutionRepository;
     }
 
@@ -59,11 +49,26 @@ public class HumanTaskExecutor implements TaskExecutor {
     }
 
     /**
-     * Initial execution — pauses the workflow and waits for human input.
+     * Initial execution pauses the workflow. On re-entry after an API response,
+     * resolves routing and returns COMPLETED so the engine can advance.
      */
     @Override
     public TaskExecutionResult execute(WorkflowTask task, WorkflowExecution execution,
             ExecutionContext context) {
+        Optional<WorkflowTaskExecution> responded = findRespondedHumanTaskExecution(
+                execution.getId(), task.getTaskId());
+
+        if (responded.isPresent()) {
+            return buildResultFromResponse(responded.get(), task, execution);
+        }
+
+        return pauseForHumanInput(task);
+    }
+
+    /**
+     * Initial execution — pauses the workflow and waits for human input.
+     */
+    private TaskExecutionResult pauseForHumanInput(WorkflowTask task) {
         HumanTaskParameters params = (HumanTaskParameters) task.getParameters();
 
         log.info("Human task '{}' requires input. Assignee: {}, Actions: {}",
@@ -75,7 +80,7 @@ public class HumanTaskExecutor implements TaskExecutor {
                 .title(params.getTitle())
                 .assignee(params.getAssignee())
                 .availableActions(params.getActions())
-                .currentOutcome(null) // null = TODO state
+                .currentOutcome(null)
                 .build();
 
         return TaskExecutionResult.builder()
@@ -86,107 +91,62 @@ public class HumanTaskExecutor implements TaskExecutor {
     }
 
     /**
-     * Process a human task response.
-     * Validates the action, updates task execution data, and resumes the workflow
-     * on terminal outcomes (APPROVED/REJECTED).
+     * Re-entry after the API recorded a terminal human response.
+     * Resolves the next task (core routing) and returns a result the engine loop
+     * can act on without any task-type logic in WorkflowEngine.
      */
-    public WorkflowTaskExecution respond(String executionId, String taskExecutionId,
-            String actionId, String respondedBy, Map<String, Object> formData) {
+    private TaskExecutionResult buildResultFromResponse(WorkflowTaskExecution taskExecution,
+            WorkflowTask task, WorkflowExecution execution) {
 
-        // ── Validate ──
-        WorkflowTaskExecution taskExecution = taskExecutionRepository.findById(taskExecutionId)
-                .orElseThrow(() -> new ResourceNotFoundException("WorkflowTaskExecution", taskExecutionId));
-
-        if (!taskExecution.getWorkflowExecutionId().equals(executionId)) {
-            throw new ValidationException("Task execution does not belong to execution: " + executionId);
-        }
-        if (!"HUMAN_TASK".equals(taskExecution.getTaskType())) {
-            throw new ValidationException("Task is not a HUMAN_TASK");
-        }
-        if (!TaskExecutionStatus.PAUSED.equals(taskExecution.getStatus())) {
-            throw new ValidationException(
-                    "Task is not in PAUSED status, current: " + taskExecution.getStatus());
-        }
         if (!(taskExecution.getExecutionData() instanceof HumanTaskExecutionData executionData)) {
-            throw new ValidationException("Task execution data is invalid");
+            throw new ValidationException("Human task execution data is invalid");
         }
 
-        HumanTaskAction action = executionData.getAvailableActions().stream()
-                .filter(a -> a.getId().equals(actionId))
-                .findFirst()
-                .orElseThrow(() -> new ValidationException("Invalid actionId: " + actionId));
-
-        // ── Update execution data ──
-        executionData.setActionTaken(action.getId());
-        executionData.setCurrentOutcome(action.getOutcome());
-        executionData.setRespondedBy(respondedBy);
-        executionData.setRespondedAt(Instant.now());
-        if (formData != null) {
-            executionData.setFormData(formData);
+        HumanTaskOutcome outcome = executionData.getCurrentOutcome();
+        if (outcome == null || outcome == HumanTaskOutcome.PENDING) {
+            throw new ValidationException("Human task has not been responded to yet");
         }
 
-        taskExecution.setStatus(mapOutcomeToStatus(action.getOutcome()));
-        if (action.getOutcome() != HumanTaskOutcome.PENDING) {
-            taskExecution.setEndTime(Instant.now());
-        }
-
-        taskExecution.setExecutionData(executionData);
-        taskExecution = taskExecutionRepository.save(taskExecution);
-
-        log.info("Human task '{}' responded: action='{}', outcome={}",
-                taskExecutionId, actionId, action.getOutcome());
-
-        // ── Resume workflow on terminal outcomes ──
-        if (action.getOutcome() == HumanTaskOutcome.APPROVED
-                || action.getOutcome() == HumanTaskOutcome.REJECTED) {
-            handleWorkflowResume(taskExecution, action, executionData);
-        }
-
-        return taskExecution;
-    }
-
-    // ── Private helpers ──
-
-    private void handleWorkflowResume(WorkflowTaskExecution taskExecution,
-            HumanTaskAction action, HumanTaskExecutionData executionData) {
-
-        WorkflowExecution execution = executionRepository
-                .findById(taskExecution.getWorkflowExecutionId()).orElseThrow();
-
-        WorkflowDefinition definition = definitionRepository
-                .findById(execution.getWorkflowDefinitionId())
+        WorkflowDefinition definition = definitionRepository.findById(execution.getWorkflowDefinitionId())
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "WorkflowDefinition", execution.getWorkflowDefinitionId()));
 
-        String nextTaskId = resolveNextTaskId(action, definition, taskExecution.getTaskDefinitionId());
+        HumanTaskAction action = executionData.getAvailableActions().stream()
+                .filter(a -> a.getId().equals(executionData.getActionTaken()))
+                .findFirst()
+                .orElseThrow(() -> new ValidationException("Human task action not found"));
 
-        Map<String, Object> taskOutput = Map.of(
-                taskExecution.getTaskDefinitionId(), executionData.toOutputMap());
-        execution.getTaskOutputs().putAll(taskOutput);
+        String resolvedNextTaskId = resolveNextTaskId(action, definition, task.getTaskId());
 
-        if (action.getOutcome() == HumanTaskOutcome.REJECTED && nextTaskId == null) {
-            execution.setStatus(WorkflowExecutionStatus.FAILED);
-            execution.setCurrentTaskId(null);
-            execution.setEndTime(Instant.now());
-            executionRepository.save(execution);
-            log.info("Workflow {} failed: human task rejected with no rejection path", execution.getId());
-            return;
+        log.info("Human task '{}' re-entry: outcome={}, nextTask={}",
+                task.getTaskId(), outcome, resolvedNextTaskId);
+
+        if (outcome == HumanTaskOutcome.REJECTED && resolvedNextTaskId == null) {
+            return TaskExecutionResult.builder()
+                    .status(TaskExecutionResult.Status.FAILED)
+                    .executionData(executionData)
+                    .output(buildOutput(executionData))
+                    .errorMessage("Human task rejected with no rejection path")
+                    .build();
         }
 
-        if (nextTaskId == null) {
-            execution.setStatus(WorkflowExecutionStatus.COMPLETED);
-            execution.setCurrentTaskId(null);
-            execution.setEndTime(Instant.now());
-            executionRepository.save(execution);
-            log.info("Workflow {} completed after human task '{}'",
-                    execution.getId(), taskExecution.getTaskDefinitionId());
-            return;
-        }
+        return TaskExecutionResult.builder()
+                .status(TaskExecutionResult.Status.COMPLETED)
+                .nextTaskId(resolvedNextTaskId)
+                .executionData(executionData)
+                .output(buildOutput(executionData))
+                .build();
+    }
 
-        execution.setCurrentTaskId(nextTaskId);
-        executionRepository.save(execution);
-
-        workflowEngine.resumeWorkflow(execution.getId(), definition, taskOutput);
+    private Optional<WorkflowTaskExecution> findRespondedHumanTaskExecution(
+            String executionId, String taskDefinitionId) {
+        return taskExecutionRepository.findAllByWorkflowExecutionId(executionId).stream()
+                .filter(t -> "HUMAN_TASK".equals(t.getTaskType()))
+                .filter(t -> taskDefinitionId.equals(t.getTaskDefinitionId()))
+                .filter(t -> TaskExecutionStatus.COMPLETED.equals(t.getStatus())
+                        || TaskExecutionStatus.FAILED.equals(t.getStatus()))
+                .max(Comparator.comparing(WorkflowTaskExecution::getEndTime,
+                        Comparator.nullsLast(Comparator.naturalOrder())));
     }
 
     private String resolveNextTaskId(HumanTaskAction action, WorkflowDefinition definition,
@@ -222,13 +182,5 @@ public class HumanTaskExecutor implements TaskExecutor {
             }
         }
         return null;
-    }
-
-    private TaskExecutionStatus mapOutcomeToStatus(HumanTaskOutcome outcome) {
-        return switch (outcome) {
-            case APPROVED -> TaskExecutionStatus.COMPLETED;
-            case REJECTED -> TaskExecutionStatus.FAILED;
-            case PENDING -> TaskExecutionStatus.PAUSED;
-        };
     }
 }

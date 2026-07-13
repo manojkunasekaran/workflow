@@ -33,10 +33,15 @@ public class WorkflowExecution extends Auditable {
     private List<TaskExecutionSummary> taskExecutionSummaries;
 
     /**
-     * The ID of the next task to execute when the workflow resumes.
-     * Set when workflow is paused (e.g., PAUSED status due to human task).
+     * The task the workflow is on right now (running or paused on).
      */
     private String currentTaskId;
+
+    /**
+     * Resolved next task when known but not started yet (e.g. after wait pause).
+     * Null while the current task is still in progress.
+     */
+    private String nextTaskId;
 
     /**
      * Trigger inputs provided when the workflow execution was started.

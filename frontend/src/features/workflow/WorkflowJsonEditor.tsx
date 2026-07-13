@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { workflowApi } from '@/api/workflowApi';
+import { executionApi } from '@/api/executionApi';
 import { Loader2, Save, Play, RefreshCw, AlertCircle, CheckCircle, FileJson } from 'lucide-react';
 import {
     SAMPLE_DATA_TRANSFORM_WORKFLOW
@@ -121,7 +122,7 @@ export default function WorkflowJsonEditor() {
         try {
             setIsRunning(true);
             setLastExecution(null);
-            const result = await workflowApi.run(workflowId) as ExecutionResult;
+            const result = await executionApi.trigger(workflowId, 'ASYNC') as ExecutionResult;
             setLastExecution(result);
 
             if (result.status === 'COMPLETED') {

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useBlocker, useLocation, useNavigate, useParams } from 'react-router-dom';
 import type { Connection, Edge, NodeChange } from '@xyflow/react';
 import { workflowApi } from '@/api/workflowApi';
+import { executionApi } from '@/api/executionApi';
 import type { WorkflowDefinition } from '@/types/api';
 import { StudioHeader, type StudioMode } from '@/features/workflow-studio/StudioHeader';
 import {
@@ -750,7 +751,7 @@ export default function WorkflowStudioPage() {
                 }
             }
             if (!id) throw new Error('No workflow id');
-            const execution = await workflowApi.run(id);
+            const execution = await executionApi.trigger(id, 'ASYNC');
             if (execution.id) {
                 setLastExecutionId(execution.id);
             }

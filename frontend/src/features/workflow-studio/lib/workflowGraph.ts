@@ -56,6 +56,11 @@ import { injectParameterType, summarizeValidationErrors, validateTaskParameters 
 import { getTaskTypePlugin } from '@/features/workflow-studio/task-type-schema/registry';
 import { parseIteratorActions, normalizeIteratorParamsForExport } from '@/features/workflow-studio/task-type-schema/iteratorTask';
 import { TASK_PLUGINS } from '@/features/workflow-studio/task-type-schema/plugins';
+import {
+    applyRoutingDefaults,
+    syncRouteParamsFromEdges,
+    validateWorkflowGraph,
+} from '@/features/workflow-studio/lib/workflowValidation';
 
 const pluginByType = new Map(TASK_PLUGINS.map((plugin) => [plugin.type, plugin]));
 
@@ -349,7 +354,10 @@ export function flowToDefinition(
     existing?: WorkflowDefinition,
     workflowId?: string | null,
 ): WorkflowDefinition {
-    const syncedNodes = syncAllIteratorLoopBodies(nodes, edges);
+    const syncedNodes = syncRouteParamsFromEdges(
+        syncAllIteratorLoopBodies(nodes, edges),
+        edges,
+    );
     const withEndTasks = syncBranchEndTaskIdsFromChains(syncedNodes, edges);
     const loopBodyIds = collectAllIteratorLoopBodyTaskIds(withEndTasks, edges);
 
@@ -401,16 +409,20 @@ export function flowToDefinition(
     }
 
     const orderedIds = orderTaskIdsForExport(withEndTasks, edges);
-    const tasks: WorkflowTask[] = orderedIds
-        .map((taskId) => taskPayloadById.get(taskId))
-        .filter((task): task is WorkflowTask => Boolean(task));
+    const tasks: WorkflowTask[] = applyRoutingDefaults(
+        orderedIds
+            .map((taskId) => taskPayloadById.get(taskId))
+            .filter((task): task is WorkflowTask => Boolean(task)),
+        getMainSpineIdsFromEdges(withEndTasks, edges),
+    );
 
     return {
-        ...existing,
         id: workflowId ?? existing?.id,
         name,
         tasks,
         layout: layoutWithChains,
+        createdAt: existing?.createdAt,
+        updatedAt: existing?.updatedAt,
     };
 }
 
@@ -940,9 +952,15 @@ export function findFirstTaskValidationError(
     nodes: StudioCanvasNode[],
     edges: Edge[],
 ): string | null {
-    const syncedNodes = syncAllIteratorLoopBodies(nodes, edges);
+    const syncedNodes = syncRouteParamsFromEdges(
+        syncAllIteratorLoopBodies(nodes, edges),
+        edges,
+    );
     const basic = validateWorkflowTasks(syncedNodes);
     if (basic) return basic;
+
+    const graphError = validateWorkflowGraph(syncedNodes, edges);
+    if (graphError) return graphError;
 
     const workflowTasks = getTaskNodes(syncedNodes).map((node) => ({
         taskId: node.data.taskId,

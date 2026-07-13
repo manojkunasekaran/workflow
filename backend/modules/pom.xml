@@ -19,5 +19,6 @@
         <module>common</module>
         <module>persistence</module>
         <module>messaging</module>
+        <module>execution-events</module>
     </modules>
 </project>

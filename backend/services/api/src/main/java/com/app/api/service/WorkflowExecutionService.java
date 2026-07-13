@@ -1,65 +1,93 @@
 package com.app.api.service;
 
-import com.app.api.dispatcher.ExecutionTriggerDispatcher;
 import com.app.api.dto.HumanTaskResponse;
 import com.app.common.constant.ExecutionType;
+import com.app.common.constant.WorkflowExecutionStatus;
 import com.app.common.entity.WorkflowExecution;
 import com.app.common.entity.WorkflowTaskExecution;
 import com.app.common.exception.ResourceNotFoundException;
 import com.app.common.exception.ValidationException;
-import com.app.messaging.grpc.HumanTaskResponseRequest;
-import com.app.messaging.grpc.WorkflowServiceGrpc;
 import com.app.common.model.variable.VariableValue;
+import com.app.messaging.dispatch.ExecutionMessageDispatcherRegistry;
+import com.app.persistence.repository.WorkflowDefinitionRepository;
 import com.app.persistence.repository.WorkflowExecutionRepository;
 import com.app.persistence.repository.WorkflowTaskExecutionRepository;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
 public class WorkflowExecutionService {
 
     private final WorkflowExecutionRepository executionRepository;
+    private final WorkflowDefinitionRepository definitionRepository;
     private final WorkflowTaskExecutionRepository taskExecutionRepository;
-    private final WorkflowServiceGrpc.WorkflowServiceBlockingStub workflowServiceStub;
-    private final ObjectMapper objectMapper;
-    private final Map<ExecutionType, ExecutionTriggerDispatcher> dispatchers;
+    private final ExecutionMessageDispatcherRegistry messageDispatcherRegistry;
+    private final ExecutionSyncWaiter syncWaiter;
+    private final HumanTaskResponseService humanTaskResponseService;
+
+    @Value("${workflow.execution.sync-timeout-seconds:300}")
+    private long syncTimeoutSeconds;
 
     public WorkflowExecutionService(
             WorkflowExecutionRepository executionRepository,
+            WorkflowDefinitionRepository definitionRepository,
             WorkflowTaskExecutionRepository taskExecutionRepository,
-            WorkflowServiceGrpc.WorkflowServiceBlockingStub workflowServiceStub,
-            ObjectMapper objectMapper,
-            List<ExecutionTriggerDispatcher> dispatcherList) {
+            ExecutionMessageDispatcherRegistry messageDispatcherRegistry,
+            ExecutionSyncWaiter syncWaiter,
+            HumanTaskResponseService humanTaskResponseService) {
         this.executionRepository = executionRepository;
+        this.definitionRepository = definitionRepository;
         this.taskExecutionRepository = taskExecutionRepository;
-        this.workflowServiceStub = workflowServiceStub;
-        this.objectMapper = objectMapper;
-        this.dispatchers = dispatcherList.stream()
-                .collect(Collectors.toMap(ExecutionTriggerDispatcher::getType, Function.identity()));
+        this.messageDispatcherRegistry = messageDispatcherRegistry;
+        this.syncWaiter = syncWaiter;
+        this.humanTaskResponseService = humanTaskResponseService;
     }
 
-    /**
-     * Trigger a workflow execution using the specified execution type.
-     * Delegates to the appropriate {@link ExecutionTriggerDispatcher}.
-     */
-    public WorkflowExecution triggerExecution(String definitionId, ExecutionType type,
-                                              Map<String, VariableValue> inputs) {
-        ExecutionTriggerDispatcher dispatcher = dispatchers.get(type);
-        if (dispatcher == null) {
-            throw new ValidationException("Unsupported execution type: " + type);
+    public WorkflowExecution triggerExecution(
+            String definitionId, Map<String, VariableValue> inputs, ExecutionType executionType) {
+        definitionRepository.findById(definitionId)
+                .orElseThrow(() -> new ResourceNotFoundException("WorkflowDefinition", definitionId));
+
+        WorkflowExecution execution = createQueuedExecution(definitionId, executionType, inputs);
+        String executionId = execution.getId();
+
+        if (executionType == ExecutionType.SYNC) {
+            ExecutionSyncWaiter.WaitSession waitSession = syncWaiter.beginWait(executionId);
+            messageDispatcherRegistry.dispatch(executionType, executionId);
+            return syncWaiter.await(waitSession, syncTimeoutSeconds, TimeUnit.SECONDS);
         }
-        return dispatcher.dispatch(definitionId, inputs);
+
+        messageDispatcherRegistry.dispatch(executionType, executionId);
+        return execution;
+    }
+
+    private WorkflowExecution createQueuedExecution(
+            String definitionId, ExecutionType executionType, Map<String, VariableValue> inputs) {
+        WorkflowExecution execution = new WorkflowExecution();
+        execution.setWorkflowId(definitionId);
+        execution.setWorkflowDefinitionId(definitionId);
+        execution.setExecutionType(executionType);
+        execution.setStatus(WorkflowExecutionStatus.QUEUED);
+        execution.setStartTime(Instant.now());
+        execution.setTaskExecutionSummaries(Collections.synchronizedList(new ArrayList<>()));
+
+        if (inputs != null) {
+            execution.setTriggerInputs(inputs);
+        }
+
+        return executionRepository.save(execution);
     }
 
     public Page<WorkflowExecution> getAllExecutions(Pageable pageable) {
@@ -75,33 +103,38 @@ public class WorkflowExecutionService {
         return taskExecutionRepository.findAllByWorkflowExecutionId(id);
     }
 
-    /**
-     * Respond to a pending human task via gRPC call to the Core service.
-     */
     public WorkflowTaskExecution respondToHumanTask(String executionId, String taskExecutionId,
                                                     HumanTaskResponse response) {
-        try {
-            String formDataJson = response.getFormData() != null
-                    ? objectMapper.writeValueAsString(response.getFormData())
-                    : "";
+        WorkflowExecution execution = executionRepository.findById(executionId)
+                .orElseThrow(() -> new ResourceNotFoundException("WorkflowExecution", executionId));
 
-            HumanTaskResponseRequest request = HumanTaskResponseRequest.newBuilder()
-                    .setExecutionId(executionId)
-                    .setTaskExecutionId(taskExecutionId)
-                    .setActionId(response.getActionId() != null ? response.getActionId() : "")
-                    .setRespondedBy(response.getRespondedBy() != null ? response.getRespondedBy() : "")
-                    .setFormDataJson(formDataJson)
-                    .build();
+        WorkflowTaskExecution taskExecution = humanTaskResponseService.recordResponse(
+                executionId,
+                taskExecutionId,
+                response.getActionId(),
+                response.getRespondedBy(),
+                response.getFormData());
 
-            workflowServiceStub
-                    .withDeadlineAfter(10, TimeUnit.SECONDS)
-                    .respondToHumanTask(request);
-
-        } catch (Exception e) {
-            log.error("Error responding to human task: executionId={}, taskId={}",
-                    executionId, taskExecutionId, e);
-            throw new RuntimeException("Failed to respond to human task: " + e.getMessage(), e);
+        if (!humanTaskResponseService.isTerminalOutcome(taskExecution)) {
+            return taskExecution;
         }
+
+        if (!WorkflowExecutionStatus.PAUSED.equals(execution.getStatus())) {
+            throw new ValidationException(
+                    "Execution is not PAUSED, current: " + execution.getStatus());
+        }
+        if (!taskExecution.getTaskDefinitionId().equals(execution.getCurrentTaskId())) {
+            throw new ValidationException("Task does not match the execution's current task");
+        }
+
+        execution.setStatus(WorkflowExecutionStatus.QUEUED);
+        execution.setEndTime(null);
+        executionRepository.save(execution);
+
+        messageDispatcherRegistry.dispatch(execution.getExecutionType(), executionId);
+
+        log.info("Human task response dispatched: executionId={}, taskExecutionId={}, mode={}",
+                executionId, taskExecutionId, execution.getExecutionType());
 
         return taskExecutionRepository.findById(taskExecutionId)
                 .orElseThrow(() -> new ResourceNotFoundException(
