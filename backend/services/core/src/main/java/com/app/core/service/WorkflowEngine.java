@@ -5,12 +5,13 @@ import com.app.common.constant.WorkflowExecutionStatus;
 import com.app.common.entity.WorkflowDefinition;
 import com.app.common.entity.WorkflowExecution;
 import com.app.common.entity.WorkflowTaskExecution;
+import com.app.execution.events.ExecutionEvent;
+import com.app.execution.events.ExecutionEventPublisher;
 import com.app.common.model.task.TaskType;
 import com.app.common.model.task.WorkflowTask;
 import com.app.common.model.task.execution.TaskExecutionResult;
 import com.app.common.model.task.execution.JoinTaskExecutionData;
 import com.app.common.model.task.parameters.BranchTaskParameters;
-import com.app.common.model.variable.VariableValue;
 
 import com.app.core.model.ExecutionContext;
 import com.app.persistence.repository.WorkflowDefinitionRepository;
@@ -40,6 +41,7 @@ public class WorkflowEngine {
     private final WorkflowDefinitionRepository definitionRepository;
     private final WorkflowExecutionRepository executionRepository;
     private final WorkflowTaskExecutionRepository taskExecutionRepository;
+    private final ExecutionEventPublisher eventPublisher;
 
     private final ExecutorService executor;
 
@@ -47,6 +49,7 @@ public class WorkflowEngine {
             WorkflowExecutionRepository executionRepository,
             WorkflowTaskExecutionRepository taskExecutionRepository,
             WorkflowDefinitionRepository definitionRepository,
+            ExecutionEventPublisher eventPublisher,
             @org.springframework.beans.factory.annotation.Value("${workflow.engine.core-pool-size:10}") int corePoolSize,
             @org.springframework.beans.factory.annotation.Value("${workflow.engine.max-pool-size:50}") int maxPoolSize,
             @org.springframework.beans.factory.annotation.Value("${workflow.engine.queue-capacity:200}") int queueCapacity) {
@@ -54,6 +57,7 @@ public class WorkflowEngine {
         this.definitionRepository = definitionRepository;
         this.executionRepository = executionRepository;
         this.taskExecutionRepository = taskExecutionRepository;
+        this.eventPublisher = eventPublisher;
         this.executor = new java.util.concurrent.ThreadPoolExecutor(
                 corePoolSize, maxPoolSize, 60L, java.util.concurrent.TimeUnit.SECONDS,
                 new java.util.concurrent.LinkedBlockingQueue<>(queueCapacity),
@@ -66,113 +70,48 @@ public class WorkflowEngine {
     }
 
     /**
-     * Unified entry point to trigger a workflow execution.
-     * Performs definition lookup, creates or updates the execution record, 
-     * handles state transitions to RUNNING, and starts the background engine.
-     *
-     * @param definitionId  The workflow definition to run
-     * @param executionId   Optional execution ID (for async QUEUED executions). 
-     *                      If null, a new execution is created (sync flow).
-     * @param triggerInputs Optional variables to seed the execution context.
-     * @return The RUNNING execution record.
+     * Process an execution message — claims non-terminal status → RUNNING and runs the workflow.
      */
-    public WorkflowExecution triggerWorkflow(String definitionId, String executionId, Map<String, VariableValue> triggerInputs) {
-        log.info("Triggering workflow: definitionId={}, executionId={}", definitionId, executionId);
-        
-        try {
-            WorkflowDefinition definition = definitionRepository.findById(definitionId)
-                    .orElseThrow(() -> new com.app.common.exception.ResourceNotFoundException(
-                            "WorkflowDefinition", definitionId));
+    public void processExecution(String executionId) {
+        log.info("Processing execution: executionId={}", executionId);
 
-            WorkflowExecution execution;
-            if (executionId != null) {
-                // Async case: execution created by API as QUEUED
-                execution = executionRepository.findById(executionId)
-                        .orElseThrow(() -> new com.app.common.exception.ResourceNotFoundException(
-                                "WorkflowExecution", executionId));
-                
-                execution.setStatus(WorkflowExecutionStatus.RUNNING);
-                if (triggerInputs != null && !triggerInputs.isEmpty()) {
-                    execution.setTriggerInputs(triggerInputs);
-                }
-                execution = executionRepository.save(execution);
-            } else {
-                // Sync case: no pre-existing execution
-                execution = initializeExecution(definition, triggerInputs);
-            }
-
-            final String finalExecutionId = execution.getId();
-
-            CompletableFuture.runAsync(
-                    () -> executeWorkflow(definition, finalExecutionId), executor);
-
-            log.info("Workflow started: executionId={}", finalExecutionId);
-            return execution;
-
-        } catch (Exception e) {
-            log.error("Failed to trigger workflow: definitionId={}, executionId={}, error={}", 
-                    definitionId, executionId, e.getMessage(), e);
-
-            // Mark execution as FAILED if it exists and failed during trigger
-            if (executionId != null) {
-                executionRepository.findById(executionId).ifPresent(exec -> {
-                    exec.setStatus(WorkflowExecutionStatus.FAILED);
-                    executionRepository.save(exec);
-                });
-            }
-            throw e; 
-        }
-    }
-
-    /**
-     * Resume a paused workflow. Validates state, merges task outputs,
-     * and resumes execution asynchronously.
-     */
-    public void resumeWorkflow(@NonNull final String executionId, WorkflowDefinition definition,
-            Map<String, Object> taskOutputs) {
         WorkflowExecution execution = executionRepository.findById(executionId)
                 .orElseThrow(() -> new IllegalStateException("Execution not found: " + executionId));
 
-        if (!WorkflowExecutionStatus.PAUSED.equals(execution.getStatus())) {
-            throw new IllegalStateException("Cannot resume execution " + executionId
-                    + " — status is " + execution.getStatus() + ", expected PAUSED");
-        }
-
-        final WorkflowDefinition resolvedDefinition = definition != null ? definition
-                : definitionRepository.findById(execution.getWorkflowDefinitionId())
-                        .orElseThrow(() -> new IllegalStateException("Workflow Definition not found"));
-
-        if (taskOutputs != null) {
-            execution.getTaskOutputs().putAll(taskOutputs);
+        if (shouldSkipProcessing(execution)) {
+            log.warn("Skipping execution {} — status {}", executionId, execution.getStatus());
+            return;
         }
 
         execution.setStatus(WorkflowExecutionStatus.RUNNING);
         execution.setEndTime(null);
         executionRepository.save(execution);
 
-        log.info("Resuming workflow {} from task '{}'", executionId, execution.getCurrentTaskId());
+        String definitionId = execution.getWorkflowDefinitionId();
+        WorkflowDefinition definition = definitionRepository.findById(definitionId)
+                .orElseThrow(() -> new com.app.common.exception.ResourceNotFoundException(
+                        "WorkflowDefinition", definitionId));
 
-        CompletableFuture.runAsync(
-                () -> executeWorkflow(resolvedDefinition, executionId), executor);
+        publishEvent(execution);
+
+        CompletableFuture.runAsync(() -> executeWorkflow(definition, executionId), executor);
     }
 
-    private WorkflowExecution initializeExecution(WorkflowDefinition definition,
-            Map<String, VariableValue> triggerInputs) {
-        WorkflowExecution execution = new WorkflowExecution();
-        execution.setWorkflowId(definition.getId());
-        execution.setWorkflowDefinitionId(definition.getId());
-        execution.setStatus(WorkflowExecutionStatus.RUNNING);
-        execution.setStartTime(Instant.now());
-        execution.setTaskExecutionSummaries(Collections.synchronizedList(new ArrayList<>()));
+    private boolean shouldSkipProcessing(WorkflowExecution execution) {
+        WorkflowExecutionStatus status = execution.getStatus();
+        return WorkflowExecutionStatus.COMPLETED.equals(status)
+                || WorkflowExecutionStatus.FAILED.equals(status)
+                || WorkflowExecutionStatus.RUNNING.equals(status);
+    }
 
-        // Set trigger inputs (for variable resolution)
-        if (triggerInputs != null) {
-            execution.setTriggerInputs(triggerInputs);
+    private void publishEvent(WorkflowExecution execution) {
+        if (execution.getStatus() == null) {
+            return;
         }
-
-        execution = executionRepository.save(execution);
-        log.info("Initialized execution {} for workflow: {}", execution.getId(), definition.getName());
-        return execution;
+        eventPublisher.publish(ExecutionEvent.of(
+                execution.getId(),
+                execution.getStatus().name(),
+                execution.getCurrentTaskId()));
     }
 
     /**
@@ -183,23 +122,26 @@ public class WorkflowEngine {
         WorkflowExecution execution = executionRepository.findById(executionId)
                 .orElseThrow(() -> new IllegalStateException("Execution not found: " + executionId));
 
+        if (WorkflowExecutionStatus.COMPLETED.equals(execution.getStatus())
+                || WorkflowExecutionStatus.FAILED.equals(execution.getStatus())) {
+            log.warn("Skipping workflow loop for execution {} — status {}", executionId, execution.getStatus());
+            return;
+        }
+
+        List<WorkflowTask> tasks = definition.getTasks();
+        if (tasks == null || tasks.isEmpty()) {
+            log.warn("Workflow {} has no tasks", definition.getId());
+            execution.setStatus(WorkflowExecutionStatus.COMPLETED);
+            return;
+        }
+
         ExecutionContext context = ExecutionContext.fromExecution(
                 execution.getTriggerInputs(),
-                definition.getVariables(),
                 execution.getTaskOutputs(),
-                execution.getId());
-
-        boolean skipFinallyPersist = false;
+                execution.getId(),
+                definition);
 
         try {
-            List<WorkflowTask> tasks = definition.getTasks();
-            if (tasks == null || tasks.isEmpty()) {
-                log.warn("Workflow {} has no tasks", definition.getId());
-                execution.setStatus(WorkflowExecutionStatus.COMPLETED);
-                execution.setEndTime(Instant.now());
-                return;
-            }
-
             // Resume from currentTaskId if set, otherwise start from first task
             String currentTaskId = execution.getCurrentTaskId() != null
                     ? execution.getCurrentTaskId()
@@ -224,19 +166,14 @@ public class WorkflowEngine {
                 // Record task execution
                 recordTaskExecution(execution, currentTask, result);
 
-                // PAUSED: persist and exit — do not run finally save (avoids racing resume)
+                // PAUSED: set resume cursor and exit loop — finally persists once
                 if (result.getStatus() == TaskExecutionResult.Status.PAUSED) {
-                    if (currentTask.getType() == TaskType.WAIT) {
-                        execution.setCurrentTaskId(getNextTaskId(tasks, currentTask.getTaskId()));
-                    } else {
-                        execution.setCurrentTaskId(null);
-                    }
+                    execution.setCurrentTaskId(result.getNextTaskId() != null
+                            ? result.getNextTaskId()
+                            : currentTask.getTaskId());
                     execution.setStatus(WorkflowExecutionStatus.PAUSED);
-                    execution.setEndTime(null);
-                    executionRepository.save(execution);
-                    skipFinallyPersist = true;
                     log.info("Workflow {} paused at task '{}'", execution.getId(), currentTask.getTaskId());
-                    return;
+                    break;
                 }
 
                 // FAILED
@@ -275,12 +212,9 @@ public class WorkflowEngine {
             log.error("Workflow execution failed: {}", e.getMessage(), e);
             execution.setStatus(WorkflowExecutionStatus.FAILED);
         } finally {
-            if (!skipFinallyPersist) {
-                if (!WorkflowExecutionStatus.PAUSED.equals(execution.getStatus())) {
-                    execution.setEndTime(Instant.now());
-                }
-                executionRepository.save(execution);
-            }
+            execution.setEndTime(Instant.now());
+            executionRepository.save(execution);
+            publishEvent(execution);
         }
 
     }
@@ -305,6 +239,10 @@ public class WorkflowEngine {
      * Record task execution in database.
      */
     private void recordTaskExecution(WorkflowExecution execution, WorkflowTask task, TaskExecutionResult result) {
+        if (hasTerminalTaskExecution(execution.getId(), task.getTaskId())) {
+            return;
+        }
+
         WorkflowTaskExecution taskExecution = new WorkflowTaskExecution();
         taskExecution.setWorkflowExecutionId(execution.getId());
         taskExecution.setWorkflowDefinitionId(execution.getWorkflowId());
@@ -327,6 +265,13 @@ public class WorkflowEngine {
         summary.setTaskDefinitionId(task.getTaskId());
         summary.setStatus(TaskExecutionStatus.valueOf(result.getStatus().name()));
         execution.getTaskExecutionSummaries().add(summary);
+    }
+
+    private boolean hasTerminalTaskExecution(String executionId, String taskDefinitionId) {
+        return taskExecutionRepository.findAllByWorkflowExecutionId(executionId).stream()
+                .filter(t -> taskDefinitionId.equals(t.getTaskDefinitionId()))
+                .anyMatch(t -> TaskExecutionStatus.COMPLETED.equals(t.getStatus())
+                        || TaskExecutionStatus.FAILED.equals(t.getStatus()));
     }
 
     /**

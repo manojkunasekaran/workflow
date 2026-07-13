@@ -22,6 +22,8 @@ export interface WorkflowTask {
     parameters: TaskParameters;
 }
 
+export type ExecutionType = 'SYNC' | 'ASYNC';
+
 export interface WorkflowDefinition {
     id?: string;
     name: string;

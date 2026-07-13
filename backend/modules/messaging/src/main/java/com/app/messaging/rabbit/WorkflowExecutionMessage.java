@@ -1,11 +1,9 @@
 package com.app.messaging.rabbit;
 
 import java.time.Instant;
-import java.util.Map;
 
-public record WorkflowResumeMessage(
+public record WorkflowExecutionMessage(
         String executionId,
-        Map<String, Object> taskOutputs,
         Instant timestamp
 ) {
 }

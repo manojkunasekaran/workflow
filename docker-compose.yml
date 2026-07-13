@@ -25,6 +25,15 @@ services:
     networks:
       - workflow-network
 
+  redis:
+    container_name: redis
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    networks:
+      - workflow-network
+
   # ── Frontend ──────────────────────────────────────────────────────────────────
   frontend:
     build:
@@ -64,6 +73,10 @@ services:
     depends_on:
       build-libs:
         condition: service_completed_successfully
+      redis:
+        condition: service_started
+      rabbitmq:
+        condition: service_started
     restart: unless-stopped
     deploy:
       resources:
@@ -91,6 +104,10 @@ services:
     depends_on:
       build-libs:
         condition: service_completed_successfully
+      redis:
+        condition: service_started
+      rabbitmq:
+        condition: service_started
     restart: unless-stopped
     deploy:
       resources:

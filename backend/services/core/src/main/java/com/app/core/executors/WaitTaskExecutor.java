@@ -1,24 +1,22 @@
 package com.app.core.executors;
 
 import com.app.common.entity.WorkflowExecution;
+import com.app.common.model.task.WorkflowTask;
 import com.app.common.model.task.execution.TaskExecutionResult;
 import com.app.common.model.task.TaskType;
 import com.app.common.model.task.execution.WaitTaskExecutionData;
 import com.app.common.model.task.parameters.WaitTaskParameters;
-import com.app.common.model.task.WorkflowTask;
 
 import com.app.core.model.ExecutionContext;
 import com.app.core.service.TaskExecutor;
 import com.app.core.service.VariableResolver;
-import com.app.core.service.WorkflowEngine;
+import com.app.messaging.dispatch.DelayedExecutionMessageDispatcher;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Executor for WAIT task type.
@@ -27,16 +25,11 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class WaitTaskExecutor implements TaskExecutor {
 
     private final VariableResolver variableResolver;
-    private final WorkflowEngine workflowEngine;
-
-    public WaitTaskExecutor(VariableResolver variableResolver,
-            @Lazy WorkflowEngine workflowEngine) {
-        this.variableResolver = variableResolver;
-        this.workflowEngine = workflowEngine;
-    }
+    private final DelayedExecutionMessageDispatcher delayedExecutionMessageDispatcher;
 
     @Override
     public boolean canExecute(TaskType taskType) {
@@ -61,7 +54,7 @@ public class WaitTaskExecutor implements TaskExecutor {
                     .build();
         }
 
-        log.info("Wait task {} scheduling continuation in {} ms", task.getTaskId(), duration);
+        log.info("Wait task {} scheduling delayed continuation in {} ms", task.getTaskId(), duration);
 
         Instant waitStart = Instant.now();
         Instant waitEnd = waitStart.plusMillis(duration);
@@ -73,17 +66,11 @@ public class WaitTaskExecutor implements TaskExecutor {
                 .waitEndTime(waitEnd)
                 .build();
 
-        CompletableFuture.runAsync(() -> {
-            try {
-                log.info("Resuming workflow {} after wait task {}", execution.getId(), task.getTaskId());
-                workflowEngine.resumeWorkflow(execution.getId(), null, null);
-            } catch (Exception e) {
-                log.error("Failed to resume wait task {}: {}", task.getTaskId(), e.getMessage(), e);
-            }
-        }, CompletableFuture.delayedExecutor(duration, TimeUnit.MILLISECONDS));
+        delayedExecutionMessageDispatcher.dispatch(execution.getId(), duration);
 
         return TaskExecutionResult.builder()
                 .status(TaskExecutionResult.Status.PAUSED)
+                .nextTaskId(context.getSequentialNextTaskId(task.getTaskId()))
                 .executionData(executionData)
                 .output(buildOutput(executionData))
                 .build();

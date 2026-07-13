@@ -1,8 +1,7 @@
 package com.app.core.inbound;
 
 import com.app.messaging.rabbit.QueueConstants;
-import com.app.messaging.rabbit.WorkflowResumeMessage;
-import com.app.messaging.rabbit.WorkflowTriggerMessage;
+import com.app.messaging.rabbit.WorkflowExecutionMessage;
 import com.app.core.service.WorkflowEngine;
 
 import lombok.RequiredArgsConstructor;
@@ -20,26 +19,11 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class AsyncWorkflowConsumer {
 
-        private final WorkflowEngine workflowEngine;
+    private final WorkflowEngine workflowEngine;
 
-        @RabbitListener(queues = QueueConstants.TOPIC_WORKFLOW_TRIGGER)
-        public void handleTrigger(WorkflowTriggerMessage message) {
-                log.info("Received async trigger message: definitionId={}, executionId={}",
-                                message.workflowDefinitionId(), message.executionId());
-
-                workflowEngine.triggerWorkflow(
-                                message.workflowDefinitionId(),
-                                message.executionId(),
-                                null);
-        }
-
-        @RabbitListener(queues = QueueConstants.TOPIC_WORKFLOW_RESUME)
-        public void handleResume(WorkflowResumeMessage message) {
-                log.info("Received async resume message: executionId={}", message.executionId());
-
-                workflowEngine.resumeWorkflow(
-                                message.executionId(),
-                                null,
-                                message.taskOutputs());
-        }
+    @RabbitListener(queues = QueueConstants.TOPIC_WORKFLOW_EXECUTION)
+    public void handleExecution(WorkflowExecutionMessage message) {
+        log.info("Received execution message: executionId={}", message.executionId());
+        workflowEngine.processExecution(message.executionId());
+    }
 }

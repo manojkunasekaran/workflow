@@ -26,7 +26,7 @@ export function ExecutionHeader({
     embedded = false,
 }: ExecutionHeaderProps) {
     const duration = formatExecutionDuration(execution.startTime, execution.endTime);
-    const isRunning = !execution.endTime && ['RUNNING', 'QUEUED', 'PAUSED'].includes(execution.status);
+    const isRunning = ['RUNNING', 'QUEUED'].includes(execution.status.toUpperCase());
 
     return (
         <PageHeader

@@ -1,6 +1,5 @@
 import axios from 'axios';
 import type { WorkflowDefinition } from '@/types/api';
-import type { WorkflowExecution } from '@/api/executionApi';
 import { API_BASE_URL } from '@/api/config';
 
 export const workflowApi = {
@@ -25,11 +24,6 @@ export const workflowApi = {
             ...definition,
             id,
         });
-        return response.data;
-    },
-
-    run: async (id: string): Promise<WorkflowExecution> => {
-        const response = await axios.post<WorkflowExecution>(`${API_BASE_URL}/executions/${id}`);
         return response.data;
     },
 

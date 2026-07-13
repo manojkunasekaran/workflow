@@ -1,5 +1,9 @@
 import axios from 'axios';
+import type { ExecutionType } from '@/types/api';
 import { API_BASE_URL } from '@/api/config';
+
+export const executionStreamUrl = (executionId: string) =>
+    `${API_BASE_URL}/executions/${executionId}/stream`;
 
 export interface WorkflowExecution {
     id: string;
@@ -44,6 +48,26 @@ export interface HumanTaskRespondRequest {
 }
 
 export const executionApi = {
+    /**
+     * Trigger a workflow execution.
+     * POST /executions/{definitionId}?executionType=SYNC|ASYNC
+     */
+    trigger: async (
+        definitionId: string,
+        executionType: ExecutionType,
+        inputs?: Record<string, unknown>,
+    ): Promise<WorkflowExecution> => {
+        const response = await axios.post<WorkflowExecution>(
+            `${API_BASE_URL}/executions/${definitionId}`,
+            inputs,
+            {
+                params: { executionType },
+                validateStatus: (status) => status === 200 || status === 202,
+            },
+        );
+        return response.data;
+    },
+
     /**
      * Get all workflow executions (paginated API — returns content array)
      */

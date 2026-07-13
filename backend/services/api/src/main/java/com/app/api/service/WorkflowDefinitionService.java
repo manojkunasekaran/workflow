@@ -1,5 +1,6 @@
 package com.app.api.service;
 
+import com.app.api.validation.WorkflowDefinitionValidator;
 import com.app.common.entity.WorkflowDefinition;
 import com.app.persistence.repository.WorkflowDefinitionRepository;
 import lombok.RequiredArgsConstructor;
@@ -15,8 +16,10 @@ import java.util.UUID;
 public class WorkflowDefinitionService {
 
     private final WorkflowDefinitionRepository repository;
+    private final WorkflowDefinitionValidator validator;
 
     public WorkflowDefinition createWorkflowDefinition(@NonNull WorkflowDefinition definition) {
+        validator.validate(definition);
         if (definition.getId() == null) {
             definition.setId(UUID.randomUUID().toString());
         }

@@ -1,3 +1,4 @@
+import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { StatusBadge, type StatusBadgeProps } from '@/components/ui/status-badge';
 import { executionStatusLabel, executionStatusVariant } from '@/features/executions/lib/executionDisplay';
@@ -17,6 +18,12 @@ const placementClass: Record<ExecutionStatusBadgePlacement, string | undefined> 
         'pointer-events-none absolute left-1/2 top-0 z-[3] -translate-x-1/2 -translate-y-1/2 shadow-sm',
 };
 
+const iconSizeClass: Record<NonNullable<StatusBadgeProps['size']>, string> = {
+    sm: 'h-2.5 w-2.5',
+    md: 'h-3 w-3',
+    lg: 'h-3.5 w-3.5',
+};
+
 export function ExecutionStatusBadge({
     status,
     className,
@@ -25,15 +32,21 @@ export function ExecutionStatusBadge({
 }: ExecutionStatusBadgeProps) {
     const normalized = status.toUpperCase();
     const label = executionStatusLabel(status);
+    const isRunning = normalized === 'RUNNING';
 
     return (
         <StatusBadge
             variant={executionStatusVariant(status)}
             size={size}
-            pulse={normalized === 'RUNNING'}
             title={label}
-            className={cn(placementClass[placement], className)}
+            className={cn(isRunning && 'gap-1', placementClass[placement], className)}
         >
+            {isRunning ? (
+                <Loader2
+                    className={cn(iconSizeClass[size ?? 'md'], 'shrink-0 animate-spin')}
+                    aria-hidden
+                />
+            ) : null}
             {label}
         </StatusBadge>
     );
