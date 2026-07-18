@@ -38,43 +38,32 @@ services:
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile.prod
     ports:
-      - "5173:5173"
-    volumes:
-      - ./frontend:/app
+      - "80:80"
     restart: unless-stopped
-
-  # ── Backend ──────────────────────────────────────────────────────────
-  # Build the shared modules into the Maven local repository.
-  build-libs:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile.build-libs
-    volumes:
-      - ./backend:/app
-      - maven-repo:/root/.m2
-    restart: "no"
+    deploy:
+      resources:
+        limits:
+          memory: 64M
     networks:
       - workflow-network
 
+  # ── Backend ──────────────────────────────────────────────────────────
   core:
     build:
       context: ./backend
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile.prod
       args:
         APP_MODULE: core
     ports:
-      - "8081:8081" # Spring Boot HTTP / Actuator
-      - "9090:9090" # gRPC server
-      - "9000:9000" # JVM remote debug
+      - "8081:8081"
+      - "9090:9090"
     env_file:
       - backend/.env
     environment:
       JAVA_OPTS: "-XX:MaxRAMPercentage=70.0"
     depends_on:
-      build-libs:
-        condition: service_completed_successfully
       redis:
         condition: service_started
       rabbitmq:
@@ -88,26 +77,20 @@ services:
           memory: 1G
     networks:
       - workflow-network
-    volumes:
-      - ./backend:/app
-      - maven-repo:/root/.m2
 
   api:
     build:
       context: ./backend
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile.prod
       args:
         APP_MODULE: api
     ports:
       - "8080:8080" # Spring Boot HTTP / REST
-      - "8000:8000" # JVM remote debug
     env_file:
       - backend/.env
     environment:
       JAVA_OPTS: "-XX:MaxRAMPercentage=70.0"
     depends_on:
-      build-libs:
-        condition: service_completed_successfully
       redis:
         condition: service_started
       rabbitmq:
@@ -121,9 +104,6 @@ services:
           memory: 1G
     networks:
       - workflow-network
-    volumes:
-      - ./backend:/app
-      - maven-repo:/root/.m2
 
 networks:
   workflow-network:
@@ -132,4 +112,6 @@ networks:
 # ── Volumes ───────────────────────────────────────────────────────────────────
 
 volumes:
-  maven-repo:
+  rabbitmq_data:
+  redis_data:
+
