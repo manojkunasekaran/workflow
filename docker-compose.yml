@@ -1,19 +1,8 @@
-# =============================================================================
-# docker-compose.yml — Workflow Platform (Development)
-# =============================================================================
-# Services
-#   rabbitmq      — message broker (infrastructure)
-#   frontend      — React frontend  (development)
-#   core          — workflow engine  (gRPC server + RabbitMQ consumer)
-#   api           — REST gateway    (gRPC client + HTTP API)
-# =============================================================================
-
 services:
 
   # ── Infrastructure ──────────────────────────────────────────────────────────
 
   rabbitmq:
-    container_name: rabbitmq
     image: rabbitmq:3-management
     ports:
       - "5672:5672" # AMQP
@@ -22,15 +11,26 @@ services:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
     restart: unless-stopped
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    deploy:
+      resources:
+        limits:
+          memory: 512M
     networks:
       - workflow-network
 
   redis:
-    container_name: redis
     image: redis:7-alpine
     ports:
       - "6379:6379"
     restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    deploy:
+      resources:
+        limits:
+          memory: 512M
     networks:
       - workflow-network
 
@@ -38,7 +38,7 @@ services:
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     ports:
       - "5173:5173"
     volumes:
@@ -70,6 +70,8 @@ services:
       - "9000:9000" # JVM remote debug
     env_file:
       - backend/.env
+    environment:
+      JAVA_OPTS: "-XX:MaxRAMPercentage=70.0"
     depends_on:
       build-libs:
         condition: service_completed_successfully
@@ -101,6 +103,8 @@ services:
       - "8000:8000" # JVM remote debug
     env_file:
       - backend/.env
+    environment:
+      JAVA_OPTS: "-XX:MaxRAMPercentage=70.0"
     depends_on:
       build-libs:
         condition: service_completed_successfully

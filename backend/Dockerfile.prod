@@ -1,0 +1,45 @@
+# =============================================================================
+# Production Dockerfile — Workflow Platform
+# Multi-stage build: compile full reactor, ship only the runtime jar.
+# =============================================================================
+
+# ---- Stage 1: Build ---------------------------------------------------------
+FROM maven:3.9.6-eclipse-temurin-21 AS build
+
+WORKDIR /app
+
+ARG APP_MODULE=core
+
+# Copy just the POMs first so Docker can cache dependency resolution
+# separately from source changes.
+COPY pom.xml ./
+COPY modules/pom.xml modules/pom.xml
+COPY services/core/pom.xml services/core/pom.xml
+COPY services/api/pom.xml services/api/pom.xml
+
+# Install parent POM (non-recursive), then resolve module deps offline-friendly.
+RUN mvn -N install -DskipTests
+
+# Now copy full source and build.
+COPY modules modules
+COPY services services
+
+# Install shared modules into local repo, then package only the target service.
+RUN mvn -f modules/pom.xml install -DskipTests \
+    && mvn -pl services/${APP_MODULE} -am package -DskipTests
+
+# Find the built jar and copy it to a known fixed name for stage 2.
+RUN cp services/${APP_MODULE}/target/*.jar /app/app.jar
+
+# ---- Stage 2: Runtime --------------------------------------------------------
+FROM eclipse-temurin:21-jre-alpine AS runtime
+
+WORKDIR /app
+
+# Non-root user for security
+RUN addgroup -S spring && adduser -S spring -G spring
+USER spring
+
+COPY --from=build /app/app.jar /app/app.jar
+
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]

@@ -1,0 +1,22 @@
+# =============================================================================
+# Frontend build-only Dockerfile — Workflow Platform (Production)
+# =============================================================================
+# Builds the Vite/React app and leaves the static output in /app/dist.
+# This container does not run long-term — it builds once, populates the
+# shared "frontend_dist" volume, and exits. Nginx (separate service) then
+# serves those files.
+# =============================================================================
+
+FROM node:20-alpine
+
+WORKDIR /app
+
+COPY package.json yarn.lock ./
+RUN yarn install
+
+COPY . .
+
+RUN yarn build
+
+# Nothing to run - this stage's only job is to produce /app/dist.
+# The compose "command" override (e.g. ["true"]) handles the exit.
