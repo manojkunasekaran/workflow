@@ -8,8 +8,8 @@ services:
       - "5672:5672" # AMQP
       - "15672:15672" # Management UI  →  http://localhost:15672  (guest / guest)
     environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-guest}
     restart: unless-stopped
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
@@ -34,28 +34,43 @@ services:
     networks:
       - workflow-network
 
-  # ── Frontend ──────────────────────────────────────────────────────────────────
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile.prod
+  nginx:
+    container_name: nginx
+    image: nginx:1.27-alpine
+    volumes:
+      - frontend_dist:/usr/share/nginx/html:ro
+      - ./config/nginx.conf:/etc/nginx/conf.d/default.conf:ro
     ports:
       - "80:80"
+    depends_on:
+      frontend-extractor:
+        condition: service_completed_successfully
     restart: unless-stopped
     deploy:
       resources:
         limits:
-          memory: 64M
+          memory: 50M
     networks:
       - workflow-network
 
+  # ── Frontend ──────────────────────────────────────────────────────────────────
+  frontend-extractor:
+    image: ghcr.io/yourusername/workflow-frontend:latest
+    # build:
+    #   context: ./frontend
+    #   dockerfile: Dockerfile.prod
+    volumes:
+      - frontend_dist:/output
+    restart: "no"
+
   # ── Backend ──────────────────────────────────────────────────────────
   core:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile.prod
-      args:
-        APP_MODULE: core
+    image: ghcr.io/yourusername/workflow-core:latest
+    # build:
+    #   context: ./backend
+    #   dockerfile: Dockerfile.prod
+    #   args:
+    #     APP_MODULE: core
     ports:
       - "8081:8081"
       - "9090:9090"
@@ -79,11 +94,12 @@ services:
       - workflow-network
 
   api:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile.prod
-      args:
-        APP_MODULE: api
+    image: ghcr.io/yourusername/workflow-api:latest
+    # build:
+    #   context: ./backend
+    #   dockerfile: Dockerfile.prod
+    #   args:
+    #     APP_MODULE: api
     ports:
       - "8080:8080" # Spring Boot HTTP / REST
     env_file:
@@ -114,4 +130,5 @@ networks:
 volumes:
   rabbitmq_data:
   redis_data:
+  frontend_dist:
 
