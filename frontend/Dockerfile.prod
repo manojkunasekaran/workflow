@@ -1,0 +1,24 @@
+# =============================================================================
+# Production Dockerfile — Workflow Frontend
+# Multi-stage build: compile Vite/React, package into a Data Extractor.
+# =============================================================================
+
+# ---- Stage 1: Build ----
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+COPY package.json yarn.lock ./
+RUN yarn install --frozen-lockfile
+
+COPY . .
+RUN yarn build
+
+# ---- Stage 2: Data Extractor (Init Container) ----
+FROM alpine:3.19
+
+# Store the built files inside the image
+COPY --from=builder /app/dist /app-dist
+
+# When the container runs on the VM, it wipes the shared volume clean, copies the new files, and exits.
+CMD ["sh", "-c", "rm -rf /output/* && cp -a /app-dist/. /output/"]
