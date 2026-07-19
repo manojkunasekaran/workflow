@@ -20,6 +20,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -43,6 +46,7 @@ jobs:
           context: ./frontend
           file: ./frontend/Dockerfile.prod
           push: true
+          platforms: linux/amd64,linux/arm64
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:latest
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:${{ github.sha }}
@@ -56,6 +60,7 @@ jobs:
           build-args: |
             APP_MODULE=core
           push: true
+          platforms: linux/amd64,linux/arm64
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-core:latest
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-core:${{ github.sha }}
@@ -71,6 +76,7 @@ jobs:
           build-args: |
             APP_MODULE=api
           push: true
+          platforms: linux/amd64,linux/arm64
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-api:latest
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-api:${{ github.sha }}
