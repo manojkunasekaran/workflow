@@ -8,7 +8,6 @@ FROM maven:3.9.6-eclipse-temurin-21 AS build
 
 WORKDIR /app
 
-ARG APP_MODULE=core
 
 # Copy just the POMs first so Docker can cache dependency resolution
 # separately from source changes.
@@ -25,6 +24,7 @@ COPY modules modules
 COPY services services
 
 # Install shared modules into local repo, then package only the target service.
+ARG APP_MODULE=core
 RUN mvn -f modules/pom.xml install -DskipTests \
     && mvn -pl services/${APP_MODULE} -am package -DskipTests
 
