@@ -1,5 +1,5 @@
 import type { Edge } from '@xyflow/react';
-import type { WorkflowDefinition, WorkflowTask } from '@/types/api';
+import type { WorkflowTask } from '@/types/api';
 import { getTaskNodes, type StudioCanvasNode } from '@/features/workflow-studio/lib/canvasNodeUtils';
 import { getTaskTypePlugin } from '@/features/workflow-studio/task-type-schema/registry';
 import { collectBranchChainTaskIds } from '@/features/workflow-studio/lib/joinWiring';
