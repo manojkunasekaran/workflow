@@ -36,26 +36,6 @@ interface TaskExecutionDialogProps {
 
 // ─── Tone helpers ─────────────────────────────────────────────────────────────
 
-// ─── Copy button ─────────────────────────────────────────────────────────────
-function CopyButton({ text }: { text: string }) {
-    const [copied, setCopied] = useState(false);
-    return (
-        <button
-            type="button"
-            onClick={() => {
-                void navigator.clipboard.writeText(text).then(() => {
-                    setCopied(true);
-                    setTimeout(() => setCopied(false), 1500);
-                });
-            }}
-            className="ml-1.5 inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded text-muted-foreground/50 opacity-0 transition group-hover:opacity-100 hover:!opacity-100 hover:text-foreground"
-            aria-label="Copy"
-        >
-            {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-        </button>
-    );
-}
-
 // ─── Collapsible output section ───────────────────────────────────────────────
 function OutputSection({ executionData }: { executionData: unknown }) {
     const [open, setOpen] = useState(true);
