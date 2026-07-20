@@ -4,7 +4,7 @@ import { normalizeOptionalTaskRef } from '../taskRefs';
 import { JOIN_FAILURE_STRATEGIES } from './shared';
 import type { TaskParameterErrors, TaskValidationContext } from '../types';
 import { JOIN_TASK_WIRING } from './wiring';
-import { formatPrimitive, recordFromUnknown } from '@/features/executions/lib/executionSummaryUtils';
+import { formatDurationMs, formatPrimitive, recordFromUnknown } from '@/features/executions/lib/executionSummaryUtils';
 
 const FAILURE_STRATEGY_SET = new Set<string>(JOIN_FAILURE_STRATEGIES.map((s) => s.value));
 
@@ -77,29 +77,34 @@ export const joinTaskPlugin = defineTaskPlugin({
         const strategy = String(params.failureStrategy ?? 'FAIL_FAST').replace(/_/g, ' ').toLowerCase();
         return { primary: `Split ${branch}`, secondary: strategy };
     },
-    executionSummary({ executionData }) {
+    executionSummary({ parameters, executionData }) {
         const data = recordFromUnknown(executionData);
         const total = data?.totalBranches;
         const success = data?.successfulBranches;
         const failed = data?.failedBranches;
+        const strategy = String(parameters.failureStrategy ?? 'FAIL_FAST').replace(/_/g, ' ').toLowerCase();
         return {
             lines: [
                 {
                     label: 'Branches',
                     value:
                         success != null && total != null
-                            ? `${success} / ${total} succeeded`
+                            ? `${String(success)} / ${String(total)} succeeded`
                             : formatPrimitive(total),
-                    tone: typeof failed === 'number' && failed > 0 ? 'warning' : 'success',
+                    tone:
+                        typeof failed === 'number' && failed > 0
+                            ? 'danger'
+                            : success != null
+                              ? 'success'
+                              : 'default',
                 },
-                { label: 'Failed', value: formatPrimitive(failed) },
                 {
-                    label: 'Wait time',
-                    value:
-                        typeof data?.joinDurationMs === 'number'
-                            ? `${data.joinDurationMs}ms`
-                            : '—',
+                    label: 'Failed',
+                    value: formatPrimitive(failed),
+                    tone: typeof failed === 'number' && failed > 0 ? 'danger' : 'default',
                 },
+                { label: 'Wait time', value: formatDurationMs(data?.joinDurationMs) },
+                { label: 'On failure', value: strategy },
             ],
         };
     },

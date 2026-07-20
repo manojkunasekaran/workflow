@@ -48,3 +48,18 @@ export function formatPrimitive(value: unknown): string {
     }
     return String(value);
 }
+
+/** Convert raw milliseconds to a human-readable duration like "1.3s", "2m 5s". */
+export function formatDurationMs(value: unknown): string {
+    const ms = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : NaN;
+    if (!Number.isFinite(ms) || ms < 0) return '—';
+    if (ms < 1000) return `${ms}ms`;
+    const s = ms / 1000;
+    if (s < 60) return `${s % 1 === 0 ? s : s.toFixed(1)}s`;
+    const minutes = Math.floor(s / 60);
+    const rem = Math.round(s % 60);
+    if (minutes < 60) return rem > 0 ? `${minutes}m ${rem}s` : `${minutes}m`;
+    const hours = Math.floor(minutes / 60);
+    const remMin = minutes % 60;
+    return remMin > 0 ? `${hours}h ${remMin}m` : `${hours}h`;
+}

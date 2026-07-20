@@ -6,10 +6,8 @@ import {
     loadExecutionGraph,
     type ExecutionGraphData,
 } from '@/features/executions/lib/loadExecutionGraph';
-import {
-    WorkflowCanvas,
-    useWorkflowCanvasState,
-} from '@/features/workflow-studio/WorkflowCanvas';
+import { useNodesState, useEdgesState } from '@xyflow/react';
+import { WorkflowCanvas } from '@/features/workflow-studio/WorkflowCanvas';
 import type { StudioCanvasNode } from '@/features/workflow-studio/lib/workflowGraph';
 import {
     buildExecutionNodeStatusMap,
@@ -44,10 +42,13 @@ export function ExecutionView({
     const [dialogOpen, setDialogOpen] = useState(false);
     const reconnectAttemptRef = useRef(0);
 
-    const { nodes, edges, onNodesChange, resetCanvas } = useWorkflowCanvasState(
-        [],
-        [],
-    );
+    const [nodes, setNodes, onNodesChange] = useNodesState<StudioCanvasNode>([]);
+    const [edges, setEdges] = useEdgesState<Edge>([]);
+
+    const resetCanvas = useCallback((nextNodes: StudioCanvasNode[], nextEdges: Edge[]) => {
+        setNodes(nextNodes);
+        setEdges(nextEdges);
+    }, [setNodes, setEdges]);
 
     const load = useCallback(
         async (refresh = false) => {
@@ -177,7 +178,7 @@ export function ExecutionView({
     }
 
     return (
-        <div className="flex h-full min-h-0 flex-col bg-[#f8fafc]">
+        <div className="flex h-full min-h-0 flex-col bg-background">
             {showHeader ? (
                 <ExecutionHeader
                     execution={data.execution}

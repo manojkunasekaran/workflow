@@ -4,6 +4,7 @@ export function formatExecutionDuration(startTime: string, endTime?: string): st
     const end = endTime ? new Date(endTime).getTime() : Date.now();
     if (Number.isNaN(end)) return '—';
     const ms = Math.max(0, end - start);
+    if (ms === 0) return '< 1ms';
     if (ms < 1000) return `${ms}ms`;
     const seconds = Math.floor(ms / 1000);
     if (seconds < 60) return `${seconds}s`;
@@ -49,4 +50,17 @@ export function executionStatusVariant(
         default:
             return 'neutral';
     }
+}
+
+export function formatExecutionTimestamp(ts?: string): string | null {
+    if (!ts) return null;
+    return new Date(ts).toLocaleString(undefined, {
+        month: 'numeric',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        second: '2-digit',
+        fractionalSecondDigits: 3,
+    });
 }

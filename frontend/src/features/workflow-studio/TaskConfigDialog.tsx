@@ -164,7 +164,10 @@ export function TaskConfigDialog({
                     </div>
                 ) : (
                     <TaskConfigContext.Provider value={validationContext}>
-                        <div className="flex items-center justify-between gap-4 border-b border-border px-5 py-4">
+                        <div 
+                            className="flex items-center justify-between gap-4 border-b border-border px-5 py-4"
+                            style={{ borderTopColor: `${taskAccentColor}55`, borderTopWidth: 3 }}
+                        >
                             <div className="flex min-w-0 flex-1 items-center gap-2.5">
                                 {plugin ? (
                                     <span

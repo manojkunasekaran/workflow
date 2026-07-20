@@ -56,7 +56,7 @@
     --sidebar-ring: 220 9% 46%;
 
     /* Workflow Canvas Specific */
-    --canvas-bg: 220 14% 96%;
+    --canvas-bg: 220 14% 98%;
     --canvas-dots: 220 9% 80%;
     --node-shadow: 220 13% 18%;
     --handle-color: 220 9% 46%;
@@ -72,7 +72,7 @@
     --popover: 222 47% 8%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 158 64% 52%;
+    --primary: 210 40% 98%;
     --primary-foreground: 222 47% 6%;
 
     --secondary: 217 33% 17%;
@@ -233,8 +233,8 @@
   }
 
   .studio-dot-grid {
-    background-color: #f8fafc;
-    background-image: radial-gradient(#cbd5e1 1px, transparent 0);
+    background-color: hsl(var(--canvas-bg));
+    background-image: radial-gradient(hsl(var(--canvas-dots)) 1px, transparent 0);
     background-size: 24px 24px;
     background-position: -1px -1px;
   }

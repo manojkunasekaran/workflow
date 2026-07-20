@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, UserCheck, AlertTriangle } from 'lucide-react';
 import { executionApi } from '@/api/executionApi';
 import type { WorkflowTaskExecution } from '@/api/executionApi';
 import { Button } from '@/components/ui/button';
@@ -27,6 +27,7 @@ export function HumanTaskRespondForm({
 
     const actions = resolveHumanActions(task, taskExecution);
     const description = String(task.parameters?.description ?? '').trim();
+    const title = String(task.parameters?.title ?? 'Action required').trim();
 
     const submit = async (actionId: string) => {
         const name = respondedBy.trim();
@@ -52,52 +53,75 @@ export function HumanTaskRespondForm({
     };
 
     return (
-        <div className="space-y-4 rounded-md border border-amber-200 bg-amber-50/80 p-4">
-            <div>
-                <p className="text-sm font-medium text-amber-950">Action required</p>
-                <p className="mt-1 text-xs text-amber-900/80">
-                    This step is waiting for a human decision.
-                </p>
+        <div className="overflow-hidden rounded-lg border border-amber-300/70 bg-amber-50/60 dark:border-amber-700/40 dark:bg-amber-950/20">
+            {/* Header */}
+            <div className="flex items-center gap-2.5 border-b border-amber-200/80 bg-amber-100/60 px-3 py-2.5 dark:border-amber-800/40 dark:bg-amber-900/20">
+                <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                <div className="min-w-0">
+                    <p className="text-xs font-semibold text-amber-900 dark:text-amber-200">
+                        Action required · {title}
+                    </p>
+                    <p className="text-[11px] text-amber-700/80 dark:text-amber-400/80">
+                        This step is waiting for a human decision.
+                    </p>
+                </div>
             </div>
 
-            {description ? (
-                <p className="text-sm text-foreground">{description}</p>
-            ) : null}
+            <div className="space-y-3 p-3">
+                {/* Description */}
+                {description ? (
+                    <p className="text-xs text-amber-900/80 dark:text-amber-200/70">{description}</p>
+                ) : null}
 
-            <div className="space-y-1.5">
-                <label className="text-xs font-medium text-foreground" htmlFor="responded-by">
-                    Your name
-                </label>
-                <Input
-                    id="responded-by"
-                    value={respondedBy}
-                    onChange={(event) => setRespondedBy(event.target.value)}
-                    placeholder="e.g. you@company.com"
-                    disabled={isSubmitting}
-                />
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-                {actions.map((action) => (
-                    <Button
-                        key={action.id}
-                        type="button"
-                        size="sm"
-                        disabled={isSubmitting}
-                        variant={action.outcome === 'REJECTED' ? 'outline' : 'default'}
-                        className={cn(
-                            action.outcome === 'REJECTED' &&
-                                'border-destructive/40 text-destructive hover:bg-destructive/5',
-                        )}
-                        onClick={() => void submit(action.id)}
+                {/* Responder name */}
+                <div className="space-y-1">
+                    <label
+                        className="flex items-center gap-1.5 text-[11px] font-medium text-amber-900 dark:text-amber-200"
+                        htmlFor="responded-by"
                     >
-                        {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                        {action.label || action.id}
-                    </Button>
-                ))}
-            </div>
+                        <UserCheck className="h-3 w-3" />
+                        Your name or email
+                    </label>
+                    <Input
+                        id="responded-by"
+                        value={respondedBy}
+                        onChange={(event) => setRespondedBy(event.target.value)}
+                        placeholder="e.g. you@company.com"
+                        disabled={isSubmitting}
+                        className="h-8 text-xs bg-white/70 dark:bg-background/50"
+                    />
+                </div>
 
-            {error ? <p className="text-xs text-destructive">{error}</p> : null}
+                {/* Action buttons */}
+                <div className="flex flex-wrap gap-2">
+                    {actions.map((action) => {
+                        const isRejected = action.outcome === 'REJECTED';
+                        return (
+                            <Button
+                                key={action.id}
+                                type="button"
+                                size="sm"
+                                disabled={isSubmitting}
+                                variant={isRejected ? 'outline' : 'default'}
+                                className={cn(
+                                    'h-7 text-xs',
+                                    isRejected &&
+                                        'border-red-300 text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/30',
+                                )}
+                                onClick={() => void submit(action.id)}
+                            >
+                                {isSubmitting ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+                                {action.label || action.id}
+                            </Button>
+                        );
+                    })}
+                </div>
+
+                {/* Error message */}
+                {error ? (
+                    <p className="text-[11px] text-red-600 dark:text-red-400">{error}</p>
+                ) : null}
+            </div>
         </div>
     );
 }

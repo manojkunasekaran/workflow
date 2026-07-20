@@ -11,12 +11,12 @@ export const statusBadgeVariants = cva(
                 danger: 'border-red-200 bg-red-50 text-red-700',
                 warning: 'border-amber-200 bg-amber-50 text-amber-700',
                 info: 'border-sky-200 bg-sky-50 text-sky-700',
-                neutral: 'border-border bg-muted/50 text-muted-foreground',
+                neutral: 'border-border bg-muted text-muted-foreground',
             },
             size: {
-                sm: 'rounded-md px-1.5 py-0.5 text-[9px] leading-none',
-                md: 'rounded-md px-2 py-0.5 text-[11px] leading-none',
-                lg: 'rounded-md px-2 py-1 text-xs',
+                sm: 'rounded-md px-2 py-[3px] text-[9px]',
+                md: 'rounded-md px-2.5 py-1 text-[11px]',
+                lg: 'rounded-md px-3 py-1.5 text-xs',
             },
         },
         defaultVariants: {

@@ -4,9 +4,12 @@ import { executionApi, type WorkflowExecution } from '@/api/executionApi';
 import { workflowApi } from '@/api/workflowApi';
 import { PageHeader } from '@/layouts/PageHeader';
 import { Button } from '@/components/ui/button';
+import { Hint } from '@/components/ui/hint';
+import { cn } from '@/lib/utils';
 import { Loader2, RefreshCw, ArrowRight } from 'lucide-react';
 import {
     formatExecutionDuration,
+    formatExecutionTimestamp,
 } from '@/features/executions/lib/executionDisplay';
 import { ExecutionStatusBadge } from '@/features/executions/ExecutionStatusBadge';
 
@@ -90,11 +93,11 @@ export default function ExecutionsList() {
                     </div>
                 ) : null}
 
-                {sortedExecutions.length === 0 ? (
+                {sortedExecutions.length === 0 && !error ? (
                     <div className="py-12 text-center text-muted-foreground">
                         No executions found. Run a workflow to see executions here.
                     </div>
-                ) : (
+                ) : sortedExecutions.length > 0 ? (
                     <div className="overflow-hidden rounded-lg border border-border bg-card">
                         <table className="w-full">
                             <thead className="border-b border-border bg-muted/50">
@@ -145,7 +148,7 @@ export default function ExecutionsList() {
                                                 {duration}
                                             </td>
                                             <td className="px-4 py-3 text-sm text-muted-foreground">
-                                                {new Date(execution.startTime).toLocaleString()}
+                                                {formatExecutionTimestamp(execution.startTime)}
                                             </td>
                                             <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
                                                 {failedStepId ? (
@@ -157,14 +160,26 @@ export default function ExecutionsList() {
                                                 )}
                                             </td>
                                             <td className="px-4 py-3">
-                                                <Button variant="ghost" size="sm" asChild>
-                                                    <Link
-                                                        to={`/executions/${execution.id}`}
-                                                        onClick={(event) => event.stopPropagation()}
-                                                    >
-                                                        <ArrowRight className="h-4 w-4" />
-                                                    </Link>
-                                                </Button>
+                                                <div className="flex items-center justify-end gap-1">
+                                                    <Hint content="View execution details">
+                                                        <Button 
+                                                            variant="ghost" 
+                                                            size="sm" 
+                                                            asChild
+                                                            className={cn(
+                                                                'text-muted-foreground',
+                                                                'hover:bg-muted hover:text-foreground',
+                                                            )}
+                                                        >
+                                                            <Link
+                                                                to={`/executions/${execution.id}`}
+                                                                onClick={(event) => event.stopPropagation()}
+                                                            >
+                                                                <ArrowRight className="h-4 w-4" />
+                                                            </Link>
+                                                        </Button>
+                                                    </Hint>
+                                                </div>
                                             </td>
                                         </tr>
                                     );
@@ -172,7 +187,7 @@ export default function ExecutionsList() {
                             </tbody>
                         </table>
                     </div>
-                )}
+                ) : null}
             </div>
         </div>
     );

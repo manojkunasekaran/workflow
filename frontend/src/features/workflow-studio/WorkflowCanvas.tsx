@@ -14,7 +14,9 @@ import {
     type ReactFlowInstance,
     ReactFlowProvider
 } from '@xyflow/react';
-import { BrushCleaning, Minus, Plus } from 'lucide-react';
+import { BrushCleaning, Minus, Plus, Undo2, Redo2 } from 'lucide-react';
+import { useStore } from 'zustand';
+import { useWorkflowStore } from '@/features/workflow-studio/store/workflowStore';
 import { Hint } from '@/components/ui/hint';
 import { TaskNode } from '@/features/workflow-studio/nodes/TaskNode';
 import { StartNode } from '@/features/workflow-studio/nodes/StartNode';
@@ -59,8 +61,8 @@ import { STUDIO_NODE_ORIGIN } from '@/features/workflow-studio/constants/taskNod
 import { cn } from '@/lib/utils';
 
 const CANVAS_TOOL_BUTTON_CLASS = cn(
-    'flex h-8 w-8 items-center justify-center rounded-md border border-[#c6c6cd] bg-white/95 text-[#64748b] shadow-lg backdrop-blur',
-    'transition-colors hover:border-[#94a3b8] hover:bg-[#f1f5f9] hover:text-[#475569]',
+    'flex h-8 w-8 items-center justify-center rounded-md border border-border bg-card/95 text-muted-foreground shadow-lg backdrop-blur',
+    'transition-colors hover:bg-muted/60 hover:text-foreground',
 );
 
 /** Same fit-view glyph as React Flow's built-in Controls. */
@@ -131,6 +133,12 @@ function WorkflowCanvasInner({
     const reactFlowInstance = useRef<ReactFlowInstance<StudioCanvasNode, Edge> | null>(null);
     const readOnly = mode === 'inspect';
     const hasFitViewRef = useRef(false);
+
+    // Pull Zundo temporal state to disable buttons when there is no history
+    const pastStatesLength = useStore(useWorkflowStore.temporal, (state) => state.pastStates.length);
+    const futureStatesLength = useStore(useWorkflowStore.temporal, (state) => state.futureStates.length);
+    const canUndo = pastStatesLength > 0;
+    const canRedo = futureStatesLength > 0;
 
     const displayNodes = useMemo((): StudioCanvasNode[] => {
         const spineIds = getMainSpineIdsFromEdges(nodes, chainEdges);
@@ -362,7 +370,6 @@ function WorkflowCanvasInner({
                 proOptions={{ hideAttribution: true }}
                 className={cn(readOnly && 'opacity-95')}
             >
-                <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="#cbd5e1" />
                 <Panel position="bottom-left" className="m-6 flex items-center gap-2">
                     <Hint content="Zoom in">
                         <button
@@ -406,6 +413,32 @@ function WorkflowCanvasInner({
                             </button>
                         </Hint>
                     ) : null}
+                    {!readOnly ? (
+                        <>
+                            <Hint content="Undo (Ctrl+Z)">
+                                <button
+                                    type="button"
+                                    onClick={() => useWorkflowStore.temporal.getState().undo()}
+                                    disabled={!canUndo}
+                                    aria-label="Undo"
+                                    className={cn(CANVAS_TOOL_BUTTON_CLASS, !canUndo && 'opacity-50 cursor-not-allowed')}
+                                >
+                                    <Undo2 className="h-4 w-4" strokeWidth={2.25} />
+                                </button>
+                            </Hint>
+                            <Hint content="Redo (Ctrl+Y)">
+                                <button
+                                    type="button"
+                                    onClick={() => useWorkflowStore.temporal.getState().redo()}
+                                    disabled={!canRedo}
+                                    aria-label="Redo"
+                                    className={cn(CANVAS_TOOL_BUTTON_CLASS, !canRedo && 'opacity-50 cursor-not-allowed')}
+                                >
+                                    <Redo2 className="h-4 w-4" strokeWidth={2.25} />
+                                </button>
+                            </Hint>
+                        </>
+                    ) : null}
                 </Panel>
                 </ReactFlow>
             </div>
@@ -421,22 +454,3 @@ export function WorkflowCanvas(props: WorkflowCanvasProps) {
     );
 }
 
-export function useWorkflowCanvasState(initialNodes: StudioCanvasNode[], initialEdges: Edge[]) {
-    const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-    const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
-
-    const resetCanvas = useCallback((nextNodes: StudioCanvasNode[], nextEdges: Edge[]) => {
-        setNodes(nextNodes);
-        setEdges(nextEdges);
-    }, [setNodes, setEdges]);
-
-    return {
-        nodes,
-        edges,
-        onNodesChange,
-        onEdgesChange,
-        setNodes,
-        setEdges,
-        resetCanvas,
-    };
-}
