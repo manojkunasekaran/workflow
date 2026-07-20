@@ -65,7 +65,7 @@ export function AppSidebar() {
                         to="/"
                         className="flex min-w-0 flex-1 items-center gap-2 font-bold text-xl text-primary group-data-[collapsible=icon]:flex-none"
                     >
-                        <Workflow className="h-6 w-6 shrink-0" />
+                        <img src="/logo.png" alt="Workflow Logo" className="h-6 w-6 shrink-0 object-contain invert dark:invert-0" />
                         <span className="truncate group-data-[collapsible=icon]:hidden">Flow</span>
                     </Link>
                     <SidebarCollapseButton />
