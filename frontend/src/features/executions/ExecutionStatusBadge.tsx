@@ -38,7 +38,6 @@ export function ExecutionStatusBadge({
         <StatusBadge
             variant={executionStatusVariant(status)}
             size={size}
-            title={label}
             className={cn(isRunning && 'gap-1', placementClass[placement], className)}
         >
             {isRunning ? (

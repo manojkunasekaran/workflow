@@ -28,7 +28,7 @@ export interface WorkflowTaskExecution {
     taskType: string;
     status: string;
     startTime: string;
-    endTime: string;
+    endTime?: string;
     executionData?: any;
     errorMessage?: string;
 }

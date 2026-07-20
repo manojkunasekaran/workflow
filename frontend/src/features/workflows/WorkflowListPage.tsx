@@ -5,15 +5,13 @@ import type { WorkflowDefinition } from '@/types/api';
 import { cn } from '@/lib/utils';
 import { PageHeader } from '@/layouts/PageHeader';
 import { Button } from '@/components/ui/button';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { ArrowRight, Loader2, Plus, RefreshCw, Trash2, Workflow } from 'lucide-react';
+import { Hint } from '@/components/ui/hint';
+import { ArrowRight, Loader2, Plus, RefreshCw, Workflow } from 'lucide-react';
 
 export default function WorkflowListPage() {
     const [workflows, setWorkflows] = useState<WorkflowDefinition[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [deletingId, setDeletingId] = useState<string | null>(null);
-    const [workflowToDelete, setWorkflowToDelete] = useState<WorkflowDefinition | null>(null);
     const navigate = useNavigate();
 
     const loadWorkflows = async () => {
@@ -39,23 +37,7 @@ export default function WorkflowListPage() {
         return new Date(dateString).toLocaleString();
     };
 
-    const confirmDelete = async () => {
-        const workflow = workflowToDelete;
-        if (!workflow?.id) return;
 
-        try {
-            setDeletingId(workflow.id);
-            setError(null);
-            await workflowApi.delete(workflow.id);
-            setWorkflows((current) => current.filter((item) => item.id !== workflow.id));
-            setWorkflowToDelete(null);
-        } catch (err) {
-            console.error('Failed to delete workflow', err);
-            setError('Failed to delete workflow');
-        } finally {
-            setDeletingId(null);
-        }
-    };
 
     if (isLoading) {
         return (
@@ -93,7 +75,7 @@ export default function WorkflowListPage() {
                     </div>
                 )}
 
-                {workflows.length === 0 ? (
+                {workflows.length === 0 && !error ? (
                     <div className="flex flex-col items-center justify-center py-16 text-center">
                         <Workflow className="mb-4 h-12 w-12 text-muted-foreground/40" />
                         <p className="mb-1 font-medium text-foreground">No workflows yet</p>
@@ -105,7 +87,7 @@ export default function WorkflowListPage() {
                             New Workflow
                         </Button>
                     </div>
-                ) : (
+                ) : workflows.length > 0 ? (
                     <div className="overflow-hidden rounded-lg border border-border bg-card">
                         <table className="w-full">
                             <thead className="border-b border-border bg-muted/50">
@@ -146,39 +128,25 @@ export default function WorkflowListPage() {
                                         </td>
                                         <td className="px-4 py-3">
                                             <div className="flex items-center justify-end gap-1">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className={cn(
-                                                        'text-muted-foreground',
-                                                        'hover:bg-muted hover:text-foreground',
-                                                    )}
-                                                    onClick={(event) => {
-                                                        event.stopPropagation();
-                                                        if (workflow.id) {
-                                                            navigate(`/workflows/${workflow.id}`);
-                                                        }
-                                                    }}
-                                                    aria-label={`Open ${workflow.name}`}
-                                                >
-                                                    <ArrowRight className="h-4 w-4" />
-                                                </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className={cn(
-                                                        'text-muted-foreground',
-                                                        'hover:bg-destructive/10 hover:text-destructive',
-                                                    )}
-                                                    disabled={!workflow.id}
-                                                    onClick={(event) => {
-                                                        event.stopPropagation();
-                                                        setWorkflowToDelete(workflow);
-                                                    }}
-                                                    aria-label={`Delete ${workflow.name}`}
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
+                                                <Hint content={`Open ${workflow.name}`}>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className={cn(
+                                                            'text-muted-foreground',
+                                                            'hover:bg-muted hover:text-foreground',
+                                                        )}
+                                                        onClick={(event) => {
+                                                            event.stopPropagation();
+                                                            if (workflow.id) {
+                                                                navigate(`/workflows/${workflow.id}`);
+                                                            }
+                                                        }}
+                                                        aria-label={`Open ${workflow.name}`}
+                                                    >
+                                                        <ArrowRight className="h-4 w-4" />
+                                                    </Button>
+                                                </Hint>
                                             </div>
                                         </td>
                                     </tr>
@@ -186,29 +154,10 @@ export default function WorkflowListPage() {
                             </tbody>
                         </table>
                     </div>
-                )}
+                ) : null}
             </div>
 
-            <ConfirmDialog
-                open={workflowToDelete !== null}
-                onOpenChange={(open) => {
-                    if (!open && !deletingId) setWorkflowToDelete(null);
-                }}
-                title="Delete workflow?"
-                description={
-                    <>
-                        <span className="font-medium text-foreground">
-                            {workflowToDelete?.name ?? 'This workflow'}
-                        </span>{' '}
-                        will be permanently removed. This action cannot be undone.
-                    </>
-                }
-                confirmLabel="Delete"
-                cancelLabel="Cancel"
-                destructive
-                isConfirming={Boolean(deletingId)}
-                onConfirm={confirmDelete}
-            />
+
         </div>
     );
 }

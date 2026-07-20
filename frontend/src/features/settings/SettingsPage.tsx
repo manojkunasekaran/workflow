@@ -1,114 +1,129 @@
 import { useEffect, useState } from 'react';
 import { healthApi, type HealthResponse } from '@/api/healthApi';
-import { API_BASE_URL } from '@/api/config';
 import { PageHeader } from '@/layouts/PageHeader';
 import { Button } from '@/components/ui/button';
-import { Loader2, RefreshCw } from 'lucide-react';
-
-function statusClass(status: string) {
-    if (status === 'UP') return 'text-green-600 bg-green-50 border-green-200';
-    if (status === 'DOWN') return 'text-red-600 bg-red-50 border-red-200';
-    return 'text-yellow-600 bg-yellow-50 border-yellow-200';
-}
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Loader2, Moon, Sun, Monitor, ShieldCheck, Server } from 'lucide-react';
+import { useTheme } from '@/components/theme-provider';
 
 export default function SettingsPage() {
     const [health, setHealth] = useState<HealthResponse | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-
-    const loadHealth = async () => {
-        try {
-            setIsLoading(true);
-            setError(null);
-            setHealth(await healthApi.getApiHealth());
-        } catch (err) {
-            console.error('Failed to load API health', err);
-            setHealth(null);
-            setError('Cannot reach API. Is the backend running on port 8080?');
-        } finally {
-            setIsLoading(false);
-        }
-    };
+    const { theme, setTheme } = useTheme();
 
     useEffect(() => {
+        const loadHealth = async () => {
+            try {
+                setHealth(await healthApi.getApiHealth());
+            } catch (err) {
+                console.error('Failed to load API health', err);
+            } finally {
+                setIsLoading(false);
+            }
+        };
         loadHealth();
     }, []);
 
+    const isHealthy = health?.status === 'UP';
+
     return (
         <div className="flex h-full flex-col bg-background">
-            <PageHeader
-                title={<h1 className="text-sm font-semibold">Settings</h1>}
-                actions={
-                    <Button variant="outline" size="sm" onClick={loadHealth} disabled={isLoading}>
-                        {isLoading ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                            <RefreshCw className="h-4 w-4" />
-                        )}
-                        Refresh
-                    </Button>
-                }
-            />
+            <PageHeader title={<h1 className="text-sm font-semibold">Settings</h1>} />
 
             <div className="flex-1 overflow-auto p-6">
-                <div className="max-w-2xl space-y-6">
-                    <section className="bg-card border border-border rounded-lg p-4">
-                        <h2 className="font-semibold mb-3">API Connection</h2>
-                        <dl className="space-y-2 text-sm">
-                            <div className="flex justify-between gap-4">
-                                <dt className="text-muted-foreground">Base URL</dt>
-                                <dd className="font-mono text-xs">{API_BASE_URL}</dd>
-                            </div>
-                        </dl>
-                    </section>
-
-                    <section className="bg-card border border-border rounded-lg p-4">
-                        <h2 className="font-semibold mb-3">API Health</h2>
-                        {isLoading && (
-                            <div className="flex items-center gap-2 text-muted-foreground text-sm">
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                                Checking...
-                            </div>
-                        )}
-                        {error && (
-                            <p className="text-sm text-red-600">{error}</p>
-                        )}
-                        {health && (
-                            <div className="space-y-3">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-sm text-muted-foreground">Overall</span>
-                                    <span
-                                        className={`inline-flex px-2 py-1 text-xs font-medium rounded border ${statusClass(health.status)}`}
-                                    >
-                                        {health.status}
-                                    </span>
-                                </div>
-                                {health.components && (
-                                    <div className="grid grid-cols-2 gap-2">
-                                        {Object.entries(health.components).map(([name, component]) => (
-                                            <div
-                                                key={name}
-                                                className="flex items-center justify-between rounded border border-border px-3 py-2 text-xs"
-                                            >
-                                                <span className="text-muted-foreground">{name}</span>
-                                                <span className={`font-medium ${component.status === 'UP' ? 'text-green-600' : 'text-red-600'}`}>
-                                                    {component.status}
-                                                </span>
-                                            </div>
-                                        ))}
+                <div className="mx-auto max-w-4xl space-y-8">
+                    
+                    {/* Profile Settings */}
+                    <section className="space-y-4">
+                        <div>
+                            <h2 className="text-lg font-medium tracking-tight">Profile Settings</h2>
+                            <p className="text-sm text-muted-foreground">Manage your personal information and security.</p>
+                        </div>
+                        <div className="rounded-xl border bg-card text-card-foreground shadow-sm p-6">
+                            <div className="flex flex-col md:flex-row gap-8">
+                                <div className="flex flex-col items-center gap-4">
+                                    <div className="flex h-24 w-24 items-center justify-center rounded-full bg-primary/10 text-primary">
+                                        <span className="text-3xl font-semibold">JD</span>
                                     </div>
-                                )}
+                                    <Button variant="outline" size="sm">Change Avatar</Button>
+                                </div>
+                                <div className="flex-1 space-y-4">
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="name">Full Name</Label>
+                                        <Input id="name" defaultValue="John Doe" />
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="email">Email Address</Label>
+                                        <Input id="email" type="email" defaultValue="john.doe@example.com" />
+                                    </div>
+                                    <div className="pt-2">
+                                        <Button>Update Profile</Button>
+                                    </div>
+                                </div>
                             </div>
-                        )}
+                        </div>
                     </section>
 
-                    <section className="bg-card border border-border rounded-lg p-4">
-                        <h2 className="font-semibold mb-2">Backend configuration</h2>
-                        <p className="text-sm text-muted-foreground">
-                            MongoDB, RabbitMQ, and gRPC are configured in the backend <code className="text-xs">.env</code> file
-                            and Docker Compose — not from this UI.
-                        </p>
+                    {/* User Preferences */}
+                    <section className="space-y-4">
+                        <div>
+                            <h2 className="text-lg font-medium tracking-tight">User Preferences</h2>
+                            <p className="text-sm text-muted-foreground">Customize your workflow experience.</p>
+                        </div>
+                        <div className="rounded-xl border bg-card text-card-foreground shadow-sm p-6 space-y-6">
+                            <div className="space-y-3">
+                                <Label>Appearance</Label>
+                                <div className="flex flex-wrap gap-3">
+                                    <Button 
+                                        variant={theme === 'light' ? 'default' : 'outline'}
+                                        onClick={() => setTheme('light')}
+                                        className="w-32"
+                                    >
+                                        <Sun className="mr-2 h-4 w-4" /> Light
+                                    </Button>
+                                    <Button 
+                                        variant={theme === 'dark' ? 'default' : 'outline'}
+                                        onClick={() => setTheme('dark')}
+                                        className="w-32"
+                                    >
+                                        <Moon className="mr-2 h-4 w-4" /> Dark
+                                    </Button>
+                                    <Button 
+                                        variant={theme === 'system' ? 'default' : 'outline'}
+                                        onClick={() => setTheme('system')}
+                                        className="w-32"
+                                    >
+                                        <Monitor className="mr-2 h-4 w-4" /> System
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
                     </section>
+
+                    {/* System Health (Simplified) */}
+                    <section className="space-y-4">
+                        <div>
+                            <h2 className="text-lg font-medium tracking-tight">System Status</h2>
+                            <p className="text-sm text-muted-foreground">Current health of the workflow platform.</p>
+                        </div>
+                        <div className="rounded-xl border bg-card text-card-foreground shadow-sm p-6">
+                            <div className="flex items-center gap-4">
+                                <div className={`p-3 rounded-full ${isHealthy ? 'bg-green-100 text-green-600' : isLoading ? 'bg-blue-100 text-blue-600' : 'bg-red-100 text-red-600'}`}>
+                                    {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : isHealthy ? <ShieldCheck className="h-6 w-6" /> : <Server className="h-6 w-6" />}
+                                </div>
+                                <div>
+                                    <h3 className="font-semibold text-base">
+                                        {isLoading ? 'Checking status...' : isHealthy ? 'All Systems Operational' : 'System Offline / Degraded'}
+                                    </h3>
+                                    <p className="text-sm text-muted-foreground">
+                                        {isLoading ? 'Connecting to backend services' : isHealthy ? 'API and all background workers are running smoothly.' : 'There is an issue connecting to the core services.'}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
                 </div>
             </div>
         </div>

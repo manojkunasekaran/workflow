@@ -32,21 +32,21 @@ export function StudioTaskCatalog({
     return (
         <div
             className={cn(
-                'flex shrink-0 flex-col border-l border-[#c6c6cd] bg-white transition-[width] duration-200',
+                'flex shrink-0 flex-col border-l border-border bg-card transition-[width] duration-200',
                 open ? 'w-60' : 'w-10',
                 disabled && 'pointer-events-none opacity-50',
             )}
         >
             {open ? (
                 <>
-                    <div className="flex items-center justify-between border-b border-[#c6c6cd]/60 px-3 py-2.5">
-                        <p className="text-[11px] font-bold uppercase tracking-wide text-[#45464d]">
+                    <div className="flex items-center justify-between border-b border-border/60 px-3 py-2.5">
+                        <p className="text-[11px] font-bold uppercase tracking-wide text-foreground">
                             Tasks
                         </p>
                         <button
                             type="button"
                             onClick={() => onOpenChange(false)}
-                            className="flex h-7 w-7 items-center justify-center rounded-md text-[#45464d] hover:bg-[#f1f5f9] hover:text-[#334155]"
+                            className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                             aria-label="Close task catalog"
                         >
                             <X className="h-4 w-4" />
@@ -86,18 +86,18 @@ export function StudioTaskCatalog({
                                             }
                                         }}
                                         className={cn(
-                                            'group flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-xs text-[#0b1c30] transition-colors',
+                                            'group flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-xs text-foreground transition-colors',
                                             clickToAdd ? 'cursor-pointer' : 'cursor-grab active:cursor-grabbing',
-                                            'hover:bg-[#f1f5f9]',
+                                            'hover:bg-accent hover:text-accent-foreground',
                                             disabled && 'cursor-not-allowed',
                                         )}
                                     >
-                                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-[#f1f5f9] text-[#64748b]">
+                                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
                                             <Icon className="h-3.5 w-3.5" />
                                         </span>
                                         <span className="min-w-0 flex-1 font-medium">{item.label}</span>
                                         <GripVertical
-                                            className="h-4 w-0 shrink-0 overflow-hidden text-[#94a3b8] opacity-0 transition-[width,opacity] duration-150 group-hover:w-4 group-hover:opacity-100"
+                                            className="h-4 w-0 shrink-0 overflow-hidden text-muted-foreground opacity-0 transition-[width,opacity] duration-150 group-hover:w-4 group-hover:opacity-100"
                                             aria-hidden
                                         />
                                     </div>
@@ -120,7 +120,7 @@ export function StudioTaskCatalog({
                             onBrowseOpen?.();
                             onOpenChange(true);
                         }}
-                        className="flex h-full min-h-[120px] flex-col items-center justify-center gap-1 px-1 py-4 text-[#45464d] hover:bg-[#f1f5f9] hover:text-[#334155]"
+                        className="flex h-full min-h-[120px] flex-col items-center justify-center gap-1 px-1 py-4 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                         aria-label="Open task catalog"
                     >
                         <ChevronRight className="h-4 w-4 rotate-180" />

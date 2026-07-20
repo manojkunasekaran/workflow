@@ -16,6 +16,7 @@ import { dataTransformTaskPlugin } from './dataTransformTaskPlugin';
 import { httpTaskPlugin } from './httpTaskPlugin';
 import { scriptTaskPlugin } from './scriptTaskPlugin';
 import { waitTaskPlugin } from './waitTaskPlugin';
+import { formatPrimitive, recordFromUnknown } from '@/features/executions/lib/executionSummaryUtils';
 
 const NESTED_PLUGINS: TaskTypePlugin[] = [
     httpTaskPlugin,
@@ -109,6 +110,42 @@ export const iteratorTaskPlugin = defineTaskPlugin({
         return {
             primary: `Loop over ${loopOver}`,
             secondary: done ? 'Done path connected' : 'Done path not connected',
+        };
+    },
+    executionSummary({ parameters, executionData, status }) {
+        const data = recordFromUnknown(executionData);
+        const total = data?.totalIterations;
+        const completed = data?.completedIterations;
+        const failed = data?.failedIterations;
+        const current = data?.currentIndex;
+        const loopOver = formatPrimitive(data?.loopOver ?? parameters.loopOver);
+        const isRunning = status.toUpperCase() === 'RUNNING';
+        const progressValue =
+            completed != null && total != null && typeof total === 'number' && total > 0
+                ? `${String(completed)} / ${String(total)}`
+                : isRunning && current != null
+                  ? `Index ${String(current)}`
+                  : formatPrimitive(completed);
+        return {
+            lines: [
+                { label: 'Loop over', value: loopOver },
+                {
+                    label: 'Progress',
+                    value: progressValue,
+                    tone:
+                        typeof failed === 'number' && failed > 0
+                            ? 'warning'
+                            : completed != null && total != null
+                              ? 'success'
+                              : 'default',
+                },
+                {
+                    label: 'Failed items',
+                    value: formatPrimitive(failed ?? 0),
+                    tone: typeof failed === 'number' && failed > 0 ? 'danger' : 'default',
+                },
+                { label: 'Done step', value: formatPrimitive(data?.doneNextTaskId ?? parameters.doneNextTaskId) },
+            ],
         };
     },
 });

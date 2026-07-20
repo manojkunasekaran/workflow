@@ -2,6 +2,7 @@ import { Globe } from 'lucide-react';
 import { defineTaskPlugin } from '../pluginTypes';
 import { HTTP_METHODS } from './shared';
 import {
+    formatDurationMs,
     formatPrimitive,
     readNested,
     recordFromUnknown,
@@ -87,6 +88,7 @@ export const httpTaskPlugin = defineTaskPlugin({
         const url = formatPrimitive(request?.url ?? parameters.url);
         const statusCode = response?.statusCode;
         const statusText = response?.statusText;
+        const durationMs = response?.durationMs ?? data?.durationMs;
         const lines: ExecutionSummaryLine[] = [
             { label: 'Request', value: `${method} ${url}` },
             {
@@ -104,6 +106,7 @@ export const httpTaskPlugin = defineTaskPlugin({
                             : 'success'
                         : 'default',
             },
+            { label: 'Duration', value: formatDurationMs(durationMs) },
         ];
         return { lines };
     },

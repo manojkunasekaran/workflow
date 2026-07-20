@@ -156,7 +156,9 @@ public class WorkflowEngine {
                 }
 
                 // Execute the task
+                Instant taskStartTime = Instant.now();
                 TaskExecutionResult result = executeTask(currentTask, execution, context);
+                Instant taskEndTime = Instant.now();
 
                 // Store task output for variable resolution
                 if (result.getOutput() != null) {
@@ -164,7 +166,7 @@ public class WorkflowEngine {
                 }
 
                 // Record task execution
-                recordTaskExecution(execution, currentTask, result);
+                recordTaskExecution(execution, currentTask, result, taskStartTime);
 
                 // PAUSED: set resume cursor and exit loop — finally persists once
                 if (result.getStatus() == TaskExecutionResult.Status.PAUSED) {
@@ -238,7 +240,7 @@ public class WorkflowEngine {
     /**
      * Record task execution in database.
      */
-    private void recordTaskExecution(WorkflowExecution execution, WorkflowTask task, TaskExecutionResult result) {
+    private void recordTaskExecution(WorkflowExecution execution, WorkflowTask task, TaskExecutionResult result, Instant startTime) {
         if (hasTerminalTaskExecution(execution.getId(), task.getTaskId())) {
             return;
         }
@@ -249,7 +251,7 @@ public class WorkflowEngine {
         taskExecution.setTaskDefinitionId(task.getTaskId());
         taskExecution.setTaskType(task.getType().name());
         taskExecution.setStatus(TaskExecutionStatus.valueOf(result.getStatus().name()));
-        taskExecution.setStartTime(Instant.now());
+        taskExecution.setStartTime(startTime);
         taskExecution.setEndTime(Instant.now());
         taskExecution.setExecutionData(result.getExecutionData());
 
@@ -398,6 +400,7 @@ public class WorkflowEngine {
                             "Task not found in branch '" + branch.getBranchName() + "': " + currentTaskId);
                 }
 
+                Instant taskStartTime = Instant.now();
                 TaskExecutionResult result = executeTask(currentTask, execution, branchContext);
                 tasksExecuted++;
                 lastTaskId = currentTaskId;
@@ -409,7 +412,7 @@ public class WorkflowEngine {
                 }
 
                 // Record task execution (thread-safe via repository)
-                recordTaskExecution(execution, currentTask, result);
+                recordTaskExecution(execution, currentTask, result, taskStartTime);
 
                 if (result.getStatus() == TaskExecutionResult.Status.FAILED) {
                     return JoinTaskExecutionData.BranchResult.builder()

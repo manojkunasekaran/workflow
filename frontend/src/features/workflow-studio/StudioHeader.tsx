@@ -105,11 +105,10 @@ export function StudioHeader({
                     </div>
 
                     <Button
-                        variant="outline"
+                        variant="secondary"
                         size="sm"
                         onClick={onSave}
                         disabled={isSaving || !isDirty}
-                        className={cn(STUDIO_OUTLINE_BUTTON_CLASS)}
                     >
                         {isSaving ? 'Saving…' : 'Save'}
                     </Button>

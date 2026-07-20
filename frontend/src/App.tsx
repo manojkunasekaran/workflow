@@ -1,5 +1,6 @@
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { ThemeProvider } from '@/components/theme-provider';
 import AppLayout from '@/layouts/AppLayout';
 import LandingPage from '@/features/landing/LandingPage';
 import WorkflowListPage from '@/features/workflows/WorkflowListPage';
@@ -25,9 +26,11 @@ const router = createBrowserRouter([
 
 function App() {
     return (
-        <TooltipProvider delayDuration={350}>
-            <RouterProvider router={router} />
-        </TooltipProvider>
+        <ThemeProvider defaultTheme="light" storageKey="workflow-theme">
+            <TooltipProvider delayDuration={350}>
+                <RouterProvider router={router} />
+            </TooltipProvider>
+        </ThemeProvider>
     );
 }
 

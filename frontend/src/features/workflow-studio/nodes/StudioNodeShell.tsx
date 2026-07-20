@@ -116,8 +116,8 @@ export function StudioNodeShell({
                 {resolvedHoverActions}
                 <div
                     className={cn(
-                        'pointer-events-auto absolute left-1/2 z-[1] flex -translate-x-1/2 items-center justify-center rounded-[16px] border-2 bg-white shadow-sm transition-[background-color,box-shadow,border-color] duration-150',
-                        showHoverChrome && 'bg-[#f1f5f9] shadow-[0_8px_24px_rgba(15,23,42,0.14)]',
+                        'pointer-events-auto absolute left-1/2 z-[1] flex -translate-x-1/2 items-center justify-center rounded-[16px] border-2 bg-card shadow-sm transition-[background-color,box-shadow,border-color] duration-150',
+                        showHoverChrome && 'shadow-[0_8px_24px_rgba(15,23,42,0.14)]',
                         nodeBorder.className,
                     )}
                     style={{
@@ -142,7 +142,7 @@ export function StudioNodeShell({
 
             <Hint content={label}>
                 <p
-                    className="relative z-[1] line-clamp-2 w-full px-0.5 text-center text-[11px] font-normal leading-[14px] text-[#64748b]"
+                    className="relative z-[1] line-clamp-2 w-full px-0.5 text-center text-[11px] font-normal leading-[14px] text-muted-foreground"
                     style={{ marginTop: labelMarginTop }}
                     onMouseEnter={() => setNodeHover(true)}
                     onMouseLeave={() => setNodeHover(false)}

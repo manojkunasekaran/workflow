@@ -5,10 +5,8 @@ import { workflowApi } from '@/api/workflowApi';
 import { executionApi } from '@/api/executionApi';
 import type { WorkflowDefinition } from '@/types/api';
 import { StudioHeader, type StudioMode } from '@/features/workflow-studio/StudioHeader';
-import {
-    WorkflowCanvas,
-    useWorkflowCanvasState,
-} from '@/features/workflow-studio/WorkflowCanvas';
+import { WorkflowCanvas } from '@/features/workflow-studio/WorkflowCanvas';
+import { useWorkflowStore } from '@/features/workflow-studio/store/workflowStore';
 import { TaskConfigDialog } from '@/features/workflow-studio/TaskConfigDialog';
 import { StudioTaskCatalog } from '@/features/workflow-studio/StudioTaskCatalog';
 import { applyTaskWithBranchJoinSync } from '@/features/workflow-studio/lib/branchJoinSync';
@@ -92,9 +90,27 @@ export default function WorkflowStudioPage() {
     const loadGenerationRef = useRef(0);
     const allowNavigationRef = useRef(false);
 
-    const initial = useMemo(() => definitionToFlow(EMPTY_WORKFLOW), []);
     const { nodes, edges, onNodesChange, onEdgesChange, setNodes, setEdges, resetCanvas } =
-        useWorkflowCanvasState(initial.nodes, initial.edges);
+        useWorkflowStore();
+
+    // Make sure we initialize the store with EMPTY_WORKFLOW once on mount if empty
+    useEffect(() => {
+        const currentNodes = useWorkflowStore.getState().nodes;
+        if (currentNodes.length === 0) {
+            const initial = definitionToFlow(EMPTY_WORKFLOW);
+            useWorkflowStore.getState().resetCanvas(initial.nodes, initial.edges);
+            useWorkflowStore.temporal.getState().clear();
+        }
+
+        // Whenever an undo/redo happens (history array length changes), mark the page as dirty
+        const unsub = useWorkflowStore.temporal.subscribe((state, prevState) => {
+            if (state.pastStates.length !== prevState.pastStates.length || 
+                state.futureStates.length !== prevState.futureStates.length) {
+                setIsDirty(true);
+            }
+        });
+        return () => unsub();
+    }, []);
 
     const applyDefinition = useCallback(
         (definition: WorkflowDefinition) => {
@@ -108,6 +124,10 @@ export default function WorkflowStudioPage() {
                 );
             });
             resetCanvas(nextNodes, nextEdges);
+            // Clear history after loading a workflow so you can't undo into the previous workflow
+            setTimeout(() => {
+                useWorkflowStore.temporal.getState().clear();
+            }, 0);
             setWorkflowName(definition.name);
             setWorkflowId(definition.id ?? null);
             setSavedDefinition(definition);
@@ -263,6 +283,30 @@ export default function WorkflowStudioPage() {
     useEffect(() => {
         allowNavigationRef.current = false;
     }, [location.pathname]);
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            // Check if we are typing in an input or textarea
+            const target = e.target as HTMLElement;
+            if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) {
+                return;
+            }
+
+            if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z') {
+                e.preventDefault();
+                useWorkflowStore.temporal.getState().undo();
+            } else if (
+                ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'z') ||
+                ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y')
+            ) {
+                e.preventDefault();
+                useWorkflowStore.temporal.getState().redo();
+            }
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, []);
 
     useEffect(() => {
         if (!isDirty) return;

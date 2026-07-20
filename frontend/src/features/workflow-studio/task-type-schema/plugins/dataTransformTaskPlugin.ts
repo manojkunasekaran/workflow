@@ -1,6 +1,7 @@
 import { Shuffle } from 'lucide-react';
 import { defineTaskPlugin } from '../pluginTypes';
 import { TRANSFORM_OPERATIONS } from './shared';
+import { formatPrimitive, recordFromUnknown } from '@/features/executions/lib/executionSummaryUtils';
 
 export const dataTransformTaskPlugin = defineTaskPlugin({
     type: 'DATA_TRANSFORM',
@@ -35,4 +36,28 @@ export const dataTransformTaskPlugin = defineTaskPlugin({
     preview(params) {
         return { primary: String(params.operation ?? 'JSON_EXTRACT').replace(/_/g, ' ') };
     },
+    executionSummary({ parameters, executionData, errorMessage }) {
+        const data = recordFromUnknown(executionData);
+        const operation = formatPrimitive(data?.operation ?? parameters.operation);
+        const result = formatPrimitive(data?.result);
+        const error = formatPrimitive(data?.error ?? errorMessage);
+        const hasError = Boolean(data?.error ?? errorMessage);
+        return {
+            lines: [
+                { label: 'Operation', value: operation },
+                { label: 'Expression', value: formatPrimitive(data?.expression ?? parameters.expression) },
+                {
+                    label: 'Result',
+                    value: result,
+                    tone: hasError ? 'default' : result !== '—' ? 'success' : 'default',
+                },
+                {
+                    label: 'Error',
+                    value: error,
+                    tone: hasError ? 'danger' : 'default',
+                },
+            ],
+        };
+    },
 });
+
