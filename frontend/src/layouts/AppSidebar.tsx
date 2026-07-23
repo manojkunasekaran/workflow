@@ -34,6 +34,7 @@ function SidebarCollapseButton() {
         <Tooltip>
             <TooltipTrigger asChild>
                 <button
+                    data-testid="sidebar-collapse-btn"
                     type="button"
                     className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground outline-none ring-sidebar-ring transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2"
                     onClick={toggleSidebar}
@@ -62,6 +63,7 @@ export function AppSidebar() {
                     )}
                 >
                     <Link
+                        data-testid="nav-logo-link"
                         to="/"
                         className="flex min-w-0 flex-1 items-center gap-2 font-bold text-xl text-primary group-data-[collapsible=icon]:flex-none"
                     >
@@ -87,7 +89,7 @@ export function AppSidebar() {
                                         }
                                         tooltip={item.title}
                                     >
-                                        <Link to={item.url}>
+                                        <Link data-testid={`nav-link-${item.title.toLowerCase()}`} to={item.url}>
                                             <item.icon />
                                             <span>{item.title}</span>
                                         </Link>

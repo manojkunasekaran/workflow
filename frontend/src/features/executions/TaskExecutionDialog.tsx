@@ -183,6 +183,7 @@ export function TaskExecutionDialog({
     return (
         <Dialog open={open && Boolean(task)} onOpenChange={onOpenChange} modal={false}>
             <DialogContent
+                data-testid="task-execution-dialog"
                 blocking={false}
                 className="flex max-h-[90vh] w-full flex-col p-0 sm:max-w-lg"
                 onOpenAutoFocus={(event) => event.preventDefault()}

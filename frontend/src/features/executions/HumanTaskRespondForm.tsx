@@ -53,7 +53,7 @@ export function HumanTaskRespondForm({
     };
 
     return (
-        <div className="overflow-hidden rounded-lg border border-amber-300/70 bg-amber-50/60 dark:border-amber-700/40 dark:bg-amber-950/20">
+        <div data-testid="human-task-respond-form" className="overflow-hidden rounded-lg border border-amber-300/70 bg-amber-50/60 dark:border-amber-700/40 dark:bg-amber-950/20">
             {/* Header */}
             <div className="flex items-center gap-2.5 border-b border-amber-200/80 bg-amber-100/60 px-3 py-2.5 dark:border-amber-800/40 dark:bg-amber-900/20">
                 <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
@@ -83,6 +83,7 @@ export function HumanTaskRespondForm({
                         Your name or email
                     </label>
                     <Input
+                        data-testid="human-task-responder-input"
                         id="responded-by"
                         value={respondedBy}
                         onChange={(event) => setRespondedBy(event.target.value)}
@@ -98,6 +99,7 @@ export function HumanTaskRespondForm({
                         const isRejected = action.outcome === 'REJECTED';
                         return (
                             <Button
+                                data-testid={`human-task-action-btn-${action.id}`}
                                 key={action.id}
                                 type="button"
                                 size="sm"
@@ -119,7 +121,7 @@ export function HumanTaskRespondForm({
 
                 {/* Error message */}
                 {error ? (
-                    <p className="text-[11px] text-red-600 dark:text-red-400">{error}</p>
+                    <p data-testid="human-task-error-msg" className="text-[11px] text-red-600 dark:text-red-400">{error}</p>
                 ) : null}
             </div>
         </div>

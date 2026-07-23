@@ -29,7 +29,7 @@ export default function SettingsPage() {
 
     return (
         <div className="flex h-full flex-col bg-background">
-            <PageHeader title={<h1 className="text-sm font-semibold">Settings</h1>} />
+            <PageHeader title={<h1 data-testid="settings-page-heading" className="text-sm font-semibold">Settings</h1>} />
 
             <div className="flex-1 overflow-auto p-6">
                 <div className="mx-auto max-w-4xl space-y-8">
@@ -37,7 +37,7 @@ export default function SettingsPage() {
                     {/* Profile Settings */}
                     <section className="space-y-4">
                         <div>
-                            <h2 className="text-lg font-medium tracking-tight">Profile Settings</h2>
+                            <h2 data-testid="profile-settings-section" className="text-lg font-medium tracking-tight">Profile Settings</h2>
                             <p className="text-sm text-muted-foreground">Manage your personal information and security.</p>
                         </div>
                         <div className="rounded-xl border bg-card text-card-foreground shadow-sm p-6">
@@ -51,14 +51,14 @@ export default function SettingsPage() {
                                 <div className="flex-1 space-y-4">
                                     <div className="grid gap-2">
                                         <Label htmlFor="name">Full Name</Label>
-                                        <Input id="name" defaultValue="John Doe" />
+                                        <Input id="name" data-testid="full-name-input" defaultValue="John Doe" />
                                     </div>
                                     <div className="grid gap-2">
                                         <Label htmlFor="email">Email Address</Label>
-                                        <Input id="email" type="email" defaultValue="john.doe@example.com" />
+                                        <Input id="email" data-testid="email-input" type="email" defaultValue="john.doe@example.com" />
                                     </div>
                                     <div className="pt-2">
-                                        <Button>Update Profile</Button>
+                                        <Button data-testid="update-profile-btn">Update Profile</Button>
                                     </div>
                                 </div>
                             </div>
@@ -68,7 +68,7 @@ export default function SettingsPage() {
                     {/* User Preferences */}
                     <section className="space-y-4">
                         <div>
-                            <h2 className="text-lg font-medium tracking-tight">User Preferences</h2>
+                            <h2 data-testid="user-preferences-section" className="text-lg font-medium tracking-tight">User Preferences</h2>
                             <p className="text-sm text-muted-foreground">Customize your workflow experience.</p>
                         </div>
                         <div className="rounded-xl border bg-card text-card-foreground shadow-sm p-6 space-y-6">
@@ -76,6 +76,7 @@ export default function SettingsPage() {
                                 <Label>Appearance</Label>
                                 <div className="flex flex-wrap gap-3">
                                     <Button 
+                                        data-testid="theme-light-btn"
                                         variant={theme === 'light' ? 'default' : 'outline'}
                                         onClick={() => setTheme('light')}
                                         className="w-32"
@@ -83,6 +84,7 @@ export default function SettingsPage() {
                                         <Sun className="mr-2 h-4 w-4" /> Light
                                     </Button>
                                     <Button 
+                                        data-testid="theme-dark-btn"
                                         variant={theme === 'dark' ? 'default' : 'outline'}
                                         onClick={() => setTheme('dark')}
                                         className="w-32"
@@ -90,6 +92,7 @@ export default function SettingsPage() {
                                         <Moon className="mr-2 h-4 w-4" /> Dark
                                     </Button>
                                     <Button 
+                                        data-testid="theme-system-btn"
                                         variant={theme === 'system' ? 'default' : 'outline'}
                                         onClick={() => setTheme('system')}
                                         className="w-32"
@@ -104,7 +107,7 @@ export default function SettingsPage() {
                     {/* System Health (Simplified) */}
                     <section className="space-y-4">
                         <div>
-                            <h2 className="text-lg font-medium tracking-tight">System Status</h2>
+                            <h2 data-testid="system-status-section" className="text-lg font-medium tracking-tight">System Status</h2>
                             <p className="text-sm text-muted-foreground">Current health of the workflow platform.</p>
                         </div>
                         <div className="rounded-xl border bg-card text-card-foreground shadow-sm p-6">
@@ -113,7 +116,7 @@ export default function SettingsPage() {
                                     {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : isHealthy ? <ShieldCheck className="h-6 w-6" /> : <Server className="h-6 w-6" />}
                                 </div>
                                 <div>
-                                    <h3 className="font-semibold text-base">
+                                    <h3 data-testid="system-status-badge" className="font-semibold text-base">
                                         {isLoading ? 'Checking status...' : isHealthy ? 'All Systems Operational' : 'System Offline / Degraded'}
                                     </h3>
                                     <p className="text-sm text-muted-foreground">

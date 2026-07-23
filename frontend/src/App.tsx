@@ -20,6 +20,7 @@ const router = createBrowserRouter([
             { path: 'executions', element: <ExecutionsList /> },
             { path: 'executions/:id', element: <ExecutionDetail /> },
             { path: 'settings', element: <SettingsPage /> },
+            { path: '*', element: <LandingPage /> },
         ],
     },
 ]);

@@ -46,6 +46,7 @@ export function StudioHeader({
                         type="button"
                         variant="ghost"
                         size="icon"
+                        data-testid="back-to-workflows-btn"
                         className={cn('h-8 w-8 shrink-0', STUDIO_GHOST_ICON_BUTTON_CLASS)}
                         onClick={onBack}
                         aria-label="Back to workflows"
@@ -54,6 +55,7 @@ export function StudioHeader({
                     </Button>
                     <div className="flex min-w-0 items-center gap-2">
                         <input
+                            data-testid="workflow-name-input"
                             value={workflowName}
                             onChange={(e) => onWorkflowNameChange(e.target.value)}
                             placeholder="Workflow name"
@@ -68,7 +70,7 @@ export function StudioHeader({
                             aria-label="Workflow name"
                         />
                         {isDirty ? (
-                            <span className="shrink-0 rounded-md border border-border/70 bg-muted/60 px-2 py-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                            <span data-testid="draft-badge" className="shrink-0 rounded-md border border-border/70 bg-muted/60 px-2 py-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
                                 Draft
                             </span>
                         ) : null}
@@ -80,6 +82,7 @@ export function StudioHeader({
                     <div className="flex items-center rounded-md border border-border bg-muted p-0.5">
                         <button
                             type="button"
+                            data-testid="mode-design-toggle"
                             onClick={() => onModeChange('design')}
                             className={cn(
                                 'rounded-sm px-3 py-1 text-xs font-medium transition-colors',
@@ -92,6 +95,7 @@ export function StudioHeader({
                         </button>
                         <button
                             type="button"
+                            data-testid="mode-inspect-toggle"
                             onClick={() => onModeChange('inspect')}
                             className={cn(
                                 'rounded-sm px-3 py-1 text-xs font-medium transition-colors',
@@ -105,6 +109,7 @@ export function StudioHeader({
                     </div>
 
                     <Button
+                        data-testid="save-workflow-btn"
                         variant="secondary"
                         size="sm"
                         onClick={onSave}
@@ -112,12 +117,12 @@ export function StudioHeader({
                     >
                         {isSaving ? 'Saving…' : 'Save'}
                     </Button>
-                    <Button size="sm" onClick={onRun} disabled={isRunning || mode === 'inspect'}>
+                    <Button data-testid="run-workflow-btn" size="sm" onClick={onRun} disabled={isRunning || mode === 'inspect'}>
                         <Play className="h-4 w-4 fill-current" />
                         {isRunning ? 'Running…' : 'Run Workflow'}
                     </Button>
                     {lastExecutionId ? (
-                        <Button variant="outline" size="sm" asChild className={STUDIO_OUTLINE_BUTTON_CLASS}>
+                        <Button data-testid="view-execution-link" variant="outline" size="sm" asChild className={STUDIO_OUTLINE_BUTTON_CLASS}>
                             <Link to={`/executions/${lastExecutionId}`}>
                                 <ExternalLink className="h-4 w-4" />
                                 View execution
