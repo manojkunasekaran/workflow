@@ -102,10 +102,9 @@ export default function WorkflowStudioPage() {
             useWorkflowStore.temporal.getState().clear();
         }
 
-        // Whenever an undo/redo happens (history array length changes), mark the page as dirty
+        // Whenever an undo/redo happens (user performs action), mark the page as dirty
         const unsub = useWorkflowStore.temporal.subscribe((state, prevState) => {
-            if (state.pastStates.length !== prevState.pastStates.length || 
-                state.futureStates.length !== prevState.futureStates.length) {
+            if (state.pastStates.length > prevState.pastStates.length) {
                 setIsDirty(true);
             }
         });
@@ -127,11 +126,11 @@ export default function WorkflowStudioPage() {
             // Clear history after loading a workflow so you can't undo into the previous workflow
             setTimeout(() => {
                 useWorkflowStore.temporal.getState().clear();
+                setIsDirty(layoutRepaired);
             }, 0);
             setWorkflowName(definition.name);
             setWorkflowId(definition.id ?? null);
             setSavedDefinition(definition);
-            setIsDirty(layoutRepaired);
         },
         [resetCanvas],
     );
@@ -839,12 +838,12 @@ export default function WorkflowStudioPage() {
             />
 
             {message && (
-                <div className="border-b border-[#c6c6cd]/60 bg-muted/40 px-6 py-2 text-xs text-[#45464d]">
+                <div data-testid="studio-status-message" className="border-b border-[#c6c6cd]/60 bg-muted/40 px-6 py-2 text-xs text-[#45464d]">
                     {message}
                 </div>
             )}
 
-            <div className="flex min-h-0 flex-1">
+            <div data-testid="studio-canvas-container" className="flex min-h-0 flex-1">
                 {mode === 'inspect' && lastExecutionId ? (
                     <div className="min-h-0 min-w-0 flex-1">
                         <ExecutionView
@@ -854,7 +853,7 @@ export default function WorkflowStudioPage() {
                         />
                     </div>
                 ) : mode === 'inspect' ? (
-                    <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2 p-8 text-center">
+                    <div data-testid="studio-no-execution-message" className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2 p-8 text-center">
                         <p className="text-sm font-medium text-foreground">No execution to inspect</p>
                         <p className="max-w-md text-sm text-muted-foreground">
                             Switch to Design and run the workflow. Inspect will show the latest run here.

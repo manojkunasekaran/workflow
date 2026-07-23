@@ -63,3 +63,9 @@ export function formatDurationMs(value: unknown): string {
     const remMin = minutes % 60;
     return remMin > 0 ? `${hours}h ${remMin}m` : `${hours}h`;
 }
+
+export function getFailedStepId(taskExecutions: { status: string; taskDefinitionId: string }[] | undefined): string | null {
+    if (!taskExecutions || taskExecutions.length === 0) return null;
+    const failedTask = taskExecutions.find(t => t.status.toUpperCase() === 'FAILED');
+    return failedTask ? failedTask.taskDefinitionId : null;
+}

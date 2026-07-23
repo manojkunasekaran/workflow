@@ -163,7 +163,7 @@ export function ExecutionView({
 
     if (error || !data) {
         return (
-            <div className="flex h-full flex-col bg-background">
+            <div data-testid="execution-error-view" className="flex h-full flex-col bg-background">
                 <div className="flex flex-1 flex-col items-center justify-center gap-4">
                     <XCircle className="h-12 w-12 text-red-500" />
                     <p className="text-muted-foreground">{error ?? 'Execution not found'}</p>
@@ -202,7 +202,7 @@ export function ExecutionView({
                 </div>
             )}
 
-            <div className="relative min-h-0 min-w-0 flex-1">
+            <div data-testid="execution-canvas-container" className="relative min-h-0 min-w-0 flex-1">
                 <WorkflowCanvas
                     key={executionId}
                     nodes={nodes}

@@ -53,14 +53,14 @@ export default function WorkflowListPage() {
     return (
         <div className="flex h-full flex-col bg-background">
             <PageHeader
-                title={<h1 className="text-sm font-semibold">Workflows</h1>}
+                title={<h1 data-testid="workflow-list-heading" className="text-sm font-semibold">Workflows</h1>}
                 actions={
                     <>
-                        <Button variant="outline" size="sm" onClick={loadWorkflows}>
+                        <Button data-testid="refresh-workflows-btn" variant="outline" size="sm" onClick={loadWorkflows}>
                             <RefreshCw className="h-4 w-4" />
                             Refresh
                         </Button>
-                        <Button size="sm" onClick={() => navigate('/workflows/new')}>
+                        <Button data-testid="new-workflow-btn-header" size="sm" onClick={() => navigate('/workflows/new')}>
                             <Plus className="h-4 w-4" />
                             New Workflow
                         </Button>
@@ -70,25 +70,25 @@ export default function WorkflowListPage() {
 
             <div className="flex-1 overflow-auto p-6">
                 {error && (
-                    <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-red-600">
+                    <div data-testid="workflow-list-error" className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-red-600">
                         {error}
                     </div>
                 )}
 
                 {workflows.length === 0 && !error ? (
-                    <div className="flex flex-col items-center justify-center py-16 text-center">
+                    <div data-testid="empty-state-container" className="flex flex-col items-center justify-center py-16 text-center">
                         <Workflow className="mb-4 h-12 w-12 text-muted-foreground/40" />
                         <p className="mb-1 font-medium text-foreground">No workflows yet</p>
                         <p className="mb-6 text-sm text-muted-foreground">
                             Create your first workflow to get started.
                         </p>
-                        <Button onClick={() => navigate('/workflows/new')}>
+                        <Button data-testid="new-workflow-btn-empty" onClick={() => navigate('/workflows/new')}>
                             <Plus className="h-4 w-4" />
                             New Workflow
                         </Button>
                     </div>
                 ) : workflows.length > 0 ? (
-                    <div className="overflow-hidden rounded-lg border border-border bg-card">
+                    <div data-testid="workflow-table-container" className="overflow-hidden rounded-lg border border-border bg-card">
                         <table className="w-full">
                             <thead className="border-b border-border bg-muted/50">
                                 <tr>
@@ -111,25 +111,27 @@ export default function WorkflowListPage() {
                                 {workflows.map((workflow) => (
                                     <tr
                                         key={workflow.id}
+                                        data-testid={`workflow-row-${workflow.id}`}
                                         className="cursor-pointer transition-colors hover:bg-muted/30"
                                         onClick={() => navigate(`/workflows/${workflow.id}`)}
                                     >
-                                        <td className="px-4 py-3 text-sm font-medium text-foreground">
+                                        <td data-testid={`workflow-name-${workflow.id}`} className="px-4 py-3 text-sm font-medium text-foreground">
                                             {workflow.name}
                                         </td>
-                                        <td className="px-4 py-3 text-sm text-muted-foreground">
+                                        <td data-testid={`task-count-${workflow.id}`} className="px-4 py-3 text-sm text-muted-foreground">
                                             {workflow.tasks?.length ?? 0}
                                         </td>
-                                        <td className="px-4 py-3 text-sm text-muted-foreground">
+                                        <td data-testid={`updated-at-${workflow.id}`} className="px-4 py-3 text-sm text-muted-foreground">
                                             {formatDate(workflow.updatedAt ?? workflow.createdAt)}
                                         </td>
-                                        <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
+                                        <td data-testid={`workflow-id-${workflow.id}`} className="px-4 py-3 font-mono text-xs text-muted-foreground">
                                             {workflow.id ? `${workflow.id.substring(0, 8)}…` : '—'}
                                         </td>
                                         <td className="px-4 py-3">
                                             <div className="flex items-center justify-end gap-1">
                                                 <Hint content={`Open ${workflow.name}`}>
                                                     <Button
+                                                        data-testid={`open-workflow-btn-${workflow.id}`}
                                                         variant="ghost"
                                                         size="sm"
                                                         className={cn(

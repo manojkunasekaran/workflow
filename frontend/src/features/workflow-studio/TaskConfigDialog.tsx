@@ -150,6 +150,7 @@ export function TaskConfigDialog({
     return (
         <Dialog open={open} onOpenChange={onOpenChange} modal={false}>
             <DialogContent
+                data-testid="task-config-dialog"
                 blocking={false}
                 className="flex max-h-[90vh] flex-col p-0 sm:max-w-lg"
                 onOpenAutoFocus={(event) => event.preventDefault()}

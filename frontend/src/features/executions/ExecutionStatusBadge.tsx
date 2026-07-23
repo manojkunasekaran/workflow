@@ -36,6 +36,7 @@ export function ExecutionStatusBadge({
 
     return (
         <StatusBadge
+            data-testid="execution-status-badge"
             variant={executionStatusVariant(status)}
             size={size}
             className={cn(isRunning && 'gap-1', placementClass[placement], className)}

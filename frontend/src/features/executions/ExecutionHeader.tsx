@@ -48,6 +48,7 @@ export function ExecutionHeader({
                             type="button"
                             variant="ghost"
                             size="icon"
+                            data-testid="execution-header-back-btn"
                             className="h-8 w-8 shrink-0 text-muted-foreground hover:bg-muted hover:text-foreground"
                             onClick={onBack}
                             aria-label="Back"
@@ -57,7 +58,7 @@ export function ExecutionHeader({
                     )}
                     <div className="flex min-w-0 flex-col gap-0.5">
                         <div className="flex flex-wrap items-center gap-2">
-                            <h1 className="text-sm font-semibold">
+                            <h1 data-testid="execution-header-title" className="text-sm font-semibold">
                                 {embedded ? 'Execution inspect' : 'Execution'}
                             </h1>
                             <ExecutionStatusBadge status={execution.status} size="md" />
@@ -95,6 +96,7 @@ export function ExecutionHeader({
                     <Button
                         variant="outline"
                         size="sm"
+                        data-testid="execution-header-refresh-btn"
                         onClick={onRefresh}
                         disabled={isRefreshing}
                     >
@@ -106,7 +108,7 @@ export function ExecutionHeader({
                         <Tooltip>
                             <TooltipTrigger asChild>
                                 <Button variant="outline" size="sm" asChild>
-                                    <Link to={`/workflows/${execution.workflowId}`}>
+                                    <Link data-testid="open-workflow-definition-link" to={`/workflows/${execution.workflowId}`}>
                                         <ExternalLink className="h-4 w-4" />
                                         <span className="max-w-[140px] truncate">{definition.name}</span>
                                     </Link>

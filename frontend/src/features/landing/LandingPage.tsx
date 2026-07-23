@@ -27,12 +27,13 @@ export default function LandingPage() {
     ];
 
     return (
-        <div className="flex h-full flex-col bg-background">
-            <PageHeader title={<h1 className="text-sm font-semibold">Overview</h1>} />
+        <div className="flex h-full flex-col studio-dot-grid">
+            <PageHeader title={<h1 data-testid="overview-heading" className="text-sm font-semibold">Overview</h1>} />
             <div className="flex-1 flex items-center justify-center p-6">
                 <div className="grid w-full max-w-5xl gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {options.map((option) => (
                         <button
+                            data-testid={`landing-card-${option.title.toLowerCase()}`}
                             key={option.title}
                             onClick={() => navigate(option.path)}
                             className="group flex flex-col items-start rounded-2xl border border-border/50 bg-card p-8 text-left transition-all hover:border-primary/40 hover:shadow-xl hover:shadow-primary/5 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
