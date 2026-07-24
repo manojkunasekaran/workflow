@@ -73,29 +73,31 @@ const MOCK_TASK_EXECUTIONS = [
   },
 ];
 
+const headers = { 'Access-Control-Allow-Origin': '*' };
+
 async function mockExecutionApis(page: Page) {
   await page.route(
-    (url) => url.pathname === '/rest/executions',
-    (route) => route.fulfill({ json: MOCK_EXECUTIONS_PAGE }),
+    '**/rest/executions',
+    (route) => route.fulfill({ json: MOCK_EXECUTIONS_PAGE, headers }),
   );
   await page.route(
-    (url) => url.pathname === '/rest/workflows',
-    (route) => route.fulfill({ json: MOCK_WORKFLOWS }),
+    '**/rest/workflows',
+    (route) => route.fulfill({ json: MOCK_WORKFLOWS, headers }),
   );
 }
 
 async function mockExecutionDetailApis(page: Page, executionId = 'exec-001') {
   await page.route(`**/rest/executions/${executionId}`, (route) =>
-    route.fulfill({ json: MOCK_EXECUTIONS_PAGE.content[0] }),
+    route.fulfill({ json: MOCK_EXECUTIONS_PAGE.content[0], headers }),
   );
   await page.route(`**/rest/workflows/wf-001`, (route) =>
-    route.fulfill({ json: MOCK_DEFINITION }),
+    route.fulfill({ json: MOCK_DEFINITION, headers }),
   );
   await page.route(`**/rest/executions/${executionId}/tasks`, (route) =>
-    route.fulfill({ json: MOCK_TASK_EXECUTIONS }),
+    route.fulfill({ json: MOCK_TASK_EXECUTIONS, headers }),
   );
   await page.route(`**/rest/executions/${executionId}/stream`, (route) =>
-    route.fulfill({ status: 200, contentType: 'text/event-stream', body: '' }),
+    route.fulfill({ status: 200, contentType: 'text/event-stream', body: '', headers }),
   );
 }
 
@@ -104,6 +106,8 @@ async function mockExecutionDetailApis(page: Page, executionId = 'exec-001') {
 test.describe('Executions List Page', () => {
   test.describe('Happy Path', () => {
     test('[Happy] should display the page heading', async ({ page }) => {
+      page.on('console', msg => console.log('PAGE LOG:', msg.text()));
+      page.on('requestfailed', request => console.log('REQ FAILED:', request.url(), request.failure()?.errorText));
       await mockExecutionApis(page);
       await page.goto('/executions');
       await expect(page.getByTestId('executions-list-heading')).toBeVisible();

@@ -53,4 +53,21 @@ describe('LandingPage Unit Tests', () => {
     fireEvent.click(settingsCard);
     expect(mockNavigate).toHaveBeenCalledWith('/settings');
   });
+
+  it('A-015: Render with no router context — component throws an expected error boundary', async () => {
+    // Unmock useNavigate for this specific test
+    vi.mocked(useNavigate).mockImplementation(() => {
+      throw new Error('useNavigate() may be used only in the context of a <Router> component.');
+    });
+
+    // We expect the render to throw. We can use try-catch or expect(() => ...).toThrow()
+    // Suppress console.error for the expected error
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    expect(() => {
+      render(<LandingPage />);
+    }).toThrow(/useNavigate/);
+
+    consoleError.mockRestore();
+  });
 });

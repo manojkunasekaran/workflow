@@ -1,8 +1,9 @@
-import { ChevronRight, GripVertical, X } from 'lucide-react';
+import { ChevronRight, GripVertical, Search, X } from 'lucide-react';
 import { Hint } from '@/components/ui/hint';
 import { STUDIO_TASK_DRAG_MIME } from '@/features/workflow-studio/constants/studioDrag';
 import { TASK_PALETTE, type StudioTaskType } from '@/features/workflow-studio/constants/taskPalette';
 import { cn } from '@/lib/utils';
+import { useState } from 'react';
 
 interface StudioTaskCatalogProps {
     open: boolean;
@@ -24,9 +25,11 @@ export function StudioTaskCatalog({
     disabled,
     allowedTypes,
 }: StudioTaskCatalogProps) {
-    const catalogItems = allowedTypes
+    const [searchQuery, setSearchQuery] = useState('');
+    
+    const catalogItems = (allowedTypes
         ? TASK_PALETTE.filter((item) => allowedTypes.includes(item.type))
-        : TASK_PALETTE;
+        : TASK_PALETTE).filter(item => item.label.toLowerCase().includes(searchQuery.toLowerCase()));
     const clickToAdd = Boolean(onSelectType);
 
     return (
@@ -51,6 +54,19 @@ export function StudioTaskCatalog({
                         >
                             <X className="h-4 w-4" />
                         </button>
+                    </div>
+                    <div className="border-b border-border/60 p-2">
+                        <div className="relative">
+                            <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                            <input
+                                type="text"
+                                placeholder="Search tasks..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full rounded-md border border-input bg-background py-1.5 pl-7 pr-2 text-xs shadow-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                                data-testid="task-catalog-search"
+                            />
+                        </div>
                     </div>
                     <ul className="flex-1 overflow-y-auto p-2 scrollbar-thin" data-testid="task-catalog-list">
                         {catalogItems.map((item) => {

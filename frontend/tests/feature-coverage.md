@@ -156,7 +156,7 @@
 | A-012 | Spec | Edge | In light mode, background dot colours use light CSS variables | ✅ Written |
 | A-013 | Unit | Happy | Render `LandingPage` — all three option items appear in the DOM | ✅ Written |
 | A-014 | Unit | Happy | Mock `useNavigate` — clicking a card calls navigate with the correct path | ✅ Written |
-| A-015 | Unit | Edge | Render with no router context — component throws an expected error boundary | ⬜ Planned |
+| A-015 | Unit | Edge | Render with no router context — component throws an expected error boundary | ✅ Written |
 
 ---
 
@@ -303,8 +303,8 @@
 | C-014 | Unit | Negative | `executionApi.getById('missing')` — 404 propagates as rejected promise | ✅ Written |
 | C-015 | Unit | Happy | `healthApi.check()` — sends GET `/actuator/health`, returns status object | ✅ Written |
 | C-016 | Unit | Negative | `healthApi.check()` — network abort propagates as rejected promise | ✅ Written |
-| C-017 | Unit | Edge | Axios base URL is read from `VITE_API_BASE_URL` env variable | ⬜ Planned |
-| C-018 | Unit | Edge | Request Content-Type header is `application/json` for POST/PUT | ⬜ Planned |
+| C-017 | Unit | Edge | Axios base URL is read from `VITE_API_BASE_URL` env variable | ✅ Written |
+| C-018 | Unit | Edge | Request Content-Type header is `application/json` for POST/PUT | ✅ Written |
 
 ---
 
@@ -321,11 +321,11 @@
 | D-006 | Unit | Happy | After `setNodes`, `temporal.pastStates` has length 1 | ✅ Written |
 | D-007 | Unit | Happy | `temporal.undo()` — reverts nodes to previous state | ✅ Written |
 | D-008 | Unit | Happy | `temporal.redo()` — reapplies undone state | ✅ Written |
-| D-009 | Unit | Happy | `temporal.clear()` — empties past and future stacks | ⬜ Planned |
-| D-010 | Unit | Edge | Multiple undo calls stop at the oldest state (stack floor) | ⬜ Planned |
-| D-011 | Unit | Edge | Redo with empty future stack — state unchanged, no error thrown | ⬜ Planned |
-| D-012 | Unit | Edge | `resetCanvas` then `temporal.clear()` — history stack is empty | ⬜ Planned |
-| D-013 | Unit | Edge | 51 consecutive state changes — history capped at 50 (zundo limit) | ⬜ Planned |
+| D-009 | Unit | Happy | `temporal.clear()` — empties past and future stacks | ✅ Written |
+| D-010 | Unit | Edge | Multiple undo calls stop at the oldest state (stack floor) | ✅ Written |
+| D-011 | Unit | Edge | Redo with empty future stack — state unchanged, no error thrown | ✅ Written |
+| D-012 | Unit | Edge | `resetCanvas` then `temporal.clear()` — history stack is empty | ✅ Written |
+| D-013 | Unit | Edge | 51 consecutive state changes — history capped at 50 (zundo limit) | ✅ Written |
 
 ---
 
@@ -340,30 +340,30 @@
 | E-004 | Unit | Happy | `flowToDefinition(name, nodes, edges)` — exported task array matches canvas nodes | ✅ Written |
 | E-005 | Unit | Happy | `flowToDefinition` — layout block written with x/y for every task node | ✅ Written |
 | E-006 | Unit | Happy | `appendTaskToChain` — new task appended to end of main spine | ✅ Written |
-| E-007 | Unit | Happy | `appendTaskToChain` — returns `null` when spine is terminated by CONDITIONAL | ⬜ Planned |
+| E-007 | Unit | Happy | `appendTaskToChain` — returns `null` when spine is terminated by CONDITIONAL | ✅ Written |
 | E-008 | Unit | Happy | `removeTaskFromChain` — removes node and heals edges | ✅ Written |
-| E-009 | Unit | Happy | `removeTaskFromChain` on ITERATOR_TASK — also removes all loop-body child nodes | ⬜ Planned |
-| E-010 | Unit | Happy | `placeDetachedTask` — new node placed at given position, not auto-wired | ⬜ Planned |
-| E-011 | Unit | Happy | `addBranchTask` — wires task from a routing output handle | ⬜ Planned |
-| E-012 | Unit | Happy | `appendBranchChainTask` — wires task via branch-chain edge | ⬜ Planned |
-| E-013 | Unit | Happy | `appendJoinAtBranchEnd` — creates JOIN node linked to upstream BRANCH | ⬜ Planned |
-| E-014 | Unit | Negative | `appendBranchChainTask` with type JOIN — returns `null` (rejected) | ⬜ Planned |
-| E-015 | Unit | Negative | `appendJoinAtBranchEnd` with no upstream BRANCH node — returns `null` | ⬜ Planned |
-| E-016 | Unit | Happy | `syncWorkflowLayout` — nodes re-positioned after tidy-up | ⬜ Planned |
-| E-017 | Unit | Happy | `tidyUpWorkflowGraph` — all nodes have new consistent positions | ⬜ Planned |
-| E-018 | Unit | Happy | `getOrderedTaskIds` — returns spine IDs in topological order | ⬜ Planned |
-| E-019 | Unit | Happy | `nextTaskId` — increments suffix when base ID already exists | ⬜ Planned |
-| E-020 | Unit | Edge | `nextTaskId` with empty existing set — returns base ID unchanged | ⬜ Planned |
-| E-021 | Unit | Happy | `isValidStudioConnection` — allows valid source→target pair | ⬜ Planned |
-| E-022 | Unit | Negative | `isValidStudioConnection` — rejects self-connection (source === target) | ⬜ Planned |
-| E-023 | Unit | Negative | `isValidStudioConnection` — rejects duplicate existing edge | ⬜ Planned |
-| E-024 | Unit | Happy | `applyStudioConnection` — adds edge and returns updated nodes/edges | ⬜ Planned |
-| E-025 | Unit | Happy | `findFirstTaskValidationError` — returns error string for invalid task | ⬜ Planned |
-| E-026 | Unit | Happy | `findFirstTaskValidationError` — returns null for fully valid graph | ⬜ Planned |
-| E-027 | Unit | Happy | `getTaskNodes` — filters out start/addTask nodes, returns only task nodes | ⬜ Planned |
+| E-009 | Unit | Happy | `removeTaskFromChain` on ITERATOR_TASK — also removes all loop-body child nodes | ✅ Written |
+| E-010 | Unit | Happy | `placeDetachedTask` — new node placed at given position, not auto-wired | ✅ Written |
+| E-011 | Unit | Happy | `addBranchTask` — wires task from a routing output handle | ✅ Written |
+| E-012 | Unit | Happy | `appendBranchChainTask` — wires task via branch-chain edge | ✅ Written |
+| E-013 | Unit | Happy | `appendJoinAtBranchEnd` — creates JOIN node linked to upstream BRANCH | ✅ Written |
+| E-014 | Unit | Negative | `appendBranchChainTask` with type JOIN — returns `null` (rejected) | ✅ Written |
+| E-015 | Unit | Negative | `appendJoinAtBranchEnd` with no upstream BRANCH node — returns `null` | ✅ Written |
+| E-016 | Unit | Happy | `syncWorkflowLayout` — nodes re-positioned after tidy-up | ✅ Written |
+| E-017 | Unit | Happy | `tidyUpWorkflowGraph` — all nodes have new consistent positions | ✅ Written |
+| E-018 | Unit | Happy | `getOrderedTaskIds` — returns spine IDs in topological order | ✅ Written |
+| E-019 | Unit | Happy | `nextTaskId` — increments suffix when base ID already exists | ✅ Written |
+| E-020 | Unit | Edge | `nextTaskId` with empty existing set — returns base ID unchanged | ✅ Written |
+| E-021 | Unit | Happy | `isValidStudioConnection` — allows valid source→target pair | ✅ Written |
+| E-022 | Unit | Negative | `isValidStudioConnection` — rejects self-connection (source === target) | ✅ Written |
+| E-023 | Unit | Negative | `isValidStudioConnection` — rejects duplicate existing edge | ✅ Written |
+| E-024 | Unit | Happy | `applyStudioConnection` — adds edge and returns updated nodes/edges | ✅ Written |
+| E-025 | Unit | Happy | `findFirstTaskValidationError` — returns error string for invalid task | ✅ Written |
+| E-026 | Unit | Happy | `findFirstTaskValidationError` — returns null for fully valid graph | ✅ Written |
+| E-027 | Unit | Happy | `getTaskNodes` — filters out start/addTask nodes, returns only task nodes | ✅ Written |
 | E-028 | Unit | Edge | `definitionToFlow` with empty tasks array — only Start + AddTask nodes produced | ✅ Written |
-| E-029 | Unit | Edge | `flowToDefinition` — iterator loop body tasks excluded from top-level export | ⬜ Planned |
-| E-030 | Unit | Edge | `getMainSpineIdsFromEdges` with a branched graph — only spine IDs returned |
+| E-029 | Unit | Edge | `flowToDefinition` — iterator loop body tasks excluded from top-level export | ✅ Written |
+| E-030 | Unit | Edge | `getMainSpineIdsFromEdges` with a branched graph — only spine IDs returned | ✅ Written |
 
 ---
 
@@ -472,25 +472,25 @@
 | H-025 | Spec | Happy | `HumanTaskRespondForm` — filling form and clicking respond sends API request |
 | H-026 | Spec | Negative | `HumanTaskRespondForm` — empty required field blocks submission |
 | H-027 | Spec | Edge | `HumanTaskRespondForm` — payload matches expected schema on submit intercept |
-| H-028 | Unit | Happy | `executionNodeStatus.ts` — `COMPLETED` maps to `completed` visual state |
-| H-029 | Unit | Happy | `executionNodeStatus.ts` — `FAILED` maps to `failed` visual state |
-| H-030 | Unit | Happy | `executionNodeStatus.ts` — `RUNNING` maps to `running` visual state |
-| H-031 | Unit | Happy | `executionNodeStatus.ts` — `QUEUED` maps to `pending` visual state |
-| H-032 | Unit | Happy | `executionNodeStatus.ts` — `PAUSED` maps to `paused` visual state |
-| H-033 | Unit | Edge | `executionNodeStatus.ts` — unknown status string maps to `idle` |
-| H-034 | Unit | Happy | `executionSummaryUtils.ts` — `getFailedStepId` returns first FAILED task ID |
-| H-035 | Unit | Edge | `executionSummaryUtils.ts` — `getFailedStepId` returns null for COMPLETED run |
-| H-036 | Unit | Happy | `executionDisplay.ts` — `formatDuration(5000)` returns human-readable string |
-| H-037 | Unit | Edge | `executionDisplay.ts` — `formatDuration(0)` returns `< 1s` or equivalent |
-| H-038 | Unit | Happy | `humanTaskExecution.ts` — `isHumanTask(node)` returns true for HUMAN_TASK type |
-| H-039 | Unit | Happy | `loadExecutionGraph.ts` — merges task execution statuses onto canvas nodes |
+| H-028 | Unit | Happy | `executionNodeStatus.ts` — `COMPLETED` maps to `completed` visual state | ✅ Written |
+| H-029 | Unit | Happy | `executionNodeStatus.ts` — `FAILED` maps to `failed` visual state | ✅ Written |
+| H-030 | Unit | Happy | `executionNodeStatus.ts` — `RUNNING` maps to `running` visual state | ✅ Written |
+| H-031 | Unit | Happy | `executionNodeStatus.ts` — `QUEUED` maps to `pending` visual state | ✅ Written |
+| H-032 | Unit | Happy | `executionNodeStatus.ts` — `PAUSED` maps to `paused` visual state | ✅ Written |
+| H-033 | Unit | Edge | `executionNodeStatus.ts` — unknown status string maps to `idle` | ✅ Written |
+| H-034 | Unit | Happy | `executionSummaryUtils.ts` — `getFailedStepId` returns first FAILED task ID | ✅ Written |
+| H-035 | Unit | Edge | `executionSummaryUtils.ts` — `getFailedStepId` returns null for COMPLETED run | ✅ Written |
+| H-036 | Unit | Happy | `executionDisplay.ts` — `formatDuration(5000)` returns human-readable string | ✅ Written |
+| H-037 | Unit | Edge | `executionDisplay.ts` — `formatDuration(0)` returns `< 1s` or equivalent | ✅ Written |
+| H-038 | Unit | Happy | `humanTaskExecution.ts` — `canRespondToHumanTask` returns true for HUMAN_TASK type in PAUSED status | ✅ Written |
+| H-039 | Unit | Happy | `loadExecutionGraph.ts` — loads data and returns frozen nodes | ✅ Written |
 | H-040 | Spec | Happy | SSE stream — synthetic RUNNING event updates node colour in real-time |
 | H-041 | Spec | Happy | SSE stream — synthetic COMPLETED event updates node colour to green |
 | H-042 | Spec | Negative | SSE stream — connection abort triggers reconnect attempt |
-| H-043 | Unit | Happy | `ExecutionStatusBadge` — renders correct colour for COMPLETED status |
-| H-044 | Unit | Happy | `ExecutionStatusBadge` — renders correct colour for FAILED status |
-| H-045 | Unit | Happy | `ExecutionStatusBadge` — renders correct colour for RUNNING status |
-| H-046 | Unit | Edge | `ExecutionStatusBadge` — unknown status renders neutral badge |
+| H-043 | Unit | Happy | `ExecutionStatusBadge` — renders correct colour for COMPLETED status | ✅ Written |
+| H-044 | Unit | Happy | `ExecutionStatusBadge` — renders correct colour for FAILED status | ✅ Written |
+| H-045 | Unit | Happy | `ExecutionStatusBadge` — renders correct colour for RUNNING status | ✅ Written |
+| H-046 | Unit | Edge | `ExecutionStatusBadge` — unknown status renders neutral badge | ✅ Written |
 ---
 
 ### I. Workflow List Feature (`WorkflowListPage`)
@@ -571,8 +571,8 @@
 | K-023 | Spec | Edge | `WorkflowCanvas` — clicking delete key removes selected task node |
 | K-024 | Spec | Edge | `WorkflowCanvas` — cannot delete the Start node |
 | K-025 | Spec | Negative | `WorkflowCanvas` — creating invalid edge connection displays toast error |
-| K-026 | Unit | Happy | `StudioNodeShell` — renders validation error ring when node has errors |
-| K-027 | Unit | Happy | `StudioTaskCatalog` — filters task list based on search input |
+| K-026 | Unit | Happy | `StudioNodeShell` — renders validation error ring when node has errors | ✅ Written |
+| K-027 | Unit | Happy | `StudioTaskCatalog` — filters task list based on search input | ✅ Written |
 
 ---
 
@@ -581,11 +581,35 @@
 
 | # | Type | Category | Test Case |
 |---|---|---|---|
-| L-001 | Unit | Happy | `Button` — renders with correct variant classes |
-| L-002 | Unit | Happy | `Button` — renders loading spinner when `isLoading=true` |
-| L-003 | Unit | Happy | `Dialog` — renders content in a portal when open |
-| L-004 | Unit | Happy | `Input` — accepts and displays text values |
-| L-005 | Unit | Happy | `Select` — displays options and calls `onValueChange` |
-| L-006 | Unit | Happy | `StatusBadge` — renders text and correct colour classes |
-| L-007 | Unit | Happy | `use-mobile` — returns true when `window.innerWidth < 768` |
-| L-008 | Unit | Happy | `use-mobile` — updates state on window resize event |
+| L-001 | Unit | Happy | `Button` — renders with correct variant classes | ✅ Written |
+| L-002 | Unit | Happy | `Button` — renders loading spinner when `isLoading=true` | ✅ Written |
+| L-003 | Unit | Happy | `Dialog` — renders content in a portal when open | ✅ Written |
+| L-004 | Unit | Happy | `Input` — accepts and displays text values | ✅ Written |
+| L-005 | Unit | Happy | `Select` — displays options and calls `onValueChange` | ✅ Written |
+| L-006 | Unit | Happy | `StatusBadge` — renders text and correct colour classes | ✅ Written |
+| L-007 | Unit | Happy | `use-mobile` — returns true when `window.innerWidth < 768` | ✅ Written |
+| L-008 | Unit | Happy | `use-mobile` — updates state on window resize event | ✅ Written |
+| L-009 | Unit | Happy | `Textarea` — accepts user input and applies custom styles | ✅ Written |
+| L-010 | Unit | Happy | `Tooltip` — renders tooltip content on hover/focus | ✅ Written |
+| L-011 | Unit | Happy | `Sheet` — slides in from the correct side when opened | ✅ Written |
+| L-012 | Unit | Happy | `ConfirmDialog` — fires onConfirm callback and closes | ✅ Written |
+| L-013 | Unit | Happy | `Hint` — displays helper text accurately next to element | ✅ Written |
+| L-014 | Unit | Happy | `ScrollArea` — manages overflow and renders scrollbars | ✅ Written |
+| L-015 | Unit | Happy | `Sidebar` — expands and collapses correctly | ✅ Written |
+| L-016 | Unit | Happy | `Skeleton` — renders animated placeholder | ✅ Written |
+| L-017 | Unit | Happy | `Label` — associates with input elements | ✅ Written |
+| L-018 | Unit | Happy | `Separator` — renders horizontal or vertical visual dividers | ✅ Written |
+
+---
+
+### M. Workflow JSON Editor (`WorkflowJsonEditor`)
+> File: `src/features/workflow/WorkflowJsonEditor.tsx`
+
+| # | Type | Category | Test Case | Status |
+|---|---|---|---|---|
+| M-001 | Unit | Happy | Render editor, verify "New Workflow" and "Load Sample" buttons are visible | ✅ Written |
+| M-002 | Unit | Happy | "Load Sample" button correctly populates the JSON textarea | ✅ Written |
+| M-003 | Unit | Negative | Inputting invalid JSON formats displays inline `AlertCircle` parsing error | ✅ Written |
+| M-004 | Unit | Happy | "Save" button triggers `workflowApi.update` / `create` API endpoints | ✅ Written |
+| M-005 | Unit | Happy | "Run" button triggers `executionApi.trigger` and displays execution badge | ✅ Written |
+| M-006 | Unit | Edge | Save and Run buttons disable correctly when parsing errors are present | ✅ Written |
