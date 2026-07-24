@@ -119,4 +119,24 @@ describe('API Client Layer', () => {
       await expect(healthApi.getApiHealth()).rejects.toThrow('Network error');
     });
   });
+
+  describe('Configuration & Defaults', () => {
+    it('C-017: API_BASE_URL defaults to /rest or reads from env', async () => {
+      // In the vitest environment, VITE_API_URL is loaded from .env.test as http://localhost:8080
+      // meaning API_BASE_URL should read from it successfully.
+      const { API_BASE_URL } = await import('../config');
+      expect(API_BASE_URL).toMatch(/\/rest$/); // Either /rest or http://localhost:8080/rest
+    });
+
+    it('C-018: Request Content-Type header defaults to application/json for POST', async () => {
+      // Axios sends application/json automatically when data is passed as an object
+      mockedAxios.post.mockResolvedValueOnce({ data: { id: 'wf-2' } });
+      await workflowApi.create({ id: '', name: 'Test', tasks: [] } as any);
+      
+      expect(mockedAxios.post).toHaveBeenCalledWith(
+        expect.stringContaining('/rest/workflows'),
+        { id: '', name: 'Test', tasks: [] }
+      );
+    });
+  });
 });

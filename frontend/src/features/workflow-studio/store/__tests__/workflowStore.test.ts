@@ -75,5 +75,65 @@ describe('Zustand Workflow Store & History', () => {
       expect(countAfterUndo).toBe(0);
       expect(countAfterRedo).toBe(1);
     });
+
+    it('D-009: temporal.clear() — empties past and future stacks', () => {
+      const store = useWorkflowStore;
+      store.getState().setNodes([{ id: 'n1', position: { x: 0, y: 0 }, data: {} }] as any);
+      
+      expect(store.temporal.getState().pastStates.length).toBeGreaterThan(0);
+      
+      store.temporal.getState().clear();
+      
+      expect(store.temporal.getState().pastStates).toHaveLength(0);
+      expect(store.temporal.getState().futureStates).toHaveLength(0);
+    });
+
+    it('D-010: Multiple undo calls stop at the oldest state (stack floor)', () => {
+      const store = useWorkflowStore;
+      store.getState().setNodes([{ id: 'n1', position: { x: 0, y: 0 }, data: {} }] as any);
+      store.getState().setNodes([{ id: 'n2', position: { x: 0, y: 0 }, data: {} }] as any);
+      
+      // Call undo more times than there are states
+      store.temporal.getState().undo();
+      store.temporal.getState().undo();
+      store.temporal.getState().undo();
+      store.temporal.getState().undo();
+      
+      // State should not crash and should be at the initial empty state
+      expect(store.getState().nodes).toHaveLength(0);
+    });
+
+    it('D-011: Redo with empty future stack — state unchanged, no error thrown', () => {
+      const store = useWorkflowStore;
+      store.getState().setNodes([{ id: 'n1', position: { x: 0, y: 0 }, data: {} }] as any);
+      
+      store.temporal.getState().redo(); // Nothing to redo
+      
+      expect(store.getState().nodes).toHaveLength(1);
+      expect(store.getState().nodes[0].id).toBe('n1');
+    });
+
+    it('D-012: resetCanvas then temporal.clear() — history stack is empty', () => {
+      const store = useWorkflowStore;
+      store.getState().setNodes([{ id: 'n1', position: { x: 0, y: 0 }, data: {} }] as any);
+      
+      store.getState().resetCanvas([], []);
+      store.temporal.getState().clear();
+      
+      expect(store.temporal.getState().pastStates).toHaveLength(0);
+      expect(store.temporal.getState().futureStates).toHaveLength(0);
+      expect(store.getState().nodes).toHaveLength(0);
+    });
+
+    it('D-013: 51 consecutive state changes — history capped at 50 (zundo limit)', () => {
+      const store = useWorkflowStore;
+      // Perform 51 updates
+      for (let i = 0; i < 51; i++) {
+        store.getState().setNodes([{ id: `n${i}`, position: { x: 0, y: 0 }, data: {} }] as any);
+      }
+      
+      const pastCount = store.temporal.getState().pastStates.length;
+      expect(pastCount).toBeLessThanOrEqual(50);
+    });
   });
 });
