@@ -21,6 +21,7 @@ export type StudioNodeShellProps = {
     errorMessage?: string;
     /** Execution observability border (does not override validation invalid). */
     statusBorderClass?: string;
+    subLabel?: string;
     children?: ReactNode;
     hoverActions?: ReactNode;
     /** Stretch the visible card to the full handle column (parallel splits with 3+ branches). */
@@ -52,6 +53,7 @@ export function StudioNodeShell({
     invalid = false,
     errorMessage,
     statusBorderClass,
+    subLabel,
     children,
     hoverActions,
     stretchIconTile = false,
@@ -150,6 +152,16 @@ export function StudioNodeShell({
                     {label}
                 </p>
             </Hint>
+
+            {subLabel ? (
+                <p
+                    className="relative z-[1] mt-0.5 w-full truncate px-0.5 text-center text-[10px] font-medium leading-tight text-muted-foreground/80"
+                    onMouseEnter={() => setNodeHover(true)}
+                    onMouseLeave={() => setNodeHover(false)}
+                >
+                    {subLabel}
+                </p>
+            ) : null}
 
             {errorMessage ? (
                 <Hint content={errorMessage}>

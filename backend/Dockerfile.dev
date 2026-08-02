@@ -12,5 +12,5 @@ ENV APP_MODULE=${APP_MODULE}
 WORKDIR /app
 
 ENTRYPOINT ["sh", "-c", \
-    "exec mvn spring-boot:run -pl services/${APP_MODULE} \
+    "exec mvn clean spring-boot:run -pl services/${APP_MODULE} \
     -Dspring-boot.run.jvmArguments=\"-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:${DEBUG_PORT:-9000}\""]

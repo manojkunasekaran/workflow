@@ -8,6 +8,7 @@ import com.app.common.model.base.Auditable;
 import com.app.common.model.variable.VariableType;
 import com.app.common.model.variable.VariableValue;
 import com.app.common.model.task.WorkflowTask;
+import com.app.common.model.trigger.TriggerConfig;
 
 import org.springframework.data.annotation.Id;
 import java.util.List;
@@ -22,6 +23,12 @@ public class WorkflowDefinition extends Auditable {
     private String id;
     private String name;
     private List<WorkflowTask> tasks;
+
+    /**
+     * Trigger configuration: determines how and when this workflow is started.
+     * Defaults to MANUAL if null.
+     */
+    private TriggerConfig trigger;
 
     /**
      * UI-only canvas layout: maps a taskId to its node position on the studio

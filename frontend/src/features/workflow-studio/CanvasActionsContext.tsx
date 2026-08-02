@@ -8,6 +8,7 @@ export type CanvasActionsContextValue = {
     onEdgeDelete?: (edge: Edge) => void;
     onTaskEdit?: (taskId: string) => void;
     onTaskDelete?: (taskId: string) => void;
+    onStartNodeClick?: () => void;
     readOnly?: boolean;
 };
 

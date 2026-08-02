@@ -7,6 +7,7 @@ import com.app.common.entity.WorkflowExecution;
 import com.app.common.entity.WorkflowTaskExecution;
 import com.app.common.exception.ResourceNotFoundException;
 import com.app.common.exception.ValidationException;
+import com.app.common.model.trigger.TriggerType;
 import com.app.common.model.variable.VariableValue;
 import com.app.messaging.dispatch.ExecutionMessageDispatcherRegistry;
 import com.app.persistence.repository.WorkflowDefinitionRepository;
@@ -26,6 +27,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import com.app.api.config.properties.WorkflowApiProperties;
+
 @Slf4j
 @Service
 public class WorkflowExecutionService {
@@ -36,9 +39,7 @@ public class WorkflowExecutionService {
     private final ExecutionMessageDispatcherRegistry messageDispatcherRegistry;
     private final ExecutionSyncWaiter syncWaiter;
     private final HumanTaskResponseService humanTaskResponseService;
-
-    @Value("${workflow.execution.sync-timeout-seconds:300}")
-    private long syncTimeoutSeconds;
+    private final WorkflowApiProperties properties;
 
     public WorkflowExecutionService(
             WorkflowExecutionRepository executionRepository,
@@ -46,27 +47,45 @@ public class WorkflowExecutionService {
             WorkflowTaskExecutionRepository taskExecutionRepository,
             ExecutionMessageDispatcherRegistry messageDispatcherRegistry,
             ExecutionSyncWaiter syncWaiter,
-            HumanTaskResponseService humanTaskResponseService) {
+            HumanTaskResponseService humanTaskResponseService,
+            WorkflowApiProperties properties) {
         this.executionRepository = executionRepository;
         this.definitionRepository = definitionRepository;
         this.taskExecutionRepository = taskExecutionRepository;
         this.messageDispatcherRegistry = messageDispatcherRegistry;
         this.syncWaiter = syncWaiter;
         this.humanTaskResponseService = humanTaskResponseService;
+        this.properties = properties;
     }
 
+    /**
+     * Trigger a workflow execution.
+     * Overload for backward compatibility — defaults triggeredBy to MANUAL.
+     */
     public WorkflowExecution triggerExecution(
             String definitionId, Map<String, VariableValue> inputs, ExecutionType executionType) {
+        return triggerExecution(definitionId, inputs, executionType, TriggerType.MANUAL);
+    }
+
+    /**
+     * Trigger a workflow execution with an explicit trigger source.
+     * This is the single entry-point used by the API controller, webhook controller,
+     * and scheduler service — no duplicate trigger logic.
+     */
+    public WorkflowExecution triggerExecution(
+            String definitionId, Map<String, VariableValue> inputs,
+            ExecutionType executionType, TriggerType triggeredBy) {
         definitionRepository.findById(definitionId)
                 .orElseThrow(() -> new ResourceNotFoundException("WorkflowDefinition", definitionId));
 
-        WorkflowExecution execution = createQueuedExecution(definitionId, executionType, inputs);
+        WorkflowExecution execution = createQueuedExecution(
+                definitionId, executionType, inputs, triggeredBy);
         String executionId = execution.getId();
 
         if (executionType == ExecutionType.SYNC) {
             ExecutionSyncWaiter.WaitSession waitSession = syncWaiter.beginWait(executionId);
             messageDispatcherRegistry.dispatch(executionType, executionId);
-            return syncWaiter.await(waitSession, syncTimeoutSeconds, TimeUnit.SECONDS);
+            return syncWaiter.await(waitSession, properties.getExecution().getSyncTimeoutSeconds(), TimeUnit.SECONDS);
         }
 
         messageDispatcherRegistry.dispatch(executionType, executionId);
@@ -74,11 +93,13 @@ public class WorkflowExecutionService {
     }
 
     private WorkflowExecution createQueuedExecution(
-            String definitionId, ExecutionType executionType, Map<String, VariableValue> inputs) {
+            String definitionId, ExecutionType executionType,
+            Map<String, VariableValue> inputs, TriggerType triggeredBy) {
         WorkflowExecution execution = new WorkflowExecution();
         execution.setWorkflowId(definitionId);
         execution.setWorkflowDefinitionId(definitionId);
         execution.setExecutionType(executionType);
+        execution.setTriggeredBy(triggeredBy != null ? triggeredBy : TriggerType.MANUAL);
         execution.setStatus(WorkflowExecutionStatus.QUEUED);
         execution.setStartTime(Instant.now());
         execution.setTaskExecutionSummaries(Collections.synchronizedList(new ArrayList<>()));

@@ -4,6 +4,8 @@ import { ConditionalBranchListField } from '@/features/workflow-studio/task-conf
 import { HumanActionListField } from '@/features/workflow-studio/task-config/HumanActionListField';
 import { WaitDurationField } from '@/features/workflow-studio/task-config/WaitDurationField';
 import { TaskRefField } from '@/features/workflow-studio/task-config/TaskRefField';
+import { CredentialSelectField } from '@/features/workflow-studio/task-config/CredentialSelectField';
+import { VariableInput } from '@/features/workflow-studio/task-config/VariableInput';
 import { filterTaskPickCandidates, taskLabelById } from '@/features/workflow-studio/task-config/taskRefUtils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -61,6 +63,10 @@ export function TaskFieldRenderer({
 }: TaskFieldRendererProps) {
     const { workflowTasks, currentTaskId } = useTaskConfigContext();
     const value = readFieldValue(parameters, field.key);
+
+    if (field.hideIf?.(parameters)) {
+        return null;
+    }
 
     if (readOnly && field.type !== 'wiredRef') {
         return (
@@ -154,6 +160,21 @@ export function TaskFieldRenderer({
         );
     }
 
+    if (field.type === 'credential') {
+        return (
+            <CredentialSelectField
+                id={field.key}
+                label={label}
+                value={value}
+                onChange={(val) => update(val)}
+                error={error}
+                description={field.description}
+                // If filterTypes exists, pass the first one, e.g. "SMTP"
+                filterType={field.filterTypes?.[0]}
+            />
+        );
+    }
+
     if (field.type === 'wiredRef') {
         const wired = String(value ?? '').trim();
         const wiredLabel = wired ? taskLabelById(workflowTasks, wired) : '';
@@ -243,8 +264,18 @@ export function TaskFieldRenderer({
 
     if (field.type === 'textarea') {
         return (
-            <div className="space-y-1.5">
-                {label}
+            <VariableInput
+                fieldKey={field.key}
+                label={field.label}
+                value={value}
+                onChange={(next) => update(next)}
+                placeholder={field.placeholder}
+                mono={field.mono}
+                rows={field.rows ?? 4}
+                multiline
+                error={error}
+                description={field.description}
+            >
                 <Textarea
                     id={field.key}
                     value={String(value ?? '')}
@@ -253,15 +284,25 @@ export function TaskFieldRenderer({
                     rows={field.rows ?? 4}
                     className={cn('resize-y text-sm', field.mono && 'font-mono text-xs')}
                 />
-                {error && <p className="text-xs text-destructive">{error}</p>}
-            </div>
+            </VariableInput>
         );
     }
 
     if (field.type === 'number') {
         return (
-            <div className="space-y-1.5">
-                {label}
+            <VariableInput
+                fieldKey={field.key}
+                label={field.label}
+                value={value}
+                onChange={(next) => {
+                    const num = Number(next);
+                    update(Number.isNaN(num) ? next : num);
+                }}
+                placeholder={field.placeholder ?? '0'}
+                mono
+                error={error}
+                description={field.description}
+            >
                 <Input
                     id={field.key}
                     type="number"
@@ -278,8 +319,7 @@ export function TaskFieldRenderer({
                     }}
                     placeholder={field.placeholder}
                 />
-                {error && <p className="text-xs text-destructive">{error}</p>}
-            </div>
+            </VariableInput>
         );
     }
 
@@ -342,22 +382,40 @@ export function TaskFieldRenderer({
         const jsonText =
             typeof value === 'string' ? value : JSON.stringify(value ?? field.defaultValue ?? null, null, 2);
         return (
-            <div className="space-y-1.5">
-                {label}
+            <VariableInput
+                fieldKey={field.key}
+                label={field.label}
+                value={jsonText}
+                onChange={(next) => update(next)}
+                placeholder='{"key": "value"}'
+                mono
+                rows={6}
+                multiline
+                error={error}
+                description={field.description}
+            >
                 <Textarea
                     id={field.key}
                     value={jsonText}
                     onChange={(e) => update(e.target.value)}
                     className="min-h-[160px] resize-y font-mono text-xs"
                 />
-                {error && <p className="text-xs text-destructive">{error}</p>}
-            </div>
+            </VariableInput>
         );
     }
 
+    // Default: 'text' type — wrapped with VariableInput
     return (
-        <div className="space-y-1.5">
-            {label}
+        <VariableInput
+            fieldKey={field.key}
+            label={field.label}
+            value={value}
+            onChange={(next) => update(next)}
+            placeholder={field.placeholder}
+            mono={field.mono}
+            error={error}
+            description={field.description}
+        >
             <Input
                 id={field.key}
                 value={String(value ?? '')}
@@ -365,11 +423,7 @@ export function TaskFieldRenderer({
                 placeholder={field.placeholder}
                 className={cn('text-sm', field.mono && 'font-mono')}
             />
-            {field.description && (
-                <p className="text-[11px] text-muted-foreground">{field.description}</p>
-            )}
-            {error && <p className="text-xs text-destructive">{error}</p>}
-        </div>
+        </VariableInput>
     );
 }
 

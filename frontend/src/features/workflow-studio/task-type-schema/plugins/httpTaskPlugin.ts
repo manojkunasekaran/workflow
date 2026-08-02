@@ -17,6 +17,13 @@ export const httpTaskPlugin = defineTaskPlugin({
     defaultTaskId: 'http_task',
     fields: [
         {
+            key: 'credentialId',
+            label: 'Authentication',
+            type: 'credential',
+            filterTypes: ['BEARER_TOKEN', 'BASIC_AUTH'],
+            description: 'Select a saved credential to authenticate this request automatically.',
+        },
+        {
             key: 'method',
             label: 'Method',
             type: 'segmented',

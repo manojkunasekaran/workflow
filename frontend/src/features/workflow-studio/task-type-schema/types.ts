@@ -19,7 +19,8 @@ export type TaskFieldType =
     | 'humanActionList'
     | 'iteratorActionList'
     | 'wiredRef'
-    | 'waitDuration';
+    | 'waitDuration'
+    | 'credential';
 
 /** One parallel path in a BRANCH task — matches backend ParallelBranch. */
 export interface ParallelBranchRow {
@@ -43,6 +44,8 @@ export interface TaskFieldSchema {
     min?: number;
     filterTypes?: string[];
     excludeSelf?: boolean;
+    /** Dynamically hide this field based on other parameters */
+    hideIf?: (parameters: Record<string, unknown>) => boolean;
 }
 
 export interface TaskValidationContext {

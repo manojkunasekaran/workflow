@@ -9,5 +9,6 @@ public enum TaskType {
     BRANCH,
     WAIT,
     DATA_TRANSFORM,
-    JOIN;
+    JOIN,
+    SMTP_TASK;
 }

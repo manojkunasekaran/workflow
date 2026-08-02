@@ -27,8 +27,8 @@
     --muted-foreground: 220 9% 46%;
 
     /* Accent - neutral slate gray */
-    --accent: 220 9% 46%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 220 14% 96%;
+    --accent-foreground: 220 13% 18%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
@@ -81,8 +81,8 @@
     --muted: 217 33% 17%;
     --muted-foreground: 215 20% 65%;
 
-    --accent: 215 20% 65%;
-    --accent-foreground: 222 47% 6%;
+    --accent: 217 33% 17%;
+    --accent-foreground: 210 40% 98%;
 
     --destructive: 0 63% 31%;
     --destructive-foreground: 210 40% 98%;

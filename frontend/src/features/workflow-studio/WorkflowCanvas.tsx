@@ -85,10 +85,13 @@ const edgeTypes = {
     studioChain: ChainEdge,
 };
 
+import type { TriggerConfig } from '@/types/api';
+
 interface WorkflowCanvasProps {
     nodes: StudioCanvasNode[];
     chainEdges: Edge[];
     mode: StudioMode;
+    triggerConfig?: TriggerConfig;
     /** Allow node click → onTaskSelect while read-only (execution observability). */
     enableTaskSelection?: boolean;
     executionNodeStatuses?: Map<string, ExecutionNodeStatus>;
@@ -97,6 +100,7 @@ interface WorkflowCanvasProps {
     onChainEdgesChange: (changes: EdgeChange[]) => void;
     onGraphConnect: (connection: Connection) => void;
     onRouteEdgeRemove: (edge: Edge) => void;
+    onStartNodeClick?: () => void;
     onAddTaskClick: () => void;
     onBranchAddClick: (sourceTaskId: string, sourceHandle: string) => void;
     onEdgeInsert: (edge: Edge) => void;
@@ -111,6 +115,7 @@ function WorkflowCanvasInner({
     nodes,
     chainEdges,
     mode,
+    triggerConfig,
     enableTaskSelection = false,
     executionNodeStatuses,
     taskValidationErrors,
@@ -118,6 +123,7 @@ function WorkflowCanvasInner({
     onChainEdgesChange,
     onGraphConnect,
     onRouteEdgeRemove,
+    onStartNodeClick,
     onAddTaskClick,
     onBranchAddClick,
     onEdgeInsert,
@@ -155,7 +161,11 @@ function WorkflowCanvasInner({
                 if (node.id === WORKFLOW_START_ID) {
                     return {
                         ...node,
-                        data: { ...(node.data as { label: string }), showAdd: showStartAdd },
+                        data: { 
+                            ...(node.data as { label: string }), 
+                            showAdd: showStartAdd,
+                            triggerConfig: triggerConfig
+                        },
                     };
                 }
                 if (node.type !== 'task') return node;
@@ -178,7 +188,7 @@ function WorkflowCanvasInner({
                     },
                 };
             });
-    }, [chainEdges, executionNodeStatuses, nodes, taskValidationErrors]);
+    }, [chainEdges, executionNodeStatuses, nodes, taskValidationErrors, triggerConfig]);
 
     const displayEdges = useMemo((): Edge[] => {
         const merged = mergeDisplayEdges(chainEdges, nodes);
@@ -224,9 +234,10 @@ function WorkflowCanvasInner({
             onEdgeDelete: readOnly ? undefined : onEdgeDelete,
             onTaskEdit: readOnly ? undefined : onTaskSelect,
             onTaskDelete: readOnly ? undefined : onTaskDelete,
+            onStartNodeClick: readOnly ? undefined : onStartNodeClick,
             readOnly,
         }),
-        [onAddTaskClick, onBranchAddClick, onEdgeDelete, onEdgeInsert, onTaskDelete, onTaskSelect, readOnly],
+        [onAddTaskClick, onBranchAddClick, onEdgeDelete, onEdgeInsert, onStartNodeClick, onTaskDelete, onTaskSelect, readOnly],
     );
 
     const handleInit = useCallback((instance: ReactFlowInstance<StudioCanvasNode, Edge>) => {

@@ -21,7 +21,7 @@ public class RabbitDeferredStartup {
     private final ObjectProvider<RabbitListenerEndpointRegistry> listenerRegistry;
     private final AtomicBoolean started = new AtomicBoolean(false);
 
-    @Scheduled(fixedDelayString = "${workflow.rabbit.retry-interval-ms:5000}")
+    @Scheduled(fixedDelayString = "${workflow.messaging.rabbit.retry-interval-ms:5000}")
     public void ensureStarted() {
         if (started.get()) {
             return;

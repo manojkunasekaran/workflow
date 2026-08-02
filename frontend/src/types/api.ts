@@ -8,6 +8,7 @@ export const TaskType = {
     JOIN: 'JOIN',
     WAIT: 'WAIT',
     DATA_TRANSFORM: 'DATA_TRANSFORM',
+    SMTP_TASK: 'SMTP_TASK',
 } as const;
 
 export type TaskType = typeof TaskType[keyof typeof TaskType];
@@ -24,10 +25,49 @@ export interface WorkflowTask {
 
 export type ExecutionType = 'SYNC' | 'ASYNC';
 
+export type VariableType = 'string' | 'number' | 'boolean' | 'object' | 'array';
+
+export interface WorkflowInput {
+    name: string;
+    type: VariableType;
+    description?: string;
+    required?: boolean;
+    defaultValue?: any;
+}
+
+export interface VariableValue {
+    name: string;
+    type: VariableType;
+    value?: any;
+}
+
+export type TriggerType = 'MANUAL' | 'WEBHOOK' | 'SCHEDULE';
+
+export interface WebhookConfig {
+    path?: string;
+    method?: string;
+    active?: boolean;
+}
+
+export interface ScheduleConfig {
+    cronExpression?: string;
+    timezone?: string;
+    active?: boolean;
+}
+
+export interface TriggerConfig {
+    type?: TriggerType;
+    webhook?: WebhookConfig;
+    schedule?: ScheduleConfig;
+}
+
 export interface WorkflowDefinition {
     id?: string;
     name: string;
     tasks: WorkflowTask[];
+    trigger?: TriggerConfig;
+    inputs?: WorkflowInput[];
+    variables?: Record<string, VariableValue>;
     /** UI-only canvas layout: taskId -> node position. Engine ignores this. */
     layout?: Record<string, NodePosition>;
     createdAt?: string;
@@ -49,4 +89,14 @@ export interface NodePosition {
      * Persists nested branch chains across save/load.
      */
     studioChainOut?: string;
+}
+
+export interface IntegrationCredential {
+    id?: string;
+    organizationId?: string;
+    name: string;
+    type: string;
+    credentials?: Record<string, string>;
+    createdAt?: string;
+    updatedAt?: string;
 }
