@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AlertCircle, Code2, Trash2, X } from 'lucide-react';
+import type { Edge } from '@xyflow/react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { TaskConfigContext } from '@/features/workflow-studio/task-config/TaskConfigContext';
+import { VariableExplorerContext } from '@/features/workflow-studio/task-config/VariableExplorerContext';
 import { TaskParametersForm } from '@/features/workflow-studio/task-config/TaskParametersForm';
 import { getTaskTypePlugin } from '@/features/workflow-studio/task-type-schema/registry';
 import type { TaskParameterErrors } from '@/features/workflow-studio/task-type-schema/types';
@@ -21,6 +23,8 @@ import {
     STUDIO_GHOST_ICON_BUTTON_CLASS,
     STUDIO_INPUT_FOCUS_CLASS,
 } from '@/features/workflow-studio/constants/studioUi';
+import type { StudioCanvasNode } from '@/features/workflow-studio/lib/canvasNodeUtils';
+import type { WorkflowInput, VariableValue } from '@/types/api';
 
 interface TaskConfigDialogProps {
     open: boolean;
@@ -28,6 +32,12 @@ interface TaskConfigDialogProps {
     isNewTask?: boolean;
     workflowTasks?: TaskValidationContext['workflowTasks'];
     taskOrder?: string[];
+    /** Live React Flow canvas nodes — for graph-aware variable explorer */
+    nodes?: StudioCanvasNode[];
+    /** Live React Flow canvas edges — for graph-aware variable explorer */
+    edges?: Edge[];
+    workflowInputs?: WorkflowInput[];
+    workflowVariables?: Record<string, VariableValue>;
     onOpenChange: (open: boolean) => void;
     onApply: (task: TaskNodeData) => void;
     onDelete: (taskId: string) => void;
@@ -40,6 +50,10 @@ export function TaskConfigDialog({
     isNewTask = false,
     workflowTasks = [],
     taskOrder = [],
+    nodes = [],
+    edges = [],
+    workflowInputs,
+    workflowVariables,
     onOpenChange,
     onApply,
     onDelete,
@@ -165,6 +179,15 @@ export function TaskConfigDialog({
                     </div>
                 ) : (
                     <TaskConfigContext.Provider value={validationContext}>
+                        <VariableExplorerContext.Provider
+                            value={{
+                                currentNodeId: draft.taskId,
+                                nodes,
+                                edges,
+                                workflowInputs,
+                                workflowVariables,
+                            }}
+                        >
                         <div 
                             className="flex items-center justify-between gap-4 border-b border-border px-5 py-4"
                             style={{ borderTopColor: `${taskAccentColor}55`, borderTopWidth: 3 }}
@@ -255,6 +278,7 @@ export function TaskConfigDialog({
                                 />
                             )}
                         </div>
+                        </VariableExplorerContext.Provider>
                     </TaskConfigContext.Provider>
                 )}
             </DialogContent>

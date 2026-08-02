@@ -13,9 +13,12 @@ export const TASK_ACCENT_COLORS: Record<StudioTaskType, string> = {
     JOIN: '#059669',
     WAIT: '#2563eb',
     DATA_TRANSFORM: '#7c3aed',
+    SMTP_TASK: '#0891b2',
 };
 
 export const TRIGGER_ACCENT_COLOR = '#0d9488';
+export const WEBHOOK_ACCENT_COLOR = '#c026d3';
+export const SCHEDULE_ACCENT_COLOR = '#0284c7';
 export const DEFAULT_TASK_ACCENT_COLOR = '#6366f1';
 
 export function resolveTaskAccentColor(type: string): string {

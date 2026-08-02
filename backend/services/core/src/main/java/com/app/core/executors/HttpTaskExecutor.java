@@ -7,7 +7,7 @@ import com.app.common.model.task.execution.TaskExecutionResult;
 import com.app.common.model.task.TaskType;
 import com.app.common.model.task.WorkflowTask;
 import com.app.core.model.ExecutionContext;
-import com.app.core.service.CredentialService;
+import com.app.core.service.CredentialProvider;
 import com.app.core.service.TaskExecutor;
 import com.app.core.service.VariableResolver;
 import com.app.common.entity.WorkflowExecution;
@@ -38,7 +38,7 @@ import java.util.Optional;
 public class HttpTaskExecutor implements TaskExecutor {
 
     private final RestTemplate restTemplate;
-    private final CredentialService credentialService;
+    private final CredentialProvider credentialProvider;
     private final VariableResolver variableResolver;
     private final ObjectMapper objectMapper;
 
@@ -80,11 +80,28 @@ public class HttpTaskExecutor implements TaskExecutor {
         String credentialId = params.getCredentialId();
         if (credentialId != null && !credentialId.isEmpty()) {
             String resolvedCredentialId = variableResolver.resolveString(credentialId, context);
-            Optional<IntegrationCredential> credentialOpt = credentialService.getCredential(resolvedCredentialId);
+            Optional<IntegrationCredential> credentialOpt = credentialProvider.getDecryptedCredential(resolvedCredentialId);
             if (credentialOpt.isPresent()) {
                 IntegrationCredential credential = credentialOpt.get();
-                if (credential.getCredentials() != null) {
-                    credential.getCredentials().forEach(headers::add);
+                Map<String, String> creds = credential.getCredentials();
+                if (creds != null) {
+                    if ("BEARER_TOKEN".equals(credential.getType())) {
+                        String token = creds.get("token");
+                        if (token != null) {
+                            headers.add(HttpHeaders.AUTHORIZATION, "Bearer " + token);
+                        }
+                    } else if ("BASIC_AUTH".equals(credential.getType())) {
+                        String username = creds.get("username");
+                        String password = creds.get("password");
+                        if (username != null && password != null) {
+                            String auth = username + ":" + password;
+                            String encoded = java.util.Base64.getEncoder().encodeToString(auth.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                            headers.add(HttpHeaders.AUTHORIZATION, "Basic " + encoded);
+                        }
+                    } else {
+                        // For Custom or unknown types, fallback to iterating over map
+                        creds.forEach(headers::add);
+                    }
                 }
                 log.info("Applied credentials for ID: {}", resolvedCredentialId);
             } else {

@@ -57,6 +57,7 @@ import {
     deleteStudioEdge,
     insertTaskOnStudioEdge,
 } from '@/features/workflow-studio/lib/studioEdgeActions';
+import { TriggerConfigDialog } from '@/features/workflow-studio/task-config/TriggerConfigDialog';
 
 export default function WorkflowStudioPage() {
     const { id: routeId } = useParams();
@@ -77,6 +78,7 @@ export default function WorkflowStudioPage() {
     const [creatingTask, setCreatingTask] = useState<TaskNodeData | null>(null);
     const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
     const [configOpen, setConfigOpen] = useState(false);
+    const [triggerDialogOpen, setTriggerDialogOpen] = useState(false);
     const [configDraft, setConfigDraft] = useState<TaskNodeData | null>(null);
     const [pendingBranchWire, setPendingBranchWire] = useState<{
         sourceTaskId: string;
@@ -388,7 +390,24 @@ export default function WorkflowStudioPage() {
                     !getTaskNodes(nodes).some((node) => node.id === change.id)
                 );
             });
+            
+            const isStructural = changes.some(
+                (change) =>
+                    (change.type === 'position' && change.dragging === false) ||
+                    change.type === 'remove' ||
+                    change.type === 'add' ||
+                    change.type === 'replace'
+            );
+
+            if (!isStructural) {
+                useWorkflowStore.temporal.getState().pause();
+            }
+
             if (filtered.length > 0) onNodesChange(filtered);
+
+            if (!isStructural) {
+                useWorkflowStore.temporal.getState().resume();
+            }
 
             // Persist manual drags: a finished position change makes the workflow dirty.
             const dragged = changes.some(
@@ -401,9 +420,21 @@ export default function WorkflowStudioPage() {
 
     const handleChainEdgesChange = useCallback(
         (changes: Parameters<typeof onEdgesChange>[0]) => {
+            const isStructural = changes.some(
+                (change) => change.type === 'add' || change.type === 'remove'
+            );
+
+            if (!isStructural) {
+                useWorkflowStore.temporal.getState().pause();
+            }
+
             onEdgesChange(changes);
-            const structural = changes.some((change) => change.type === 'add' || change.type === 'remove');
-            if (structural) markDirty();
+
+            if (!isStructural) {
+                useWorkflowStore.temporal.getState().resume();
+            }
+
+            if (isStructural) markDirty();
         },
         [onEdgesChange, markDirty],
     );
@@ -862,16 +893,18 @@ export default function WorkflowStudioPage() {
                 ) : (
                     <>
                         <div className="relative min-h-0 min-w-0 flex-1">
-                            <WorkflowCanvas
+                        <WorkflowCanvas
                         key={workflowId ?? routeId ?? 'studio'}
                         nodes={canvasNodes}
                         chainEdges={edges}
                         mode={mode}
+                        triggerConfig={savedDefinition?.trigger}
                         taskValidationErrors={taskValidationErrors}
                         onNodesChange={handleNodesChange}
                         onChainEdgesChange={handleChainEdgesChange}
                         onGraphConnect={handleGraphConnect}
                         onRouteEdgeRemove={handleRouteEdgeRemove}
+                        onStartNodeClick={() => setTriggerDialogOpen(true)}
                         onAddTaskClick={handleAddTaskClick}
                         onBranchAddClick={handleBranchAddClick}
                         onEdgeInsert={handleEdgeInsert}
@@ -908,10 +941,27 @@ export default function WorkflowStudioPage() {
                 isNewTask={creatingTask !== null}
                 workflowTasks={workflowTasksForConfig}
                 taskOrder={taskOrderForConfig}
+                nodes={canvasNodes}
+                edges={edges}
+                workflowInputs={savedDefinition?.inputs}
+                workflowVariables={savedDefinition?.variables}
                 onOpenChange={handleConfigOpenChange}
                 onApply={handleTaskApply}
                 onDelete={handleDeleteTask}
                 onDraftChange={handleConfigDraftChange}
+            />
+
+            <TriggerConfigDialog
+                open={triggerDialogOpen}
+                onOpenChange={setTriggerDialogOpen}
+                workflowId={workflowId || 'NEW_WORKFLOW'}
+                config={savedDefinition?.trigger}
+                onSave={(config) => {
+                    const nextDef = { ...savedDefinition, name: workflowName, trigger: config } as WorkflowDefinition;
+                    setSavedDefinition(nextDef);
+                    markDirty();
+                }}
+                onForceSave={handleSave}
             />
 
             <ConfirmDialog

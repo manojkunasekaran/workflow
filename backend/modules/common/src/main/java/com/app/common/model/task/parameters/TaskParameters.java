@@ -13,7 +13,8 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
         @JsonSubTypes.Type(value = WaitTaskParameters.class, name = "WAIT"),
         @JsonSubTypes.Type(value = JoinTaskParameters.class, name = "JOIN"),
         @JsonSubTypes.Type(value = ScriptTaskParameters.class, name = "SCRIPT_TASK"),
-        @JsonSubTypes.Type(value = DataTransformTaskParameters.class, name = "DATA_TRANSFORM")
+        @JsonSubTypes.Type(value = DataTransformTaskParameters.class, name = "DATA_TRANSFORM"),
+        @JsonSubTypes.Type(value = SmtpTaskParameters.class, name = "SMTP_TASK")
 })
 
 public interface TaskParameters {

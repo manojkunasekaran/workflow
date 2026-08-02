@@ -17,6 +17,7 @@
 
     <modules>
         <module>common</module>
+        <module>crypto</module>
         <module>persistence</module>
         <module>messaging</module>
         <module>execution-events</module>

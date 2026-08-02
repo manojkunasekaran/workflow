@@ -9,4 +9,4 @@ WORKDIR /app
 
 # Install the parent POM (non-recursive) so module descriptors can resolve their
 # <parent>, then build the modules/* reactor into the shared .m2 volume.
-CMD ["sh", "-c", "mvn -N install -DskipTests && mvn -f modules/pom.xml install -DskipTests"]
+CMD ["sh", "-c", "mvn -N clean install -DskipTests && mvn -f modules/pom.xml clean install -DskipTests"]

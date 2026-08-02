@@ -12,6 +12,8 @@ import org.springframework.stereotype.Component;
 
 import java.util.concurrent.TimeUnit;
 
+import com.app.messaging.config.properties.WorkflowMessagingProperties;
+
 @Slf4j
 @Component
 @ConditionalOnBean(WorkflowServiceGrpc.WorkflowServiceBlockingStub.class)
@@ -19,9 +21,7 @@ import java.util.concurrent.TimeUnit;
 public class SyncExecutionMessageDispatcher implements ExecutionMessageDispatcher {
 
     private final WorkflowServiceGrpc.WorkflowServiceBlockingStub workflowServiceStub;
-
-    @Value("${workflow.execution.sync-timeout-seconds:300}")
-    private long syncTimeoutSeconds;
+    private final WorkflowMessagingProperties messagingProperties;
 
     @Override
     public ExecutionType getType() {
@@ -31,7 +31,7 @@ public class SyncExecutionMessageDispatcher implements ExecutionMessageDispatche
     @Override
     public void dispatch(String executionId) {
         workflowServiceStub
-                .withDeadlineAfter(syncTimeoutSeconds, TimeUnit.SECONDS)
+                .withDeadlineAfter(messagingProperties.getExecution().getSyncTimeoutSeconds(), TimeUnit.SECONDS)
                 .processExecution(ProcessExecutionRequest.newBuilder()
                         .setExecutionId(executionId)
                         .build());

@@ -16,6 +16,7 @@ import com.app.common.constant.ExecutionType;
 import com.app.common.constant.TaskExecutionStatus;
 import com.app.common.constant.WorkflowExecutionStatus;
 import com.app.common.model.base.Auditable;
+import com.app.common.model.trigger.TriggerType;
 import com.app.common.model.variable.VariableValue;
 
 @Data
@@ -28,6 +29,9 @@ public class WorkflowExecution extends Auditable {
     private String workflowDefinitionId;
     private ExecutionType executionType;
     private WorkflowExecutionStatus status;
+
+    /** How this execution was triggered. Null or MANUAL for legacy executions. */
+    private TriggerType triggeredBy;
     private Instant startTime;
     private Instant endTime;
     private List<TaskExecutionSummary> taskExecutionSummaries;

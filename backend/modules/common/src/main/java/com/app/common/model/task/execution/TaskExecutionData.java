@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
         @JsonSubTypes.Type(value = IteratorTaskExecutionData.class, name = "ITERATOR"),
         @JsonSubTypes.Type(value = JoinTaskExecutionData.class, name = "JOIN"),
         @JsonSubTypes.Type(value = ScriptTaskExecutionData.class, name = "SCRIPT_TASK"),
+        @JsonSubTypes.Type(value = SmtpTaskExecutionData.class, name = "SMTP_TASK"),
         @JsonSubTypes.Type(value = WaitTaskExecutionData.class, name = "WAIT")
 })
 public interface TaskExecutionData {

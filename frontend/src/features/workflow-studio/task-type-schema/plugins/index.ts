@@ -6,6 +6,7 @@ import { humanTaskPlugin } from './humanTaskPlugin';
 import { iteratorTaskPlugin } from './iteratorTaskPlugin';
 import { joinTaskPlugin } from './joinTaskPlugin';
 import { scriptTaskPlugin } from './scriptTaskPlugin';
+import { smtpTaskPlugin } from './smtpTaskPlugin';
 import { waitTaskPlugin } from './waitTaskPlugin';
 import type { TaskTypePlugin } from '../pluginTypes';
 
@@ -20,4 +21,5 @@ export const TASK_PLUGINS: TaskTypePlugin[] = [
     iteratorTaskPlugin,
     branchTaskPlugin,
     joinTaskPlugin,
+    smtpTaskPlugin,
 ];

@@ -31,6 +31,7 @@
 | `JOIN` | Gathers parallel branches; supports `FAIL_FAST`, `WAIT_FOR_ALL`, `REQUIRE_ALL` strategies |
 | `WAIT` | Delays execution for a configurable duration with variable substitution |
 | `DATA_TRANSFORM` | Transforms/maps data between tasks (plugin registered) |
+| `SMTP_TASK` | Sends email via user-configured SMTP. Per-node credentials (host, port, user, password, TLS). Supports plain text and HTML bodies with `{{ expressions }}`. |
 
 ### Messaging & Infrastructure
 - **RabbitMQ** — Async workflow dispatch with dead-letter exchange for failed messages.
@@ -108,10 +109,9 @@
 
 ## Test Coverage
 
-> **Locators Standard**: All Playwright E2E specs exclusively use `data-testid` locators to ensure deterministic and resilient test execution.
-
+> **Locators Standard**: All Playwright E2E specs exclusively use
 | Area | Location | Status |
-|---|---|---|
+|---|---|---|\
 | App smoke tests (all routes + edge cases) | `tests/smoke.spec.ts` | ✅ Written |
 | Workflow list (happy, empty, error, edge) | `src/features/workflows/__tests__/` | ✅ Written |
 | Workflow studio canvas (load, name edit, modes, save, run) | `src/features/workflow-studio/__tests__/` | ✅ Written |
@@ -126,8 +126,92 @@
 | API Client Layer (`workflowApi`, `executionApi`, `healthApi`) | `src/api/__tests__/` | ✅ Written |
 | Zustand Store & History (`workflowStore`) | `src/features/workflow-studio/store/__tests__/` | ✅ Written |
 | Graph Utility Library (`workflowGraph`) | `src/features/workflow-studio/lib/__tests__/` | ✅ Written |
+| **Variable Explorer** (`variableExplorer.ts`) | `src/features/workflow-studio/lib/__tests__/` | ✅ Written |
+| **Variable Input / Expression Toggle** (E2E) | `src/features/workflow-studio/__tests__/variable-input.spec.ts` | ✅ Written |
+| **SMTP Task Plugin** (Unit) | `src/features/workflow-studio/task-type-schema/__tests__/smtpTaskPlugin.test.ts` | ✅ Written |
+| **SMTP Task Node** (E2E) | `src/features/workflow-studio/__tests__/smtp-task.spec.ts` | ✅ Written |
 
 ---
+
+### P. SMTP Task Node (`SMTP_TASK`)
+> Unit: `src/features/workflow-studio/task-type-schema/__tests__/smtpTaskPlugin.test.ts`
+> E2E: `src/features/workflow-studio/__tests__/smtp-task.spec.ts`
+
+| # | Type | Category | Test Case | Status |
+|---|---|---|---|---|
+| P-001 | Unit | Happy | `validate` — all required fields (smtpHost, to, subject, fromAddress) present → no errors | ✅ Written |
+| P-002 | Unit | Negative | `validate` — missing smtpHost → error on `smtpHost` field | ✅ Written |
+| P-003 | Unit | Negative | `validate` — missing `to` → error on `to` field | ✅ Written |
+| P-004 | Unit | Negative | `validate` — missing `subject` → error on `subject` field | ✅ Written |
+| P-005 | Unit | Negative | `validate` — missing `fromAddress` → error on `fromAddress` field | ✅ Written |
+| P-006 | Unit | Edge | `validate` — whitespace-only smtpHost treated as empty → validation error | ✅ Written |
+| P-007 | Unit | Happy | `preview` — returns smtpHost as primary, subject as secondary | ✅ Written |
+| P-008 | Unit | Edge | `preview` — no smtpHost → primary is "Configure SMTP" | ✅ Written |
+| P-009 | Unit | Edge | `preview` — subject > 30 chars → secondary is truncated with ellipsis | ✅ Written |
+| P-010 | Unit | Edge | `preview` — no subject but has `to` → secondary falls back to `to` value | ✅ Written |
+| P-011 | Unit | Happy | `executionSummary` — status SENT → Status line has `success` tone | ✅ Written |
+| P-012 | Unit | Negative | `executionSummary` — errorMessage present → Error line has `danger` tone | ✅ Written |
+| P-013 | Unit | Happy | `executionSummary` — formats smtpHost:smtpPort from execution data | ✅ Written |
+| P-014 | Unit | Happy | Plugin `type` equals `'SMTP_TASK'` | ✅ Written |
+| P-015 | Unit | Happy | Plugin `label` is non-empty | ✅ Written |
+| P-016 | Unit | Happy | Plugin fields include smtpHost, to, subject, fromAddress | ✅ Written |
+| P-017 | Unit | Happy | Required field flags: smtpHost, to, subject, fromAddress all marked required | ✅ Written |
+| P-018 | Unit | Happy | `smtpPort` field defaults to `587` | ✅ Written |
+| P-019 | Unit | Happy | `security` field defaults to `'STARTTLS'` | ✅ Written |
+| P-020 | Unit | Happy | `bodyFormat` field defaults to `'PLAIN'` | ✅ Written |
+| P-021 | Spec | Happy | SMTP_TASK appears in the task catalog sidebar | ✅ Written |
+| P-022 | Spec | Happy | SMTP_TASK catalog item shows correct label text | ✅ Written |
+| P-023 | Spec | Happy | Searching "smtp" in catalog filters to SMTP node, hides HTTP_TASK | ✅ Written |
+| P-024 | Spec | Happy | Clicking SMTP node opens config dialog with smtpHost, to, subject fields | ✅ Written |
+| P-025 | Spec | Happy | Config dialog pre-fills persisted smtpHost and to values | ✅ Written |
+| P-026 | Spec | Negative | Submitting empty config shows validation errors for required fields | ✅ Written |
+| P-027 | Spec | Edge | Password field placeholder suggests using a `{{ }}` variable expression | ✅ Written |
+| P-028 | Spec | Happy | Execution summary shows SENT status | ✅ Written |
+| P-029 | Spec | Negative | Execution summary shows error message on failed send | ✅ Written |
+
+
+## Comprehensive Application-Level Test Plan
+
+### N. Variable Input & Expression System
+> Vitest: `src/features/workflow-studio/lib/__tests__/variableExplorer.test.ts`
+> Playwright: `src/features/workflow-studio/__tests__/variable-input.spec.ts`
+
+| # | Type | Category | Test Case | Status |
+|---|---|---|---|---|
+| N-001 | Spec | Happy | Fixed/Expression toggle renders on a text field in TaskConfigDialog | ✅ Written |
+| N-002 | Spec | Happy | Default mode is Fixed when field value contains no `{{ }}` expression | ✅ Written |
+| N-003 | Spec | Happy | Clicking Expression toggle renders ExpressionEditor | ✅ Written |
+| N-004 | Spec | Happy | Switching back to Fixed restores the standard input control | ✅ Written |
+| N-005 | Spec | Happy | Clicking Variables button opens the DataExplorer popover | ✅ Written |
+| N-006 | Spec | Happy | DataExplorer shows `$input` and `$variables` global sources | ✅ Written |
+| N-007 | Spec | Happy | DataExplorer shows predecessor task as a named variable source | ✅ Written |
+| N-008 | Spec | Negative | First task in chain sees no `$tasks.*` predecessor sources | ✅ Written |
+| N-009 | Spec | Happy | Search in DataExplorer filters the source list | ✅ Written |
+| N-010 | Spec | Happy | Typing `{{` in ExpressionEditor auto-opens DataExplorer | ✅ Written |
+| N-011 | Spec | Edge | Pressing Escape in ExpressionEditor closes the DataExplorer | ✅ Written |
+| N-012 | Spec | Edge | Single-task workflow: DataExplorer shows global sources but no task sources | ✅ Written |
+| N-013 | Unit | Happy | `getAncestorTaskNodes` returns correct ancestors in a linear chain | ✅ Written |
+| N-014 | Unit | Happy | `getAncestorTaskNodes` returns empty for the first task after Start | ✅ Written |
+| N-015 | Unit | Negative | `getAncestorTaskNodes` returns empty when no nodes/edges exist | ✅ Written |
+| N-016 | Unit | Edge | `getAncestorTaskNodes` — sibling branch tasks are NOT included | ✅ Written |
+| N-017 | Unit | Edge | `getAncestorTaskNodes` — all branches are included after a JOIN | ✅ Written |
+| N-018 | Unit | Happy | `isInsideIteratorLoop` returns `true` for a loop body task | ✅ Written |
+| N-019 | Unit | Negative | `isInsideIteratorLoop` returns `false` for a main-chain task | ✅ Written |
+| N-020 | Unit | Edge | `isInsideIteratorLoop` returns `false` when no ITERATOR_TASK nodes exist | ✅ Written |
+| N-021 | Unit | Happy | `buildVariableSources` always includes `$input` and `$variables` | ✅ Written |
+| N-022 | Unit | Happy | `buildVariableSources` includes ancestor task scope | ✅ Written |
+| N-023 | Unit | Happy | `buildVariableSources` injects `$loop` when task is inside iterator | ✅ Written |
+| N-024 | Unit | Negative | `buildVariableSources` omits `$loop` for main-chain tasks | ✅ Written |
+| N-025 | Unit | Edge | `buildVariableSources` lists global sources first | ✅ Written |
+| N-026 | Unit | Happy | `buildExpression('$input')` → `'{{$input}}'` | ✅ Written |
+| N-027 | Unit | Happy | `buildExpression('$tasks.t1', 'body.id')` → `'{{$tasks.t1.body.id}}'` | ✅ Written |
+| N-028 | Unit | Edge | `buildExpression` handles deeply nested property paths | ✅ Written |
+| N-029 | Unit | Happy | `isExpression('{{$input.name}}')` → `true` | ✅ Written |
+| N-030 | Unit | Negative | `isExpression('hello world')` → `false` | ✅ Written |
+| N-031 | Unit | Edge | `isExpression('{{$input.name')` (unclosed) → `false` | ✅ Written |
+
+---
+
 
 ## Comprehensive Application-Level Test Plan
 
@@ -364,6 +448,20 @@
 | E-028 | Unit | Edge | `definitionToFlow` with empty tasks array — only Start + AddTask nodes produced | ✅ Written |
 | E-029 | Unit | Edge | `flowToDefinition` — iterator loop body tasks excluded from top-level export | ✅ Written |
 | E-030 | Unit | Edge | `getMainSpineIdsFromEdges` with a branched graph — only spine IDs returned | ✅ Written |
+
+---
+
+### O. Workflow Trigger System (Webhooks & Scheduling)
+> Files: `src/test/java/com/app/api/controller/WebhookControllerTest.java` & `src/test/java/com/app/api/service/WorkflowSchedulerServiceTest.java`
+
+| # | Type | Category | Test Case | Status |
+|---|---|---|---|---|
+| O-001 | Unit | Happy | `WebhookController` — Successfully handles payload when trigger type is WEBHOOK and active | ✅ Written |
+| O-002 | Unit | Negative | `WebhookController` — Throws ValidationException if trigger type is not WEBHOOK | ✅ Written |
+| O-003 | Unit | Negative | `WebhookController` — Throws ValidationException if webhook trigger is disabled | ✅ Written |
+| O-004 | Unit | Happy | `WorkflowSchedulerService` — Registers active schedules on startup (`loadSchedules`) | ✅ Written |
+| O-005 | Unit | Happy | `WorkflowSchedulerService` — syncSchedule adds new schedule if active | ✅ Written |
+| O-006 | Unit | Happy | `WorkflowSchedulerService` — syncSchedule removes existing schedule if updated to disabled | ✅ Written |
 
 ---
 
@@ -613,3 +711,18 @@
 | M-004 | Unit | Happy | "Save" button triggers `workflowApi.update` / `create` API endpoints | ✅ Written |
 | M-005 | Unit | Happy | "Run" button triggers `executionApi.trigger` and displays execution badge | ✅ Written |
 | M-006 | Unit | Edge | Save and Run buttons disable correctly when parsing errors are present | ✅ Written |
+
+---
+
+### Q. Credentials Management
+> Unit: `backend/services/api/src/test/java/com/app/api/service/IntegrationCredentialServiceTest.java`
+> E2E: `frontend/src/features/settings/__tests__/settings-credentials.spec.ts`
+
+| # | Type | Category | Test Case | Status |
+|---|---|---|---|---|
+| Q-001 | Unit | Happy | `IntegrationCredentialServiceTest` — createCredential encrypts secrets and returns masked values | ✅ Written |
+| Q-002 | Unit | Happy | `IntegrationCredentialServiceTest` — updateCredential encrypts only unmasked updated fields | ✅ Written |
+| Q-003 | Unit | Happy | `IntegrationCredentialControllerTest` — verify REST endpoints for CRUD operations | ✅ Written |
+| Q-004 | Unit | Happy | `CredentialProviderTest` — fetch and decrypt credential at runtime | ✅ Written |
+| Q-005 | Unit | Happy | `HttpTaskExecutorTest` — properly constructs Authorization headers for Basic and Bearer tokens | ✅ Written |
+| Q-006 | Spec | Happy | `settings-credentials.spec.ts` — Adding, editing, and deleting credentials from the UI | ✅ Written |
