@@ -67,7 +67,7 @@ public class HttpTaskExecutorTest {
         task.setTaskId("task1");
         task.setParameters(params);
 
-        context = new ExecutionContext();
+        context = ExecutionContext.builder().build();
         execution = new WorkflowExecution();
 
         when(variableResolver.resolveString(anyString(), any())).thenAnswer(inv -> inv.getArgument(0));
