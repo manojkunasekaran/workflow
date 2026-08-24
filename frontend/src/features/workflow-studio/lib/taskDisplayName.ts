@@ -13,8 +13,7 @@ export function resolveTaskDisplayName(data: Pick<TaskNodeData, 'displayName' | 
     return taskTypeLabel(data.type);
 }
 
-export function nextTaskDisplayName(nodes: StudioCanvasNode[], type: string): string {
-    const base = taskTypeLabel(type);
+export function nextCustomDisplayName(nodes: StudioCanvasNode[], base: string): string {
     const existing = new Set(
         getTaskNodes(nodes).map((node) => resolveTaskDisplayName(node.data as TaskNodeData).toLowerCase()),
     );
@@ -22,4 +21,8 @@ export function nextTaskDisplayName(nodes: StudioCanvasNode[], type: string): st
     let index = 2;
     while (existing.has(`${base} ${index}`.toLowerCase())) index += 1;
     return `${base} ${index}`;
+}
+
+export function nextTaskDisplayName(nodes: StudioCanvasNode[], type: string): string {
+    return nextCustomDisplayName(nodes, taskTypeLabel(type));
 }

@@ -108,7 +108,7 @@ interface WorkflowCanvasProps {
     onTaskSelect: (taskId: string) => void;
     onTaskDelete: (taskId: string) => void;
     onTidyUp: () => void;
-    onTaskDrop?: (type: StudioTaskType, position: { x: number; y: number }) => void;
+    onTaskDrop?: (typeOrPayload: string, position: { x: number; y: number }) => void;
 }
 
 function WorkflowCanvasInner({

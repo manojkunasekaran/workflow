@@ -1,0 +1,46 @@
+{
+  "connectorId": "stripe",
+  "displayName": "Stripe",
+  "icon": "https://cdn.iconscout.com/icon/free/png-256/stripe-2-498440.png",
+  "category": "Payments",
+  "baseUrl": "https://api.stripe.com/v1",
+  "authType": "BEARER_TOKEN",
+  "credentialGuide": {
+    "fields": [
+      {
+        "key": "token",
+        "label": "Secret Key",
+        "hint": "Starts with sk_live_ or sk_test_"
+      }
+    ]
+  },
+  "actions": [
+    {
+      "actionId": "create_customer",
+      "displayName": "Create Customer",
+      "method": "POST",
+      "path": "/customers",
+      "inputSchema": [
+        {
+          "key": "email",
+          "label": "Email",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": true
+        },
+        {
+          "key": "name",
+          "label": "Name",
+          "type": "STRING",
+          "required": false,
+          "supportsExpression": true
+        }
+      ],
+      "inputScript": "return { email: $inputs.email, name: $inputs.name };",
+      "outputPaths": [
+        "id",
+        "email"
+      ]
+    }
+  ]
+}

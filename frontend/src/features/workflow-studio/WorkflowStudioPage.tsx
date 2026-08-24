@@ -52,7 +52,7 @@ import {
 import { MAIN_OUT, ITER_LOOP_OUT } from '@/features/workflow-studio/lib/graphHandles';
 import { isIteratorLoopHandle, syncAllIteratorLoopBodies } from '@/features/workflow-studio/lib/iteratorLoopSync';
 import { ITERATOR_NESTED_TYPES } from '@/features/workflow-studio/task-type-schema/iteratorTask';
-import { nextTaskDisplayName } from '@/features/workflow-studio/lib/taskDisplayName';
+import { nextTaskDisplayName, nextCustomDisplayName } from '@/features/workflow-studio/lib/taskDisplayName';
 import {
     deleteStudioEdge,
     insertTaskOnStudioEdge,
@@ -500,24 +500,48 @@ export default function WorkflowStudioPage() {
     );
 
     const handleTaskDrop = useCallback(
-        (type: StudioTaskType, position: { x: number; y: number }) => {
+        (typeOrPayload: string, position: { x: number; y: number }) => {
             if (mode === 'inspect') return;
+
+            let type: StudioTaskType;
+            let initialParams: Record<string, unknown> = {};
+            if (typeOrPayload.startsWith('{')) {
+                try {
+                    const parsed = JSON.parse(typeOrPayload);
+                    type = parsed.type;
+                    initialParams = { ...parsed };
+                    delete initialParams.type;
+                } catch {
+                    // Fallback to typeOrPayload as type if JSON fails
+                    type = typeOrPayload as StudioTaskType;
+                }
+            } else {
+                type = typeOrPayload as StudioTaskType;
+            }
 
             const paletteItem = TASK_PALETTE.find((item) => item.type === type);
             if (!paletteItem) return;
             if (catalogAllowedTypes && !catalogAllowedTypes.includes(type)) return;
 
             const existingIds = new Set(getTaskNodes(nodes).map((node) => node.id));
-            const taskId = nextTaskId(existingIds, paletteItem.defaultTaskId);
+            let customTaskId = paletteItem.defaultTaskId;
+            if (type === 'CONNECTOR_TASK' && initialParams.connectorId) {
+                customTaskId = `connector_${initialParams.connectorId}`;
+            }
+            const taskId = nextTaskId(existingIds, customTaskId);
             const { type: paramType, ...rest } = paletteItem.defaultParameters;
+
+            const baseName = type === 'CONNECTOR_TASK' && (initialParams.connectorName || initialParams.connectorId)
+                ? String(initialParams.connectorName || (String(initialParams.connectorId).charAt(0).toUpperCase() + String(initialParams.connectorId).slice(1)))
+                : null;
 
             const draft: TaskNodeData = {
                 taskId,
-                displayName: nextTaskDisplayName(nodes, paletteItem.type),
+                displayName: baseName ? nextCustomDisplayName(nodes, baseName) : nextTaskDisplayName(nodes, paletteItem.type),
                 type: paletteItem.type,
                 parameters: injectParameterType(
                     paletteItem.type,
-                    rest as Record<string, unknown>,
+                    { ...rest, ...initialParams } as Record<string, unknown>,
                 ),
             };
 
@@ -541,8 +565,23 @@ export default function WorkflowStudioPage() {
     );
 
     const handleCatalogSelectType = useCallback(
-        (type: StudioTaskType) => {
+        (typeOrPayload: string) => {
             if (mode === 'inspect' || !catalogAddIntent) return;
+
+            let type: StudioTaskType;
+            let initialParams: Record<string, unknown> = {};
+            if (typeOrPayload.startsWith('{')) {
+                try {
+                    const parsed = JSON.parse(typeOrPayload);
+                    type = parsed.type;
+                    initialParams = { ...parsed };
+                    delete initialParams.type;
+                } catch {
+                    return;
+                }
+            } else {
+                type = typeOrPayload as StudioTaskType;
+            }
 
             const paletteItem = TASK_PALETTE.find((item) => item.type === type);
             if (!paletteItem) return;
@@ -551,19 +590,24 @@ export default function WorkflowStudioPage() {
             const wire = pendingBranchWire;
             const fromIteratorLoop =
                 wire?.sourceHandle === ITER_LOOP_OUT || isIteratorLoopHandle(wire?.sourceHandle ?? '');
-            const taskId = nextTaskId(
-                existingIds,
-                fromIteratorLoop ? 'loop_action' : paletteItem.defaultTaskId,
-            );
+            let customTaskId = fromIteratorLoop ? 'loop_action' : paletteItem.defaultTaskId;
+            if (type === 'CONNECTOR_TASK' && initialParams.connectorId) {
+                customTaskId = `connector_${initialParams.connectorId}`;
+            }
+            const taskId = nextTaskId(existingIds, customTaskId);
             const { type: paramType, ...rest } = paletteItem.defaultParameters;
+
+            const baseName = type === 'CONNECTOR_TASK' && (initialParams.connectorName || initialParams.connectorId)
+                ? String(initialParams.connectorName || (String(initialParams.connectorId).charAt(0).toUpperCase() + String(initialParams.connectorId).slice(1)))
+                : null;
 
             const draft: TaskNodeData = {
                 taskId,
-                displayName: nextTaskDisplayName(nodes, paletteItem.type),
+                displayName: baseName ? nextCustomDisplayName(nodes, baseName) : nextTaskDisplayName(nodes, paletteItem.type),
                 type: paletteItem.type,
                 parameters: injectParameterType(
                     paletteItem.type,
-                    rest as Record<string, unknown>,
+                    { ...rest, ...initialParams } as Record<string, unknown>,
                 ),
             };
 

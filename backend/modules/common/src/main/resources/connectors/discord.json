@@ -1,0 +1,115 @@
+{
+  "connectorId": "discord",
+  "displayName": "Discord",
+  "icon": "https://cdn.simpleicons.org/discord/5865F2",
+  "category": "Communication",
+  "baseUrl": "https://discord.com/api/v10",
+  "authType": "BEARER_TOKEN",
+  "credentialGuide": {
+    "fields": [
+      { "key": "token", "label": "Bot Token", "hint": "Discord Developer Portal → Applications → Bot → Token", "docUrl": "https://discord.com/developers/applications" }
+    ]
+  },
+  "actions": [
+    {
+      "actionId": "send_message",
+      "displayName": "Send Message",
+      "method": "POST",
+      "path": "/channels/{channelId}/messages",
+      "pathParams": ["channelId"],
+      "fixedHeaders": { "Content-Type": "application/json" },
+      "inputSchema": [
+        { "key": "channelId", "label": "Channel ID", "type": "STRING", "required": true, "supportsExpression": true },
+        { "key": "content", "label": "Message Content", "type": "TEXTAREA", "required": true, "supportsExpression": true }
+      ],
+      "outputPaths": ["id", "channel_id", "content", "timestamp"]
+    },
+    {
+      "actionId": "send_embed",
+      "displayName": "Send Embed Message",
+      "method": "POST",
+      "path": "/channels/{channelId}/messages",
+      "pathParams": ["channelId"],
+      "fixedHeaders": { "Content-Type": "application/json" },
+      "inputSchema": [
+        { "key": "channelId", "label": "Channel ID", "type": "STRING", "required": true, "supportsExpression": true },
+        { "key": "content", "label": "Message Text (optional)", "type": "STRING", "required": false, "supportsExpression": true },
+        { "key": "embeds", "label": "Embeds (JSON Array)", "type": "JSON", "required": true, "supportsExpression": true, "description": "Array of Discord embed objects with title, description, color, fields etc." }
+      ],
+      "outputPaths": ["id", "channel_id", "timestamp"]
+    },
+    {
+      "actionId": "delete_message",
+      "displayName": "Delete Message",
+      "method": "DELETE",
+      "path": "/channels/{channelId}/messages/{messageId}",
+      "pathParams": ["channelId", "messageId"],
+      "inputSchema": [
+        { "key": "channelId", "label": "Channel ID", "type": "STRING", "required": true, "supportsExpression": true },
+        { "key": "messageId", "label": "Message ID", "type": "STRING", "required": true, "supportsExpression": true }
+      ],
+      "outputPaths": []
+    },
+    {
+      "actionId": "get_channel",
+      "displayName": "Get Channel",
+      "method": "GET",
+      "path": "/channels/{channelId}",
+      "pathParams": ["channelId"],
+      "inputSchema": [
+        { "key": "channelId", "label": "Channel ID", "type": "STRING", "required": true, "supportsExpression": true }
+      ],
+      "outputPaths": ["id", "name", "type", "guild_id", "topic"]
+    },
+    {
+      "actionId": "get_guild",
+      "displayName": "Get Server (Guild)",
+      "method": "GET",
+      "path": "/guilds/{guildId}",
+      "pathParams": ["guildId"],
+      "inputSchema": [
+        { "key": "guildId", "label": "Server (Guild) ID", "type": "STRING", "required": true, "supportsExpression": true }
+      ],
+      "outputPaths": ["id", "name", "description", "member_count", "icon"]
+    },
+    {
+      "actionId": "kick_member",
+      "displayName": "Kick Member",
+      "method": "DELETE",
+      "path": "/guilds/{guildId}/members/{userId}",
+      "pathParams": ["guildId", "userId"],
+      "inputSchema": [
+        { "key": "guildId", "label": "Server (Guild) ID", "type": "STRING", "required": true, "supportsExpression": true },
+        { "key": "userId", "label": "User ID", "type": "STRING", "required": true, "supportsExpression": true }
+      ],
+      "outputPaths": []
+    },
+    {
+      "actionId": "ban_member",
+      "displayName": "Ban Member",
+      "method": "PUT",
+      "path": "/guilds/{guildId}/bans/{userId}",
+      "pathParams": ["guildId", "userId"],
+      "fixedHeaders": { "Content-Type": "application/json" },
+      "inputSchema": [
+        { "key": "guildId", "label": "Server (Guild) ID", "type": "STRING", "required": true, "supportsExpression": true },
+        { "key": "userId", "label": "User ID", "type": "STRING", "required": true, "supportsExpression": true },
+        { "key": "delete_message_seconds", "label": "Delete Messages (seconds)", "type": "NUMBER", "required": false, "supportsExpression": false, "defaultValue": 0 }
+      ],
+      "outputPaths": []
+    },
+    {
+      "actionId": "add_role",
+      "displayName": "Add Role to Member",
+      "method": "PUT",
+      "path": "/guilds/{guildId}/members/{userId}/roles/{roleId}",
+      "pathParams": ["guildId", "userId", "roleId"],
+      "inputSchema": [
+        { "key": "guildId", "label": "Server (Guild) ID", "type": "STRING", "required": true, "supportsExpression": true },
+        { "key": "userId", "label": "User ID", "type": "STRING", "required": true, "supportsExpression": true },
+        { "key": "roleId", "label": "Role ID", "type": "STRING", "required": true, "supportsExpression": true }
+      ],
+      "outputPaths": []
+    }
+  ]
+}

@@ -1,0 +1,95 @@
+{
+  "connectorId": "google_sheets",
+  "displayName": "Google Sheets",
+  "icon": "https://cdn.simpleicons.org/googlesheets/0F9D58",
+  "category": "Productivity",
+  "baseUrl": "https://sheets.googleapis.com/v4/spreadsheets",
+  "authType": "OAUTH2",
+  "oauth2Config": {
+    "authorizationUrl": "https://accounts.google.com/o/oauth2/v2/auth",
+    "tokenUrl": "https://oauth2.googleapis.com/token",
+    "defaultScopes": ["https://www.googleapis.com/auth/spreadsheets"]
+  },
+  "actions": [
+    {
+      "actionId": "get_spreadsheet",
+      "displayName": "Get Spreadsheet",
+      "method": "GET",
+      "path": "/{spreadsheetId}",
+      "pathParams": ["spreadsheetId"],
+      "inputSchema": [
+        { "key": "spreadsheetId", "label": "Spreadsheet ID", "type": "STRING", "required": true, "supportsExpression": true }
+      ],
+      "outputPaths": ["spreadsheetId", "properties.title", "sheets"]
+    },
+    {
+      "actionId": "get_values",
+      "displayName": "Get Range Values",
+      "method": "GET",
+      "path": "/{spreadsheetId}/values/{range}",
+      "pathParams": ["spreadsheetId", "range"],
+      "inputSchema": [
+        { "key": "spreadsheetId", "label": "Spreadsheet ID", "type": "STRING", "required": true, "supportsExpression": true },
+        { "key": "range", "label": "Range (A1 notation)", "type": "STRING", "required": true, "supportsExpression": true, "placeholder": "e.g. Sheet1!A1:D10" },
+        { "key": "majorDimension", "label": "Major Dimension", "type": "SELECT", "required": false, "supportsExpression": false, "defaultValue": "ROWS",
+          "options": [{"label":"Rows","value":"ROWS"},{"label":"Columns","value":"COLUMNS"}] }
+      ],
+      "outputPaths": ["range", "values", "majorDimension"]
+    },
+    {
+      "actionId": "append_values",
+      "displayName": "Append Rows",
+      "method": "POST",
+      "path": "/{spreadsheetId}/values/{range}:append",
+      "pathParams": ["spreadsheetId", "range"],
+      "fixedHeaders": { "Content-Type": "application/json" },
+      "inputSchema": [
+        { "key": "spreadsheetId", "label": "Spreadsheet ID", "type": "STRING", "required": true, "supportsExpression": true },
+        { "key": "range", "label": "Range (A1 notation)", "type": "STRING", "required": true, "supportsExpression": true, "placeholder": "e.g. Sheet1!A:D" },
+        { "key": "values", "label": "Rows (JSON 2D Array)", "type": "JSON", "required": true, "supportsExpression": true, "description": "e.g. [[\"John\", \"Doe\", \"john@example.com\"]]" },
+        { "key": "valueInputOption", "label": "Value Input Option", "type": "SELECT", "required": false, "supportsExpression": false, "defaultValue": "USER_ENTERED",
+          "options": [{"label":"User Entered (parses formulas)","value":"USER_ENTERED"},{"label":"Raw","value":"RAW"}] }
+      ],
+      "outputPaths": ["spreadsheetId", "tableRange", "updates.updatedRows"]
+    },
+    {
+      "actionId": "update_values",
+      "displayName": "Update Range Values",
+      "method": "PUT",
+      "path": "/{spreadsheetId}/values/{range}",
+      "pathParams": ["spreadsheetId", "range"],
+      "fixedHeaders": { "Content-Type": "application/json" },
+      "inputSchema": [
+        { "key": "spreadsheetId", "label": "Spreadsheet ID", "type": "STRING", "required": true, "supportsExpression": true },
+        { "key": "range", "label": "Range (A1 notation)", "type": "STRING", "required": true, "supportsExpression": true },
+        { "key": "values", "label": "Values (JSON 2D Array)", "type": "JSON", "required": true, "supportsExpression": true },
+        { "key": "valueInputOption", "label": "Value Input Option", "type": "SELECT", "required": false, "supportsExpression": false, "defaultValue": "USER_ENTERED",
+          "options": [{"label":"User Entered","value":"USER_ENTERED"},{"label":"Raw","value":"RAW"}] }
+      ],
+      "outputPaths": ["spreadsheetId", "updatedRange", "updatedRows", "updatedColumns", "updatedCells"]
+    },
+    {
+      "actionId": "clear_values",
+      "displayName": "Clear Range",
+      "method": "POST",
+      "path": "/{spreadsheetId}/values/{range}:clear",
+      "pathParams": ["spreadsheetId", "range"],
+      "inputSchema": [
+        { "key": "spreadsheetId", "label": "Spreadsheet ID", "type": "STRING", "required": true, "supportsExpression": true },
+        { "key": "range", "label": "Range (A1 notation)", "type": "STRING", "required": true, "supportsExpression": true }
+      ],
+      "outputPaths": ["spreadsheetId", "clearedRange"]
+    },
+    {
+      "actionId": "create_spreadsheet",
+      "displayName": "Create Spreadsheet",
+      "method": "POST",
+      "path": "",
+      "fixedHeaders": { "Content-Type": "application/json" },
+      "inputSchema": [
+        { "key": "title", "label": "Spreadsheet Title", "type": "STRING", "required": true, "supportsExpression": true }
+      ],
+      "outputPaths": ["spreadsheetId", "spreadsheetUrl", "properties.title"]
+    }
+  ]
+}

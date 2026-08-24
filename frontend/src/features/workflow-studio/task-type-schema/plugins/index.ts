@@ -8,6 +8,7 @@ import { joinTaskPlugin } from './joinTaskPlugin';
 import { scriptTaskPlugin } from './scriptTaskPlugin';
 import { smtpTaskPlugin } from './smtpTaskPlugin';
 import { waitTaskPlugin } from './waitTaskPlugin';
+import { connectorTaskPlugin } from './connectorTaskPlugin';
 import type { TaskTypePlugin } from '../pluginTypes';
 
 /** Single source of truth for all studio task types. */
@@ -22,4 +23,5 @@ export const TASK_PLUGINS: TaskTypePlugin[] = [
     branchTaskPlugin,
     joinTaskPlugin,
     smtpTaskPlugin,
+    connectorTaskPlugin,
 ];

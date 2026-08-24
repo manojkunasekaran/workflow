@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2, Moon, Sun, Monitor, ShieldCheck, Server } from 'lucide-react';
 import { useTheme } from '@/components/theme-provider';
-import { CredentialsList } from './components/CredentialsList';
 
 export default function SettingsPage() {
     const [health, setHealth] = useState<HealthResponse | null>(null);
@@ -104,8 +103,6 @@ export default function SettingsPage() {
                             </div>
                         </div>
                     </section>
-
-                    <CredentialsList />
 
                     {/* System Health (Simplified) */}
                     <section className="space-y-4">

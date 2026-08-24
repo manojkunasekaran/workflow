@@ -96,6 +96,7 @@ export interface IntegrationCredential {
     organizationId?: string;
     name: string;
     type: string;
+    connectorId?: string;
     credentials?: Record<string, string>;
     createdAt?: string;
     updatedAt?: string;

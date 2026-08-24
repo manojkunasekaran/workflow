@@ -4,6 +4,7 @@ import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.mongodb.config.EnableMongoAuditing;
 import org.springframework.data.mongodb.repository.config.EnableMongoRepositories;
+import org.springframework.context.annotation.ComponentScan;
 
 @AutoConfiguration
 @ConditionalOnProperty(
@@ -11,6 +12,7 @@ import org.springframework.data.mongodb.repository.config.EnableMongoRepositorie
         havingValue = "true",
         matchIfMissing = true)
 @EnableMongoRepositories(basePackages = "com.app.persistence.repository")
+@ComponentScan(basePackages = "com.app.persistence")
 @EnableMongoAuditing
 public class PersistenceAutoConfiguration {
 }

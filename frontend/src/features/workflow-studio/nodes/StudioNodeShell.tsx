@@ -14,6 +14,8 @@ export type StudioNodeShellProps = {
     totalHeight: number;
     accentColor: string;
     icon: LucideIcon;
+    /** Optional CDN/remote icon URL — rendered as <img> instead of the LucideIcon when provided. */
+    iconUrl?: string;
     label: string;
     iconClassName?: string;
     selected?: boolean;
@@ -47,6 +49,7 @@ export function StudioNodeShell({
     totalHeight,
     accentColor,
     icon: Icon,
+    iconUrl,
     label,
     iconClassName,
     selected = false,
@@ -133,11 +136,20 @@ export function StudioNodeShell({
                     onMouseLeave={() => setNodeHover(false)}
                     aria-hidden
                 >
-                    <Icon
-                        className={cn('text-current', iconClassName)}
-                        style={{ color: accentColor, width: iconGlyphSize, height: iconGlyphSize }}
-                        strokeWidth={2.25}
-                    />
+                    {iconUrl ? (
+                        <img
+                            src={iconUrl}
+                            alt={label}
+                            style={{ width: iconGlyphSize, height: iconGlyphSize }}
+                            className="object-contain"
+                        />
+                    ) : (
+                        <Icon
+                            className={cn('text-current', iconClassName)}
+                            style={{ color: accentColor, width: iconGlyphSize, height: iconGlyphSize }}
+                            strokeWidth={2.25}
+                        />
+                    )}
                 </div>
                 {children}
             </div>
