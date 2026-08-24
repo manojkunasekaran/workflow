@@ -139,8 +139,8 @@ class ConnectorTaskExecutorTest {
         assertThat(result.getStatus()).isEqualTo(TaskExecutionResult.Status.COMPLETED);
         assertThat(result.getExecutionData()).isInstanceOf(ConnectorTaskExecutionData.class);
         ConnectorTaskExecutionData connResult = (ConnectorTaskExecutionData) result.getExecutionData();
-        assertThat(connResult.getResponse()).isEqualTo(Map.of("ok", true));
-        assertThat(connResult.getStatusCode()).isEqualTo(200);
+        assertThat(connResult.getResponse().getBody()).isEqualTo(Map.of("ok", true));
+        assertThat(connResult.getResponse().getStatusCode()).isEqualTo(200);
 
         verify(restTemplate, times(1)).exchange(
                 eq("https://slack.com/api/chat.postMessage"),
