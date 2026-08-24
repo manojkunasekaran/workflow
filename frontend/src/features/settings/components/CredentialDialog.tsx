@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/select';
 import { Loader2 } from 'lucide-react';
 import type { IntegrationCredential } from '@/types/api';
+import { connectorApi, type ConnectorManifest } from '@/api/connectorApi';
 
 interface CredentialDialogProps {
     open: boolean;
@@ -31,12 +32,59 @@ export function CredentialDialog({ open, onOpenChange, credential, onSave }: Cre
     const [isSaving, setIsSaving] = useState(false);
     const [name, setName] = useState('');
     const [type, setType] = useState('BEARER_TOKEN');
+    const [connectorId, setConnectorId] = useState('');
     const [credentials, setCredentials] = useState<Record<string, string>>({});
+    const [connectors, setConnectors] = useState<ConnectorManifest[]>([]);
+    const [oauthError, setOauthError] = useState<string | null>(null);
+
+    // Opens the OAuth2 authorization URL in a popup window and listens for the
+    // result message posted by OAuthCallbackPage. On success, closes the dialog
+    // so the credentials list refreshes.
+    const handleOAuthConnect = (cId: string, displayName: string) => {
+        setOauthError(null);
+        const width = 600;
+        const height = 700;
+        const left = Math.round(window.screenX + (window.outerWidth - width) / 2);
+        const top = Math.round(window.screenY + (window.outerHeight - height) / 2);
+        const popup = window.open(
+            `/api/v1/oauth/${cId}/authorize`,
+            `oauth_${cId}`,
+            `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`,
+        );
+
+        const handleMessage = (event: MessageEvent) => {
+            // Only accept messages from the same origin
+            if (event.origin !== window.location.origin) return;
+            if (event.data?.type === 'OAUTH_SUCCESS') {
+                window.removeEventListener('message', handleMessage);
+                popup?.close();
+                onOpenChange(false); // Close dialog — parent should refresh credentials list
+            } else if (event.data?.type === 'OAUTH_ERROR') {
+                window.removeEventListener('message', handleMessage);
+                popup?.close();
+                setOauthError(event.data.message ?? `Failed to connect with ${displayName}. Please try again.`);
+            }
+        };
+        window.addEventListener('message', handleMessage);
+
+        // Cleanup listener if popup is closed manually
+        const pollClosed = setInterval(() => {
+            if (popup?.closed) {
+                clearInterval(pollClosed);
+                window.removeEventListener('message', handleMessage);
+            }
+        }, 500);
+    };
+
+    useEffect(() => {
+        connectorApi.list().then(setConnectors).catch(console.error);
+    }, []);
 
     useEffect(() => {
         if (open) {
             setName(credential?.name ?? '');
             setType(credential?.type ?? 'BEARER_TOKEN');
+            setConnectorId(credential?.connectorId ?? '');
             setCredentials(credential?.credentials ?? {});
         }
     }, [open, credential]);
@@ -49,6 +97,7 @@ export function CredentialDialog({ open, onOpenChange, credential, onSave }: Cre
                 id: credential?.id,
                 name,
                 type,
+                connectorId: connectorId || undefined,
                 credentials,
             });
             onOpenChange(false);
@@ -62,6 +111,22 @@ export function CredentialDialog({ open, onOpenChange, credential, onSave }: Cre
     const updateCred = (key: string, value: string) => {
         setCredentials((prev) => ({ ...prev, [key]: value }));
     };
+
+    const handleTypeChange = (val: string) => {
+        if (val.startsWith('CONNECTOR:')) {
+            const cId = val.replace('CONNECTOR:', '');
+            const connector = connectors.find(c => c.connectorId === cId);
+            if (connector) {
+                setType(connector.authType);
+                setConnectorId(cId);
+            }
+        } else {
+            setType(val);
+            setConnectorId('');
+        }
+    };
+    
+    const selectedConnector = connectors.find(c => c.connectorId === connectorId);
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -86,10 +151,9 @@ export function CredentialDialog({ open, onOpenChange, credential, onSave }: Cre
                         />
                     </div>
 
-                    {!credential && (
                         <div className="grid gap-2">
                             <Label htmlFor="type">Type</Label>
-                            <Select value={type} onValueChange={setType}>
+                            <Select value={connectorId ? `CONNECTOR:${connectorId}` : type} onValueChange={handleTypeChange}>
                                 <SelectTrigger id="type">
                                     <SelectValue placeholder="Select type" />
                                 </SelectTrigger>
@@ -97,8 +161,25 @@ export function CredentialDialog({ open, onOpenChange, credential, onSave }: Cre
                                     <SelectItem value="SMTP">SMTP Server</SelectItem>
                                     <SelectItem value="BEARER_TOKEN">Bearer Token</SelectItem>
                                     <SelectItem value="BASIC_AUTH">Basic Auth</SelectItem>
+                                    {connectors.map(c => (
+                                        <SelectItem key={c.connectorId} value={`CONNECTOR:${c.connectorId}`}>
+                                            {c.displayName}
+                                        </SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
+                        </div>
+                    
+                    {selectedConnector && selectedConnector.credentialGuide && (
+                        <div className="rounded-md border border-border bg-muted/50 p-3 text-sm">
+                            <p className="font-medium mb-2">How to get {selectedConnector.displayName} credentials:</p>
+                            <ul className="list-inside list-disc space-y-1 text-muted-foreground">
+                                {selectedConnector.credentialGuide.fields.map(f => (
+                                    <li key={f.key}>
+                                        <span className="font-semibold">{f.label}</span>: {f.hint}
+                                    </li>
+                                ))}
+                            </ul>
                         </div>
                     )}
 
@@ -175,6 +256,40 @@ export function CredentialDialog({ open, onOpenChange, credential, onSave }: Cre
                             />
                         </div>
                     )}
+                    
+                    {type === 'API_KEY' && selectedConnector && (
+                        <div className="grid gap-2">
+                            <Label htmlFor="apiKey">API Key</Label>
+                            <Input
+                                id="apiKey"
+                                type="password"
+                                value={credentials.apiKey || ''}
+                                onChange={(e) => updateCred('apiKey', e.target.value)}
+                                placeholder="********"
+                            />
+                        </div>
+                    )}
+
+                    {type === 'OAUTH2' && selectedConnector && (
+                        <div className="flex flex-col items-center justify-center p-6 border rounded-md bg-muted/20 space-y-4">
+                            <p className="text-sm text-muted-foreground text-center">
+                                {selectedConnector.displayName} uses OAuth2. Click below to securely authorize
+                                this application in a popup window.
+                            </p>
+                            {oauthError && (
+                                <p className="text-xs text-destructive bg-destructive/5 rounded p-2 w-full text-center">
+                                    {oauthError}
+                                </p>
+                            )}
+                            <button
+                                type="button"
+                                className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+                                onClick={() => handleOAuthConnect(selectedConnector.connectorId, selectedConnector.displayName)}
+                            >
+                                Connect with {selectedConnector.displayName}
+                            </button>
+                        </div>
+                    )}
 
                     {type === 'BASIC_AUTH' && (
                         <>
@@ -205,10 +320,12 @@ export function CredentialDialog({ open, onOpenChange, credential, onSave }: Cre
                     <Button variant="outline" onClick={() => onOpenChange(false)}>
                         Cancel
                     </Button>
-                    <Button onClick={handleSave} disabled={isSaving || !name.trim()}>
-                        {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Save Credential
-                    </Button>
+                    {type !== 'OAUTH2' && (
+                        <Button onClick={handleSave} disabled={isSaving || !name.trim()}>
+                            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Save Credential
+                        </Button>
+                    )}
                 </DialogFooter>
             </DialogContent>
         </Dialog>

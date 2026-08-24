@@ -1,0 +1,107 @@
+{
+  "connectorId": "gmail",
+  "displayName": "Gmail",
+  "icon": "https://cdn.simpleicons.org/gmail/EA4335",
+  "category": "Communication",
+  "baseUrl": "https://gmail.googleapis.com/gmail/v1/users/me",
+  "authType": "OAUTH2",
+  "oauth2Config": {
+    "authorizationUrl": "https://accounts.google.com/o/oauth2/v2/auth",
+    "tokenUrl": "https://oauth2.googleapis.com/token",
+    "defaultScopes": [
+      "https://www.googleapis.com/auth/gmail.send",
+      "https://www.googleapis.com/auth/gmail.readonly",
+      "https://www.googleapis.com/auth/gmail.modify",
+      "https://www.googleapis.com/auth/gmail.labels"
+    ]
+  },
+  "actions": [
+    {
+      "actionId": "send_email",
+      "displayName": "Send Email",
+      "method": "POST",
+      "path": "/messages/send",
+      "inputScript": "let to = $input.to;\nlet subject = $input.subject;\nlet body = $input.body;\nlet from = $input.from || '';\nlet cc = $input.cc || '';\nlet bcc = $input.bcc || '';\nlet isHtml = $input.bodyIsHtml === true || $input.bodyIsHtml === 'true';\n\nif (!to || !subject || !body) throw new Error('To, Subject, and Body are required');\n\nlet mime = [];\nmime.push('Date: ' + new Date().toUTCString());\nif (from) mime.push('From: ' + from);\nmime.push('To: ' + to);\nif (cc) mime.push('Cc: ' + cc);\nif (bcc) mime.push('Bcc: ' + bcc);\nmime.push('Subject: ' + subject);\nmime.push('MIME-Version: 1.0');\nmime.push('Content-Type: ' + (isHtml ? 'text/html; charset=UTF-8' : 'text/plain; charset=UTF-8'));\nmime.push('');\nmime.push(body);\n\nreturn { raw: $helpers.base64UrlEncode(mime.join('\\r\\n')) };",
+      "fixedHeaders": { "Content-Type": "application/json" },
+      "inputSchema": [
+        { "key": "to", "label": "To", "type": "STRING", "required": true, "supportsExpression": true, "placeholder": "recipient@example.com (comma-separated for multiple)" },
+        { "key": "subject", "label": "Subject", "type": "STRING", "required": true, "supportsExpression": true },
+        { "key": "body", "label": "Body", "type": "TEXTAREA", "required": true, "supportsExpression": true },
+        { "key": "from", "label": "From (optional override)", "type": "STRING", "required": false, "supportsExpression": true, "placeholder": "Your Name <you@gmail.com>", "description": "Defaults to authenticated Gmail account if omitted." },
+        { "key": "cc", "label": "CC", "type": "STRING", "required": false, "supportsExpression": true },
+        { "key": "bcc", "label": "BCC", "type": "STRING", "required": false, "supportsExpression": true },
+        { "key": "bodyIsHtml", "label": "Send as HTML", "type": "BOOLEAN", "required": false, "supportsExpression": false, "defaultValue": false }
+      ],
+      "outputPaths": ["id", "threadId", "labelIds"]
+    },
+    {
+      "actionId": "get_profile",
+      "displayName": "Get Profile",
+      "method": "GET",
+      "path": "/profile",
+      "inputSchema": [],
+      "outputPaths": ["emailAddress", "messagesTotal", "threadsTotal"]
+    },
+    {
+      "actionId": "list_messages",
+      "displayName": "List Messages",
+      "method": "GET",
+      "path": "/messages",
+      "inputSchema": [
+        { "key": "q", "label": "Search Query", "type": "STRING", "required": false, "supportsExpression": true, "placeholder": "e.g. from:user@example.com is:unread" },
+        { "key": "maxResults", "label": "Max Results", "type": "NUMBER", "required": false, "supportsExpression": true, "defaultValue": 10 },
+        { "key": "labelIds", "label": "Label IDs (comma-separated)", "type": "STRING", "required": false, "supportsExpression": true, "placeholder": "e.g. INBOX,UNREAD" }
+      ],
+      "outputPaths": ["messages", "nextPageToken", "resultSizeEstimate"]
+    },
+    {
+      "actionId": "get_message",
+      "displayName": "Get Message",
+      "method": "GET",
+      "path": "/messages/{id}",
+      "pathParams": ["id"],
+      "inputSchema": [
+        { "key": "id", "label": "Message ID", "type": "STRING", "required": true, "supportsExpression": true },
+        { "key": "format", "label": "Format", "type": "SELECT", "required": false, "supportsExpression": false, "defaultValue": "full",
+          "options": [{"label":"Full","value":"full"},{"label":"Metadata","value":"metadata"},{"label":"Minimal","value":"minimal"}] }
+      ],
+      "outputPaths": ["id", "threadId", "snippet", "payload.headers", "payload.body.data"]
+    },
+    {
+      "actionId": "create_draft",
+      "displayName": "Create Draft",
+      "method": "POST",
+      "path": "/drafts",
+      "fixedHeaders": { "Content-Type": "application/json" },
+      "inputSchema": [
+        { "key": "raw", "label": "Raw Message (Base64 URL encoded)", "type": "TEXTAREA", "required": true, "supportsExpression": true }
+      ],
+      "outputPaths": ["id", "message.id", "message.threadId"]
+    },
+    {
+      "actionId": "modify_message_labels",
+      "displayName": "Modify Message Labels",
+      "method": "POST",
+      "path": "/messages/{id}/modify",
+      "pathParams": ["id"],
+      "fixedHeaders": { "Content-Type": "application/json" },
+      "inputSchema": [
+        { "key": "id", "label": "Message ID", "type": "STRING", "required": true, "supportsExpression": true },
+        { "key": "addLabelIds", "label": "Add Label IDs (JSON Array)", "type": "JSON", "required": false, "supportsExpression": true, "description": "e.g. [\"STARRED\", \"IMPORTANT\"]" },
+        { "key": "removeLabelIds", "label": "Remove Label IDs (JSON Array)", "type": "JSON", "required": false, "supportsExpression": true, "description": "e.g. [\"UNREAD\"]" }
+      ],
+      "outputPaths": ["id", "labelIds"]
+    },
+    {
+      "actionId": "trash_message",
+      "displayName": "Trash Message",
+      "method": "POST",
+      "path": "/messages/{id}/trash",
+      "pathParams": ["id"],
+      "inputSchema": [
+        { "key": "id", "label": "Message ID", "type": "STRING", "required": true, "supportsExpression": true }
+      ],
+      "outputPaths": ["id", "labelIds"]
+    }
+  ]
+}

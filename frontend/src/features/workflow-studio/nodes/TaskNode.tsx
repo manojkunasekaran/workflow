@@ -54,6 +54,10 @@ function TaskNodeComponent({ data, selected }: NodeProps & { data: TaskNodeData 
     const plugin = getTaskTypePlugin(data.type);
     const Icon = plugin?.icon ?? Code2;
     const accentColor = plugin?.accentColor ?? resolveTaskAccentColor(data.type);
+    // Connector nodes store their CDN icon URL in parameters so the canvas can render it
+    const connectorIconUrl = data.type === 'CONNECTOR_TASK'
+        ? (data.parameters?.connectorIcon as string | undefined)
+        : undefined;
 
     const { inputs, outputs, isRoutingTerminator } = useMemo(
         () => resolveTaskOutputViews(data),
@@ -126,6 +130,7 @@ function TaskNodeComponent({ data, selected }: NodeProps & { data: TaskNodeData 
             stretchIconTile={stretchIconTile}
             accentColor={accentColor}
             icon={Icon}
+            iconUrl={connectorIconUrl}
             label={label}
             selected={selected}
             invalid={hasValidationError}

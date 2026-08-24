@@ -10,5 +10,6 @@ public enum TaskType {
     WAIT,
     DATA_TRANSFORM,
     JOIN,
-    SMTP_TASK;
+    SMTP_TASK,
+    CONNECTOR_TASK;
 }

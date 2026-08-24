@@ -3,8 +3,10 @@ import type { IntegrationCredential } from '@/types/api';
 import { API_BASE_URL } from '@/api/config';
 
 export const credentialApi = {
-    getAll: async (): Promise<IntegrationCredential[]> => {
-        const response = await axios.get<IntegrationCredential[]>(`${API_BASE_URL}/credentials`);
+    getAll: async (connectorId?: string): Promise<IntegrationCredential[]> => {
+        const response = await axios.get<IntegrationCredential[]>(`${API_BASE_URL}/credentials`, {
+            params: connectorId ? { connectorId } : {},
+        });
         return response.data ?? [];
     },
 

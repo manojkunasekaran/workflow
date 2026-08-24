@@ -26,6 +26,8 @@ describe('Navigation Layout Unit Tests', () => {
 
       expect(screen.getByTestId('nav-link-workflows')).toBeInTheDocument();
       expect(screen.getByTestId('nav-link-executions')).toBeInTheDocument();
+      expect(screen.getByTestId('nav-link-integrations')).toBeInTheDocument();
+      expect(screen.getByTestId('nav-link-credentials')).toBeInTheDocument();
       expect(screen.getByTestId('nav-link-settings')).toBeInTheDocument();
     });
   });

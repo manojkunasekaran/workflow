@@ -52,7 +52,7 @@ test.describe('Settings - Credentials Management', () => {
             }
         });
 
-        await page.goto('/settings');
+        await page.goto('/credentials');
     });
 
     test('should list existing credentials', async ({ page }) => {

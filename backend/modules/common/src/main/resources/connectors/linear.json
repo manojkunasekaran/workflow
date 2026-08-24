@@ -1,0 +1,53 @@
+{
+  "connectorId": "linear",
+  "displayName": "Linear",
+  "icon": "https://cdn.iconscout.com/icon/free/png-256/linear-3628861-3030001.png",
+  "category": "Project Management",
+  "baseUrl": "https://api.linear.app/graphql",
+  "authType": "BEARER_TOKEN",
+  "authHeaderPrefix": "Bearer ",
+  "credentialGuide": {
+    "fields": [
+      {
+        "key": "token",
+        "label": "Personal API Key",
+        "hint": "Found in Linear settings under API"
+      }
+    ]
+  },
+  "actions": [
+    {
+      "actionId": "create_issue",
+      "displayName": "Create Issue",
+      "method": "POST",
+      "path": "",
+      "inputSchema": [
+        {
+          "key": "teamId",
+          "label": "Team ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": true
+        },
+        {
+          "key": "title",
+          "label": "Title",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": true
+        },
+        {
+          "key": "description",
+          "label": "Description",
+          "type": "TEXTAREA",
+          "required": false,
+          "supportsExpression": true
+        }
+      ],
+      "inputScript": "return { query: `mutation { issueCreate(input: { title: \"${$inputs.title}\", teamId: \"${$inputs.teamId}\", description: \"${$inputs.description || ''}\" }) { issue { id title } } }` };",
+      "outputPaths": [
+        "data.issueCreate.issue.id"
+      ]
+    }
+  ]
+}

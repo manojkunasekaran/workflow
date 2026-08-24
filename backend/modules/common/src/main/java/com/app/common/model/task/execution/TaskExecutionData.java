@@ -13,6 +13,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "taskType")
 @JsonSubTypes({
         @JsonSubTypes.Type(value = BranchTaskExecutionData.class, name = "BRANCH"),
+        @JsonSubTypes.Type(value = ConnectorTaskExecutionData.class, name = "CONNECTOR_TASK"),
         @JsonSubTypes.Type(value = ConditionalTaskExecutionData.class, name = "CONDITIONAL"),
         @JsonSubTypes.Type(value = DataTransformExecutionData.class, name = "DATA_TRANSFORM"),
         @JsonSubTypes.Type(value = HttpTaskExecutionData.class, name = "HTTP_TASK"),

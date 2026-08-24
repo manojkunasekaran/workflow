@@ -1,0 +1,45 @@
+{
+  "connectorId": "monday",
+  "displayName": "Monday.com",
+  "icon": "https://cdn.iconscout.com/icon/free/png-256/monday-3628861-3030001.png",
+  "category": "Project Management",
+  "baseUrl": "https://api.monday.com/v2",
+  "authType": "BEARER_TOKEN",
+  "credentialGuide": {
+    "fields": [
+      {
+        "key": "token",
+        "label": "API Token",
+        "hint": "From Developers -> Developer Data"
+      }
+    ]
+  },
+  "actions": [
+    {
+      "actionId": "create_item",
+      "displayName": "Create Item",
+      "method": "POST",
+      "path": "",
+      "inputSchema": [
+        {
+          "key": "boardId",
+          "label": "Board ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": true
+        },
+        {
+          "key": "itemName",
+          "label": "Item Name",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": true
+        }
+      ],
+      "inputScript": "return { query: `mutation { create_item (board_id: ${$inputs.boardId}, item_name: \"${$inputs.itemName}\") { id } }` };",
+      "outputPaths": [
+        "data.create_item.id"
+      ]
+    }
+  ]
+}

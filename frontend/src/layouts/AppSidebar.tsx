@@ -1,4 +1,4 @@
-import { Home, Settings, Workflow, PlayCircle, User, PanelLeftClose, PanelLeft } from 'lucide-react';
+import { Home, Settings, Workflow, PlayCircle, User, PanelLeftClose, PanelLeft, Blocks, KeyRound } from 'lucide-react';
 import {
     Sidebar,
     SidebarContent,
@@ -23,6 +23,8 @@ const items = [
     { title: 'Home', url: '/', icon: Home },
     { title: 'Workflows', url: '/workflows', icon: Workflow },
     { title: 'Executions', url: '/executions', icon: PlayCircle },
+    { title: 'Integrations', url: '/integrations', icon: Blocks },
+    { title: 'Credentials', url: '/credentials', icon: KeyRound },
     { title: 'Settings', url: '/settings', icon: Settings },
 ];
 

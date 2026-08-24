@@ -26,7 +26,10 @@ public class IntegrationCredentialController {
     }
 
     @GetMapping
-    public List<IntegrationCredential> list() {
+    public List<IntegrationCredential> list(@RequestParam(required = false) String connectorId) {
+        if (connectorId != null && !connectorId.isBlank()) {
+            return service.getCredentialsByConnector(connectorId);
+        }
         return service.getAllCredentials();
     }
 

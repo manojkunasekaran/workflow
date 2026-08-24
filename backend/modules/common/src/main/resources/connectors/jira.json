@@ -1,0 +1,79 @@
+{
+  "connectorId": "jira",
+  "displayName": "Jira Software",
+  "icon": "https://cdn.iconscout.com/icon/free/png-256/jira-3628861-3030001.png",
+  "category": "Project Management",
+  "baseUrl": "https://api.atlassian.com/ex/jira",
+  "authType": "OAUTH2",
+  "oauth2Config": {
+    "authorizationUrl": "https://auth.atlassian.com/authorize?audience=api.atlassian.com",
+    "tokenUrl": "https://auth.atlassian.com/oauth/token",
+    "defaultScopes": ["read:jira-work", "write:jira-work"]
+  },
+  "credentialGuide": {
+    "fields": [
+      {
+        "key": "client_id",
+        "label": "Client ID",
+        "hint": "Found in Jira Developer Console -> OAuth 2.0 integration"
+      },
+      {
+        "key": "client_secret",
+        "label": "Client Secret",
+        "hint": "Generated in Jira Developer Console"
+      }
+    ]
+  },
+  "actions": [
+    {
+      "actionId": "create_issue",
+      "displayName": "Create Issue",
+      "description": "Creates an issue or a sub-task from a JSON representation.",
+      "method": "POST",
+      "path": "/{cloudId}/rest/api/3/issue",
+      "pathParams": ["cloudId"],
+      "inputSchema": [
+        {
+          "key": "cloudId",
+          "label": "Cloud ID",
+          "type": "STRING",
+          "required": true,
+          "description": "The ID of the Atlassian site.",
+          "supportsExpression": true
+        },
+        {
+          "key": "projectKey",
+          "label": "Project Key",
+          "type": "STRING",
+          "required": true,
+          "description": "Key of the project (e.g. ENG)",
+          "supportsExpression": true
+        },
+        {
+          "key": "summary",
+          "label": "Summary",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": true
+        },
+        {
+          "key": "issueType",
+          "label": "Issue Type",
+          "type": "STRING",
+          "required": true,
+          "defaultValue": "Task",
+          "supportsExpression": true
+        },
+        {
+          "key": "description",
+          "label": "Description",
+          "type": "TEXTAREA",
+          "required": false,
+          "supportsExpression": true
+        }
+      ],
+      "inputScript": "return { fields: { project: { key: $inputs.projectKey }, summary: $inputs.summary, description: { type: 'doc', version: 1, content: [{ type: 'paragraph', content: [{ text: $inputs.description || '', type: 'text' }]}] }, issuetype: { name: $inputs.issueType } } };",
+      "outputPaths": ["id", "key", "self"]
+    }
+  ]
+}

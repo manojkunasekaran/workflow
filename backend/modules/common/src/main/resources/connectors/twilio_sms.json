@@ -1,0 +1,68 @@
+{
+  "connectorId": "twilio_sms",
+  "displayName": "Twilio SMS",
+  "icon": "https://cdn.iconscout.com/icon/free/png-256/twilio-3628861-3030001.png",
+  "category": "SMS / Comms",
+  "baseUrl": "https://api.twilio.com/2010-04-01/Accounts/{AccountSid}",
+  "authType": "BASIC_AUTH",
+  "credentialGuide": {
+    "fields": [
+      {
+        "key": "username",
+        "label": "Account SID",
+        "hint": "Starts with AC"
+      },
+      {
+        "key": "password",
+        "label": "Auth Token",
+        "hint": "Your Twilio auth token"
+      }
+    ]
+  },
+  "actions": [
+    {
+      "actionId": "send_sms",
+      "displayName": "Send SMS",
+      "method": "POST",
+      "path": "/Messages.json",
+      "pathParams": [
+        "AccountSid"
+      ],
+      "inputSchema": [
+        {
+          "key": "AccountSid",
+          "label": "Account SID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": true
+        },
+        {
+          "key": "To",
+          "label": "To Phone Number",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": true
+        },
+        {
+          "key": "From",
+          "label": "From Phone Number",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": true
+        },
+        {
+          "key": "Body",
+          "label": "Message Body",
+          "type": "TEXTAREA",
+          "required": true,
+          "supportsExpression": true
+        }
+      ],
+      "inputScript": "return { To: $inputs.To, From: $inputs.From, Body: $inputs.Body };",
+      "outputPaths": [
+        "sid",
+        "status"
+      ]
+    }
+  ]
+}

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { TaskConfigContext } from '@/features/workflow-studio/task-config/TaskConfigContext';
 import { VariableExplorerContext } from '@/features/workflow-studio/task-config/VariableExplorerContext';
 import { TaskParametersForm } from '@/features/workflow-studio/task-config/TaskParametersForm';
+import { ConnectorTaskConfigPanel } from '@/features/workflow-studio/task-config/ConnectorTaskConfigPanel';
 import { getTaskTypePlugin } from '@/features/workflow-studio/task-type-schema/registry';
 import type { TaskParameterErrors } from '@/features/workflow-studio/task-type-schema/types';
 import {
@@ -131,6 +132,10 @@ export function TaskConfigDialog({
     const stepNamePlaceholder = draft ? taskTypeLabel(draft.type) : 'Step name';
     const TaskIcon = plugin?.icon ?? Code2;
     const taskAccentColor = plugin?.accentColor ?? '#64748b';
+    // For connector tasks, prefer the connector's brand icon URL over the generic plugin icon
+    const connectorIconUrl = draft?.type === 'CONNECTOR_TASK'
+        ? (draft.parameters?.connectorIcon as string | undefined)
+        : undefined;
     const errorSummary = summarizeValidationErrors(errors);
 
     const handleParametersChange = (parameters: Record<string, unknown>) => {
@@ -195,14 +200,23 @@ export function TaskConfigDialog({
                             <div className="flex min-w-0 flex-1 items-center gap-2.5">
                                 {plugin ? (
                                     <span
-                                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md"
+                                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md overflow-hidden"
                                         style={{
                                             backgroundColor: `${taskAccentColor}18`,
                                             color: taskAccentColor,
                                         }}
                                         aria-hidden
                                     >
-                                        <TaskIcon className="h-4 w-4" />
+                                        {connectorIconUrl ? (
+                                            <img
+                                                src={connectorIconUrl}
+                                                alt=""
+                                                className="h-5 w-5 object-contain"
+                                                onError={e => { e.currentTarget.style.display = 'none'; }}
+                                            />
+                                        ) : (
+                                            <TaskIcon className="h-4 w-4" />
+                                        )}
                                     </span>
                                 ) : (
                                     <span
@@ -269,14 +283,20 @@ export function TaskConfigDialog({
                         ) : null}
 
                         <div className="min-h-0 flex-1 overflow-y-auto p-5 scrollbar-thin">
-                            {plugin && (
+                            {plugin && plugin.type === 'CONNECTOR_TASK' ? (
+                                <ConnectorTaskConfigPanel
+                                    parameters={draft.parameters}
+                                    onChange={handleParametersChange}
+                                    errors={errors}
+                                />
+                            ) : plugin ? (
                                 <TaskParametersForm
                                     plugin={plugin}
                                     parameters={draft.parameters}
                                     onChange={handleParametersChange}
                                     errors={errors}
                                 />
-                            )}
+                            ) : null}
                         </div>
                         </VariableExplorerContext.Provider>
                     </TaskConfigContext.Provider>

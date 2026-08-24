@@ -1,0 +1,71 @@
+{
+  "connectorId": "mailchimp",
+  "displayName": "Mailchimp",
+  "icon": "https://cdn.iconscout.com/icon/free/png-256/mailchimp-3628861-3030001.png",
+  "category": "Email Marketing",
+  "baseUrl": "https://{dc}.api.mailchimp.com/3.0",
+  "authType": "BASIC_AUTH",
+  "credentialGuide": {
+    "fields": [
+      {
+        "key": "username",
+        "label": "Username",
+        "hint": "Any string, often 'anystring'"
+      },
+      {
+        "key": "password",
+        "label": "API Key",
+        "hint": "Your Mailchimp API Key (ends with -dc, e.g. -us6)"
+      }
+    ]
+  },
+  "actions": [
+    {
+      "actionId": "add_subscriber",
+      "displayName": "Add Subscriber",
+      "method": "POST",
+      "path": "/lists/{listId}/members",
+      "pathParams": [
+        "dc",
+        "listId"
+      ],
+      "inputSchema": [
+        {
+          "key": "dc",
+          "label": "Data Center",
+          "type": "STRING",
+          "required": true,
+          "description": "e.g., us6",
+          "supportsExpression": true
+        },
+        {
+          "key": "listId",
+          "label": "List/Audience ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": true
+        },
+        {
+          "key": "email",
+          "label": "Email",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": true
+        },
+        {
+          "key": "status",
+          "label": "Status",
+          "type": "STRING",
+          "required": true,
+          "defaultValue": "subscribed",
+          "supportsExpression": true
+        }
+      ],
+      "inputScript": "return { email_address: $inputs.email, status: $inputs.status };",
+      "outputPaths": [
+        "id",
+        "status"
+      ]
+    }
+  ]
+}

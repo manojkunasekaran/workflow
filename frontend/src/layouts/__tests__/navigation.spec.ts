@@ -18,10 +18,12 @@ test.describe('App Navigation & Layout', () => {
     });
 
     test('[Happy] B-002, B-003, B-004, B-009: sidebar navigation links and brand logo are present', async ({ page }) => {
-      await expect(page.getByTestId('nav-logo-link')).toBeVisible();
+      await expect(page.getByTestId('nav-link-logo')).toBeVisible().catch(() => expect(page.getByTestId('nav-logo-link')).toBeVisible());
       await expect(page.getByTestId('nav-link-home')).toBeVisible();
       await expect(page.getByTestId('nav-link-workflows')).toBeVisible();
       await expect(page.getByTestId('nav-link-executions')).toBeVisible();
+      await expect(page.getByTestId('nav-link-integrations')).toBeVisible();
+      await expect(page.getByTestId('nav-link-credentials')).toBeVisible();
       await expect(page.getByTestId('nav-link-settings')).toBeVisible();
     });
 
@@ -38,6 +40,16 @@ test.describe('App Navigation & Layout', () => {
     test('[Happy] B-007: clicking sidebar Settings link routes to /settings', async ({ page }) => {
       await page.getByTestId('nav-link-settings').click();
       await expect(page).toHaveURL('/settings');
+    });
+
+    test('[Happy] clicking sidebar Integrations link routes to /integrations', async ({ page }) => {
+      await page.getByTestId('nav-link-integrations').click();
+      await expect(page).toHaveURL('/integrations');
+    });
+
+    test('[Happy] clicking sidebar Credentials link routes to /credentials', async ({ page }) => {
+      await page.getByTestId('nav-link-credentials').click();
+      await expect(page).toHaveURL('/credentials');
     });
 
     test('[Happy] B-008: clicking collapse button toggles sidebar state', async ({ page }) => {

@@ -79,6 +79,14 @@ public class IntegrationCredentialService {
                 .collect(Collectors.toList());
     }
 
+    public List<IntegrationCredential> getCredentialsByConnector(@NonNull String connectorId) {
+        return repository.findAll().stream()
+                .filter(c -> DEFAULT_ORG_ID.equals(c.getOrganizationId()))
+                .filter(c -> connectorId.equals(c.getConnectorId()))
+                .map(this::maskCredentials)
+                .collect(Collectors.toList());
+    }
+
     public Optional<IntegrationCredential> getCredentialById(@NonNull String id) {
         return repository.findByIdAndOrganizationId(id, DEFAULT_ORG_ID)
                 .map(this::maskCredentials);
@@ -99,6 +107,7 @@ public class IntegrationCredentialService {
         masked.setOrganizationId(original.getOrganizationId());
         masked.setName(original.getName());
         masked.setType(original.getType());
+        masked.setConnectorId(original.getConnectorId());
         masked.setCreatedAt(original.getCreatedAt());
         masked.setUpdatedAt(original.getUpdatedAt());
         
