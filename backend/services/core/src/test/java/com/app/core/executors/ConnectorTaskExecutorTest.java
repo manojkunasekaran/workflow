@@ -8,6 +8,8 @@ import com.app.common.model.task.TaskType;
 import com.app.common.model.task.WorkflowTask;
 import com.app.common.model.task.execution.ConnectorTaskExecutionData;
 import com.app.common.model.task.execution.TaskExecutionData;
+import com.app.common.model.task.execution.TaskExecutionResult;
+import com.app.common.entity.WorkflowExecution;
 import com.app.common.constant.TaskExecutionStatus;
 import com.app.common.model.task.parameters.ConnectorTaskParameters;
 import com.app.core.model.ExecutionContext;
@@ -69,6 +71,7 @@ class ConnectorTaskExecutorTest {
     private ConnectorTaskExecutor executor;
 
     private ExecutionContext context;
+    private WorkflowExecution execution;
     private WorkflowTask task;
     private ConnectorTaskParameters params;
     private ConnectorManifest manifest;
@@ -77,6 +80,7 @@ class ConnectorTaskExecutorTest {
 
     @BeforeEach
     void setUp() {
+        execution = new WorkflowExecution();
         context = ExecutionContext.builder()
                 .workflowExecutionId("exec-1")
                 .workflowVariables(new HashMap<>())
@@ -122,7 +126,7 @@ class ConnectorTaskExecutorTest {
     void execute_shouldPerformBasicSuccessRequest() throws Exception {
         when(connectorRegistry.findById("slack", "default-org")).thenReturn(Optional.of(manifest));
         when(credentialProvider.getDecryptedCredential("cred-1")).thenReturn(Optional.of(credential));
-        when(variableResolver.resolveObject(any(), anyMap())).thenReturn(params.getInputs());
+        when(variableResolver.resolveValue(any(), any(ExecutionContext.class))).thenAnswer(inv -> inv.getArgument(0));
         
         ResponseEntity<String> successResponse = new ResponseEntity<>("{\"ok\":true}", HttpStatus.OK);
         when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), eq(String.class)))
@@ -130,11 +134,11 @@ class ConnectorTaskExecutorTest {
                 
         when(objectMapper.readValue("{\"ok\":true}", Object.class)).thenReturn(Map.of("ok", true));
 
-        TaskExecutionData result = executor.execute(task, context);
+        TaskExecutionResult result = executor.execute(task, execution, context);
 
-        assertThat(result.getStatus()).isEqualTo(TaskExecutionStatus.COMPLETED);
-        assertThat(result).isInstanceOf(ConnectorTaskExecutionData.class);
-        ConnectorTaskExecutionData connResult = (ConnectorTaskExecutionData) result;
+        assertThat(result.getStatus()).isEqualTo(TaskExecutionResult.Status.COMPLETED);
+        assertThat(result.getExecutionData()).isInstanceOf(ConnectorTaskExecutionData.class);
+        ConnectorTaskExecutionData connResult = (ConnectorTaskExecutionData) result.getExecutionData();
         assertThat(connResult.getResponse()).isEqualTo(Map.of("ok", true));
         assertThat(connResult.getStatusCode()).isEqualTo(200);
 
@@ -150,7 +154,7 @@ class ConnectorTaskExecutorTest {
     void execute_shouldRetryOn5xxErrors() throws Exception {
         when(connectorRegistry.findById("slack", "default-org")).thenReturn(Optional.of(manifest));
         when(credentialProvider.getDecryptedCredential("cred-1")).thenReturn(Optional.of(credential));
-        when(variableResolver.resolveObject(any(), anyMap())).thenReturn(params.getInputs());
+        when(variableResolver.resolveValue(any(), any(ExecutionContext.class))).thenAnswer(inv -> inv.getArgument(0));
         
         // 1st attempt: 503
         HttpServerErrorException exception503 = HttpServerErrorException.create(
@@ -164,9 +168,9 @@ class ConnectorTaskExecutorTest {
                 
         when(objectMapper.readValue("{\"ok\":true}", Object.class)).thenReturn(Map.of("ok", true));
 
-        TaskExecutionData result = executor.execute(task, context);
+        TaskExecutionResult result = executor.execute(task, execution, context);
 
-        assertThat(result.getStatus()).isEqualTo(TaskExecutionStatus.COMPLETED);
+        assertThat(result.getStatus()).isEqualTo(TaskExecutionResult.Status.COMPLETED);
         verify(restTemplate, times(2)).exchange(anyString(), any(), any(), eq(String.class));
     }
 
@@ -174,7 +178,7 @@ class ConnectorTaskExecutorTest {
     void execute_shouldParseRetryAfterHeaderOn429() throws Exception {
         when(connectorRegistry.findById("slack", "default-org")).thenReturn(Optional.of(manifest));
         when(credentialProvider.getDecryptedCredential("cred-1")).thenReturn(Optional.of(credential));
-        when(variableResolver.resolveObject(any(), anyMap())).thenReturn(params.getInputs());
+        when(variableResolver.resolveValue(any(), any(ExecutionContext.class))).thenAnswer(inv -> inv.getArgument(0));
         
         HttpHeaders headers = new HttpHeaders();
         // Since test delay is small, let's just make Retry-After 1 second. 
@@ -193,9 +197,9 @@ class ConnectorTaskExecutorTest {
                 
         when(objectMapper.readValue("{\"ok\":true}", Object.class)).thenReturn(Map.of("ok", true));
 
-        TaskExecutionData result = executor.execute(task, context);
+        TaskExecutionResult result = executor.execute(task, execution, context);
 
-        assertThat(result.getStatus()).isEqualTo(TaskExecutionStatus.COMPLETED);
+        assertThat(result.getStatus()).isEqualTo(TaskExecutionResult.Status.COMPLETED);
         verify(restTemplate, times(2)).exchange(anyString(), any(), any(), eq(String.class));
     }
 
@@ -203,7 +207,7 @@ class ConnectorTaskExecutorTest {
     void execute_shouldFailFastOnNonRetryable4xx() throws Exception {
         when(connectorRegistry.findById("slack", "default-org")).thenReturn(Optional.of(manifest));
         when(credentialProvider.getDecryptedCredential("cred-1")).thenReturn(Optional.of(credential));
-        when(variableResolver.resolveObject(any(), anyMap())).thenReturn(params.getInputs());
+        when(variableResolver.resolveValue(any(), any(ExecutionContext.class))).thenAnswer(inv -> inv.getArgument(0));
         
         // 400 Bad Request should NOT be retried
         HttpClientErrorException exception400 = HttpClientErrorException.create(
@@ -212,10 +216,10 @@ class ConnectorTaskExecutorTest {
         when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), eq(String.class)))
                 .thenThrow(exception400);
 
-        TaskExecutionData result = executor.execute(task, context);
+        TaskExecutionResult result = executor.execute(task, execution, context);
 
-        assertThat(result.getStatus()).isEqualTo(TaskExecutionStatus.FAILED);
-        assertThat(result.getError()).contains("invalid_channel");
+        assertThat(result.getStatus()).isEqualTo(TaskExecutionResult.Status.FAILED);
+        assertThat(result.getErrorMessage()).contains("invalid_channel");
         
         // RestTemplate should only be called once!
         verify(restTemplate, times(1)).exchange(anyString(), any(), any(), eq(String.class));
@@ -228,10 +232,10 @@ class ConnectorTaskExecutorTest {
         
         when(connectorRegistry.findById("slack", "default-org")).thenReturn(Optional.of(manifest));
         when(credentialProvider.getDecryptedCredential("cred-1")).thenReturn(Optional.of(credential));
-        when(variableResolver.resolveObject(any(), anyMap())).thenReturn(params.getInputs());
+        when(variableResolver.resolveValue(any(), any(ExecutionContext.class))).thenAnswer(inv -> inv.getArgument(0));
 
         IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
-            executor.execute(task, context);
+            executor.execute(task, execution, context);
         });
         
         assertThat(exception.getMessage()).contains("OAuth2 token for credential").contains("has expired");
@@ -244,10 +248,10 @@ class ConnectorTaskExecutorTest {
         
         when(connectorRegistry.findById("slack", "default-org")).thenReturn(Optional.of(manifest));
         when(credentialProvider.getDecryptedCredential("cred-1")).thenReturn(Optional.of(credential));
-        when(variableResolver.resolveObject(any(), anyMap())).thenReturn(params.getInputs());
+        when(variableResolver.resolveValue(any(), any(ExecutionContext.class))).thenAnswer(inv -> inv.getArgument(0));
         
         when(scriptEvaluationService.executeScript(anyString(), anyMap()))
-                .thenReturn(new ScriptEvaluationService.ScriptResult(Map.of("mapped", "C123"), Collections.emptyList()));
+                .thenReturn(new ScriptEvaluationService.ScriptResult(Map.of("mapped", "C123"), (String) null));
                 
         ResponseEntity<String> successResponse = new ResponseEntity<>("{\"ok\":true}", HttpStatus.OK);
         when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), eq(String.class)))
@@ -255,7 +259,7 @@ class ConnectorTaskExecutorTest {
                 
         when(objectMapper.readValue("{\"ok\":true}", Object.class)).thenReturn(Map.of("ok", true));
 
-        executor.execute(task, context);
+        executor.execute(task, execution, context);
 
         verify(scriptEvaluationService, times(1)).executeScript(eq("return { mapped: inputs.channel };"), anyMap());
     }
