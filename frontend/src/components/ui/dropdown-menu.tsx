@@ -45,9 +45,9 @@ function DropdownMenuTrigger({ children, asChild }: { children: React.ReactEleme
             onClick: (e: React.MouseEvent) => {
                 e.stopPropagation();
                 setOpen(!open);
-                children.props.onClick?.(e);
+                (children.props as any).onClick?.(e);
             },
-        });
+        } as any);
     }
     return (
         <button onClick={() => setOpen(!open)} type="button">

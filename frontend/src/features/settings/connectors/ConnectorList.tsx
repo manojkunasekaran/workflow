@@ -6,7 +6,6 @@ import {
     MoreVertical,
     Zap,
     Lock,
-    AlertTriangle,
 } from 'lucide-react';
 import { connectorApi, type ConnectorManifest, type ConnectorAuthType } from '@/api/connectorApi';
 import { Button } from '@/components/ui/button';

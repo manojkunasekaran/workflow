@@ -21,17 +21,18 @@ export const connectorTaskPlugin = defineTaskPlugin({
         };
     },
     executionSummary({ executionData, status }) {
-        if (!executionData || status === 'SKIPPED') return [];
+        if (!executionData || status === 'SKIPPED') return null;
         const items = [];
         
-        if (executionData.response?.statusCode) {
+        const execData = executionData as any;
+        if (execData.response?.statusCode) {
             items.push({
                 label: 'Status Code',
-                value: String(executionData.response.statusCode),
-                status: executionData.response.statusCode >= 400 ? 'error' : 'success',
+                value: String(execData.response.statusCode),
+                status: execData.response.statusCode >= 400 ? 'error' : 'success',
             });
         }
         
-        return items;
+        return items.length > 0 ? { lines: items } : null;
     },
 });

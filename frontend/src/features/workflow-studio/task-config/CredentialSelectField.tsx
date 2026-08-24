@@ -5,6 +5,7 @@ import { SimpleSelect } from '@/components/ui/select';
 import { Loader2, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CredentialDialog } from '@/features/settings/components/CredentialDialog';
+import { Label } from '@/components/ui/label';
 
 interface CredentialSelectFieldProps {
     id?: string;
@@ -33,7 +34,7 @@ export function CredentialSelectField({
 
     const load = useCallback(async () => {
         try {
-            const data = await credentialApi.getAll({ connectorId });
+            const data = await credentialApi.getAll(connectorId);
             if (filterType) {
                 setCredentials(data.filter(c => c.type === filterType));
             } else {

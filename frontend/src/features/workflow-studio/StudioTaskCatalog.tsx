@@ -140,7 +140,7 @@ export function StudioTaskCatalog({
                                     Integrations
                                 </div>
                                 {integrationItems.map((item) => {
-                                    const payload = JSON.stringify({ type: 'CONNECTOR_TASK', connectorId: item.connectorId });
+
                                                 // Resolve icon: CDN/http URLs used directly; others treated as local
                                                 const iconSrc = item.icon?.startsWith('http')
                                                     ? item.icon
