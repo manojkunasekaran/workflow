@@ -9,6 +9,7 @@ export const TaskType = {
     WAIT: 'WAIT',
     DATA_TRANSFORM: 'DATA_TRANSFORM',
     SMTP_TASK: 'SMTP_TASK',
+    CONNECTOR_TASK: 'CONNECTOR_TASK',
 } as const;
 
 export type TaskType = typeof TaskType[keyof typeof TaskType];

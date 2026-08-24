@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { PageHeader } from '@/layouts/PageHeader';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import ConnectorsPage from '@/features/settings/connectors/ConnectorsPage';
-import { Blocks, Layers, Globe, Building2 } from 'lucide-react';
+import { Blocks, Globe, Building2 } from 'lucide-react';
 
 export default function IntegrationsPage() {
     const [activeTab, setActiveTab] = useState<'system' | 'custom'>('system');

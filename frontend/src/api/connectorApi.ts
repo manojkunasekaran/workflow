@@ -61,6 +61,8 @@ export interface ConnectorAction {
     inputSchema: ConnectorInputField[];
     outputDescription?: string;
     outputPaths?: string[];
+    maxRetries?: number;
+    retryDelayMs?: number;
 }
 
 export interface OAuth2Config {

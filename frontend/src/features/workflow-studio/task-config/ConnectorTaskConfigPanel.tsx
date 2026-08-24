@@ -4,7 +4,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, ChevronDown } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import type { TaskParameterErrors } from '@/features/workflow-studio/task-type-schema/types';
 import { VariableInput } from '@/features/workflow-studio/task-config/VariableInput';
 import { CredentialSelectField } from '@/features/workflow-studio/task-config/CredentialSelectField';
@@ -324,7 +324,7 @@ export function ConnectorTaskConfigPanel({ parameters, onChange, errors }: Props
                                 type="number"
                                 min="0"
                                 max="10"
-                                placeholder={selectedManifest.actions.find(a => a.actionId === actionId)?.maxRetries?.toString() || "3"}
+                                placeholder={selectedAction?.maxRetries?.toString() || "3"}
                                 value={(parameters.maxRetries as string | number) || ''}
                                 onChange={e => {
                                     const val = e.target.value === '' ? undefined : Number(e.target.value);
@@ -339,7 +339,7 @@ export function ConnectorTaskConfigPanel({ parameters, onChange, errors }: Props
                                 type="number"
                                 min="0"
                                 step="100"
-                                placeholder={selectedManifest.actions.find(a => a.actionId === actionId)?.retryDelayMs?.toString() || "1000"}
+                                placeholder={selectedAction?.retryDelayMs?.toString() || "1000"}
                                 value={(parameters.retryDelayMs as string | number) || ''}
                                 onChange={e => {
                                     const val = e.target.value === '' ? undefined : Number(e.target.value);
