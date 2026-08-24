@@ -7,7 +7,8 @@ import com.app.common.connector.ConnectorAuthType;
 import com.app.common.connector.ConnectorManifest;
 import com.app.common.entity.IntegrationCredential;
 import com.app.common.exception.ResourceNotFoundException;
-import com.app.core.service.CredentialProvider;
+import com.app.crypto.util.EncryptionService;
+import com.app.persistence.repository.IntegrationCredentialRepository;
 import com.app.persistence.connector.ConnectorRegistry;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -50,10 +51,10 @@ public class ConnectorTestService {
     private static final String DEFAULT_ORG_ID = "default-org";
 
     private final ConnectorRegistry connectorRegistry;
-    private final CredentialProvider credentialProvider;
+    private final IntegrationCredentialRepository credentialRepository;
+    private final EncryptionService encryptionService;
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
-    private final com.app.core.service.ScriptEvaluationService scriptEvaluationService;
 
     public ConnectorTestResult testAction(String connectorId, ConnectorTestRequest request) {
         ConnectorManifest manifest = connectorRegistry.findById(connectorId, DEFAULT_ORG_ID)
@@ -138,11 +139,12 @@ public class ConnectorTestService {
             throw new IllegalArgumentException("A credential is required to test this connector.");
         }
 
-        IntegrationCredential credential = credentialProvider.getDecryptedCredential(credentialId)
+        IntegrationCredential credential = credentialRepository.findById(credentialId)
                 .orElseThrow(() -> new IllegalArgumentException("Credential not found: " + credentialId));
 
         Map<String, String> creds = credential.getCredentials();
         if (creds == null) return;
+        creds = encryptionService.decryptMap(creds);
 
         switch (manifest.getAuthType()) {
             case BEARER_TOKEN -> {
@@ -182,39 +184,10 @@ public class ConnectorTestService {
     private Map<String, Object> buildBody(ConnectorAction action, Map<String, Object> inputs) {
         if ("GET".equalsIgnoreCase(action.getMethod())) return null;
         
-        // Evaluate input script if present
+        // Test calls bypass input scripts because the user is expected
+        // to provide pre-evaluated test inputs in the UI dialogue.
         if (action.getInputScript() != null && !action.getInputScript().isBlank()) {
-            try {
-                Map<String, Object> context = new HashMap<>();
-                context.put("inputs", inputs);
-                com.app.core.service.ScriptEvaluationService.ScriptResult result = 
-                    scriptEvaluationService.executeScript(action.getInputScript(), context);
-                
-                if (result.data() == null) {
-                    return null;
-                }
-                
-                if (result.data() instanceof Map) {
-                    return (Map<String, Object>) result.data();
-                } else if (result.data() instanceof String) {
-                    // Script returned a string body, try to parse it
-                    try {
-                        return objectMapper.readValue((String) result.data(), new TypeReference<Map<String, Object>>() {});
-                    } catch (Exception e) {
-                        Map<String, Object> map = new HashMap<>();
-                        map.put("body", result.data());
-                        return map;
-                    }
-                }
-                
-                Map<String, Object> map = new HashMap<>();
-                map.put("data", result.data());
-                return map;
-                
-            } catch (Exception e) {
-                log.error("Failed to evaluate connector input script for test call", e);
-                throw new IllegalArgumentException("Failed to evaluate input script: " + e.getMessage(), e);
-            }
+            log.info("Bypassing input script evaluation for test call (action={})", action.getActionId());
         }
         
         // Default behavior if no script

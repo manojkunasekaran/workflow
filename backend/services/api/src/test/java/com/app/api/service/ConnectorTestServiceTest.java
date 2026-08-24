@@ -6,8 +6,8 @@ import com.app.common.connector.ConnectorAction;
 import com.app.common.connector.ConnectorAuthType;
 import com.app.common.connector.ConnectorManifest;
 import com.app.common.entity.IntegrationCredential;
-import com.app.core.service.CredentialProvider;
-import com.app.core.service.ScriptEvaluationService;
+import com.app.crypto.util.EncryptionService;
+import com.app.persistence.repository.IntegrationCredentialRepository;
 import com.app.persistence.connector.ConnectorRegistry;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,13 +42,13 @@ class ConnectorTestServiceTest {
     @Mock
     private ConnectorRegistry connectorRegistry;
     @Mock
-    private CredentialProvider credentialProvider;
+    private IntegrationCredentialRepository credentialRepository;
+    @Mock
+    private EncryptionService encryptionService;
     @Mock
     private RestTemplate restTemplate;
     @Mock
     private ObjectMapper objectMapper;
-    @Mock
-    private ScriptEvaluationService scriptEvaluationService;
 
     @InjectMocks
     private ConnectorTestService testService;
@@ -88,7 +88,8 @@ class ConnectorTestServiceTest {
     @Test
     void testAction_shouldReturnSuccessfulResult() throws Exception {
         when(connectorRegistry.findById("dummy", "default-org")).thenReturn(Optional.of(manifest));
-        when(credentialProvider.getDecryptedCredential("cred-1")).thenReturn(Optional.of(credential));
+        when(credentialRepository.findById("cred-1")).thenReturn(Optional.of(credential));
+        when(encryptionService.decryptMap(any())).thenAnswer(inv -> inv.getArgument(0));
 
         ResponseEntity<String> responseEntity = new ResponseEntity<>("{\"id\":\"123\", \"name\":\"John\"}", HttpStatus.OK);
         when(restTemplate.exchange(
@@ -113,7 +114,8 @@ class ConnectorTestServiceTest {
     @Test
     void testAction_shouldReturnErrorResultOnHttpClientException() throws Exception {
         when(connectorRegistry.findById("dummy", "default-org")).thenReturn(Optional.of(manifest));
-        when(credentialProvider.getDecryptedCredential("cred-1")).thenReturn(Optional.of(credential));
+        when(credentialRepository.findById("cred-1")).thenReturn(Optional.of(credential));
+        when(encryptionService.decryptMap(any())).thenAnswer(inv -> inv.getArgument(0));
 
         HttpClientErrorException exception404 = HttpClientErrorException.create(
                 HttpStatus.NOT_FOUND, "Not Found", HttpHeaders.EMPTY, "{\"error\":\"User not found\"}".getBytes(StandardCharsets.UTF_8), null);
