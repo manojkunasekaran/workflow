@@ -8,9 +8,9 @@ import com.app.common.model.task.TaskType;
 import com.app.common.model.task.WorkflowTask;
 import com.app.common.model.task.execution.ConnectorTaskExecutionData;
 import com.app.common.model.task.execution.TaskExecutionData;
-import com.app.common.model.task.execution.TaskExecutionStatus;
+import com.app.common.constant.TaskExecutionStatus;
 import com.app.common.model.task.parameters.ConnectorTaskParameters;
-import com.app.core.context.ExecutionContext;
+import com.app.core.model.ExecutionContext;
 import com.app.core.service.CredentialProvider;
 import com.app.core.service.ScriptEvaluationService;
 import com.app.core.service.VariableResolver;
@@ -78,11 +78,9 @@ class ConnectorTaskExecutorTest {
     @BeforeEach
     void setUp() {
         context = ExecutionContext.builder()
-                .workflowId("wf-1")
-                .executionId("exec-1")
-                .organizationId("default-org")
-                .variables(new HashMap<>())
-                .tasksExecutionData(new HashMap<>())
+                .workflowExecutionId("exec-1")
+                .workflowVariables(new HashMap<>())
+                .taskOutputs(new HashMap<>())
                 .build();
 
         params = new ConnectorTaskParameters();
@@ -134,7 +132,7 @@ class ConnectorTaskExecutorTest {
 
         TaskExecutionData result = executor.execute(task, context);
 
-        assertThat(result.getStatus()).isEqualTo(TaskExecutionStatus.SUCCESS);
+        assertThat(result.getStatus()).isEqualTo(TaskExecutionStatus.COMPLETED);
         assertThat(result).isInstanceOf(ConnectorTaskExecutionData.class);
         ConnectorTaskExecutionData connResult = (ConnectorTaskExecutionData) result;
         assertThat(connResult.getResponse()).isEqualTo(Map.of("ok", true));
@@ -168,7 +166,7 @@ class ConnectorTaskExecutorTest {
 
         TaskExecutionData result = executor.execute(task, context);
 
-        assertThat(result.getStatus()).isEqualTo(TaskExecutionStatus.SUCCESS);
+        assertThat(result.getStatus()).isEqualTo(TaskExecutionStatus.COMPLETED);
         verify(restTemplate, times(2)).exchange(anyString(), any(), any(), eq(String.class));
     }
 
@@ -197,7 +195,7 @@ class ConnectorTaskExecutorTest {
 
         TaskExecutionData result = executor.execute(task, context);
 
-        assertThat(result.getStatus()).isEqualTo(TaskExecutionStatus.SUCCESS);
+        assertThat(result.getStatus()).isEqualTo(TaskExecutionStatus.COMPLETED);
         verify(restTemplate, times(2)).exchange(anyString(), any(), any(), eq(String.class));
     }
 
