@@ -17,7 +17,10 @@ public class ConnectorManifest {
     private String authHeaderName;
     private String authHeaderPrefix;
     private CredentialGuide credentialGuide;
+    private ConnectionSetup connectionSetup;
+    private VerifyAction verifyAction;
     private OAuth2Config oauth2Config;
     private List<ConnectorAction> actions;
     private boolean enabled = true;
+    private boolean systemConnectionConfigured; // Added for phase 4, transient field representing env var presence
 }

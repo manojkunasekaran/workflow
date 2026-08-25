@@ -28,6 +28,7 @@ const router = createBrowserRouter([
             { path: 'executions/:id', element: <ExecutionDetail /> },
             { path: 'integrations', element: <IntegrationsPage /> },
             { path: 'credentials', element: <CredentialsPage /> },
+            { path: 'connections', element: <Navigate to="/credentials" replace /> },
             { path: 'settings', element: <SettingsPage /> },
             { path: 'admin', element: <Navigate to="/integrations" replace /> },
             { path: '*', element: <LandingPage /> },

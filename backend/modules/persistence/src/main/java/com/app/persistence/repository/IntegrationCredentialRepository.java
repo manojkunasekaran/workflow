@@ -18,4 +18,8 @@ public interface IntegrationCredentialRepository extends MongoRepository<Integra
      * Used by {@code OAuthTokenRefreshJob} to proactively refresh tokens.
      */
     List<IntegrationCredential> findByTokenTypeAndTokenExpiresAtBefore(String tokenType, Instant threshold);
+
+    List<IntegrationCredential> findByOrganizationId(String organizationId);
+    List<IntegrationCredential> findByOrganizationIdAndConnectorId(String organizationId, String connectorId);
+    List<IntegrationCredential> findByCredentialScope(com.app.common.entity.CredentialScope credentialScope);
 }

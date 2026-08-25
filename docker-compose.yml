@@ -45,6 +45,8 @@ services:
       - ./frontend:/app
       - /app/node_modules
     restart: unless-stopped
+    networks:
+      - workflow-network
 
   # ── Backend ──────────────────────────────────────────────────────────
   # Build the shared modules into the Maven local repository.

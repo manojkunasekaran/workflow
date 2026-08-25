@@ -71,6 +71,28 @@ export interface OAuth2Config {
     defaultScopes?: string[];
 }
 
+export interface ConnectionSetupField {
+    key: string;
+    label: string;
+    placeholder?: string;
+    hint?: string;
+    docUrl?: string;
+    sensitive?: boolean;
+}
+
+export interface ConnectionSetup {
+    buttonLabel?: string;
+    buttonIcon?: string;
+    description?: string;
+    fields?: ConnectionSetupField[];
+}
+
+export interface VerifyAction {
+    method: string;
+    path: string;
+    headers?: Record<string, string>;
+}
+
 export interface ConnectorManifest {
     id?: string;
     scope?: 'SYSTEM' | 'TENANT';
@@ -85,8 +107,11 @@ export interface ConnectorManifest {
     authHeaderPrefix?: string;
     oauth2Config?: OAuth2Config;
     credentialGuide?: CredentialGuide;
+    connectionSetup?: ConnectionSetup;
+    verifyAction?: VerifyAction;
     actions: ConnectorAction[];
     enabled?: boolean;
+    systemConnectionConfigured?: boolean;
 }
 
 // ─── Test Action Types ───────────────────────────────────────────────────────

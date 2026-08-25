@@ -48,6 +48,7 @@ export type TaskNodeData = {
     type: StudioTaskType | string;
     parameters: Record<string, unknown>;
     studioGraph?: TaskNodeStudioGraph;
+    sampleData?: Record<string, unknown>;
 };
 
 function TaskNodeComponent({ data, selected }: NodeProps & { data: TaskNodeData }) {

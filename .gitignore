@@ -98,3 +98,4 @@ $RECYCLE.BIN/
 .env.production.local
 *.key
 *.pem
+.m2/

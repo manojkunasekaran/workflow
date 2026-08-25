@@ -58,7 +58,7 @@ public class SmtpTaskExecutor implements TaskExecutor {
         int smtpPort;
 
         if (credentialId != null && !credentialId.isBlank()) {
-            Map<String, String> creds = credentialProvider.getDecryptedCredentials(credentialId)
+            Map<String, String> creds = credentialProvider.resolveCredentials(credentialId, null, context)
                     .orElseThrow(() -> new IllegalArgumentException("Credential not found: " + credentialId));
             
             smtpHost = creds.get("host");

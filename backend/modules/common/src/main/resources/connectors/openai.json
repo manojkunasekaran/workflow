@@ -1,46 +1,136 @@
 {
-  "connectorId": "openai",
-  "displayName": "OpenAI",
-  "icon": "https://cdn.iconscout.com/icon/free/png-256/openai-3628861-3030001.png",
-  "category": "AI",
-  "baseUrl": "https://api.openai.com/v1",
-  "authType": "BEARER_TOKEN",
-  "credentialGuide": {
-    "fields": [
-      {
-        "key": "token",
-        "label": "API Key",
-        "hint": "Starts with sk-"
-      }
-    ]
-  },
-  "actions": [
-    {
-      "actionId": "create_completion",
-      "displayName": "Create Chat Completion",
-      "method": "POST",
-      "path": "/chat/completions",
-      "inputSchema": [
-        {
-          "key": "model",
-          "label": "Model",
-          "type": "STRING",
-          "required": true,
-          "defaultValue": "gpt-4o",
-          "supportsExpression": true
-        },
-        {
-          "key": "prompt",
-          "label": "Prompt",
-          "type": "TEXTAREA",
-          "required": true,
-          "supportsExpression": true
-        }
-      ],
-      "inputScript": "return { model: $inputs.model, messages: [{ role: 'user', content: $inputs.prompt }] };",
-      "outputPaths": [
-        "choices.0.message.content"
-      ]
-    }
-  ]
+    "connectorId":  "openai",
+    "displayName":  "OpenAI",
+    "icon":  "https://cdn.iconscout.com/icon/free/png-256/openai-3628861-3030001.png",
+    "category":  "AI",
+    "baseUrl":  "https://api.openai.com/v1",
+    "authType":  "BEARER_TOKEN",
+    "credentialGuide":  {
+                            "fields":  [
+                                           {
+                                               "key":  "token",
+                                               "label":  "API Key",
+                                               "hint":  "Starts with sk-"
+                                           }
+                                       ]
+                        },
+    "actions":  [
+                    {
+                        "actionId":  "create_completion",
+                        "displayName":  "Create Chat Completion",
+                        "method":  "POST",
+                        "path":  "/chat/completions",
+                        "inputSchema":  [
+                                            {
+                                                "key":  "model",
+                                                "label":  "Model",
+                                                "type":  "STRING",
+                                                "required":  true,
+                                                "defaultValue":  "gpt-4o",
+                                                "supportsExpression":  true
+                                            },
+                                            {
+                                                "key":  "prompt",
+                                                "label":  "Prompt",
+                                                "type":  "TEXTAREA",
+                                                "required":  true,
+                                                "supportsExpression":  true
+                                            }
+                                        ],
+                        "inputScript":  "return { model: $inputs.model, messages: [{ role: \u0027user\u0027, content: $inputs.prompt }] };",
+                        "outputPaths":  [
+                                            "choices.0.message.content"
+                                        ]
+                    },
+                    {
+                        "actionId":  "create_image",
+                        "displayName":  "Create Image",
+                        "method":  "POST",
+                        "path":  "/images/generations",
+                        "inputSchema":  [
+                                            {
+                                                "key":  "prompt",
+                                                "label":  "Prompt",
+                                                "type":  "TEXTAREA",
+                                                "required":  true,
+                                                "supportsExpression":  true
+                                            },
+                                            {
+                                                "key":  "n",
+                                                "label":  "Number of Images",
+                                                "type":  "NUMBER",
+                                                "required":  false,
+                                                "defaultValue":  1,
+                                                "supportsExpression":  true
+                                            },
+                                            {
+                                                "key":  "size",
+                                                "label":  "Size",
+                                                "type":  "SELECT",
+                                                "required":  false,
+                                                "defaultValue":  "1024x1024",
+                                                "options":  [
+                                                                { "label": "256x256", "value": "256x256" },
+                                                                { "label": "512x512", "value": "512x512" },
+                                                                { "label": "1024x1024", "value": "1024x1024" }
+                                                            ]
+                                            }
+                                        ],
+                        "inputScript":  "return { prompt: $inputs.prompt, n: $inputs.n || 1, size: $inputs.size || '1024x1024' };",
+                        "outputPaths":  [
+                                            "data.0.url"
+                                        ]
+                    },
+                    {
+                        "actionId":  "create_embedding",
+                        "displayName":  "Create Embedding",
+                        "method":  "POST",
+                        "path":  "/embeddings",
+                        "inputSchema":  [
+                                            {
+                                                "key":  "model",
+                                                "label":  "Model",
+                                                "type":  "STRING",
+                                                "required":  true,
+                                                "defaultValue":  "text-embedding-ada-002",
+                                                "supportsExpression":  true
+                                            },
+                                            {
+                                                "key":  "input",
+                                                "label":  "Input Text",
+                                                "type":  "TEXTAREA",
+                                                "required":  true,
+                                                "supportsExpression":  true
+                                            }
+                                        ],
+                        "inputScript":  "return { model: $inputs.model, input: $inputs.input };",
+                        "outputPaths":  [
+                                            "data.0.embedding"
+                                        ]
+                    },
+                    {
+                        "actionId":  "list_models",
+                        "displayName":  "List Models",
+                        "method":  "GET",
+                        "path":  "/models",
+                        "inputSchema":  [],
+                        "outputPaths":  [
+                                            "data"
+                                        ]
+                    }
+                ],
+    "connectionSetup":  {
+                            "fields":  [
+                                           {
+                                               "label":  "API Key",
+                                               "key":  "token",
+                                               "sensitive":  true,
+                                               "hint":  "Starts with sk-"
+                                           }
+                                       ]
+                        },
+    "verifyAction":  {
+                         "method":  "GET",
+                         "path":  "/"
+                     }
 }

@@ -4,7 +4,7 @@ import { ConditionalBranchListField } from '@/features/workflow-studio/task-conf
 import { HumanActionListField } from '@/features/workflow-studio/task-config/HumanActionListField';
 import { WaitDurationField } from '@/features/workflow-studio/task-config/WaitDurationField';
 import { TaskRefField } from '@/features/workflow-studio/task-config/TaskRefField';
-import { CredentialSelectField } from '@/features/workflow-studio/task-config/CredentialSelectField';
+import { ConnectionSelectField } from '@/features/workflow-studio/task-config/ConnectionSelectField';
 import { VariableInput } from '@/features/workflow-studio/task-config/VariableInput';
 import { filterTaskPickCandidates, taskLabelById } from '@/features/workflow-studio/task-config/taskRefUtils';
 import { Button } from '@/components/ui/button';
@@ -162,10 +162,10 @@ export function TaskFieldRenderer({
 
     if (field.type === 'credential') {
         return (
-            <CredentialSelectField
+            <ConnectionSelectField
                 id={field.key}
                 label={label}
-                value={value}
+                value={value as string | undefined}
                 onChange={(val) => update(val)}
                 error={error}
                 description={field.description}

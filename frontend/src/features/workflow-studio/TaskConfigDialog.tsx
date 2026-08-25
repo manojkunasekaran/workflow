@@ -246,7 +246,17 @@ export function TaskConfigDialog({
                                     />
                                 </DialogTitle>
                             </div>
-                            <div className="flex shrink-0 items-center gap-2">
+                            <div className="flex shrink-0 items-center gap-1.5">
+                                {plugin?.testComponent && (() => {
+                                    const TestComponent = plugin.testComponent;
+                                    return <TestComponent parameters={{ 
+                                        ...draft.parameters, 
+                                        __taskId: draft.taskId,
+                                        __taskType: draft.type,
+                                        __taskName: draft.taskId,
+                                        __isNewTask: isNewTask
+                                    }} />;
+                                })()}
                                 {!isNewTask && (
                                     <Button
                                         type="button"

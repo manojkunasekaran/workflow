@@ -6,10 +6,20 @@ option java_outer_classname = "WorkflowServiceProto";
 
 service WorkflowService {
     rpc ProcessExecution(ProcessExecutionRequest) returns (EmptyResponse);
+    rpc TestNodeExecution(TestNodeRequest) returns (TestNodeResponse);
 }
 
 message ProcessExecutionRequest {
     string execution_id = 1;
+}
+
+message TestNodeRequest {
+    string workflow_draft_json = 1;
+    string target_task_id = 2;
+}
+
+message TestNodeResponse {
+    string result_json = 1;
 }
 
 message EmptyResponse {}

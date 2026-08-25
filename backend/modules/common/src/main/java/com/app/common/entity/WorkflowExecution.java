@@ -42,6 +42,12 @@ public class WorkflowExecution extends Auditable {
     private String currentTaskId;
 
     /**
+     * If set, this execution is a partial test run that should only execute
+     * this specific task (and automatically evaluate/run its ancestors).
+     */
+    private String targetTaskId;
+
+    /**
      * Resolved next task when known but not started yet (e.g. after wait pause).
      * Null while the current task is still in progress.
      */

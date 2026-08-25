@@ -168,6 +168,13 @@ public class WorkflowEngine {
                 // Record task execution
                 recordTaskExecution(execution, currentTask, result, taskStartTime);
 
+                // Stop early if this execution is testing a specific target task
+                if (currentTask.getTaskId().equals(execution.getTargetTaskId())) {
+                    log.info("Test target task '{}' completed, stopping test execution.", currentTask.getTaskId());
+                    execution.setStatus(WorkflowExecutionStatus.COMPLETED);
+                    break;
+                }
+
                 // PAUSED: set resume cursor and exit loop — finally persists once
                 if (result.getStatus() == TaskExecutionResult.Status.PAUSED) {
                     execution.setCurrentTaskId(result.getNextTaskId() != null

@@ -13,6 +13,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import org.springframework.core.env.Environment;
 
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -29,6 +30,7 @@ public class ConnectorRegistry {
 
     private final ObjectMapper objectMapper;
     private final ConnectorManifestRepository repository;
+    private final Environment environment;
 
     @PostConstruct
     public void seedSystemManifests() {
@@ -55,6 +57,8 @@ public class ConnectorRegistry {
                     entity.setAuthHeaderPrefix(manifest.getAuthHeaderPrefix());
                     entity.setOauth2Config(manifest.getOauth2Config());
                     entity.setCredentialGuide(manifest.getCredentialGuide());
+                    entity.setConnectionSetup(manifest.getConnectionSetup());
+                    entity.setVerifyAction(manifest.getVerifyAction());
                     entity.setActions(manifest.getActions());
                     // Don't overwrite enabled status if updating existing entity
                     if (entity.getId() == null) {
@@ -87,8 +91,11 @@ public class ConnectorRegistry {
         manifest.setAuthHeaderPrefix(entity.getAuthHeaderPrefix());
         manifest.setOauth2Config(entity.getOauth2Config());
         manifest.setCredentialGuide(entity.getCredentialGuide());
+        manifest.setConnectionSetup(entity.getConnectionSetup());
+        manifest.setVerifyAction(entity.getVerifyAction());
         manifest.setActions(entity.getActions());
         manifest.setEnabled(entity.isEnabled());
+        
         return manifest;
     }
 
@@ -110,7 +117,9 @@ public class ConnectorRegistry {
     }
 
     public List<ConnectorManifest> listAll() {
-        return listAll(null);
+        return repository.findAll().stream()
+                .map(this::mapToDomain)
+                .collect(Collectors.toList());
     }
     
     public List<ConnectorManifest> listAll(String organizationId) {
@@ -178,6 +187,8 @@ public class ConnectorRegistry {
         entity.setAuthHeaderPrefix(manifest.getAuthHeaderPrefix());
         entity.setOauth2Config(manifest.getOauth2Config());
         entity.setCredentialGuide(manifest.getCredentialGuide());
+        entity.setConnectionSetup(manifest.getConnectionSetup());
+        entity.setVerifyAction(manifest.getVerifyAction());
         entity.setActions(manifest.getActions());
         entity.setEnabled(manifest.isEnabled());
         

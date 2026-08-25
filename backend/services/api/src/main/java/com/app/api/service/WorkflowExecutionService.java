@@ -92,6 +92,29 @@ public class WorkflowExecutionService {
         return execution;
     }
 
+    public WorkflowExecution triggerTestExecution(String definitionId, String targetTaskId, Map<String, Object> cachedSampleData) {
+        WorkflowExecution execution = new WorkflowExecution();
+        execution.setWorkflowId(definitionId);
+        execution.setWorkflowDefinitionId(definitionId);
+        execution.setExecutionType(ExecutionType.SYNC);
+        execution.setTargetTaskId(targetTaskId);
+        execution.setTriggeredBy(TriggerType.MANUAL);
+        execution.setStatus(WorkflowExecutionStatus.QUEUED);
+        execution.setStartTime(Instant.now());
+        execution.setTaskExecutionSummaries(java.util.Collections.synchronizedList(new ArrayList<>()));
+
+        if (cachedSampleData != null) {
+            execution.setTaskOutputs(new java.util.concurrent.ConcurrentHashMap<>(cachedSampleData));
+        }
+
+        execution = executionRepository.save(execution);
+        String executionId = execution.getId();
+
+        ExecutionSyncWaiter.WaitSession waitSession = syncWaiter.beginWait(executionId);
+        messageDispatcherRegistry.dispatch(ExecutionType.SYNC, executionId);
+        return syncWaiter.await(waitSession, properties.getExecution().getSyncTimeoutSeconds(), TimeUnit.SECONDS);
+    }
+
     private WorkflowExecution createQueuedExecution(
             String definitionId, ExecutionType executionType,
             Map<String, VariableValue> inputs, TriggerType triggeredBy) {

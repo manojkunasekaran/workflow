@@ -11,6 +11,7 @@ export interface WorkflowState {
     onNodesChange: (changes: NodeChange<StudioCanvasNode>[]) => void;
     onEdgesChange: (changes: EdgeChange[]) => void;
     resetCanvas: (nodes: StudioCanvasNode[], edges: Edge[]) => void;
+    updateTaskSampleData: (taskId: string, data: Record<string, unknown>) => void;
 }
 
 export const useWorkflowStore = create<WorkflowState>()(
@@ -46,6 +47,15 @@ export const useWorkflowStore = create<WorkflowState>()(
             },
             resetCanvas: (nodes, edges) => {
                 set({ nodes, edges });
+            },
+            updateTaskSampleData: (taskId, data) => {
+                set((state) => ({
+                    nodes: state.nodes.map(n => 
+                        n.id === taskId 
+                            ? { ...n, data: { ...n.data, sampleData: data } }
+                            : n
+                    ) as StudioCanvasNode[]
+                }));
             },
         }),
         {

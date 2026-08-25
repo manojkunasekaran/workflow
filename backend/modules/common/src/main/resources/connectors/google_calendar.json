@@ -1,62 +1,160 @@
 {
-  "connectorId": "google_calendar",
-  "displayName": "Google Calendar",
-  "icon": "https://cdn.iconscout.com/icon/free/png-256/google-calendar-3628861-3030001.png",
-  "category": "Calendar",
-  "baseUrl": "https://www.googleapis.com/calendar/v3",
-  "authType": "OAUTH2",
-  "oauth2Config": {
-    "authorizationUrl": "https://accounts.google.com/o/oauth2/auth",
-    "tokenUrl": "https://oauth2.googleapis.com/token",
-    "defaultScopes": [
-      "https://www.googleapis.com/auth/calendar.events"
-    ]
-  },
-  "actions": [
-    {
-      "actionId": "create_event",
-      "displayName": "Create Event",
-      "method": "POST",
-      "path": "/calendars/{calendarId}/events",
-      "pathParams": [
-        "calendarId"
-      ],
-      "inputSchema": [
-        {
-          "key": "calendarId",
-          "label": "Calendar ID",
-          "type": "STRING",
-          "required": true,
-          "defaultValue": "primary",
-          "supportsExpression": true
-        },
-        {
-          "key": "summary",
-          "label": "Event Title",
-          "type": "STRING",
-          "required": true,
-          "supportsExpression": true
-        },
-        {
-          "key": "startTime",
-          "label": "Start Time (ISO8601)",
-          "type": "STRING",
-          "required": true,
-          "supportsExpression": true
-        },
-        {
-          "key": "endTime",
-          "label": "End Time (ISO8601)",
-          "type": "STRING",
-          "required": true,
-          "supportsExpression": true
-        }
-      ],
-      "inputScript": "return { summary: $inputs.summary, start: { dateTime: $inputs.startTime }, end: { dateTime: $inputs.endTime } };",
-      "outputPaths": [
-        "id",
-        "htmlLink"
-      ]
-    }
-  ]
+    "connectorId":  "google_calendar",
+    "displayName":  "Google Calendar",
+    "icon":  "https://cdn.iconscout.com/icon/free/png-256/google-calendar-3628861-3030001.png",
+    "category":  "Calendar",
+    "baseUrl":  "https://www.googleapis.com/calendar/v3",
+    "authType":  "OAUTH2",
+    "oauth2Config":  {
+                         "authorizationUrl":  "https://accounts.google.com/o/oauth2/auth",
+                         "tokenUrl":  "https://oauth2.googleapis.com/token",
+                         "defaultScopes":  [
+                                               "https://www.googleapis.com/auth/calendar.events"
+                                           ]
+                     },
+    "actions":  [
+                    {
+                        "actionId":  "create_event",
+                        "displayName":  "Create Event",
+                        "method":  "POST",
+                        "path":  "/calendars/{calendarId}/events",
+                        "pathParams":  [
+                                           "calendarId"
+                                       ],
+                        "inputSchema":  [
+                                            {
+                                                "key":  "calendarId",
+                                                "label":  "Calendar ID",
+                                                "type":  "STRING",
+                                                "required":  true,
+                                                "defaultValue":  "primary",
+                                                "supportsExpression":  true
+                                            },
+                                            {
+                                                "key":  "summary",
+                                                "label":  "Event Title",
+                                                "type":  "STRING",
+                                                "required":  true,
+                                                "supportsExpression":  true
+                                            },
+                                            {
+                                                "key":  "startTime",
+                                                "label":  "Start Time (ISO8601)",
+                                                "type":  "STRING",
+                                                "required":  true,
+                                                "supportsExpression":  true
+                                            },
+                                            {
+                                                "key":  "endTime",
+                                                "label":  "End Time (ISO8601)",
+                                                "type":  "STRING",
+                                                "required":  true,
+                                                "supportsExpression":  true
+                                            }
+                                        ],
+                        "inputScript":  "return { summary: $inputs.summary, start: { dateTime: $inputs.startTime }, end: { dateTime: $inputs.endTime } };",
+                        "outputPaths":  [
+                                            "id",
+                                            "htmlLink"
+                                        ]
+                    },
+                    {
+                        "actionId":  "get_event",
+                        "displayName":  "Get Event",
+                        "method":  "GET",
+                        "path":  "/calendars/{calendarId}/events/{eventId}",
+                        "pathParams":  [
+                                           "calendarId",
+                                           "eventId"
+                                       ],
+                        "inputSchema":  [
+                                            {
+                                                "key":  "calendarId",
+                                                "label":  "Calendar ID",
+                                                "type":  "STRING",
+                                                "required":  true,
+                                                "defaultValue":  "primary",
+                                                "supportsExpression":  true
+                                            },
+                                            {
+                                                "key":  "eventId",
+                                                "label":  "Event ID",
+                                                "type":  "STRING",
+                                                "required":  true,
+                                                "supportsExpression":  true
+                                            }
+                                        ],
+                        "outputPaths":  [
+                                            "id",
+                                            "summary",
+                                            "htmlLink"
+                                        ]
+                    },
+                    {
+                        "actionId":  "list_events",
+                        "displayName":  "List Events",
+                        "method":  "GET",
+                        "path":  "/calendars/{calendarId}/events",
+                        "pathParams":  [
+                                           "calendarId"
+                                       ],
+                        "inputSchema":  [
+                                            {
+                                                "key":  "calendarId",
+                                                "label":  "Calendar ID",
+                                                "type":  "STRING",
+                                                "required":  true,
+                                                "defaultValue":  "primary",
+                                                "supportsExpression":  true
+                                            },
+                                            {
+                                                "key":  "maxResults",
+                                                "label":  "Max Results",
+                                                "type":  "NUMBER",
+                                                "required":  false,
+                                                "defaultValue":  10,
+                                                "supportsExpression":  true
+                                            }
+                                        ],
+                        "outputPaths":  [
+                                            "items"
+                                        ]
+                    },
+                    {
+                        "actionId":  "delete_event",
+                        "displayName":  "Delete Event",
+                        "method":  "DELETE",
+                        "path":  "/calendars/{calendarId}/events/{eventId}",
+                        "pathParams":  [
+                                           "calendarId",
+                                           "eventId"
+                                       ],
+                        "inputSchema":  [
+                                            {
+                                                "key":  "calendarId",
+                                                "label":  "Calendar ID",
+                                                "type":  "STRING",
+                                                "required":  true,
+                                                "defaultValue":  "primary",
+                                                "supportsExpression":  true
+                                            },
+                                            {
+                                                "key":  "eventId",
+                                                "label":  "Event ID",
+                                                "type":  "STRING",
+                                                "required":  true,
+                                                "supportsExpression":  true
+                                            }
+                                        ],
+                        "outputPaths":  []
+                    }
+                ],
+    "connectionSetup":  {
+                            "description":  "Connect your Google Calendar account to allow workflows to access it securely.",
+                            "buttonLabel":  "Sign in with Google Calendar"
+                        },
+    "verifyAction":  {
+                         "method":  "GET",
+                         "path":  "/"
+                     }
 }

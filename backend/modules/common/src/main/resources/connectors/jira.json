@@ -1,79 +1,164 @@
 {
-  "connectorId": "jira",
-  "displayName": "Jira Software",
-  "icon": "https://cdn.iconscout.com/icon/free/png-256/jira-3628861-3030001.png",
-  "category": "Project Management",
-  "baseUrl": "https://api.atlassian.com/ex/jira",
-  "authType": "OAUTH2",
-  "oauth2Config": {
-    "authorizationUrl": "https://auth.atlassian.com/authorize?audience=api.atlassian.com",
-    "tokenUrl": "https://auth.atlassian.com/oauth/token",
-    "defaultScopes": ["read:jira-work", "write:jira-work"]
-  },
-  "credentialGuide": {
-    "fields": [
-      {
-        "key": "client_id",
-        "label": "Client ID",
-        "hint": "Found in Jira Developer Console -> OAuth 2.0 integration"
-      },
-      {
-        "key": "client_secret",
-        "label": "Client Secret",
-        "hint": "Generated in Jira Developer Console"
-      }
-    ]
-  },
-  "actions": [
-    {
-      "actionId": "create_issue",
-      "displayName": "Create Issue",
-      "description": "Creates an issue or a sub-task from a JSON representation.",
-      "method": "POST",
-      "path": "/{cloudId}/rest/api/3/issue",
-      "pathParams": ["cloudId"],
-      "inputSchema": [
-        {
-          "key": "cloudId",
-          "label": "Cloud ID",
-          "type": "STRING",
-          "required": true,
-          "description": "The ID of the Atlassian site.",
-          "supportsExpression": true
-        },
-        {
-          "key": "projectKey",
-          "label": "Project Key",
-          "type": "STRING",
-          "required": true,
-          "description": "Key of the project (e.g. ENG)",
-          "supportsExpression": true
-        },
-        {
-          "key": "summary",
-          "label": "Summary",
-          "type": "STRING",
-          "required": true,
-          "supportsExpression": true
-        },
-        {
-          "key": "issueType",
-          "label": "Issue Type",
-          "type": "STRING",
-          "required": true,
-          "defaultValue": "Task",
-          "supportsExpression": true
-        },
-        {
-          "key": "description",
-          "label": "Description",
-          "type": "TEXTAREA",
-          "required": false,
-          "supportsExpression": true
-        }
-      ],
-      "inputScript": "return { fields: { project: { key: $inputs.projectKey }, summary: $inputs.summary, description: { type: 'doc', version: 1, content: [{ type: 'paragraph', content: [{ text: $inputs.description || '', type: 'text' }]}] }, issuetype: { name: $inputs.issueType } } };",
-      "outputPaths": ["id", "key", "self"]
-    }
-  ]
+    "connectorId":  "jira",
+    "displayName":  "Jira Software",
+    "icon":  "https://cdn.iconscout.com/icon/free/png-256/jira-3628861-3030001.png",
+    "category":  "Project Management",
+    "baseUrl":  "https://api.atlassian.com/ex/jira",
+    "authType":  "OAUTH2",
+    "oauth2Config":  {
+                         "authorizationUrl":  "https://auth.atlassian.com/authorize?audience=api.atlassian.com",
+                         "tokenUrl":  "https://auth.atlassian.com/oauth/token",
+                         "defaultScopes":  [
+                                               "read:jira-work",
+                                               "write:jira-work"
+                                           ]
+                     },
+    "credentialGuide":  {
+                            "fields":  [
+                                           {
+                                               "key":  "client_id",
+                                               "label":  "Client ID",
+                                               "hint":  "Found in Jira Developer Console -\u003e OAuth 2.0 integration"
+                                           },
+                                           {
+                                               "key":  "client_secret",
+                                               "label":  "Client Secret",
+                                               "hint":  "Generated in Jira Developer Console"
+                                           }
+                                       ]
+                        },
+    "actions":  [
+                    {
+                        "actionId":  "create_issue",
+                        "displayName":  "Create Issue",
+                        "description":  "Creates an issue or a sub-task from a JSON representation.",
+                        "method":  "POST",
+                        "path":  "/{cloudId}/rest/api/3/issue",
+                        "pathParams":  [
+                                           "cloudId"
+                                       ],
+                        "inputSchema":  [
+                                            {
+                                                "key":  "cloudId",
+                                                "label":  "Cloud ID",
+                                                "type":  "STRING",
+                                                "required":  true,
+                                                "description":  "The ID of the Atlassian site.",
+                                                "supportsExpression":  true
+                                            },
+                                            {
+                                                "key":  "projectKey",
+                                                "label":  "Project Key",
+                                                "type":  "STRING",
+                                                "required":  true,
+                                                "description":  "Key of the project (e.g. ENG)",
+                                                "supportsExpression":  true
+                                            },
+                                            {
+                                                "key":  "summary",
+                                                "label":  "Summary",
+                                                "type":  "STRING",
+                                                "required":  true,
+                                                "supportsExpression":  true
+                                            },
+                                            {
+                                                "key":  "issueType",
+                                                "label":  "Issue Type",
+                                                "type":  "STRING",
+                                                "required":  true,
+                                                "defaultValue":  "Task",
+                                                "supportsExpression":  true
+                                            },
+                                            {
+                                                "key":  "description",
+                                                "label":  "Description",
+                                                "type":  "TEXTAREA",
+                                                "required":  false,
+                                                "supportsExpression":  true
+                                            }
+                                        ],
+                        "inputScript":  "return { fields: { project: { key: $inputs.projectKey }, summary: $inputs.summary, description: { type: \u0027doc\u0027, version: 1, content: [{ type: \u0027paragraph\u0027, content: [{ text: $inputs.description || \u0027\u0027, type: \u0027text\u0027 }]}] }, issuetype: { name: $inputs.issueType } } };",
+                        "outputPaths":  [
+                                            "id",
+                                            "key",
+                                            "self"
+                                        ]
+                    },
+                    {
+                        "actionId":  "get_issue",
+                        "displayName":  "Get Issue",
+                        "description":  "Returns the details for an issue.",
+                        "method":  "GET",
+                        "path":  "/{cloudId}/rest/api/3/issue/{issueIdOrKey}",
+                        "pathParams":  [
+                                           "cloudId",
+                                           "issueIdOrKey"
+                                       ],
+                        "inputSchema":  [
+                                            {
+                                                "key":  "cloudId",
+                                                "label":  "Cloud ID",
+                                                "type":  "STRING",
+                                                "required":  true,
+                                                "supportsExpression":  true
+                                            },
+                                            {
+                                                "key":  "issueIdOrKey",
+                                                "label":  "Issue ID or Key",
+                                                "type":  "STRING",
+                                                "required":  true,
+                                                "supportsExpression":  true
+                                            }
+                                        ],
+                        "outputPaths":  [
+                                            "id",
+                                            "key",
+                                            "fields.summary"
+                                        ]
+                    },
+                    {
+                        "actionId":  "update_issue",
+                        "displayName":  "Update Issue",
+                        "description":  "Updates an issue.",
+                        "method":  "PUT",
+                        "path":  "/{cloudId}/rest/api/3/issue/{issueIdOrKey}",
+                        "pathParams":  [
+                                           "cloudId",
+                                           "issueIdOrKey"
+                                       ],
+                        "inputSchema":  [
+                                            {
+                                                "key":  "cloudId",
+                                                "label":  "Cloud ID",
+                                                "type":  "STRING",
+                                                "required":  true,
+                                                "supportsExpression":  true
+                                            },
+                                            {
+                                                "key":  "issueIdOrKey",
+                                                "label":  "Issue ID or Key",
+                                                "type":  "STRING",
+                                                "required":  true,
+                                                "supportsExpression":  true
+                                            },
+                                            {
+                                                "key":  "summary",
+                                                "label":  "Summary",
+                                                "type":  "STRING",
+                                                "required":  false,
+                                                "supportsExpression":  true
+                                            }
+                                        ],
+                        "inputScript":  "let fields = {}; if ($inputs.summary) fields.summary = $inputs.summary; return { fields: fields };",
+                        "outputPaths":  []
+                    }
+                ],
+    "connectionSetup":  {
+                            "description":  "Connect your Jira Software account to allow workflows to access it securely.",
+                            "buttonLabel":  "Sign in with Jira Software"
+                        },
+    "verifyAction":  {
+                         "method":  "GET",
+                         "path":  "/"
+                     }
 }

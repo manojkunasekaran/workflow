@@ -125,7 +125,7 @@ class ConnectorTaskExecutorTest {
     @Test
     void execute_shouldPerformBasicSuccessRequest() throws Exception {
         when(connectorRegistry.findById("slack", "default-org")).thenReturn(Optional.of(manifest));
-        when(credentialProvider.getDecryptedCredential("cred-1")).thenReturn(Optional.of(credential));
+        when(credentialProvider.resolveCredential("cred-1", null, null)).thenReturn(Optional.of(credential));
         when(variableResolver.resolveValue(any(), any(ExecutionContext.class))).thenAnswer(inv -> inv.getArgument(0));
         
         ResponseEntity<String> successResponse = new ResponseEntity<>("{\"ok\":true}", HttpStatus.OK);
@@ -153,7 +153,7 @@ class ConnectorTaskExecutorTest {
     @Test
     void execute_shouldRetryOn5xxErrors() throws Exception {
         when(connectorRegistry.findById("slack", "default-org")).thenReturn(Optional.of(manifest));
-        when(credentialProvider.getDecryptedCredential("cred-1")).thenReturn(Optional.of(credential));
+        when(credentialProvider.resolveCredential("cred-1", null, null)).thenReturn(Optional.of(credential));
         when(variableResolver.resolveValue(any(), any(ExecutionContext.class))).thenAnswer(inv -> inv.getArgument(0));
         
         // 1st attempt: 503
@@ -177,7 +177,7 @@ class ConnectorTaskExecutorTest {
     @Test
     void execute_shouldParseRetryAfterHeaderOn429() throws Exception {
         when(connectorRegistry.findById("slack", "default-org")).thenReturn(Optional.of(manifest));
-        when(credentialProvider.getDecryptedCredential("cred-1")).thenReturn(Optional.of(credential));
+        when(credentialProvider.resolveCredential("cred-1", null, null)).thenReturn(Optional.of(credential));
         when(variableResolver.resolveValue(any(), any(ExecutionContext.class))).thenAnswer(inv -> inv.getArgument(0));
         
         HttpHeaders headers = new HttpHeaders();
@@ -206,7 +206,7 @@ class ConnectorTaskExecutorTest {
     @Test
     void execute_shouldFailFastOnNonRetryable4xx() throws Exception {
         when(connectorRegistry.findById("slack", "default-org")).thenReturn(Optional.of(manifest));
-        when(credentialProvider.getDecryptedCredential("cred-1")).thenReturn(Optional.of(credential));
+        when(credentialProvider.resolveCredential("cred-1", null, null)).thenReturn(Optional.of(credential));
         when(variableResolver.resolveValue(any(), any(ExecutionContext.class))).thenAnswer(inv -> inv.getArgument(0));
         
         // 400 Bad Request should NOT be retried
@@ -231,7 +231,7 @@ class ConnectorTaskExecutorTest {
         credential.setTokenExpiresAt(Instant.now().minusSeconds(3600)); // expired 1 hour ago
         
         when(connectorRegistry.findById("slack", "default-org")).thenReturn(Optional.of(manifest));
-        when(credentialProvider.getDecryptedCredential("cred-1")).thenReturn(Optional.of(credential));
+        when(credentialProvider.resolveCredential("cred-1", null, null)).thenReturn(Optional.of(credential));
         when(variableResolver.resolveValue(any(), any(ExecutionContext.class))).thenAnswer(inv -> inv.getArgument(0));
 
         IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
@@ -247,7 +247,7 @@ class ConnectorTaskExecutorTest {
         action.setInputScript("return { mapped: inputs.channel };");
         
         when(connectorRegistry.findById("slack", "default-org")).thenReturn(Optional.of(manifest));
-        when(credentialProvider.getDecryptedCredential("cred-1")).thenReturn(Optional.of(credential));
+        when(credentialProvider.resolveCredential("cred-1", null, null)).thenReturn(Optional.of(credential));
         when(variableResolver.resolveValue(any(), any(ExecutionContext.class))).thenAnswer(inv -> inv.getArgument(0));
         
         when(scriptEvaluationService.executeScript(anyString(), anyMap()))

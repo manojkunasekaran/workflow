@@ -30,4 +30,13 @@ export const workflowApi = {
     delete: async (id: string): Promise<void> => {
         await axios.delete(`${API_BASE_URL}/workflows/${id}`);
     },
+
+    testNode: async (targetTaskId: string, draftDefinition: WorkflowDefinition, cachedSampleData?: Record<string, unknown>): Promise<{ success: boolean; error?: string; failedTaskId?: string; targetResult: unknown; newSampleData: Record<string, unknown> }> => {
+        const response = await axios.post(`${API_BASE_URL}/workflows/test-node`, {
+            targetTaskId,
+            draftDefinition,
+            cachedSampleData
+        });
+        return response.data;
+    }
 };

@@ -39,4 +39,9 @@ public class WorkflowDefinitionController {
         }
         service.deleteWorkflowDefinition(id);
     }
+
+    @PostMapping("/test-node")
+    public com.app.api.dto.TestNodeResponse testNode(@RequestBody com.app.api.dto.TestNodeRequest request) {
+        return service.testNode(request);
+    }
 }

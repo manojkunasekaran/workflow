@@ -1,53 +1,93 @@
 {
-  "connectorId": "linear",
-  "displayName": "Linear",
-  "icon": "https://cdn.iconscout.com/icon/free/png-256/linear-3628861-3030001.png",
-  "category": "Project Management",
-  "baseUrl": "https://api.linear.app/graphql",
-  "authType": "BEARER_TOKEN",
-  "authHeaderPrefix": "Bearer ",
-  "credentialGuide": {
-    "fields": [
-      {
-        "key": "token",
-        "label": "Personal API Key",
-        "hint": "Found in Linear settings under API"
-      }
-    ]
-  },
-  "actions": [
-    {
-      "actionId": "create_issue",
-      "displayName": "Create Issue",
-      "method": "POST",
-      "path": "",
-      "inputSchema": [
-        {
-          "key": "teamId",
-          "label": "Team ID",
-          "type": "STRING",
-          "required": true,
-          "supportsExpression": true
-        },
-        {
-          "key": "title",
-          "label": "Title",
-          "type": "STRING",
-          "required": true,
-          "supportsExpression": true
-        },
-        {
-          "key": "description",
-          "label": "Description",
-          "type": "TEXTAREA",
-          "required": false,
-          "supportsExpression": true
-        }
-      ],
-      "inputScript": "return { query: `mutation { issueCreate(input: { title: \"${$inputs.title}\", teamId: \"${$inputs.teamId}\", description: \"${$inputs.description || ''}\" }) { issue { id title } } }` };",
-      "outputPaths": [
-        "data.issueCreate.issue.id"
-      ]
-    }
-  ]
+    "connectorId":  "linear",
+    "displayName":  "Linear",
+    "icon":  "https://cdn.iconscout.com/icon/free/png-256/linear-3628861-3030001.png",
+    "category":  "Project Management",
+    "baseUrl":  "https://api.linear.app/graphql",
+    "authType":  "BEARER_TOKEN",
+    "authHeaderPrefix":  "Bearer ",
+    "credentialGuide":  {
+                            "fields":  [
+                                           {
+                                               "key":  "token",
+                                               "label":  "Personal API Key",
+                                               "hint":  "Found in Linear settings under API"
+                                           }
+                                       ]
+                        },
+    "actions":  [
+                    {
+                        "actionId":  "create_issue",
+                        "displayName":  "Create Issue",
+                        "method":  "POST",
+                        "path":  "",
+                        "inputSchema":  [
+                                            {
+                                                "key":  "teamId",
+                                                "label":  "Team ID",
+                                                "type":  "STRING",
+                                                "required":  true,
+                                                "supportsExpression":  true
+                                            },
+                                            {
+                                                "key":  "title",
+                                                "label":  "Title",
+                                                "type":  "STRING",
+                                                "required":  true,
+                                                "supportsExpression":  true
+                                            },
+                                            {
+                                                "key":  "description",
+                                                "label":  "Description",
+                                                "type":  "TEXTAREA",
+                                                "required":  false,
+                                                "supportsExpression":  true
+                                            }
+                                        ],
+                        "inputScript":  "return { query: `mutation { issueCreate(input: { title: \"${$inputs.title}\", teamId: \"${$inputs.teamId}\", description: \"${$inputs.description || \u0027\u0027}\" }) { issue { id title } } }` };",
+                        "outputPaths":  [
+                                            "data.issueCreate.issue.id"
+                                        ]
+                    },
+                    {
+                        "actionId":  "update_issue",
+                        "displayName":  "Update Issue",
+                        "method":  "POST",
+                        "path":  "",
+                        "inputSchema":  [
+                                            {
+                                                "key":  "issueId",
+                                                "label":  "Issue ID",
+                                                "type":  "STRING",
+                                                "required":  true,
+                                                "supportsExpression":  true
+                                            },
+                                            {
+                                                "key":  "stateId",
+                                                "label":  "State ID",
+                                                "type":  "STRING",
+                                                "required":  false,
+                                                "supportsExpression":  true
+                                            }
+                                        ],
+                        "inputScript":  "let updates = []; if ($inputs.stateId) updates.push(`stateId: \"${$inputs.stateId}\"`); return { query: `mutation { issueUpdate(id: \"${$inputs.issueId}\", input: { ${updates.join(', ')} }) { issue { id } } }` };",
+                        "outputPaths":  [
+                                            "data.issueUpdate.issue.id"
+                                        ]
+                    }
+                ],
+    "connectionSetup":  {
+                            "fields":  [
+                                           {
+                                               "label":  "API Key",
+                                               "key":  "token",
+                                               "sensitive":  true,
+                                               "hint":  "Found in Linear settings under API"
+                                           }
+                                       ]
+                        },
+    "verifyAction":  {
+                         "method":  "GET",
+                         "path":  "/"
+                     }
 }

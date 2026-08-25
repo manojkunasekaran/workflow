@@ -228,22 +228,28 @@ public class ConnectorTaskExecutor implements TaskExecutor {
         }
 
         String resolvedCredentialId = variableResolver.resolveString(credentialId, context);
-        Optional<IntegrationCredential> credentialOpt = credentialProvider.getDecryptedCredential(resolvedCredentialId);
+        Optional<IntegrationCredential> credentialOpt = credentialProvider.resolveCredential(resolvedCredentialId, manifest.getConnectorId(), context);
         
         if (credentialOpt.isEmpty()) {
-            throw new IllegalArgumentException("Credential not found: " + resolvedCredentialId);
+            throw new IllegalArgumentException("Credential not found or access denied. (ID: " + resolvedCredentialId + ", Fallback failed)");
         }
 
         IntegrationCredential credential = credentialOpt.get();
 
-        // Guard: fail fast with a clear error if an OAuth2 token has expired.
-        // This surfaces a human-readable error instead of a cryptic 401 from the downstream API.
-        // The OAuthTokenRefreshJob should prevent this in normal operation.
+        // Guard: fail fast with a clear error if connection is expired or revoked.
+        if (credential.getConnectionStatus() == com.app.common.entity.ConnectionStatus.EXPIRED || 
+            credential.getConnectionStatus() == com.app.common.entity.ConnectionStatus.REVOKED) {
+            throw new IllegalStateException(
+                    "Connection for '" + credential.getName() + "' is " + 
+                    credential.getConnectionStatus() + ". Please reconnect it in Settings.");
+        }
+
+        // Guard: legacy check for OAuth2 token expiry.
         if ("oauth2".equals(credential.getTokenType()) && credential.getTokenExpiresAt() != null) {
             if (java.time.Instant.now().isAfter(credential.getTokenExpiresAt())) {
                 throw new IllegalStateException(
-                        "OAuth2 token for credential '" + credential.getName() + "' has expired. " +
-                        "Please re-authorize in the Credentials page.");
+                        "OAuth2 token for connection '" + credential.getName() + "' has expired. " +
+                        "Please re-authorize in the Connections page.");
             }
         }
 

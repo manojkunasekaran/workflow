@@ -80,7 +80,7 @@ public class HttpTaskExecutor implements TaskExecutor {
         String credentialId = params.getCredentialId();
         if (credentialId != null && !credentialId.isEmpty()) {
             String resolvedCredentialId = variableResolver.resolveString(credentialId, context);
-            Optional<IntegrationCredential> credentialOpt = credentialProvider.getDecryptedCredential(resolvedCredentialId);
+            Optional<IntegrationCredential> credentialOpt = credentialProvider.resolveCredential(resolvedCredentialId, null, context);
             if (credentialOpt.isPresent()) {
                 IntegrationCredential credential = credentialOpt.get();
                 Map<String, String> creds = credential.getCredentials();

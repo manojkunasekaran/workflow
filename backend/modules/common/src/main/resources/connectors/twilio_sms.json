@@ -1,68 +1,192 @@
 {
-  "connectorId": "twilio_sms",
-  "displayName": "Twilio SMS",
-  "icon": "https://cdn.iconscout.com/icon/free/png-256/twilio-3628861-3030001.png",
-  "category": "SMS / Comms",
-  "baseUrl": "https://api.twilio.com/2010-04-01/Accounts/{AccountSid}",
-  "authType": "BASIC_AUTH",
-  "credentialGuide": {
-    "fields": [
-      {
-        "key": "username",
-        "label": "Account SID",
-        "hint": "Starts with AC"
-      },
-      {
-        "key": "password",
-        "label": "Auth Token",
-        "hint": "Your Twilio auth token"
-      }
-    ]
-  },
-  "actions": [
-    {
-      "actionId": "send_sms",
-      "displayName": "Send SMS",
-      "method": "POST",
-      "path": "/Messages.json",
-      "pathParams": [
-        "AccountSid"
-      ],
-      "inputSchema": [
-        {
-          "key": "AccountSid",
-          "label": "Account SID",
-          "type": "STRING",
-          "required": true,
-          "supportsExpression": true
-        },
-        {
-          "key": "To",
-          "label": "To Phone Number",
-          "type": "STRING",
-          "required": true,
-          "supportsExpression": true
-        },
-        {
-          "key": "From",
-          "label": "From Phone Number",
-          "type": "STRING",
-          "required": true,
-          "supportsExpression": true
-        },
-        {
-          "key": "Body",
-          "label": "Message Body",
-          "type": "TEXTAREA",
-          "required": true,
-          "supportsExpression": true
-        }
-      ],
-      "inputScript": "return { To: $inputs.To, From: $inputs.From, Body: $inputs.Body };",
-      "outputPaths": [
-        "sid",
-        "status"
-      ]
-    }
-  ]
+    "connectorId":  "twilio_sms",
+    "displayName":  "Twilio SMS",
+    "icon":  "https://cdn.iconscout.com/icon/free/png-256/twilio-3628861-3030001.png",
+    "category":  "SMS / Comms",
+    "baseUrl":  "https://api.twilio.com/2010-04-01/Accounts/{AccountSid}",
+    "authType":  "BASIC_AUTH",
+    "credentialGuide":  {
+                            "fields":  [
+                                           {
+                                               "key":  "username",
+                                               "label":  "Account SID",
+                                               "hint":  "Starts with AC"
+                                           },
+                                           {
+                                               "key":  "password",
+                                               "label":  "Auth Token",
+                                               "hint":  "Your Twilio auth token"
+                                           }
+                                       ]
+                        },
+    "actions":  [
+                    {
+                        "actionId":  "send_sms",
+                        "displayName":  "Send SMS",
+                        "method":  "POST",
+                        "path":  "/Messages.json",
+                        "pathParams":  [
+                                           "AccountSid"
+                                       ],
+                        "inputSchema":  [
+                                            {
+                                                "key":  "AccountSid",
+                                                "label":  "Account SID",
+                                                "type":  "STRING",
+                                                "required":  true,
+                                                "supportsExpression":  true
+                                            },
+                                            {
+                                                "key":  "To",
+                                                "label":  "To Phone Number",
+                                                "type":  "STRING",
+                                                "required":  true,
+                                                "supportsExpression":  true
+                                            },
+                                            {
+                                                "key":  "From",
+                                                "label":  "From Phone Number",
+                                                "type":  "STRING",
+                                                "required":  true,
+                                                "supportsExpression":  true
+                                            },
+                                            {
+                                                "key":  "Body",
+                                                "label":  "Message Body",
+                                                "type":  "TEXTAREA",
+                                                "required":  true,
+                                                "supportsExpression":  true
+                                            }
+                                        ],
+                        "inputScript":  "return { To: $inputs.To, From: $inputs.From, Body: $inputs.Body };",
+                        "outputPaths":  [
+                                            "sid",
+                                            "status"
+                                        ]
+                    },
+                    {
+                        "actionId":  "get_message",
+                        "displayName":  "Get Message",
+                        "method":  "GET",
+                        "path":  "/Messages/{MessageSid}.json",
+                        "pathParams":  [
+                                           "AccountSid",
+                                           "MessageSid"
+                                       ],
+                        "inputSchema":  [
+                                            {
+                                                "key":  "AccountSid",
+                                                "label":  "Account SID",
+                                                "type":  "STRING",
+                                                "required":  true,
+                                                "supportsExpression":  true
+                                            },
+                                            {
+                                                "key":  "MessageSid",
+                                                "label":  "Message SID",
+                                                "type":  "STRING",
+                                                "required":  true,
+                                                "supportsExpression":  true
+                                            }
+                                        ],
+                        "outputPaths":  [
+                                            "sid",
+                                            "status",
+                                            "body"
+                                        ]
+                    },
+                    {
+                        "actionId":  "list_messages",
+                        "displayName":  "List Messages",
+                        "method":  "GET",
+                        "path":  "/Messages.json",
+                        "pathParams":  [
+                                           "AccountSid"
+                                       ],
+                        "inputSchema":  [
+                                            {
+                                                "key":  "AccountSid",
+                                                "label":  "Account SID",
+                                                "type":  "STRING",
+                                                "required":  true,
+                                                "supportsExpression":  true
+                                            },
+                                            {
+                                                "key":  "Limit",
+                                                "label":  "Limit",
+                                                "type":  "NUMBER",
+                                                "required":  false,
+                                                "defaultValue":  50,
+                                                "supportsExpression":  true
+                                            }
+                                        ],
+                        "outputPaths":  [
+                                            "messages"
+                                        ]
+                    },
+                    {
+                        "actionId":  "make_call",
+                        "displayName":  "Make Call",
+                        "method":  "POST",
+                        "path":  "/Calls.json",
+                        "pathParams":  [
+                                           "AccountSid"
+                                       ],
+                        "inputSchema":  [
+                                            {
+                                                "key":  "AccountSid",
+                                                "label":  "Account SID",
+                                                "type":  "STRING",
+                                                "required":  true,
+                                                "supportsExpression":  true
+                                            },
+                                            {
+                                                "key":  "To",
+                                                "label":  "To Phone Number",
+                                                "type":  "STRING",
+                                                "required":  true,
+                                                "supportsExpression":  true
+                                            },
+                                            {
+                                                "key":  "From",
+                                                "label":  "From Phone Number",
+                                                "type":  "STRING",
+                                                "required":  true,
+                                                "supportsExpression":  true
+                                            },
+                                            {
+                                                "key":  "Url",
+                                                "label":  "TwiML URL",
+                                                "type":  "STRING",
+                                                "required":  true,
+                                                "supportsExpression":  true
+                                            }
+                                        ],
+                        "inputScript":  "return { To: $inputs.To, From: $inputs.From, Url: $inputs.Url };",
+                        "outputPaths":  [
+                                            "sid",
+                                            "status"
+                                        ]
+                    }
+                ],
+    "connectionSetup":  {
+                            "fields":  [
+                                           {
+                                               "label":  "Account SID",
+                                               "key":  "username",
+                                               "sensitive":  false,
+                                               "hint":  "Starts with AC"
+                                           },
+                                           {
+                                               "label":  "Auth Token",
+                                               "key":  "password",
+                                               "sensitive":  true,
+                                               "hint":  "Your Twilio auth token"
+                                           }
+                                       ]
+                        },
+    "verifyAction":  {
+                         "method":  "GET",
+                         "path":  "/"
+                     }
 }

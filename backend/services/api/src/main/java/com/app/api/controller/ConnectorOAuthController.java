@@ -183,6 +183,9 @@ public class ConnectorOAuthController {
         credential.setName(manifest.getDisplayName() + " OAuth2");
         credential.setType("OAUTH2");
         credential.setTokenType("oauth2");
+        
+        credential.setConnectionStatus(com.app.common.entity.ConnectionStatus.ACTIVE);
+        credential.setConnectedAs("OAuth Account"); // A full implementation would fetch the real identity using verifyAction
 
         // Parse token expiry — set tokenExpiresAt so the refresh job can detect it
         Object expiresIn = tokenData.get("expires_in");
