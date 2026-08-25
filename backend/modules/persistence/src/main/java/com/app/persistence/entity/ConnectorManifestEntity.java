@@ -5,6 +5,8 @@ import com.app.common.connector.ConnectorAuthType;
 import com.app.common.connector.ConnectorScope;
 import com.app.common.connector.CredentialGuide;
 import com.app.common.connector.OAuth2Config;
+import com.app.common.connector.ConnectionSetup;
+import com.app.common.connector.VerifyAction;
 import lombok.Data;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
@@ -39,6 +41,8 @@ public class ConnectorManifestEntity {
     private String authHeaderPrefix;
     private OAuth2Config oauth2Config;
     private CredentialGuide credentialGuide;
+    private ConnectionSetup connectionSetup;
+    private VerifyAction verifyAction;
     
     private List<ConnectorAction> actions;
     

@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import org.springframework.core.env.Environment;
+
 /**
  * Scheduled background job that proactively refreshes expiring OAuth2 tokens.
  *
@@ -47,6 +49,7 @@ public class OAuthTokenRefreshJob {
     private final IntegrationCredentialRepository credentialRepository;
     private final ConnectorRegistry connectorRegistry;
     private final RestTemplate restTemplate;
+    private final Environment environment;
 
     @Scheduled(fixedDelayString = "PT15M", initialDelayString = "PT1M")
     @SchedulerLock(name = "oauth_token_refresh", lockAtMostFor = "PT10M", lockAtLeastFor = "PT1M")
@@ -65,10 +68,20 @@ public class OAuthTokenRefreshJob {
         for (IntegrationCredential credential : expiring) {
             try {
                 refreshCredential(credential);
+            } catch (org.springframework.web.client.HttpClientErrorException e) {
+                log.error("Failed to refresh OAuth2 token for credential '{}' (connector: {}): HTTP {}",
+                        credential.getId(), credential.getConnectorId(), e.getStatusCode());
+                if (e.getStatusCode().is4xxClientError()) {
+                    credential.setConnectionStatus(com.app.common.entity.ConnectionStatus.REVOKED);
+                } else {
+                    credential.setConnectionStatus(com.app.common.entity.ConnectionStatus.EXPIRED);
+                }
+                credentialRepository.save(credential);
             } catch (Exception e) {
                 log.error("Failed to refresh OAuth2 token for credential '{}' (connector: {}): {}",
                         credential.getId(), credential.getConnectorId(), e.getMessage(), e);
-                // Do not re-throw — attempt remaining credentials
+                credential.setConnectionStatus(com.app.common.entity.ConnectionStatus.EXPIRED);
+                credentialRepository.save(credential);
             }
         }
     }
@@ -94,10 +107,17 @@ public class OAuthTokenRefreshJob {
 
         OAuth2Config oauth2Config = manifestOpt.get().getOauth2Config();
         String refreshToken = currentCreds.get("refresh_token");
+        
+        String clientId = environment.getProperty("workflow.connectors." + credential.getConnectorId() + ".client-id");
+        String clientSecret = environment.getProperty("workflow.connectors." + credential.getConnectorId() + ".client-secret");
 
         Map<String, String> body = new HashMap<>();
         body.put("grant_type", "refresh_token");
         body.put("refresh_token", refreshToken);
+        if (clientId != null && clientSecret != null) {
+            body.put("client_id", clientId);
+            body.put("client_secret", clientSecret);
+        }
 
         HttpHeaders headers = new HttpHeaders();
         headers.set("Accept", "application/json");
@@ -115,6 +135,8 @@ public class OAuthTokenRefreshJob {
         if (tokenResponse == null || !tokenResponse.containsKey("access_token")) {
             log.error("Token refresh for credential '{}' returned invalid response: {}",
                     credential.getId(), tokenResponse);
+            credential.setConnectionStatus(com.app.common.entity.ConnectionStatus.EXPIRED);
+            credentialRepository.save(credential);
             return;
         }
 

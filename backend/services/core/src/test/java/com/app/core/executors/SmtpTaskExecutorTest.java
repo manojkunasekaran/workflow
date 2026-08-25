@@ -203,7 +203,7 @@ class SmtpTaskExecutorTest {
             "password", "vault-pass",
             "security", "SSL"
         );
-        when(credentialProvider.getDecryptedCredentials("cred-123")).thenReturn(java.util.Optional.of(decryptedCreds));
+        when(credentialProvider.resolveCredentials("cred-123", null, null)).thenReturn(java.util.Optional.of(decryptedCreds));
 
         try (MockedConstruction<JavaMailSenderImpl> mocked = Mockito.mockConstruction(JavaMailSenderImpl.class,
                 (mockSender, ctx) -> {

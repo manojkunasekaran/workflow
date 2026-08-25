@@ -7,8 +7,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Loader2 } from 'lucide-react';
 import type { TaskParameterErrors } from '@/features/workflow-studio/task-type-schema/types';
 import { VariableInput } from '@/features/workflow-studio/task-config/VariableInput';
-import { CredentialSelectField } from '@/features/workflow-studio/task-config/CredentialSelectField';
-import { ConnectorTestPanel } from '@/features/workflow-studio/task-config/ConnectorTestPanel';
+import { ConnectionSelectField } from '@/features/workflow-studio/task-config/ConnectionSelectField';
+
+
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -166,15 +167,15 @@ export function ConnectorTaskConfigPanel({ parameters, onChange, errors }: Props
 
             {/* ── Credential ── */}
             {selectedManifest && selectedManifest.authType !== 'NONE' && (
-                <CredentialSelectField
+                <ConnectionSelectField
                     id="credential-select"
                     label={
                         <Label htmlFor="credential-select">
-                            Credential <span className="text-destructive">*</span>
+                            Connection <span className="text-destructive">*</span>
                         </Label>
                     }
                     value={credentialId}
-                    onChange={val => updateParam('credentialId', val)}
+                    onChange={(val) => updateParam('credentialId', val)}
                     error={errors.credentialId}
                     connectorId={selectedManifest.connectorId}
                 />
@@ -302,15 +303,7 @@ export function ConnectorTaskConfigPanel({ parameters, onChange, errors }: Props
                 </div>
             )}
 
-            {/* ── Test Action panel ── */}
-            {selectedManifest && actionId && (
-                <ConnectorTestPanel
-                    connectorId={connectorId}
-                    actionId={actionId}
-                    credentialId={credentialId || undefined}
-                    inputs={inputs}
-                />
-            )}
+
 
             {/* ── Advanced Options ── */}
             {selectedAction && (

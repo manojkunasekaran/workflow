@@ -8,6 +8,7 @@ import {
     recordFromUnknown,
     type ExecutionSummaryLine,
 } from '@/features/executions/lib/executionSummaryUtils';
+import { TaskTestPanel } from '../../task-config/TaskTestPanel';
 
 export const httpTaskPlugin = defineTaskPlugin({
     type: 'HTTP_TASK',
@@ -15,6 +16,7 @@ export const httpTaskPlugin = defineTaskPlugin({
     icon: Globe,
     accentColor: '#7c3aed',
     defaultTaskId: 'http_task',
+    testComponent: TaskTestPanel,
     fields: [
         {
             key: 'credentialId',

@@ -46,4 +46,9 @@ public class IntegrationCredentialController {
         }
         service.deleteCredential(id);
     }
+    
+    @PostMapping("/{id}/verify")
+    public IntegrationCredential verify(@NonNull @PathVariable String id) {
+        return service.verifyConnection(id);
+    }
 }

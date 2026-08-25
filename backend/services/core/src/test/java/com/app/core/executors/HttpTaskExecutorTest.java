@@ -83,7 +83,7 @@ public class HttpTaskExecutorTest {
         secrets.put("token", "secret-token");
         cred.setCredentials(secrets);
 
-        when(credentialProvider.getDecryptedCredential("cred-bearer")).thenReturn(Optional.of(cred));
+        when(credentialProvider.resolveCredential("cred-bearer", null, null)).thenReturn(Optional.of(cred));
         when(restTemplate.exchange(anyString(), any(HttpMethod.class), any(HttpEntity.class), eq(String.class)))
                 .thenReturn(ResponseEntity.ok("{}"));
 
@@ -111,7 +111,7 @@ public class HttpTaskExecutorTest {
         secrets.put("password", "pass");
         cred.setCredentials(secrets);
 
-        when(credentialProvider.getDecryptedCredential("cred-basic")).thenReturn(Optional.of(cred));
+        when(credentialProvider.resolveCredential("cred-basic", null, null)).thenReturn(Optional.of(cred));
         when(restTemplate.exchange(anyString(), any(HttpMethod.class), any(HttpEntity.class), eq(String.class)))
                 .thenReturn(ResponseEntity.ok("{}"));
 

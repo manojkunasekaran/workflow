@@ -1,5 +1,6 @@
 import { Puzzle } from 'lucide-react';
 import { defineTaskPlugin } from '../pluginTypes';
+import { TaskTestPanel } from '../../task-config/TaskTestPanel';
 
 export const connectorTaskPlugin = defineTaskPlugin({
     type: 'CONNECTOR_TASK',
@@ -7,6 +8,7 @@ export const connectorTaskPlugin = defineTaskPlugin({
     icon: Puzzle,
     accentColor: '#0ea5e9',
     defaultTaskId: 'connector_task',
+    testComponent: TaskTestPanel,
     fields: [], // dynamically loaded in ConnectorTaskConfigPanel
     preview(params: Record<string, unknown>) {
         const name = typeof params.connectorName === 'string' && params.connectorName

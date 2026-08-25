@@ -33,4 +33,30 @@ public class IntegrationCredential extends BaseModel {
      * Null for all other credential types.
      */
     private String tokenType;
+
+    /**
+     * Connection health state — updated by the refresh job and verify endpoint.
+     */
+    private ConnectionStatus connectionStatus = ConnectionStatus.UNKNOWN;
+
+    /**
+     * Human-readable identity — e.g. "john@gmail.com", "My Workspace", "sk-...3f9a".
+     * Populated after successful OAuth or after user saves.
+     */
+    private String connectedAs;
+
+    /**
+     * User ID for PERSONAL scope credentials.
+     */
+    private String userId;
+
+    /**
+     * When was this connection last successfully used by a workflow execution?
+     */
+    private Instant lastUsedAt;
+    
+    /**
+     * The scope of this credential: PERSONAL, ORG_SHARED, or PLATFORM.
+     */
+    private CredentialScope credentialScope = CredentialScope.PERSONAL;
 }

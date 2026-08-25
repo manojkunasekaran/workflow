@@ -1,3 +1,4 @@
+import type React from 'react';
 import type { LucideIcon } from 'lucide-react';
 import type { TaskFieldSchema, TaskParameterErrors, TaskValidationContext } from './types';
 import type { TaskPluginWiring } from './pluginWiringTypes';
@@ -47,6 +48,8 @@ export interface TaskTypePlugin {
     preview?: (parameters: Record<string, unknown>) => TaskPreview;
     /** Read-only execution observability summary for the step panel. */
     executionSummary?: (context: ExecutionSummaryContext) => ExecutionSummaryResult | null;
+    /** Optional test panel button rendered in the header. */
+    testComponent?: React.FC<{ parameters: Record<string, unknown> }>;
     /** Canvas handle + route-edge wiring (n8n-style). Omit for default main-flow only. */
     wiring?: TaskPluginWiring;
 }

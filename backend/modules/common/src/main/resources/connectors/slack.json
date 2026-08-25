@@ -1,148 +1,378 @@
 {
-  "connectorId": "slack",
-  "displayName": "Slack",
-  "icon": "https://cdn.simpleicons.org/slack/E01E5A",
-  "category": "Communication",
-  "baseUrl": "https://slack.com/api",
-  "authType": "OAUTH2",
-  "oauth2Config": {
-    "authorizationUrl": "https://slack.com/oauth/v2/authorize",
-    "tokenUrl": "https://slack.com/api/oauth.v2.access",
-    "defaultScopes": ["chat:write", "channels:read", "files:write", "reactions:write"]
-  },
-  "credentialGuide": {
-    "fields": [
-      {
-        "key": "oauth",
-        "label": "OAuth2",
-        "hint": "Click 'Connect with Slack' to authenticate securely."
-      }
-    ]
-  },
-  "actions": [
-    {
-      "actionId": "post_message",
-      "displayName": "Post Message",
-      "method": "POST",
-      "path": "/chat.postMessage",
-      "fixedHeaders": { "Content-Type": "application/json" },
-      "inputSchema": [
-        { "key": "channel", "label": "Channel ID", "type": "STRING", "required": true, "supportsExpression": true, "placeholder": "e.g. C1234567890" },
-        { "key": "text", "label": "Message Text", "type": "TEXTAREA", "required": true, "supportsExpression": true },
-        { "key": "username", "label": "Bot Display Name", "type": "STRING", "required": false, "supportsExpression": true },
-        { "key": "icon_emoji", "label": "Bot Icon Emoji", "type": "STRING", "required": false, "supportsExpression": true, "placeholder": "e.g. :robot_face:" }
-      ],
-      "outputPaths": ["ok", "channel", "ts", "message.text"]
-    },
-    {
-      "actionId": "post_message_with_blocks",
-      "displayName": "Post Message with Blocks",
-      "method": "POST",
-      "path": "/chat.postMessage",
-      "fixedHeaders": { "Content-Type": "application/json" },
-      "inputSchema": [
-        { "key": "channel", "label": "Channel ID", "type": "STRING", "required": true, "supportsExpression": true },
-        { "key": "text", "label": "Fallback Text", "type": "STRING", "required": true, "supportsExpression": true },
-        { "key": "blocks", "label": "Block Kit Payload (JSON Array)", "type": "JSON", "required": true, "supportsExpression": true, "description": "Slack Block Kit JSON. See https://api.slack.com/block-kit" }
-      ],
-      "outputPaths": ["ok", "channel", "ts"]
-    },
-    {
-      "actionId": "update_message",
-      "displayName": "Update Message",
-      "method": "POST",
-      "path": "/chat.update",
-      "fixedHeaders": { "Content-Type": "application/json" },
-      "inputSchema": [
-        { "key": "channel", "label": "Channel ID", "type": "STRING", "required": true, "supportsExpression": true },
-        { "key": "ts", "label": "Message Timestamp (ts)", "type": "STRING", "required": true, "supportsExpression": true, "description": "The timestamp of the message to update" },
-        { "key": "text", "label": "New Message Text", "type": "TEXTAREA", "required": true, "supportsExpression": true }
-      ],
-      "outputPaths": ["ok", "channel", "ts"]
-    },
-    {
-      "actionId": "delete_message",
-      "displayName": "Delete Message",
-      "method": "POST",
-      "path": "/chat.delete",
-      "fixedHeaders": { "Content-Type": "application/json" },
-      "inputSchema": [
-        { "key": "channel", "label": "Channel ID", "type": "STRING", "required": true, "supportsExpression": true },
-        { "key": "ts", "label": "Message Timestamp (ts)", "type": "STRING", "required": true, "supportsExpression": true }
-      ],
-      "outputPaths": ["ok", "channel", "ts"]
-    },
-    {
-      "actionId": "add_reaction",
-      "displayName": "Add Reaction",
-      "method": "POST",
-      "path": "/reactions.add",
-      "fixedHeaders": { "Content-Type": "application/json" },
-      "inputSchema": [
-        { "key": "channel", "label": "Channel ID", "type": "STRING", "required": true, "supportsExpression": true },
-        { "key": "timestamp", "label": "Message Timestamp (ts)", "type": "STRING", "required": true, "supportsExpression": true },
-        { "key": "name", "label": "Emoji Name (without colons)", "type": "STRING", "required": true, "supportsExpression": true, "placeholder": "e.g. thumbsup" }
-      ],
-      "outputPaths": ["ok"]
-    },
-    {
-      "actionId": "list_channels",
-      "displayName": "List Channels",
-      "method": "GET",
-      "path": "/conversations.list",
-      "inputSchema": [
-        { "key": "types", "label": "Channel Types", "type": "STRING", "required": false, "supportsExpression": false, "defaultValue": "public_channel", "placeholder": "public_channel,private_channel" },
-        { "key": "limit", "label": "Limit", "type": "NUMBER", "required": false, "supportsExpression": true, "defaultValue": 100 }
-      ],
-      "outputPaths": ["ok", "channels"]
-    },
-    {
-      "actionId": "get_channel_info",
-      "displayName": "Get Channel Info",
-      "method": "GET",
-      "path": "/conversations.info",
-      "inputSchema": [
-        { "key": "channel", "label": "Channel ID", "type": "STRING", "required": true, "supportsExpression": true }
-      ],
-      "outputPaths": ["ok", "channel.id", "channel.name", "channel.topic.value"]
-    },
-    {
-      "actionId": "upload_file",
-      "displayName": "Upload File",
-      "method": "POST",
-      "path": "/files.upload",
-      "fixedHeaders": { "Content-Type": "application/json" },
-      "inputSchema": [
-        { "key": "channels", "label": "Channel IDs (comma-separated)", "type": "STRING", "required": true, "supportsExpression": true },
-        { "key": "content", "label": "File Content (text)", "type": "TEXTAREA", "required": false, "supportsExpression": true },
-        { "key": "filename", "label": "Filename", "type": "STRING", "required": false, "supportsExpression": true },
-        { "key": "initial_comment", "label": "Initial Comment", "type": "STRING", "required": false, "supportsExpression": true }
-      ],
-      "outputPaths": ["ok", "file.id", "file.name", "file.permalink"]
-    },
-    {
-      "actionId": "set_channel_topic",
-      "displayName": "Set Channel Topic",
-      "method": "POST",
-      "path": "/conversations.setTopic",
-      "fixedHeaders": { "Content-Type": "application/json" },
-      "inputSchema": [
-        { "key": "channel", "label": "Channel ID", "type": "STRING", "required": true, "supportsExpression": true },
-        { "key": "topic", "label": "Topic", "type": "STRING", "required": true, "supportsExpression": true }
-      ],
-      "outputPaths": ["ok", "topic"]
-    },
-    {
-      "actionId": "invite_user_to_channel",
-      "displayName": "Invite User to Channel",
-      "method": "POST",
-      "path": "/conversations.invite",
-      "fixedHeaders": { "Content-Type": "application/json" },
-      "inputSchema": [
-        { "key": "channel", "label": "Channel ID", "type": "STRING", "required": true, "supportsExpression": true },
-        { "key": "users", "label": "User ID(s) (comma-separated)", "type": "STRING", "required": true, "supportsExpression": true }
-      ],
-      "outputPaths": ["ok"]
-    }
-  ]
+    "connectorId":  "slack",
+    "displayName":  "Slack",
+    "icon":  "https://cdn.simpleicons.org/slack/E01E5A",
+    "category":  "Communication",
+    "baseUrl":  "https://slack.com/api",
+    "authType":  "OAUTH2",
+    "oauth2Config":  {
+                         "authorizationUrl":  "https://slack.com/oauth/v2/authorize",
+                         "tokenUrl":  "https://slack.com/api/oauth.v2.access",
+                         "defaultScopes":  [
+                                               "chat:write",
+                                               "channels:read",
+                                               "files:write",
+                                               "reactions:write"
+                                           ]
+                     },
+    "credentialGuide":  {
+                            "fields":  [
+                                           {
+                                               "key":  "oauth",
+                                               "label":  "OAuth2",
+                                               "hint":  "Click \u0027Connect with Slack\u0027 to authenticate securely."
+                                           }
+                                       ]
+                        },
+    "actions":  [
+                    {
+                        "actionId":  "post_message",
+                        "displayName":  "Post Message",
+                        "method":  "POST",
+                        "path":  "/chat.postMessage",
+                        "fixedHeaders":  {
+                                             "Content-Type":  "application/json"
+                                         },
+                        "inputSchema":  [
+                                            {
+                                                "key":  "channel",
+                                                "label":  "Channel ID",
+                                                "type":  "STRING",
+                                                "required":  true,
+                                                "supportsExpression":  true,
+                                                "placeholder":  "e.g. C1234567890"
+                                            },
+                                            {
+                                                "key":  "text",
+                                                "label":  "Message Text",
+                                                "type":  "TEXTAREA",
+                                                "required":  true,
+                                                "supportsExpression":  true
+                                            },
+                                            {
+                                                "key":  "username",
+                                                "label":  "Bot Display Name",
+                                                "type":  "STRING",
+                                                "required":  false,
+                                                "supportsExpression":  true
+                                            },
+                                            {
+                                                "key":  "icon_emoji",
+                                                "label":  "Bot Icon Emoji",
+                                                "type":  "STRING",
+                                                "required":  false,
+                                                "supportsExpression":  true,
+                                                "placeholder":  "e.g. :robot_face:"
+                                            }
+                                        ],
+                        "outputPaths":  [
+                                            "ok",
+                                            "channel",
+                                            "ts",
+                                            "message.text"
+                                        ]
+                    },
+                    {
+                        "actionId":  "post_message_with_blocks",
+                        "displayName":  "Post Message with Blocks",
+                        "method":  "POST",
+                        "path":  "/chat.postMessage",
+                        "fixedHeaders":  {
+                                             "Content-Type":  "application/json"
+                                         },
+                        "inputSchema":  [
+                                            {
+                                                "key":  "channel",
+                                                "label":  "Channel ID",
+                                                "type":  "STRING",
+                                                "required":  true,
+                                                "supportsExpression":  true
+                                            },
+                                            {
+                                                "key":  "text",
+                                                "label":  "Fallback Text",
+                                                "type":  "STRING",
+                                                "required":  true,
+                                                "supportsExpression":  true
+                                            },
+                                            {
+                                                "key":  "blocks",
+                                                "label":  "Block Kit Payload (JSON Array)",
+                                                "type":  "JSON",
+                                                "required":  true,
+                                                "supportsExpression":  true,
+                                                "description":  "Slack Block Kit JSON. See https://api.slack.com/block-kit"
+                                            }
+                                        ],
+                        "outputPaths":  [
+                                            "ok",
+                                            "channel",
+                                            "ts"
+                                        ]
+                    },
+                    {
+                        "actionId":  "update_message",
+                        "displayName":  "Update Message",
+                        "method":  "POST",
+                        "path":  "/chat.update",
+                        "fixedHeaders":  {
+                                             "Content-Type":  "application/json"
+                                         },
+                        "inputSchema":  [
+                                            {
+                                                "key":  "channel",
+                                                "label":  "Channel ID",
+                                                "type":  "STRING",
+                                                "required":  true,
+                                                "supportsExpression":  true
+                                            },
+                                            {
+                                                "key":  "ts",
+                                                "label":  "Message Timestamp (ts)",
+                                                "type":  "STRING",
+                                                "required":  true,
+                                                "supportsExpression":  true,
+                                                "description":  "The timestamp of the message to update"
+                                            },
+                                            {
+                                                "key":  "text",
+                                                "label":  "New Message Text",
+                                                "type":  "TEXTAREA",
+                                                "required":  true,
+                                                "supportsExpression":  true
+                                            }
+                                        ],
+                        "outputPaths":  [
+                                            "ok",
+                                            "channel",
+                                            "ts"
+                                        ]
+                    },
+                    {
+                        "actionId":  "delete_message",
+                        "displayName":  "Delete Message",
+                        "method":  "POST",
+                        "path":  "/chat.delete",
+                        "fixedHeaders":  {
+                                             "Content-Type":  "application/json"
+                                         },
+                        "inputSchema":  [
+                                            {
+                                                "key":  "channel",
+                                                "label":  "Channel ID",
+                                                "type":  "STRING",
+                                                "required":  true,
+                                                "supportsExpression":  true
+                                            },
+                                            {
+                                                "key":  "ts",
+                                                "label":  "Message Timestamp (ts)",
+                                                "type":  "STRING",
+                                                "required":  true,
+                                                "supportsExpression":  true
+                                            }
+                                        ],
+                        "outputPaths":  [
+                                            "ok",
+                                            "channel",
+                                            "ts"
+                                        ]
+                    },
+                    {
+                        "actionId":  "add_reaction",
+                        "displayName":  "Add Reaction",
+                        "method":  "POST",
+                        "path":  "/reactions.add",
+                        "fixedHeaders":  {
+                                             "Content-Type":  "application/json"
+                                         },
+                        "inputSchema":  [
+                                            {
+                                                "key":  "channel",
+                                                "label":  "Channel ID",
+                                                "type":  "STRING",
+                                                "required":  true,
+                                                "supportsExpression":  true
+                                            },
+                                            {
+                                                "key":  "timestamp",
+                                                "label":  "Message Timestamp (ts)",
+                                                "type":  "STRING",
+                                                "required":  true,
+                                                "supportsExpression":  true
+                                            },
+                                            {
+                                                "key":  "name",
+                                                "label":  "Emoji Name (without colons)",
+                                                "type":  "STRING",
+                                                "required":  true,
+                                                "supportsExpression":  true,
+                                                "placeholder":  "e.g. thumbsup"
+                                            }
+                                        ],
+                        "outputPaths":  [
+                                            "ok"
+                                        ]
+                    },
+                    {
+                        "actionId":  "list_channels",
+                        "displayName":  "List Channels",
+                        "method":  "GET",
+                        "path":  "/conversations.list",
+                        "inputSchema":  [
+                                            {
+                                                "key":  "types",
+                                                "label":  "Channel Types",
+                                                "type":  "STRING",
+                                                "required":  false,
+                                                "supportsExpression":  false,
+                                                "defaultValue":  "public_channel",
+                                                "placeholder":  "public_channel,private_channel"
+                                            },
+                                            {
+                                                "key":  "limit",
+                                                "label":  "Limit",
+                                                "type":  "NUMBER",
+                                                "required":  false,
+                                                "supportsExpression":  true,
+                                                "defaultValue":  100
+                                            }
+                                        ],
+                        "outputPaths":  [
+                                            "ok",
+                                            "channels"
+                                        ]
+                    },
+                    {
+                        "actionId":  "get_channel_info",
+                        "displayName":  "Get Channel Info",
+                        "method":  "GET",
+                        "path":  "/conversations.info",
+                        "inputSchema":  [
+                                            {
+                                                "key":  "channel",
+                                                "label":  "Channel ID",
+                                                "type":  "STRING",
+                                                "required":  true,
+                                                "supportsExpression":  true
+                                            }
+                                        ],
+                        "outputPaths":  [
+                                            "ok",
+                                            "channel.id",
+                                            "channel.name",
+                                            "channel.topic.value"
+                                        ]
+                    },
+                    {
+                        "actionId":  "upload_file",
+                        "displayName":  "Upload File",
+                        "method":  "POST",
+                        "path":  "/files.upload",
+                        "fixedHeaders":  {
+                                             "Content-Type":  "application/json"
+                                         },
+                        "inputSchema":  [
+                                            {
+                                                "key":  "channels",
+                                                "label":  "Channel IDs (comma-separated)",
+                                                "type":  "STRING",
+                                                "required":  true,
+                                                "supportsExpression":  true
+                                            },
+                                            {
+                                                "key":  "content",
+                                                "label":  "File Content (text)",
+                                                "type":  "TEXTAREA",
+                                                "required":  false,
+                                                "supportsExpression":  true
+                                            },
+                                            {
+                                                "key":  "filename",
+                                                "label":  "Filename",
+                                                "type":  "STRING",
+                                                "required":  false,
+                                                "supportsExpression":  true
+                                            },
+                                            {
+                                                "key":  "initial_comment",
+                                                "label":  "Initial Comment",
+                                                "type":  "STRING",
+                                                "required":  false,
+                                                "supportsExpression":  true
+                                            }
+                                        ],
+                        "outputPaths":  [
+                                            "ok",
+                                            "file.id",
+                                            "file.name",
+                                            "file.permalink"
+                                        ]
+                    },
+                    {
+                        "actionId":  "set_channel_topic",
+                        "displayName":  "Set Channel Topic",
+                        "method":  "POST",
+                        "path":  "/conversations.setTopic",
+                        "fixedHeaders":  {
+                                             "Content-Type":  "application/json"
+                                         },
+                        "inputSchema":  [
+                                            {
+                                                "key":  "channel",
+                                                "label":  "Channel ID",
+                                                "type":  "STRING",
+                                                "required":  true,
+                                                "supportsExpression":  true
+                                            },
+                                            {
+                                                "key":  "topic",
+                                                "label":  "Topic",
+                                                "type":  "STRING",
+                                                "required":  true,
+                                                "supportsExpression":  true
+                                            }
+                                        ],
+                        "outputPaths":  [
+                                            "ok",
+                                            "topic"
+                                        ]
+                    },
+                    {
+                        "actionId":  "invite_user_to_channel",
+                        "displayName":  "Invite User to Channel",
+                        "method":  "POST",
+                        "path":  "/conversations.invite",
+                        "fixedHeaders":  {
+                                             "Content-Type":  "application/json"
+                                         },
+                        "inputSchema":  [
+                                            {
+                                                "key":  "channel",
+                                                "label":  "Channel ID",
+                                                "type":  "STRING",
+                                                "required":  true,
+                                                "supportsExpression":  true
+                                            },
+                                            {
+                                                "key":  "users",
+                                                "label":  "User ID(s) (comma-separated)",
+                                                "type":  "STRING",
+                                                "required":  true,
+                                                "supportsExpression":  true
+                                            }
+                                        ],
+                        "outputPaths":  [
+                                            "ok"
+                                        ]
+                    }
+                ],
+    "connectionSetup":  {
+                            "description":  "Connect your Slack account to allow workflows to access it securely.",
+                            "buttonLabel":  "Sign in with Slack"
+                        },
+    "verifyAction":  {
+                         "method":  "GET",
+                         "path":  "/conversations.list"
+                     }
 }

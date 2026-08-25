@@ -92,13 +92,20 @@ export interface NodePosition {
     studioChainOut?: string;
 }
 
+export type ConnectionStatus = 'ACTIVE' | 'EXPIRED' | 'REVOKED' | 'UNKNOWN';
+
 export interface IntegrationCredential {
     id?: string;
     organizationId?: string;
+    userId?: string;
     name: string;
     type: string;
     connectorId?: string;
     credentials?: Record<string, string>;
     createdAt?: string;
     updatedAt?: string;
+    connectionStatus?: ConnectionStatus;
+    connectedAs?: string;
+    lastUsedAt?: string;
+    credentialScope?: 'PERSONAL' | 'ORG_SHARED' | 'PLATFORM';
 }

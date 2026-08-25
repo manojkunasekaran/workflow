@@ -32,8 +32,8 @@ public class CredentialProviderTest {
 
     @Test
     void getDecryptedCredential_shouldReturnEmptyForNullId() {
-        assertTrue(provider.getDecryptedCredential(null).isEmpty());
-        assertTrue(provider.getDecryptedCredential("").isEmpty());
+        assertTrue(provider.resolveCredential(null, null, null).isEmpty());
+        assertTrue(provider.resolveCredential("", null, null).isEmpty());
     }
 
     @Test
@@ -54,7 +54,7 @@ public class CredentialProviderTest {
             return decrypted;
         });
 
-        Optional<IntegrationCredential> result = provider.getDecryptedCredential("cred-123");
+        Optional<IntegrationCredential> result = provider.resolveCredential("cred-123", null, null);
 
         assertTrue(result.isPresent());
         assertEquals("secret", result.get().getCredentials().get("password"));
