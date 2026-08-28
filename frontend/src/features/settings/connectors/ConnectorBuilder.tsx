@@ -4,8 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Save, ArrowLeft, Loader2, Globe, Lock, KeyRound, User, Shield, AlertCircle, CheckCircle2, ImageIcon, Plus, Upload } from 'lucide-react';
-import { ConnectorConnectionPanel } from '@/features/settings/components/ConnectorConnectionPanel';
+import { Save, ArrowLeft, Loader2, Globe, Lock, KeyRound, User, Shield, AlertCircle, CheckCircle2, ImageIcon, Upload } from 'lucide-react';
 import ActionBuilder from './ActionBuilder';
 
 // --- Constants ---------------------------------------------------------------

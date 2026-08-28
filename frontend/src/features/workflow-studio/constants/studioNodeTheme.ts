@@ -15,6 +15,7 @@ export const TASK_ACCENT_COLORS: Record<StudioTaskType, string> = {
     DATA_TRANSFORM: '#7c3aed',
     SMTP_TASK: '#0891b2',
     CONNECTOR_TASK: '#ec4899',
+    AGENTS_TASK: '#8b5cf6',
 };
 
 export const TRIGGER_ACCENT_COLOR = '#0d9488';

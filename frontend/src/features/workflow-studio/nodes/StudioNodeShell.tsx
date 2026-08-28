@@ -17,7 +17,7 @@ export type StudioNodeShellProps = {
     icon: LucideIcon;
     /** Optional CDN/remote icon URL — rendered as <img> instead of the LucideIcon when provided. */
     iconUrl?: string;
-    label: string;
+    label?: string;
     iconClassName?: string;
     selected?: boolean;
     invalid?: boolean;

@@ -4,7 +4,7 @@ import type { Connection, Edge, NodeChange } from '@xyflow/react';
 import { workflowApi } from '@/api/workflowApi';
 import { executionApi } from '@/api/executionApi';
 import type { WorkflowDefinition } from '@/types/api';
-import { StudioHeader, type StudioMode } from '@/features/workflow-studio/StudioHeader';
+import { StudioHeader } from '@/features/workflow-studio/StudioHeader';
 import { WorkflowCanvas } from '@/features/workflow-studio/WorkflowCanvas';
 import { useWorkflowStore } from '@/features/workflow-studio/store/workflowStore';
 import { TaskConfigDialog } from '@/features/workflow-studio/TaskConfigDialog';
@@ -58,6 +58,8 @@ import {
     insertTaskOnStudioEdge,
 } from '@/features/workflow-studio/lib/studioEdgeActions';
 import { TriggerConfigDialog } from '@/features/workflow-studio/task-config/TriggerConfigDialog';
+
+export type StudioMode = 'design' | 'inspect';
 
 export default function WorkflowStudioPage() {
     const { id: routeId } = useParams();
@@ -904,8 +906,6 @@ export default function WorkflowStudioPage() {
                     setWorkflowName(name);
                     markDirty();
                 }}
-                mode={mode}
-                onModeChange={setMode}
                 isDirty={isDirty}
                 isSaving={isSaving}
                 isRunning={isRunning}
@@ -944,7 +944,6 @@ export default function WorkflowStudioPage() {
                         key={workflowId ?? routeId ?? 'studio'}
                         nodes={canvasNodes}
                         chainEdges={edges}
-                        mode={mode}
                         triggerConfig={savedDefinition?.trigger}
                         taskValidationErrors={taskValidationErrors}
                         onNodesChange={handleNodesChange}
