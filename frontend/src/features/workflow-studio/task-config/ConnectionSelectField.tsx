@@ -4,7 +4,7 @@ import type { IntegrationCredential } from '@/types/api';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ConnectorConnectionPanel } from '@/features/settings/components/ConnectorConnectionPanel';
-import { Loader2, PlusCircle, AlertCircle } from 'lucide-react';
+import { PlusCircle, AlertCircle } from 'lucide-react';
 
 interface ConnectionSelectFieldProps {
     value?: string;

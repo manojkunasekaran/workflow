@@ -537,7 +537,7 @@ export function buildRouteEdgesFromNodes(nodes: StudioCanvasNode[]): Edge[] {
 
         if (wiring.toolInput) {
             const rows = listRows(parameters, 'tools');
-            rows.forEach((row, index) => {
+            rows.forEach((row) => {
                 const target = String(row.targetTaskId ?? '').trim();
                 if (!target) return;
                 edges.push(
