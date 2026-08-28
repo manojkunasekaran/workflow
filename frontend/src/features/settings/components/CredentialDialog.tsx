@@ -131,17 +131,17 @@ export function CredentialDialog({ open, onOpenChange, credential, onSave }: Cre
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="w-[625px] px-4 py-2">
-                <DialogHeader className="p-2">
+                <DialogHeader>
                     <DialogTitle>{credential ? 'Edit Credential' : 'Add Credential'}</DialogTitle>
                     <DialogDescription>
                         {credential
                             ? 'Update your integration credentials. Masked fields (********) will remain unchanged unless edited.'
-                            : 'Add a new credential to use securely in your workflows.'}
+                            : 'Add a new credential to securely link your workspace accounts.'}
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="grid gap-4 py-4 overflow-y-auto px-2">
-                    <div className="grid gap-2">
+                <div className="space-y-4 py-4 px-2">
+                    <div className="space-y-1.5">
                         <Label htmlFor="name">Credential Name</Label>
                         <Input
                             id="name"

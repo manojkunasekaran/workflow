@@ -47,8 +47,8 @@ class ConnectorTestServiceTest {
     private EncryptionService encryptionService;
     @Mock
     private RestTemplate restTemplate;
-    @Mock
-    private ObjectMapper objectMapper;
+    @org.mockito.Spy
+    private ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
 
     @InjectMocks
     private ConnectorTestService testService;
@@ -99,8 +99,7 @@ class ConnectorTestServiceTest {
                 eq(String.class)
         )).thenReturn(responseEntity);
 
-        when(objectMapper.readValue("{\"id\":\"123\", \"name\":\"John\"}", Object.class))
-                .thenReturn(Map.of("id", "123", "name", "John"));
+
 
         ConnectorTestResult result = testService.testAction("dummy", request);
 
@@ -123,8 +122,7 @@ class ConnectorTestServiceTest {
         when(restTemplate.exchange(anyString(), eq(HttpMethod.GET), any(HttpEntity.class), eq(String.class)))
                 .thenThrow(exception404);
 
-        when(objectMapper.readValue("{\"error\":\"User not found\"}", Object.class))
-                .thenReturn(Map.of("error", "User not found"));
+
 
         ConnectorTestResult result = testService.testAction("dummy", request);
 
@@ -134,3 +132,4 @@ class ConnectorTestServiceTest {
         assertThat(result.getError()).contains("HTTP 404");
     }
 }
+

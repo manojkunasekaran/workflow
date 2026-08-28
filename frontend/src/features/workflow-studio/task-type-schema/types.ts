@@ -18,6 +18,7 @@ export type TaskFieldType =
     | 'conditionalBranchList'
     | 'humanActionList'
     | 'iteratorActionList'
+    | 'toolsList'
     | 'wiredRef'
     | 'waitDuration'
     | 'credential';

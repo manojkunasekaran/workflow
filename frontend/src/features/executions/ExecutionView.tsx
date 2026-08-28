@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+﻿import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Connection, Edge, NodeChange } from '@xyflow/react';
 import { Loader2, RefreshCw, XCircle } from 'lucide-react';
 import { ExecutionHeader } from '@/features/executions/ExecutionHeader';
@@ -207,7 +207,7 @@ export function ExecutionView({
                     key={executionId}
                     nodes={nodes}
                     chainEdges={edges}
-                    mode="inspect"
+                    readOnly
                     enableTaskSelection
                     executionNodeStatuses={executionNodeStatuses}
                     onNodesChange={handleNodesChange}

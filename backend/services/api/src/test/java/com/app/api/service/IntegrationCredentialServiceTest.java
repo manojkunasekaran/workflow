@@ -38,6 +38,7 @@ public class IntegrationCredentialServiceTest {
     void setUp() {
         credential = new IntegrationCredential();
         credential.setId("cred-123");
+        credential.setOrganizationId("default-org");
         credential.setName("Test Cred");
         credential.setType("SMTP");
         
@@ -82,7 +83,7 @@ public class IntegrationCredentialServiceTest {
         existingCreds.put("host", "enc_host");
         existing.setCredentials(existingCreds);
         
-        when(repository.findByIdAndOrganizationId("cred-123", "default-org")).thenReturn(Optional.of(existing));
+        when(repository.findById("cred-123")).thenReturn(Optional.of(existing));
         when(repository.save(any(IntegrationCredential.class))).thenAnswer(inv -> inv.getArgument(0));
         when(encryptionService.encrypt("new_secret")).thenReturn("enc_new_secret");
 
@@ -109,7 +110,7 @@ public class IntegrationCredentialServiceTest {
     @Test
     void getAllCredentials_shouldReturnMaskedList() {
         credential.setOrganizationId("default-org");
-        when(repository.findAll()).thenReturn(List.of(credential));
+        when(repository.findByOrganizationId("default-org")).thenReturn(List.of(credential));
         
         List<IntegrationCredential> results = service.getAllCredentials();
         
@@ -119,10 +120,13 @@ public class IntegrationCredentialServiceTest {
 
     @Test
     void deleteCredential_shouldDeleteIfExists() {
-        when(repository.findByIdAndOrganizationId("cred-123", "default-org")).thenReturn(Optional.of(credential));
+        when(repository.findById("cred-123")).thenReturn(Optional.of(credential));
         
         service.deleteCredential("cred-123");
         
         verify(repository).delete(credential);
     }
 }
+
+
+

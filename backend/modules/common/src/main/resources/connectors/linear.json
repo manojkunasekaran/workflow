@@ -1,7 +1,7 @@
 {
     "connectorId":  "linear",
     "displayName":  "Linear",
-    "icon":  "https://cdn.iconscout.com/icon/free/png-256/linear-3628861-3030001.png",
+    "icon":  "https://cdn.simpleicons.org/linear/5E6AD2",
     "category":  "Project Management",
     "baseUrl":  "https://api.linear.app/graphql",
     "authType":  "BEARER_TOKEN",
@@ -91,3 +91,4 @@
                          "path":  "/"
                      }
 }
+

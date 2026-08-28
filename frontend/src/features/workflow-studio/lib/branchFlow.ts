@@ -522,6 +522,35 @@ export function positionForRoutingWire(
         return { x: parentTop.x + BRANCH_LAYOUT.offsetX, y: parentTop.y };
     }
 
+    if (handleId === 'tools') {
+        const toolsList = Array.isArray(parentData.parameters?.tools) ? parentData.parameters.tools : [];
+        const existingToolYs = toolsList
+            .map(row => String((row as any)?.targetTaskId ?? '').trim())
+            .filter(id => id && id !== childData.taskId)
+            .map(id => nodes.find(n => n.id === id)?.position?.y)
+            .filter(y => y != null) as number[];
+
+        const parentOutputs = resolveTaskOutputViews(parentData).outputs.length;
+        const parentTotalHeight = studioTaskNodeHeight(parentOutputs, terminatesMainSpine(parentData.type));
+        
+        // Base position for the first tool: below the agent, slightly to the right
+        let toolY = parentTop.y + parentTotalHeight + 40;
+        
+        if (existingToolYs.length > 0) {
+            const maxY = Math.max(...existingToolYs);
+            const childTotalHeight = studioTaskNodeHeight(
+                resolveTaskOutputViews(childData).outputs.length,
+                terminatesMainSpine(childData.type)
+            );
+            toolY = maxY + childTotalHeight + 20;
+        }
+
+        return {
+            x: parentTop.x + 80, // Offset it slightly to the right
+            y: toolY
+        };
+    }
+
     const endpoints = listRoutingEndpoints(parentData);
     const endpointCount = Math.max(endpoints.length, 1);
     const handleIndex = endpoints.findIndex((endpoint) => endpoint.handleId === handleId);

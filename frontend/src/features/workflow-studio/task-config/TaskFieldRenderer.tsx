@@ -3,6 +3,7 @@ import { BranchListField } from '@/features/workflow-studio/task-config/BranchLi
 import { ConditionalBranchListField } from '@/features/workflow-studio/task-config/ConditionalBranchListField';
 import { HumanActionListField } from '@/features/workflow-studio/task-config/HumanActionListField';
 import { WaitDurationField } from '@/features/workflow-studio/task-config/WaitDurationField';
+import { ToolsListField } from '@/features/workflow-studio/task-config/ToolsListField';
 import { TaskRefField } from '@/features/workflow-studio/task-config/TaskRefField';
 import { ConnectionSelectField } from '@/features/workflow-studio/task-config/ConnectionSelectField';
 import { VariableInput } from '@/features/workflow-studio/task-config/VariableInput';
@@ -99,14 +100,13 @@ export function TaskFieldRenderer({
                 {label}
                 <div className="flex rounded-md bg-muted p-1" role="group" aria-label={field.label}>
                     {field.options.map((option) => (
-                        <button
-                            key={option.value}
+                        <button key={option.value} data-testid={`task-field-${field.key}-${option.value}`}
                             type="button"
                             onClick={() => update(option.value)}
                             className={cn(
                                 'flex-1 rounded-sm py-1 text-xs font-semibold transition-colors',
                                 current === option.value
-                                    ? 'bg-background text-foreground shadow-sm'
+                                    ? 'bg-background text-foreground shadow-[0_1px_3px_rgba(0,0,0,0.1),0_1px_2px_rgba(0,0,0,0.06)] border border-border/50'
                                     : 'text-muted-foreground hover:text-foreground',
                             )}
                         >
@@ -128,8 +128,7 @@ export function TaskFieldRenderer({
         return (
             <div className="space-y-1.5">
                 {label}
-                <SimpleSelect
-                    id={field.key}
+                <SimpleSelect data-testid={`task-field-${field.key}`} id={field.key}
                     value={current}
                     onValueChange={(next) => update(next)}
                     options={field.options.map((option) => ({
@@ -150,8 +149,7 @@ export function TaskFieldRenderer({
 
     if (field.type === 'waitDuration') {
         return (
-            <WaitDurationField
-                id={field.key}
+            <WaitDurationField data-testid={`task-field-${field.key}`} id={field.key}
                 label={label}
                 valueMs={value}
                 onChange={(durationMs) => update(durationMs)}
@@ -209,8 +207,7 @@ export function TaskFieldRenderer({
         });
 
         return (
-            <TaskRefField
-                id={field.key}
+            <TaskRefField data-testid={`task-field-${field.key}`} id={field.key}
                 label={field.label}
                 value={current}
                 onChange={(taskId) => update(taskId)}
@@ -231,6 +228,19 @@ export function TaskFieldRenderer({
                 description={field.description}
                 value={value}
                 onChange={(branches) => update(branches)}
+                errors={fieldErrors}
+            />
+        );
+    }
+
+    if (field.type === 'toolsList') {
+        return (
+            <ToolsListField
+                fieldKey={field.key}
+                label={field.label}
+                description={field.description}
+                value={value}
+                onChange={(tools) => update(tools)}
                 errors={fieldErrors}
             />
         );
@@ -276,8 +286,7 @@ export function TaskFieldRenderer({
                 error={error}
                 description={field.description}
             >
-                <Textarea
-                    id={field.key}
+                <Textarea data-testid={`task-field-${field.key}`} id={field.key}
                     value={String(value ?? '')}
                     onChange={(e) => update(e.target.value)}
                     placeholder={field.placeholder}
@@ -303,8 +312,7 @@ export function TaskFieldRenderer({
                 error={error}
                 description={field.description}
             >
-                <Input
-                    id={field.key}
+                <Input data-testid={`task-field-${field.key}`} id={field.key}
                     type="number"
                     min={field.min}
                     value={value === undefined || value === null ? '' : String(value)}
@@ -394,8 +402,7 @@ export function TaskFieldRenderer({
                 error={error}
                 description={field.description}
             >
-                <Textarea
-                    id={field.key}
+                <Textarea data-testid={`task-field-${field.key}`} id={field.key}
                     value={jsonText}
                     onChange={(e) => update(e.target.value)}
                     className="min-h-[160px] resize-y font-mono text-xs"
@@ -416,8 +423,7 @@ export function TaskFieldRenderer({
             error={error}
             description={field.description}
         >
-            <Input
-                id={field.key}
+            <Input data-testid={`task-field-${field.key}`} id={field.key}
                 value={String(value ?? '')}
                 onChange={(e) => update(e.target.value)}
                 placeholder={field.placeholder}
@@ -428,3 +434,4 @@ export function TaskFieldRenderer({
 }
 
 export type { TaskParameterErrors };
+

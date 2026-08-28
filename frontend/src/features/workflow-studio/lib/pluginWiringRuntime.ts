@@ -273,6 +273,19 @@ export function clearTaskWireReferences(
             );
             next = updateTaskNode(next, node.id, cleared);
         }
+
+        const wiring = getWiring(node.data.type);
+        if (wiring.toolInput) {
+            const currentTools = listRows(node.data.parameters, 'tools');
+            const nextTools = currentTools.filter((t) => String(t.targetTaskId) !== removedTaskId);
+            if (nextTools.length !== currentTools.length) {
+                const nextParams = injectParameterType(node.data.type, {
+                    ...node.data.parameters,
+                    tools: nextTools,
+                });
+                next = updateTaskNode(next, node.id, nextParams);
+            }
+        }
     }
     return next;
 }
@@ -521,6 +534,20 @@ export function buildRouteEdgesFromNodes(nodes: StudioCanvasNode[]): Edge[] {
                 });
             }
         }
+
+        if (wiring.toolInput) {
+            const rows = listRows(parameters, 'tools');
+            rows.forEach((row, index) => {
+                const target = String(row.targetTaskId ?? '').trim();
+                if (!target) return;
+                edges.push(
+                    makeRouteEdge(taskId, 'tools', target, MAIN_IN, {
+                        label: '',
+                        routeKind: 'conditional',
+                    })
+                );
+            });
+        }
     }
 
     return edges;
@@ -732,6 +759,27 @@ export function applyGraphConnection(
         );
     }
 
+    if (wiring.toolInput && sourceHandle === 'tools' && targetHandle === MAIN_IN) {
+        const currentTools = listRows(sourceData.parameters, 'tools');
+        if (currentTools.some((t) => String(t.targetTaskId) === target)) return null;
+
+        const targetName = targetData.displayName ?? targetData.type.toLowerCase();
+        const toolName = targetName.replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 64);
+        
+        const newTool = {
+            name: toolName,
+            description: '',
+            targetTaskId: target,
+            inputSchema: {}
+        };
+        
+        const nextParams = injectParameterType(sourceData.type, {
+            ...sourceData.parameters,
+            tools: [...currentTools, newTool],
+        });
+        return updateTaskNode(preparedNodes, source, nextParams);
+    }
+
     const match = findOutputDef(wiring, sourceHandle);
     if (!match || match.def.targetHandle !== targetHandle) return null;
 
@@ -813,6 +861,18 @@ export function applyRouteEdgeRemoval(
             }
             return next;
         }
+    }
+
+    if (wiring.toolInput && sourceHandle === 'tools' && target) {
+        const currentTools = listRows(sourceData.parameters, 'tools');
+        const nextTools = currentTools.filter((t) => String(t.targetTaskId) !== target);
+        if (nextTools.length === currentTools.length) return null;
+        
+        const nextParams = injectParameterType(sourceData.type, {
+            ...sourceData.parameters,
+            tools: nextTools,
+        });
+        return updateTaskNode(nodes, source, nextParams);
     }
 
     const match = findOutputDef(wiring, sourceHandle);

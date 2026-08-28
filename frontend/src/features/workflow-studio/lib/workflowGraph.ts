@@ -401,7 +401,9 @@ export function flowToDefinition(
                 ? normalizeIteratorParamsForExport(stripped)
                 : stripped;
         const parameters = normalizeTaskParametersForExport(data.type as TaskType, prepared);
+        const isToolTarget = edges.some((e) => (e.sourceHandle === 'tools' || e.sourceHandle?.startsWith('tool-')) && e.target === data.taskId);
         taskPayloadById.set(data.taskId, {
+            isTool: isToolTarget ? true : undefined,
             taskId: data.taskId,
             type: data.type as TaskType,
             parameters,
@@ -993,3 +995,4 @@ export function findFirstTaskValidationError(
     }
     return null;
 }
+

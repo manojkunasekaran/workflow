@@ -1,0 +1,7 @@
+FROM node:24-bookworm
+WORKDIR /app
+COPY package.json yarn.lock ./
+RUN yarn install
+COPY . .
+RUN npx playwright install --with-deps chromium
+CMD ["yarn", "playwright", "test"]

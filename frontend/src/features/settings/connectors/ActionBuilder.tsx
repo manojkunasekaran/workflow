@@ -1,20 +1,12 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { type ConnectorAction } from '@/api/connectorApi';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Trash2, ChevronRight, ChevronDown, Zap, Info } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Plus, Trash2, Settings2, Info } from 'lucide-react';
 import InputSchemaBuilder from './InputSchemaBuilder';
-
-// ─── Helpers ────────────────────────────────────────────────────────────────
-
-function slugify(str: string): string {
-    return str
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '_')
-        .replace(/^_|_$/g, '');
-}
 
 const METHOD_STYLES: Record<string, string> = {
     GET:    'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20',
@@ -24,234 +16,246 @@ const METHOD_STYLES: Record<string, string> = {
     DELETE: 'bg-destructive/10 text-destructive border border-destructive/20',
 };
 
-// ─── Component ───────────────────────────────────────────────────────────────
-
 interface ActionBuilderProps {
     actions: ConnectorAction[];
     onChange: (actions: ConnectorAction[]) => void;
 }
 
 export default function ActionBuilder({ actions, onChange }: ActionBuilderProps) {
-    const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
+    const [editingIndex, setEditingIndex] = useState<number | null>(null);
+    const [editingAction, setEditingAction] = useState<ConnectorAction | null>(null);
     const [confirmDeleteIndex, setConfirmDeleteIndex] = useState<number | null>(null);
 
-    const addAction = () => {
-        const newAction: ConnectorAction = {
-            actionId: `action_${actions.length + 1}`,
+    const openCreate = () => {
+        setEditingAction({
+            actionId: '',
             displayName: '',
             method: 'GET',
             path: '/',
             inputSchema: [],
-        };
-        onChange([...actions, newAction]);
-        setExpandedIndex(actions.length);
+        });
+        setEditingIndex(-1);
     };
 
-    const updateAction = (index: number, updates: Partial<ConnectorAction>) => {
+    const openEdit = (index: number) => {
+        setEditingAction({ ...actions[index] });
+        setEditingIndex(index);
+    };
+
+    const closeEdit = () => {
+        setEditingIndex(null);
+        setEditingAction(null);
+    };
+
+    const handleSaveAction = () => {
+        if (!editingAction) return;
+        
         const newActions = [...actions];
-        newActions[index] = { ...newActions[index], ...updates };
+        if (editingIndex === -1) {
+            newActions.push(editingAction);
+        } else if (editingIndex !== null) {
+            newActions[editingIndex] = editingAction;
+        }
+        
         onChange(newActions);
-    };
-
-    const handleDisplayNameChange = (index: number, displayName: string) => {
-        // Auto-derive a stable machine ID from the human-readable display name
-        const actionId = slugify(displayName) || `action_${index + 1}`;
-        updateAction(index, { displayName, actionId });
-    };
-
-    const handlePathChange = (index: number, path: string) => {
-        const matches = path.match(/\{([a-zA-Z0-9_]+)\}/g);
-        const pathParams = matches ? matches.map(m => m.replace(/[{}]/g, '')) : undefined;
-        updateAction(index, { path, pathParams });
+        closeEdit();
     };
 
     const removeAction = (index: number) => {
-        onChange(actions.filter((_, i) => i !== index));
-        if (expandedIndex === index) setExpandedIndex(null);
+        const newActions = [...actions];
+        newActions.splice(index, 1);
+        onChange(newActions);
         setConfirmDeleteIndex(null);
+    };
+
+    const handlePathChange = (path: string) => {
+        if (!editingAction) return;
+        const matches = path.match(/\{([a-zA-Z0-9_]+)\}/g);
+        const pathParams = matches ? matches.map(m => m.replace(/[{}]/g, '')) : undefined;
+        setEditingAction({ ...editingAction, path, pathParams });
     };
 
     return (
         <div className="space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex justify-between items-center">
                 <div>
-                    <h3 className="text-base font-medium">Actions</h3>
-                    <p className="text-sm text-muted-foreground mt-0.5">
-                        Each action maps to a specific API endpoint users can call from their workflows.
-                    </p>
+                    <h3 className="text-sm font-medium">Actions ({actions.length})</h3>
+                    <p className="text-xs text-muted-foreground">Define the operations this connector can perform.</p>
                 </div>
-                <Button variant="outline" size="sm" onClick={addAction} className="gap-2">
-                    <Plus className="h-4 w-4" /> Add Action
+                <Button variant="outline" size="sm" onClick={openCreate} className="h-8">
+                    <Plus className="h-3.5 w-3.5 mr-1.5" /> Add Action
                 </Button>
             </div>
 
             {actions.length === 0 ? (
-                <div className="p-10 border-2 border-dashed rounded-xl text-center text-muted-foreground bg-muted/10">
-                    <Zap className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                    <p className="text-sm font-medium">No actions defined</p>
-                    <p className="text-xs mt-1">Add an action to define what this connector can do.</p>
+                <div className="p-8 border border-dashed rounded-lg text-center bg-muted/20">
+                    <p className="text-sm text-muted-foreground mb-3">No actions defined yet.</p>
+                    <Button variant="outline" size="sm" onClick={openCreate}>
+                        <Plus className="h-3.5 w-3.5 mr-1.5" /> Create first action
+                    </Button>
                 </div>
             ) : (
-                <div className="space-y-2">
-                    {actions.map((action, index) => {
-                        const isExpanded = expandedIndex === index;
-                        const isConfirmingDelete = confirmDeleteIndex === index;
-                        const methodStyle = METHOD_STYLES[action.method] ?? 'bg-muted text-muted-foreground';
-
-                        return (
-                            <div key={index} className="border rounded-xl bg-card overflow-hidden shadow-sm">
-                                {/* Action header — always visible */}
-                                <div
-                                    className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-muted/30 transition-colors"
-                                    onClick={() => setExpandedIndex(isExpanded ? null : index)}
-                                >
-                                    <div className="flex items-center gap-3 min-w-0">
-                                        {isExpanded
-                                            ? <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
-                                            : <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-                                        }
-                                        <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded font-mono shrink-0 ${methodStyle}`}>
-                                            {action.method}
-                                        </span>
-                                        <span className="font-medium text-sm truncate">
-                                            {action.displayName || <span className="text-muted-foreground italic">Untitled Action</span>}
-                                        </span>
-                                        <span className="text-xs text-muted-foreground font-mono truncate hidden md:block">
-                                            {action.path}
-                                        </span>
-                                    </div>
-
-                                    {/* Action delete — two-step confirm */}
-                                    <div
-                                        className="flex items-center gap-1 shrink-0"
-                                        onClick={e => e.stopPropagation()}
-                                    >
-                                        {isConfirmingDelete ? (
-                                            <>
-                                                <span className="text-xs text-destructive mr-1">Remove action?</span>
-                                                <Button
-                                                    variant="destructive"
-                                                    size="sm"
-                                                    className="h-7 text-xs"
-                                                    onClick={() => removeAction(index)}
-                                                >
-                                                    Confirm
-                                                </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="h-7 text-xs"
-                                                    onClick={() => setConfirmDeleteIndex(null)}
-                                                >
-                                                    Cancel
-                                                </Button>
-                                            </>
-                                        ) : (
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                                                onClick={() => setConfirmDeleteIndex(index)}
-                                                title="Remove action"
-                                            >
-                                                <Trash2 className="h-3.5 w-3.5" />
-                                            </Button>
-                                        )}
-                                    </div>
+                <div className="grid gap-2">
+                    {actions.map((action, index) => (
+                        <div
+                            key={index}
+                            className="flex items-center justify-between p-3 border rounded-lg bg-card hover:border-primary/30 transition-colors group cursor-pointer"
+                            onClick={() => openEdit(index)}
+                        >
+                            <div className="flex items-center gap-3 overflow-hidden">
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold tracking-wider ${METHOD_STYLES[action.method] || METHOD_STYLES.GET}`}>
+                                    {action.method}
+                                </span>
+                                <div className="flex flex-col truncate">
+                                    <span className="text-sm font-medium truncate">{action.displayName || 'Unnamed Action'}</span>
+                                    <span className="text-xs text-muted-foreground font-mono truncate">{action.path}</span>
                                 </div>
+                            </div>
 
-                                {/* Expanded body */}
-                                {isExpanded && (
-                                    <div className="border-t bg-muted/10 p-4 space-y-5">
-                                        {/* Name + derived ID */}
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div className="space-y-1.5">
-                                                <Label className="text-xs">Action Name <span className="text-destructive">*</span></Label>
-                                                <Input
-                                                    className="h-9"
-                                                    value={action.displayName}
-                                                    onChange={e => handleDisplayNameChange(index, e.target.value)}
-                                                    placeholder="e.g. Send Message"
-                                                />
-                                                {action.actionId && (
-                                                    <p className="text-[10px] text-muted-foreground font-mono">
-                                                        id: <span className="text-foreground">{action.actionId}</span>
-                                                    </p>
-                                                )}
-                                            </div>
-                                            <div className="space-y-1.5">
-                                                <Label className="text-xs">Description <span className="text-muted-foreground">(optional)</span></Label>
-                                                <Input
-                                                    className="h-9"
-                                                    value={action.description ?? ''}
-                                                    onChange={e => updateAction(index, { description: e.target.value })}
-                                                    placeholder="Briefly describe what this action does"
-                                                />
-                                            </div>
-                                        </div>
-
-                                        {/* Method + Path */}
-                                        <div className="flex gap-3">
-                                            <div className="space-y-1.5 w-28 shrink-0">
-                                                <Label className="text-xs">Method</Label>
-                                                <Select
-                                                    value={action.method}
-                                                    onValueChange={val => updateAction(index, { method: val })}
-                                                >
-                                                    <SelectTrigger className="h-9 font-mono">
-                                                        <SelectValue />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        {['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].map(m => (
-                                                            <SelectItem key={m} value={m} className="font-mono">
-                                                                {m}
-                                                            </SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-                                            <div className="space-y-1.5 flex-1">
-                                                <Label className="text-xs">
-                                                    API Path
-                                                    <span className="text-muted-foreground font-normal ml-1">— use {'{'} {'}'} for dynamic segments</span>
-                                                </Label>
-                                                <Input
-                                                    className="h-9 font-mono"
-                                                    value={action.path}
-                                                    onChange={e => handlePathChange(index, e.target.value)}
-                                                    placeholder="/channels/{channelId}/messages"
-                                                />
-                                            </div>
-                                        </div>
-
-                                        {/* Path param detection hint */}
-                                        {action.pathParams && action.pathParams.length > 0 && (
-                                            <div className="flex items-start gap-2 p-3 rounded-lg bg-primary/5 border border-primary/15 text-xs text-primary">
-                                                <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-                                                <span>
-                                                    Detected path variables:{' '}
-                                                    {action.pathParams.map(p => (
-                                                        <code key={p} className="px-1 py-0.5 rounded bg-primary/10 font-mono mx-0.5">{p}</code>
-                                                    ))}
-                                                    {' '}— add these as Input Fields below so users can provide values.
-                                                </span>
-                                            </div>
-                                        )}
-
-                                        {/* Input schema */}
-                                        <div className="pt-1">
-                                            <InputSchemaBuilder
-                                                fields={action.inputSchema}
-                                                onChange={fields => updateAction(index, { inputSchema: fields })}
-                                            />
-                                        </div>
-                                    </div>
+                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-4">
+                                {confirmDeleteIndex === index ? (
+                                    <>
+                                        <Button
+                                            variant="destructive"
+                                            size="sm"
+                                            className="h-7 text-xs"
+                                            onClick={(e) => { e.stopPropagation(); removeAction(index); }}
+                                        >
+                                            Confirm
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-7 text-xs"
+                                            onClick={(e) => { e.stopPropagation(); setConfirmDeleteIndex(null); }}
+                                        >
+                                            Cancel
+                                        </Button>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                                            onClick={(e) => { e.stopPropagation(); openEdit(index); }}
+                                        >
+                                            <Settings2 className="h-3.5 w-3.5" />
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                            onClick={(e) => { e.stopPropagation(); setConfirmDeleteIndex(index); }}
+                                        >
+                                            <Trash2 className="h-3.5 w-3.5" />
+                                        </Button>
+                                    </>
                                 )}
                             </div>
-                        );
-                    })}
+                        </div>
+                    ))}
                 </div>
             )}
+
+            <Dialog open={editingIndex !== null} onOpenChange={(open) => !open && closeEdit()}>
+                <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col p-0">
+                    <DialogHeader className="px-6 py-4 border-b shrink-0">
+                        <DialogTitle>{editingIndex === -1 ? 'Create Action' : 'Edit Action'}</DialogTitle>
+                        <DialogDescription>
+                            Configure the API endpoint and input parameters for this action.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    {editingAction && (
+                        <div className="px-6 py-4 overflow-y-auto space-y-6 flex-1">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-1.5">
+                                    <Label className="text-xs">Action Name <span className="text-destructive">*</span></Label>
+                                    <Input
+                                        className="h-9"
+                                        value={editingAction.displayName}
+                                        onChange={e => setEditingAction({ ...editingAction, displayName: e.target.value })}
+                                        placeholder="e.g. Send Message"
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <Label className="text-xs">Description <span className="text-muted-foreground">(optional)</span></Label>
+                                    <Input
+                                        className="h-9"
+                                        value={editingAction.description ?? ''}
+                                        onChange={e => setEditingAction({ ...editingAction, description: e.target.value })}
+                                        placeholder="Briefly describe what this action does"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="flex gap-3">
+                                <div className="space-y-1.5 w-28 shrink-0">
+                                    <Label className="text-xs">Method</Label>
+                                    <Select
+                                        value={editingAction.method}
+                                        onValueChange={val => setEditingAction({ ...editingAction, method: val })}
+                                    >
+                                        <SelectTrigger className="h-9 font-mono">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].map(m => (
+                                                <SelectItem key={m} value={m} className="font-mono">{m}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-1.5 flex-1">
+                                    <Label className="text-xs">
+                                        API Path
+                                        <span className="text-muted-foreground font-normal ml-1">— use {'{'} {'}'} for dynamic segments</span>
+                                    </Label>
+                                    <Input
+                                        className="h-9 font-mono"
+                                        value={editingAction.path}
+                                        onChange={e => handlePathChange(e.target.value)}
+                                        placeholder="/channels/{channelId}/messages"
+                                    />
+                                </div>
+                            </div>
+
+                            {editingAction.pathParams && editingAction.pathParams.length > 0 && (
+                                <div className="flex items-start gap-2 p-3 rounded-lg bg-primary/5 border border-primary/15 text-xs text-primary">
+                                    <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                                    <span>
+                                        Detected path variables:{' '}
+                                        {editingAction.pathParams.map(p => (
+                                            <code key={p} className="px-1 py-0.5 rounded bg-primary/10 font-mono mx-0.5">{p}</code>
+                                        ))}
+                                        {' '}— add these as Input Fields below so users can provide values.
+                                    </span>
+                                </div>
+                            )}
+
+                            <div className="pt-2 border-t">
+                                <div className="mb-4">
+                                    <h4 className="text-sm font-medium">Input Schema</h4>
+                                    <p className="text-xs text-muted-foreground">Define the fields the user needs to fill out to run this action.</p>
+                                </div>
+                                <InputSchemaBuilder
+                                    fields={editingAction.inputSchema}
+                                    onChange={fields => setEditingAction({ ...editingAction, inputSchema: fields })}
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    <DialogFooter className="px-6 py-4 border-t shrink-0">
+                        <Button variant="outline" onClick={closeEdit}>Cancel</Button>
+                        <Button onClick={handleSaveAction} disabled={!editingAction?.displayName?.trim()}>
+                            Save Action
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
+

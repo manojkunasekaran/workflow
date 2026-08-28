@@ -84,6 +84,8 @@ export interface TaskPluginWiring {
     mainFlowIn?: boolean;
     /** Standard main-out handle on the right for linear chain (default true). */
     mainFlowOut?: boolean;
+    /** Distinct bottom handle for n8n-style generic tool tasks. */
+    toolInput?: boolean;
 }
 
 export const DEFAULT_TASK_WIRING: TaskPluginWiring = {

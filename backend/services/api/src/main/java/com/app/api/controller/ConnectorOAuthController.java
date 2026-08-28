@@ -56,7 +56,11 @@ public class ConnectorOAuthController {
      * @param connectorId the connector to authorize (e.g. "slack", "gmail")
      */
     @GetMapping("/{connectorId}/authorize")
-    public RedirectView authorize(@PathVariable String connectorId) {
+    public RedirectView authorize(@PathVariable String connectorId,
+                                  @RequestParam(required = false) String clientId,
+                                  @RequestParam(required = false) String clientSecret,
+                                  @RequestParam(required = false) String scopes,
+                                  @RequestParam(required = false) String allowedDomains) {
         ConnectorManifest manifest = connectorRegistry.findById(connectorId)
                 .orElseThrow(() -> new ResourceNotFoundException("ConnectorManifest", connectorId));
 
@@ -64,8 +68,8 @@ public class ConnectorOAuthController {
             throw new IllegalArgumentException("Connector '" + connectorId + "' does not support OAuth2");
         }
 
-        String clientId = getProperty(connectorId, "client-id");
-        if (clientId == null) {
+        String finalClientId = clientId != null && !clientId.isEmpty() ? clientId : getProperty(connectorId, "client-id");
+        if (finalClientId == null) {
             throw new IllegalStateException(
                     "OAuth2 client ID is not configured for connector: " + connectorId +
                     ". Set property: workflow.connectors." + connectorId + ".client-id");
@@ -77,17 +81,24 @@ public class ConnectorOAuthController {
         state.setConnectorId(connectorId);
         state.setOrganizationId(DEFAULT_ORG_ID);
         state.setExpiresAt(Instant.now().plusSeconds(600));
+        if (clientId != null && !clientId.isEmpty()) {
+            state.setCustomClientId(clientId);
+            state.setCustomClientSecret(clientSecret);
+            state.setCustomScopes(scopes);
+            state.setAllowedDomains(allowedDomains);
+        }
         stateRepository.save(state);
 
         String authUrl = UriComponentsBuilder
                 .fromUriString(manifest.getOauth2Config().getAuthorizationUrl())
-                .queryParam("client_id", clientId)
+                .queryParam("client_id", finalClientId)
                 .queryParam("redirect_uri", getCallbackUrl())
                 .queryParam("response_type", "code")
                 .queryParam("state", state.getId())
-                .queryParam("scope", String.join(" ", manifest.getOauth2Config().getDefaultScopes() != null
-                        ? manifest.getOauth2Config().getDefaultScopes()
-                        : java.util.Collections.emptyList()))
+                .queryParam("scope", scopes != null && !scopes.isEmpty() ? scopes
+                        : String.join(" ", manifest.getOauth2Config().getDefaultScopes() != null
+                                ? manifest.getOauth2Config().getDefaultScopes()
+                                : java.util.Collections.emptyList()))
                 .build(false)
                 .toUriString();
 
@@ -120,8 +131,8 @@ public class ConnectorOAuthController {
         ConnectorManifest manifest = connectorRegistry.findById(oauthState.getConnectorId())
                 .orElseThrow(() -> new ResourceNotFoundException("ConnectorManifest", oauthState.getConnectorId()));
 
-        String clientId = getProperty(oauthState.getConnectorId(), "client-id");
-        String clientSecret = getProperty(oauthState.getConnectorId(), "client-secret");
+        String clientId = oauthState.getCustomClientId() != null ? oauthState.getCustomClientId() : getProperty(oauthState.getConnectorId(), "client-id");
+        String clientSecret = oauthState.getCustomClientSecret() != null ? oauthState.getCustomClientSecret() : getProperty(oauthState.getConnectorId(), "client-secret");
 
         Map<String, String> tokenRequestBody = new HashMap<>();
         tokenRequestBody.put("client_id", clientId);
@@ -154,7 +165,7 @@ public class ConnectorOAuthController {
                 return buildErrorRedirect("Token exchange failed: provider returned an invalid response.");
             }
 
-            String savedCredentialId = saveCredential(manifest, oauthState.getOrganizationId(), tokenResponse);
+            String savedCredentialId = saveCredential(manifest, oauthState.getOrganizationId(), tokenResponse, oauthState.getAllowedDomains());
             log.info("OAuth2 credential saved successfully for connector: {}, credentialId: {}",
                     oauthState.getConnectorId(), savedCredentialId);
 
@@ -175,7 +186,7 @@ public class ConnectorOAuthController {
      * the background refresh job.
      */
     private String saveCredential(ConnectorManifest manifest, String organizationId,
-                                   Map<String, Object> tokenData) {
+                                   Map<String, Object> tokenData, String allowedDomains) {
         IntegrationCredential credential = new IntegrationCredential();
         credential.setId(UUID.randomUUID().toString());
         credential.setOrganizationId(organizationId);
@@ -196,6 +207,9 @@ public class ConnectorOAuthController {
 
         Map<String, String> creds = new HashMap<>();
         tokenData.forEach((k, v) -> creds.put(k, String.valueOf(v)));
+        if (allowedDomains != null && !allowedDomains.isEmpty()) {
+            creds.put("allowed_domains", allowedDomains);
+        }
         credential.setCredentials(creds);
 
         IntegrationCredential saved = credentialService.createCredential(credential);

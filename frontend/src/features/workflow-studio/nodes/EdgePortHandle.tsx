@@ -71,7 +71,7 @@ export function EdgePortHandle({
                     }}
                 >
                     <span
-                        className="pointer-events-none h-0 w-4 border-t-2 border-dashed border-[#94a3b8] opacity-80"
+                        className="pointer-events-none h-0 w-4 border-t-2 border-dashed border-[#94a3b8]"
                         aria-hidden
                     />
                     <Hint content={addTitle}>

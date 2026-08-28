@@ -1,7 +1,7 @@
 {
     "connectorId":  "slack",
     "displayName":  "Slack",
-    "icon":  "https://cdn.simpleicons.org/slack/E01E5A",
+    "icon":  "https://cdn.simpleicons.org/slack",
     "category":  "Communication",
     "baseUrl":  "https://slack.com/api",
     "authType":  "OAUTH2",

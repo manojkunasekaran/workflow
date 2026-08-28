@@ -11,5 +11,6 @@ public enum TaskType {
     DATA_TRANSFORM,
     JOIN,
     SMTP_TASK,
-    CONNECTOR_TASK;
+    CONNECTOR_TASK,
+    AGENTS_TASK;
 }

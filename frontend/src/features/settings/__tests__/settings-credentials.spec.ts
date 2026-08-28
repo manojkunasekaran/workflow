@@ -62,7 +62,6 @@ test.describe('Settings - Credentials Management', () => {
     });
 
     test('should open Add Credential dialog and save a new Bearer Token', async ({ page }) => {
-        // Open the dialog
         await page.getByRole('button', { name: /Add Credential/i }).click();
         
         // Ensure the dialog is visible

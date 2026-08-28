@@ -1,41 +1,24 @@
 import { type ConnectorInputField, type ConnectorFieldType } from '@/api/connectorApi';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Trash2, Code2 } from 'lucide-react';
-
-// ─── Helpers ────────────────────────────────────────────────────────────────
-
-function slugify(label: string): string {
-    return label
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '_')
-        .replace(/^_|_$/g, '');
-}
-
-/** BOOLEAN and SELECT fields have fixed values — dynamic expressions make no sense for them */
-function autoSupportsExpression(type: ConnectorFieldType): boolean {
-    return type !== 'BOOLEAN' && type !== 'SELECT';
-}
+import { Plus, Trash2, Code2, Info } from 'lucide-react';
 
 const FIELD_TYPE_LABELS: Record<ConnectorFieldType, string> = {
-    STRING: 'Text',
-    TEXTAREA: 'Long Text',
+    STRING: 'String',
+    TEXTAREA: 'String (Multiline)',
     NUMBER: 'Number',
-    BOOLEAN: 'Toggle (Yes/No)',
-    JSON: 'JSON Object',
+    BOOLEAN: 'Boolean',
+    JSON: 'JSON',
     SELECT: 'Dropdown',
 };
-
-// ─── Component ───────────────────────────────────────────────────────────────
 
 interface InputSchemaBuilderProps {
     fields: ConnectorInputField[];
     onChange: (fields: ConnectorInputField[]) => void;
 }
 
-export default function InputSchemaBuilder({ fields, onChange }: InputSchemaBuilderProps) {
+export default function InputSchemaBuilder({ fields = [], onChange }: InputSchemaBuilderProps) {
     const addField = () => {
         const count = fields.length + 1;
         const newField: ConnectorInputField = {
@@ -43,25 +26,20 @@ export default function InputSchemaBuilder({ fields, onChange }: InputSchemaBuil
             label: '',
             type: 'STRING',
             required: false,
-            supportsExpression: true, // auto-derived — STRING supports expressions
+            supportsExpression: true,
         };
         onChange([...fields, newField]);
     };
 
     const updateField = (index: number, updates: Partial<ConnectorInputField>) => {
         const newFields = [...fields];
-        const merged = { ...newFields[index], ...updates };
-        // If the type changed, re-derive supportsExpression automatically
+        newFields[index] = { ...newFields[index], ...updates };
+        
         if (updates.type !== undefined) {
-            merged.supportsExpression = autoSupportsExpression(updates.type);
+            newFields[index].supportsExpression = newFields[index].type !== 'BOOLEAN' && newFields[index].type !== 'SELECT';
         }
-        newFields[index] = merged;
+        
         onChange(newFields);
-    };
-
-    const handleLabelChange = (index: number, label: string) => {
-        const key = slugify(label) || `field_${index + 1}`;
-        updateField(index, { label, key });
     };
 
     const removeField = (index: number) => {
@@ -70,114 +48,95 @@ export default function InputSchemaBuilder({ fields, onChange }: InputSchemaBuil
 
     return (
         <div className="space-y-3">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h4 className="text-sm font-medium">Input Fields</h4>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                        Define what information users must provide when using this action.
-                    </p>
+            {fields.length > 0 && (
+                <div className="flex items-start gap-2 p-2.5 mb-2 rounded-md bg-muted/30 text-xs text-muted-foreground border border-border/50">
+                    <Info className="h-4 w-4 shrink-0 text-primary" />
+                    <div>
+                        <p><strong>Dynamic Expressions:</strong> String and Number fields automatically support dynamic workflow expressions (e.g. <code className="px-1 py-0.5 rounded bg-muted">{'{{trigger.data}}'}</code>).</p>
+                    </div>
                 </div>
-                <Button variant="outline" size="sm" onClick={addField} className="gap-1.5 h-8">
-                    <Plus className="h-3.5 w-3.5" /> Add Field
-                </Button>
-            </div>
+            )}
 
             {fields.length === 0 ? (
                 <div className="text-sm text-muted-foreground text-center py-8 border border-dashed rounded-lg bg-muted/10">
                     <Code2 className="h-6 w-6 mx-auto mb-2 opacity-40" />
-                    No input fields yet. This action will execute with no user input.
+                    No parameters defined.
                 </div>
             ) : (
-                <div className="space-y-2">
-                    {fields.map((field, index) => (
-                        <div
-                            key={index}
-                            className="border rounded-lg bg-card shadow-sm overflow-hidden"
-                        >
-                            {/* Field header row */}
-                            <div className="grid grid-cols-[1fr_120px_auto] gap-3 p-3 items-end">
-                                {/* Label → auto-derives key */}
-                                <div className="space-y-1">
-                                    <Label className="text-xs text-muted-foreground">Label <span className="text-destructive">*</span></Label>
-                                    <Input
-                                        className="h-8 text-sm"
-                                        value={field.label}
-                                        onChange={e => handleLabelChange(index, e.target.value)}
-                                        placeholder="e.g. Channel ID"
-                                    />
-                                    {/* Show derived key as read-only hint */}
-                                    {field.key && (
-                                        <p className="text-[10px] text-muted-foreground font-mono">
-                                            key: <span className="text-foreground">{field.key}</span>
-                                        </p>
-                                    )}
-                                </div>
+                <div className="space-y-1.5 border rounded-lg overflow-hidden bg-card shadow-sm">
+                    {/* Header Row */}
+                    <div className="grid grid-cols-[minmax(120px,2fr)_130px_minmax(120px,2fr)_40px_40px] gap-2 px-3 py-2 bg-muted/40 border-b text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        <div>Field Label <span className="text-destructive">*</span></div>
+                        <div>Type <span className="text-destructive">*</span></div>
+                        <div>Placeholder</div>
+                        <div className="text-center">Req</div>
+                        <div></div>
+                    </div>
 
-                                {/* Field type */}
-                                <div className="space-y-1">
-                                    <Label className="text-xs text-muted-foreground">Type</Label>
-                                    <Select
-                                        value={field.type}
-                                        onValueChange={val => updateField(index, { type: val as ConnectorFieldType })}
-                                    >
-                                        <SelectTrigger className="h-8 text-xs">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {(Object.keys(FIELD_TYPE_LABELS) as ConnectorFieldType[]).map(t => (
-                                                <SelectItem key={t} value={t} className="text-xs">
-                                                    {FIELD_TYPE_LABELS[t]}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
+                    {/* Data Rows */}
+                    <div className="divide-y divide-border/50 p-1">
+                        {fields.map((field, index) => (
+                            <div key={index} className="grid grid-cols-[minmax(120px,2fr)_130px_minmax(120px,2fr)_40px_40px] gap-2 p-1 items-center hover:bg-muted/10 transition-colors rounded-sm">
+                                <Input
+                                    className="h-8 text-xs bg-transparent border-transparent hover:border-input focus-visible:ring-1"
+                                    value={field.label}
+                                    onChange={e => updateField(index, { label: e.target.value })}
+                                    placeholder="e.g. Channel ID"
+                                />
 
-                                {/* Delete */}
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 self-end"
-                                    onClick={() => removeField(index)}
-                                    title="Remove field"
+                                <Select
+                                    value={field.type}
+                                    onValueChange={val => updateField(index, { type: val as ConnectorFieldType })}
                                 >
-                                    <Trash2 className="h-3.5 w-3.5" />
-                                </Button>
-                            </div>
+                                    <SelectTrigger className="h-8 text-xs bg-transparent border-transparent hover:border-input focus:ring-1">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {(Object.keys(FIELD_TYPE_LABELS) as ConnectorFieldType[]).map(t => (
+                                            <SelectItem key={t} value={t} className="text-xs">
+                                                {FIELD_TYPE_LABELS[t]}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
 
-                            {/* Secondary row — required toggle + placeholder */}
-                            <div className="border-t bg-muted/20 px-3 py-2 flex items-center gap-4 flex-wrap">
-                                <label className="flex items-center gap-2 cursor-pointer select-none">
+                                <Input
+                                    className="h-8 text-xs bg-transparent border-transparent hover:border-input focus-visible:ring-1"
+                                    value={field.placeholder ?? ''}
+                                    onChange={e => updateField(index, { placeholder: e.target.value })}
+                                    placeholder="e.g. #general"
+                                />
+
+                                <div className="flex justify-center items-center">
                                     <div
-                                        className={`relative w-8 h-4 rounded-full transition-colors ${field.required ? 'bg-primary' : 'bg-input'}`}
+                                        className={`relative w-6 h-3.5 rounded-full transition-colors cursor-pointer ${field.required ? 'bg-primary' : 'bg-input'}`}
                                         onClick={() => updateField(index, { required: !field.required })}
+                                        title={field.required ? "Required" : "Optional"}
                                     >
-                                        <div className={`absolute top-0.5 h-3 w-3 rounded-full bg-white shadow transition-transform ${field.required ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                                        <div className={`absolute top-0.5 h-2.5 w-2.5 rounded-full bg-white shadow transition-transform ${field.required ? 'translate-x-3' : 'translate-x-0.5'}`} />
                                     </div>
-                                    <span className="text-xs text-muted-foreground">Required</span>
-                                </label>
+                                </div>
 
-                                {/* supportsExpression is shown as read-only info derived from type */}
-                                {field.supportsExpression && (
-                                    <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                                        <code className="px-1 py-0.5 rounded bg-muted text-[9px]">{'{{expr}}'}</code>
-                                        supports dynamic expressions
-                                    </span>
-                                )}
-
-                                <div className="flex items-center gap-1.5 ml-auto">
-                                    <Input
-                                        className="h-6 text-xs w-48 border-none bg-transparent shadow-none px-1 focus-visible:ring-0"
-                                        value={field.placeholder ?? ''}
-                                        onChange={e => updateField(index, { placeholder: e.target.value })}
-                                        placeholder="Placeholder hint..."
-                                    />
+                                <div className="flex justify-center">
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                        onClick={() => removeField(index)}
+                                        title="Remove field"
+                                    >
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                    </Button>
                                 </div>
                             </div>
-                        </div>
-                    ))}
+                        ))}
+                    </div>
                 </div>
             )}
+            
+            <Button variant="outline" size="sm" onClick={addField} className="h-8 w-full border-dashed">
+                <Plus className="h-3.5 w-3.5 mr-1.5" /> Add Field
+            </Button>
         </div>
     );
 }

@@ -215,6 +215,17 @@ export function collectOffSpineTaskIds(nodes: StudioCanvasNode[], chainEdges: Ed
             addRoutingTarget(refs, params.rejectedNextTaskId as string | null | undefined);
             continue;
         }
+
+        if (Array.isArray(params.tools)) {
+            for (const row of params.tools) {
+                if (row && typeof row === 'object') {
+                    addRoutingTarget(
+                        refs,
+                        (row as Record<string, unknown>).targetTaskId as string | null | undefined,
+                    );
+                }
+            }
+        }
     }
 
     return refs;

@@ -1,6 +1,8 @@
 import { memo, useMemo } from 'react';
-import { type NodeProps } from '@xyflow/react';
-import { Code2 } from 'lucide-react';
+import { type NodeProps, Handle, Position } from '@xyflow/react';
+import { Code2, Plus } from 'lucide-react';
+import { Hint } from '@/components/ui/hint';
+import { cn } from '@/lib/utils';
 import { TASK_TYPE_LABELS, type StudioTaskType } from '@/features/workflow-studio/constants/taskPalette';
 import {
     studioIconBoxHeight,
@@ -25,6 +27,10 @@ import { StudioNodeHoverActions } from '@/features/workflow-studio/nodes/StudioN
 import { useCanvasActions } from '@/features/workflow-studio/CanvasActionsContext';
 import { ExecutionStatusBadge } from '@/features/executions/ExecutionStatusBadge';
 import { executionNodeBorderClass } from '@/features/executions/lib/executionNodeStatus';
+import {
+    STUDIO_EDGE_CONTROL_BUTTON_CLASS,
+    STUDIO_EDGE_CONTROL_ICON_CLASS,
+} from '@/features/workflow-studio/edges/studioEdgeTheme';
 
 import type { TaskParameterErrors } from '@/features/workflow-studio/task-type-schema/types';
 import type { ExecutionNodeStatus } from '@/features/executions/lib/executionNodeStatus';
@@ -32,6 +38,7 @@ import type { ExecutionNodeStatus } from '@/features/executions/lib/executionNod
 export type TaskNodeStudioGraph = {
     onMainSpine: boolean;
     hasBranchChainOut: boolean;
+    isToolNode?: boolean;
     workflowTasks?: Array<{
         taskId: string;
         type: string;
@@ -107,14 +114,18 @@ function TaskNodeComponent({ data, selected }: NodeProps & { data: TaskNodeData 
                   isRoutingTerminator,
                   hasValidationError,
               );
-    const totalHeight =
+    const baseTotalHeight =
         data.type === 'BRANCH'
             ? studioParallelBranchTaskNodeHeight(branchOutputCount, hasValidationError)
             : studioTaskNodeHeight(branchOutputCount, isRoutingTerminator, hasValidationError);
+            
+    const isToolNode = data.studioGraph?.isToolNode ?? false;
+    const hideLabel = isToolNode || data.type === 'AGENTS_TASK';
+    const totalHeight = hideLabel ? iconBoxHeight : baseTotalHeight;
 
     const title = resolveTaskDisplayName(data);
     const typeLabel = TASK_TYPE_LABELS[data.type as StudioTaskType] ?? data.type;
-    const label = title === typeLabel ? typeLabel : title;
+    const label = hideLabel ? undefined : (title === typeLabel ? typeLabel : title);
 
     return (
         <div className="relative">
@@ -143,6 +154,31 @@ function TaskNodeComponent({ data, selected }: NodeProps & { data: TaskNodeData 
                       : undefined
             }
             statusBorderClass={executionBorderClass}
+            bottomAffordanceSpace={0}
+            bottomActions={
+                plugin?.wiring?.toolInput && !readOnly ? (
+                    <div className="flex flex-col items-center pointer-events-none mt-1 z-20">
+                        <span className="pointer-events-none w-0 h-4 border-l-2 border-dashed border-[#94a3b8]" aria-hidden />
+                        <div className="relative flex items-center justify-center mt-1">
+                            <Hint content="Add AI tool">
+                                <button
+                                    type="button"
+                                    aria-label="Add AI tool"
+                                    onPointerDown={(event) => event.stopPropagation()}
+                                    onClick={(event) => {
+                                        event.stopPropagation();
+                                        onBranchAddClick?.(data.taskId, 'tools');
+                                    }}
+                                    className={cn('pointer-events-auto bg-background', STUDIO_EDGE_CONTROL_BUTTON_CLASS)}
+                                >
+                                    <Plus className={STUDIO_EDGE_CONTROL_ICON_CLASS} strokeWidth={2.5} />
+                                </button>
+                            </Hint>
+                            <span className="absolute left-full ml-1.5 text-[10px] font-medium text-[#64748b]">Tool</span>
+                        </div>
+                    </div>
+                ) : undefined
+            }
             hoverActions={
                 readOnly ? null : (
                     <StudioNodeHoverActions
@@ -167,6 +203,16 @@ function TaskNodeComponent({ data, selected }: NodeProps & { data: TaskNodeData 
                     onAddClick={addClickFor(output.handleId)}
                 />
             ))}
+
+            {plugin?.wiring?.toolInput && (
+                <Handle
+                    type="source"
+                    position={Position.Bottom}
+                    id="tools"
+                    data-testid="handle-bottom-tool"
+                    isConnectable={!readOnly}
+                />
+            )}
         </StudioNodeShell>
         </div>
     );

@@ -282,17 +282,17 @@ export function TaskConfigDialog({
                             </div>
                         </div>
 
-                        {errorSummary ? (
-                            <div
-                                className="mx-5 mt-4 flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive"
-                                role="alert"
-                            >
-                                <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                                <span>{errorSummary}</span>
-                            </div>
-                        ) : null}
-
                         <div className="min-h-0 flex-1 overflow-y-auto p-5 scrollbar-thin">
+                            {errorSummary ? (
+                                <div
+                                    className="mb-5 flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive"
+                                    role="alert"
+                                >
+                                    <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                                    <span>{errorSummary}</span>
+                                </div>
+                            ) : null}
+
                             {plugin && plugin.type === 'CONNECTOR_TASK' ? (
                                 <ConnectorTaskConfigPanel
                                     parameters={draft.parameters}

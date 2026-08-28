@@ -1,7 +1,7 @@
 {
     "connectorId":  "monday",
     "displayName":  "Monday.com",
-    "icon":  "https://cdn.iconscout.com/icon/free/png-256/monday-3628861-3030001.png",
+    "icon":  "https://cdn.simpleicons.org/mondaydotcom/FF3D57",
     "category":  "Project Management",
     "baseUrl":  "https://api.monday.com/v2",
     "authType":  "BEARER_TOKEN",
@@ -129,3 +129,4 @@
                          "path":  "/"
                      }
 }
+

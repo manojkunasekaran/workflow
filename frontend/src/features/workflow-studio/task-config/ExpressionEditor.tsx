@@ -173,7 +173,7 @@ export function ExpressionEditor({
                             mono ? 'font-mono text-xs' : 'text-sm',
                             STUDIO_INPUT_FOCUS_CLASS,
                             // Make text semi-transparent so the overlay highlight shows
-                            '[caret-color:currentColor] [color:transparent]',
+                            '[caret-color:hsl(var(--foreground))] [color:transparent]',
                             '[text-shadow:0_0_0_hsl(var(--foreground))]',
                             className,
                         )}
@@ -194,7 +194,7 @@ export function ExpressionEditor({
                             'placeholder:text-muted-foreground',
                             mono ? 'font-mono text-xs' : 'text-sm',
                             STUDIO_INPUT_FOCUS_CLASS,
-                            '[caret-color:currentColor] [color:transparent]',
+                            '[caret-color:hsl(var(--foreground))] [color:transparent]',
                             '[text-shadow:0_0_0_hsl(var(--foreground))]',
                             className,
                         )}

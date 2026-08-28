@@ -15,7 +15,8 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
         @JsonSubTypes.Type(value = ScriptTaskParameters.class, name = "SCRIPT_TASK"),
         @JsonSubTypes.Type(value = DataTransformTaskParameters.class, name = "DATA_TRANSFORM"),
         @JsonSubTypes.Type(value = SmtpTaskParameters.class, name = "SMTP_TASK"),
-        @JsonSubTypes.Type(value = ConnectorTaskParameters.class, name = "CONNECTOR_TASK")
+        @JsonSubTypes.Type(value = ConnectorTaskParameters.class, name = "CONNECTOR_TASK"),
+        @JsonSubTypes.Type(value = AgentsTaskParameters.class, name = "AGENTS_TASK")
 })
 
 public interface TaskParameters {
