@@ -142,6 +142,26 @@
     fill: hsl(var(--canvas-dots)) !important;
   }
 
+  /* Override React Flow's inline grab cursor for the canvas, 
+     but allow 'grabbing' when actually panning */
+  .react-flow__pane {
+    cursor: default !important;
+  }
+  .react-flow__pane.dragging, 
+  .react-flow__pane[style*="cursor: grabbing"] {
+    cursor: grabbing !important;
+  }
+
+  /* Nodes should use the pointer cursor to indicate they can be interacted with,
+     but we allow 'grabbing' when actively dragging them */
+  .react-flow__node {
+    cursor: pointer !important;
+  }
+  .react-flow__node.dragging, 
+  .react-flow__node[style*="cursor: grabbing"] {
+    cursor: grabbing !important;
+  }
+
   /* Default edges only (legacy / fallback) */
   .react-flow__edge:not(.studio-edge) .react-flow__edge-path {
     stroke: hsl(var(--edge-color)) !important;

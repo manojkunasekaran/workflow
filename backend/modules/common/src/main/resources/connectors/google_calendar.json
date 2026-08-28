@@ -1,7 +1,7 @@
 {
     "connectorId":  "google_calendar",
     "displayName":  "Google Calendar",
-    "icon":  "https://cdn.iconscout.com/icon/free/png-256/google-calendar-3628861-3030001.png",
+    "icon":  "https://cdn.simpleicons.org/googlecalendar/4285F4",
     "category":  "Calendar",
     "baseUrl":  "https://www.googleapis.com/calendar/v3",
     "authType":  "OAUTH2",
@@ -158,3 +158,4 @@
                          "path":  "/"
                      }
 }
+

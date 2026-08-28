@@ -43,4 +43,10 @@ public class OAuthState {
      */
     @Indexed(expireAfterSeconds = 0)
     private Instant expiresAt;
+
+    /** Optional custom OAuth overrides (BYO App) */
+    private String customClientId;
+    private String customClientSecret;
+    private String customScopes;
+    private String allowedDomains;
 }

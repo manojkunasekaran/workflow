@@ -142,10 +142,9 @@ public class WorkflowEngine {
                 definition);
 
         try {
-            // Resume from currentTaskId if set, otherwise start from first task
             String currentTaskId = execution.getCurrentTaskId() != null
                     ? execution.getCurrentTaskId()
-                    : tasks.get(0).getTaskId();
+                    : getFirstNonToolTaskId(tasks);
 
             execution.setCurrentTaskId(null);
 
@@ -229,6 +228,16 @@ public class WorkflowEngine {
     }
 
     /**
+     * Execute a single sub-task and record its execution (used by AI Agents and Iterators).
+     */
+    public TaskExecutionResult executeSubTask(WorkflowTask task, WorkflowExecution execution, ExecutionContext context) {
+        Instant startTime = Instant.now();
+        TaskExecutionResult result = executeTask(task, execution, context);
+        recordTaskExecution(execution, task, result, startTime);
+        return result;
+    }
+
+    /**
      * Execute a single task using the appropriate executor.
      */
     private TaskExecutionResult executeTask(WorkflowTask task, WorkflowExecution execution, ExecutionContext context) {
@@ -299,10 +308,24 @@ public class WorkflowEngine {
     private String getNextTaskId(List<WorkflowTask> tasks, String currentTaskId) {
         for (int i = 0; i < tasks.size() - 1; i++) {
             if (tasks.get(i).getTaskId().equals(currentTaskId)) {
-                return tasks.get(i + 1).getTaskId();
+                for (int j = i + 1; j < tasks.size(); j++) {
+                    if (!Boolean.TRUE.equals(tasks.get(j).getIsTool())) {
+                        return tasks.get(j).getTaskId();
+                    }
+                }
+                return null;
             }
         }
         return null; // No more tasks
+    }
+
+    private String getFirstNonToolTaskId(List<WorkflowTask> tasks) {
+        for (WorkflowTask task : tasks) {
+            if (!Boolean.TRUE.equals(task.getIsTool())) {
+                return task.getTaskId();
+            }
+        }
+        return null;
     }
 
     // ── Parallel branch execution ──

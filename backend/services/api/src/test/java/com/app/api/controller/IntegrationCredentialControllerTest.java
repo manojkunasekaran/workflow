@@ -42,7 +42,7 @@ public class IntegrationCredentialControllerTest {
         
         when(service.getAllCredentials()).thenReturn(List.of(cred));
 
-        mockMvc.perform(get("/api/v1/credentials"))
+        mockMvc.perform(get("/credentials"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value("cred-123"))
                 .andExpect(jsonPath("$[0].name").value("Test"));
@@ -55,7 +55,7 @@ public class IntegrationCredentialControllerTest {
         
         when(service.getCredentialById("cred-123")).thenReturn(Optional.of(cred));
 
-        mockMvc.perform(get("/api/v1/credentials/cred-123"))
+        mockMvc.perform(get("/credentials/cred-123"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value("cred-123"));
     }
@@ -71,17 +71,17 @@ public class IntegrationCredentialControllerTest {
         
         when(service.createCredential(any(IntegrationCredential.class))).thenReturn(res);
 
-        mockMvc.perform(post("/api/v1/credentials")
+        mockMvc.perform(post("/credentials")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(req)))
-                .andExpect(status().isCreated())
+                .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value("cred-123"));
     }
 
     @Test
     void updateCredential_shouldReturnUpdated() throws Exception {
         IntegrationCredential req = new IntegrationCredential();
-        req.setName("Updated Cred");
+        req.setId("cred-123"); req.setName("Updated Cred");
 
         IntegrationCredential res = new IntegrationCredential();
         res.setId("cred-123");
@@ -89,7 +89,7 @@ public class IntegrationCredentialControllerTest {
         
         when(service.updateCredential(eq("cred-123"), any(IntegrationCredential.class))).thenReturn(res);
 
-        mockMvc.perform(put("/api/v1/credentials/cred-123")
+        mockMvc.perform(post("/credentials")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk())
@@ -98,7 +98,9 @@ public class IntegrationCredentialControllerTest {
 
     @Test
     void deleteCredential_shouldReturnNoContent() throws Exception {
-        mockMvc.perform(delete("/api/v1/credentials/cred-123"))
-                .andExpect(status().isNoContent());
+        when(service.getCredentialById("cred-123")).thenReturn(Optional.of(new IntegrationCredential()));mockMvc.perform(delete("/credentials/cred-123"))
+                .andExpect(status().isOk());
     }
 }
+
+

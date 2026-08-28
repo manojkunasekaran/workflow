@@ -1,15 +1,17 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { connectorApi, type ConnectorManifest, type ConnectorAuthType } from '@/api/connectorApi';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Save, ArrowLeft, Loader2, Globe, Lock, KeyRound, User, Shield, AlertCircle, CheckCircle2, ImageIcon } from 'lucide-react';
+import { Save, ArrowLeft, Loader2, Globe, Lock, KeyRound, User, Shield, AlertCircle, CheckCircle2, ImageIcon, Plus, Upload } from 'lucide-react';
+import { ConnectorConnectionPanel } from '@/features/settings/components/ConnectorConnectionPanel';
 import ActionBuilder from './ActionBuilder';
 
-// ─── Constants ───────────────────────────────────────────────────────────────
+// --- Constants ---------------------------------------------------------------
 
 const CATEGORIES = ['Communication', 'Productivity', 'CRM', 'Developer Tools', 'Finance', 'Marketing', 'Analytics', 'Storage', 'Custom'] as const;
+
 
 interface AuthTypeInfo {
     label: string;
@@ -19,11 +21,11 @@ interface AuthTypeInfo {
 
 const AUTH_TYPE_INFO: Record<ConnectorAuthType, AuthTypeInfo> = {
     NONE:          { label: 'No Authentication', icon: <Globe className="h-4 w-4" />,     hint: 'This API is public and requires no credentials.' },
-    BEARER_TOKEN:  { label: 'API Key / Token',   icon: <KeyRound className="h-4 w-4" />,  hint: 'Users provide a single secret token (e.g. a PAT or API key) sent as a Bearer header.' },
-    API_KEY:       { label: 'API Key (Custom Header)', icon: <Lock className="h-4 w-4" />, hint: 'Like Bearer Token, but the key is sent in a custom header you define (e.g. X-Api-Key).' },
-    BASIC_AUTH:    { label: 'Username & Password', icon: <User className="h-4 w-4" />,    hint: 'Standard HTTP Basic Auth — combines username and password as a Base64 encoded header.' },
-    OAUTH2:        { label: 'OAuth 2.0',           icon: <Shield className="h-4 w-4" />,  hint: 'Secure delegated authorization. Users click "Connect" and grant access via the provider\'s consent screen.' },
-    CUSTOM_HEADER: { label: 'Custom Header',       icon: <Lock className="h-4 w-4" />,    hint: 'Send one or more arbitrary headers with each request. Define the header name and value.' },
+    BEARER_TOKEN:  { label: 'API Key / Token',   icon: <KeyRound className="h-4 w-4" />,  hint: 'Authenticates using a token in the Authorization: Bearer header.' },
+    API_KEY:       { label: 'API Key (Custom Header)', icon: <Lock className="h-4 w-4" />, hint: 'Authenticates using a secret key sent in a custom header.' },
+    BASIC_AUTH:    { label: 'Basic Auth', icon: <User className="h-4 w-4" />,    hint: 'Authenticates using standard HTTP Basic Auth (Base64 encoded credentials).' },
+    OAUTH2:        { label: 'OAuth 2.0',           icon: <Shield className="h-4 w-4" />,  hint: 'Authenticates via secure delegated OAuth 2.0 authorization.' },
+    CUSTOM_HEADER: { label: 'Custom Header',       icon: <Lock className="h-4 w-4" />,    hint: 'Authenticates by injecting arbitrary custom headers into each request.' },
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -63,6 +65,17 @@ export default function ConnectorBuilder({ scope, initialData, onBack }: Connect
     const [saveError, setSaveError] = useState<string | null>(null);
     const [errors, setErrors] = useState<Partial<Record<keyof ConnectorManifest, string>>>({});
     const [isDirty, setIsDirty] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            handleChange('icon', reader.result as string);
+        };
+        reader.readAsDataURL(file);
+    };
 
     const isEditing = !!initialData;
 
@@ -70,14 +83,6 @@ export default function ConnectorBuilder({ scope, initialData, onBack }: Connect
         setManifest(prev => ({ ...prev, [field]: value }));
         setIsDirty(true);
         if (errors[field]) setErrors(prev => ({ ...prev, [field]: undefined }));
-    };
-
-    // When display name changes, auto-generate the connectorId (only for new connectors)
-    const handleDisplayNameChange = (name: string) => {
-        handleChange('displayName', name);
-        if (!isEditing) {
-            setManifest(prev => ({ ...prev, displayName: name, connectorId: slugify(name) }));
-        }
     };
 
     const validate = (): boolean => {
@@ -95,15 +100,43 @@ export default function ConnectorBuilder({ scope, initialData, onBack }: Connect
         setSaveStatus('idle');
         setSaveError(null);
         try {
-            if (scope === 'SYSTEM') {
+            const payload = { ...manifest };
+            if (!isEditing && !payload.connectorId) {
+                payload.connectorId = slugify(payload.displayName);
+            }
+
+            // Ensure all actions have an actionId silently generated
+            if (payload.actions) {
+                payload.actions = payload.actions.map((a, idx) => {
+                    const actionId = a.actionId || slugify(a.displayName) || `action_${idx + 1}`;
+                    
+                    // Also ensure all input schema fields have keys
+                    const inputSchema = (a.inputSchema || []).map((f, fIdx) => ({
+                        ...f,
+                        key: f.key || slugify(f.label) || `field_${fIdx + 1}`
+                    }));
+
+                    return {
+                        ...a,
+                        actionId,
+                        inputSchema
+                    };
+                });
+            }
+            
+            // Route to admin API if the connector is a SYSTEM connector
+            const effectiveScope = manifest.scope || scope;
+            
+            if (effectiveScope === 'SYSTEM') {
                 isEditing
-                    ? await connectorApi.adminUpdate(manifest.connectorId, manifest)
-                    : await connectorApi.adminCreate(manifest);
+                    ? await connectorApi.adminUpdate(payload.connectorId, payload)
+                    : await connectorApi.adminCreate(payload);
             } else {
                 isEditing
-                    ? await connectorApi.update(manifest.connectorId, manifest)
-                    : await connectorApi.create(manifest);
+                    ? await connectorApi.update(payload.connectorId, payload)
+                    : await connectorApi.create(payload);
             }
+            setManifest(payload); // update local state with generated ID
             setSaveStatus('success');
             setIsDirty(false);
             setTimeout(() => onBack(), 800);
@@ -151,7 +184,7 @@ export default function ConnectorBuilder({ scope, initialData, onBack }: Connect
                     )}
                     <Button onClick={handleSave} disabled={isSaving} className="gap-2 min-w-[120px]">
                         {isSaving
-                            ? <><Loader2 className="h-4 w-4 animate-spin" /> Saving…</>
+                            ? <><Loader2 className="h-4 w-4 animate-spin" /> Saving...</>
                             : <><Save className="h-4 w-4" /> Save</>}
                     </Button>
                 </div>
@@ -171,7 +204,7 @@ export default function ConnectorBuilder({ scope, initialData, onBack }: Connect
             {/* Section 1: Identity */}
             <section className="space-y-5">
                 <div className="border-b pb-2">
-                    <h3 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">Identity</h3>
+                    <h3 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">General Information</h3>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -181,14 +214,12 @@ export default function ConnectorBuilder({ scope, initialData, onBack }: Connect
                         <Input
                             id="displayName"
                             value={manifest.displayName}
-                            onChange={e => handleDisplayNameChange(e.target.value)}
+                            onChange={e => handleChange('displayName', e.target.value)}
                             placeholder="e.g. My Internal CRM"
                         />
-                        {errors.displayName
-                            ? <p className="text-xs text-destructive">{errors.displayName}</p>
-                            : !isEditing && manifest.connectorId && (
-                                <p className="text-xs text-muted-foreground font-mono">id: {manifest.connectorId}</p>
-                            )}
+                        {errors.displayName && (
+                            <p className="text-xs text-destructive">{errors.displayName}</p>
+                        )}
                     </div>
 
                     {/* Category */}
@@ -214,7 +245,7 @@ export default function ConnectorBuilder({ scope, initialData, onBack }: Connect
                         <Label htmlFor="icon">Icon URL <span className="text-muted-foreground font-normal">(optional)</span></Label>
                         <div className="flex items-center gap-3">
                             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border bg-muted overflow-hidden">
-                                {manifest.icon?.startsWith('http') ? (
+                                {(manifest.icon?.startsWith('http') || manifest.icon?.startsWith('data:image/')) ? (
                                     <img
                                         src={manifest.icon}
                                         alt=""
@@ -225,26 +256,33 @@ export default function ConnectorBuilder({ scope, initialData, onBack }: Connect
                                     <ImageIcon className="h-4 w-4 text-muted-foreground" />
                                 )}
                             </div>
-                            <Input
-                                id="icon"
-                                value={manifest.icon ?? ''}
-                                onChange={e => handleChange('icon', e.target.value)}
-                                placeholder="https://cdn.simpleicons.org/slack/E01E5A"
-                                className="font-mono text-sm"
-                            />
+                            <div className="flex w-full gap-2">
+                                <Input
+                                    id="icon"
+                                    value={manifest.icon ?? ''}
+                                    onChange={e => handleChange('icon', e.target.value)}
+                                    placeholder="https://cdn.simpleicons.org/slack/E01E5A"
+                                    className="font-mono text-sm flex-1"
+                                />
+                                <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileUpload} />
+                                <Button variant="outline" type="button" onClick={() => fileInputRef.current?.click()} title="Upload Icon">
+                                    <Upload className="h-4 w-4" />
+                                </Button>
+                            </div>
                         </div>
                         <p className="text-xs text-muted-foreground">
-                            Use any public image URL. SimpleIcons CDN recommended:{' '}
+                            Use any public image URL or upload one directly. SimpleIcons CDN recommended:{' '}
                             <code className="text-xs bg-muted px-1 rounded">https://cdn.simpleicons.org/[name]/[hexcolor]</code>
                         </p>
                     </div>
+
                 </div>
             </section>
 
             {/* Section 2: Connection */}
             <section className="space-y-5">
                 <div className="border-b pb-2">
-                    <h3 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">Connection</h3>
+                    <h3 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">Base Configuration</h3>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -266,7 +304,7 @@ export default function ConnectorBuilder({ scope, initialData, onBack }: Connect
 
                     {/* Auth type */}
                     <div className="space-y-1.5">
-                        <Label htmlFor="authType">Authentication</Label>
+                        <Label htmlFor="authType">Authentication <span className="text-destructive">*</span></Label>
                         <Select
                             value={manifest.authType}
                             onValueChange={val => handleChange('authType', val as ConnectorAuthType)}
@@ -289,7 +327,7 @@ export default function ConnectorBuilder({ scope, initialData, onBack }: Connect
                     {/* Auth type specific field */}
                     {manifest.authType === 'API_KEY' && (
                         <div className="space-y-1.5">
-                            <Label htmlFor="authHeaderName">Header Name</Label>
+                            <Label htmlFor="authHeaderName">Header Name <span className="text-muted-foreground font-normal">(optional)</span></Label>
                             <Input
                                 id="authHeaderName"
                                 value={manifest.authHeaderName ?? ''}
@@ -321,3 +359,13 @@ export default function ConnectorBuilder({ scope, initialData, onBack }: Connect
         </div>
     );
 }
+
+
+
+
+
+
+
+
+
+

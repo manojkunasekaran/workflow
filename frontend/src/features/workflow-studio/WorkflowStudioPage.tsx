@@ -541,7 +541,7 @@ export default function WorkflowStudioPage() {
                 type: paletteItem.type,
                 parameters: injectParameterType(
                     paletteItem.type,
-                    { ...rest, ...initialParams } as Record<string, unknown>,
+                    { ...rest, ...initialParams, _isNewNode: true } as Record<string, unknown>,
                 ),
             };
 
@@ -607,7 +607,7 @@ export default function WorkflowStudioPage() {
                 type: paletteItem.type,
                 parameters: injectParameterType(
                     paletteItem.type,
-                    { ...rest, ...initialParams } as Record<string, unknown>,
+                    { ...rest, ...initialParams, _isNewNode: true } as Record<string, unknown>,
                 ),
             };
 
@@ -697,6 +697,9 @@ export default function WorkflowStudioPage() {
 
     const handleTaskApply = useCallback(
         (updated: TaskNodeData) => {
+            if (updated.parameters._isNewNode) {
+                delete updated.parameters._isNewNode;
+            }
             const onCanvas = getTaskNodes(nodes).some((node) => node.id === updated.taskId);
             let nextNodes: StudioCanvasNode[];
             let nextEdges = edges;

@@ -1,7 +1,7 @@
 {
     "connectorId":  "github",
     "displayName":  "GitHub",
-    "icon":  "https://cdn.iconscout.com/icon/free/png-256/github-1521488-1288230.png",
+    "icon":  "https://cdn.simpleicons.org/github/181717",
     "category":  "Productivity",
     "baseUrl":  "https://api.github.com",
     "authType":  "BEARER_TOKEN",
@@ -165,3 +165,4 @@
                          "path":  "/"
                      }
 }
+

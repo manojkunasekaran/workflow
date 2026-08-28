@@ -10,6 +10,7 @@ export const TaskType = {
     DATA_TRANSFORM: 'DATA_TRANSFORM',
     SMTP_TASK: 'SMTP_TASK',
     CONNECTOR_TASK: 'CONNECTOR_TASK',
+    AGENTS_TASK: 'AGENTS_TASK',
 } as const;
 
 export type TaskType = typeof TaskType[keyof typeof TaskType];
@@ -22,6 +23,7 @@ export interface WorkflowTask {
     taskId: string;
     type: TaskType;
     parameters: TaskParameters;
+    isTool?: boolean;
 }
 
 export type ExecutionType = 'SYNC' | 'ASYNC';

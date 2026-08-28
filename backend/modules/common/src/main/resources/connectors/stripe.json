@@ -1,7 +1,7 @@
 {
     "connectorId":  "stripe",
     "displayName":  "Stripe",
-    "icon":  "https://cdn.iconscout.com/icon/free/png-256/stripe-2-498440.png",
+    "icon":  "https://cdn.simpleicons.org/stripe/008CDD",
     "category":  "Payments",
     "baseUrl":  "https://api.stripe.com/v1",
     "authType":  "BEARER_TOKEN",
@@ -179,3 +179,4 @@
                          "path":  "/"
                      }
 }
+

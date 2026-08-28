@@ -171,7 +171,7 @@ export function ConnectorTaskConfigPanel({ parameters, onChange, errors }: Props
                     id="credential-select"
                     label={
                         <Label htmlFor="credential-select">
-                            Connection <span className="text-destructive">*</span>
+                            Credential <span className="text-destructive">*</span>
                         </Label>
                     }
                     value={credentialId}

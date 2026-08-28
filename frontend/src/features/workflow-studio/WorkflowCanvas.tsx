@@ -10,7 +10,8 @@ import {
     type Node,
     type NodeChange,
     type ReactFlowInstance,
-    ReactFlowProvider
+    ReactFlowProvider,
+    SelectionMode
 } from '@xyflow/react';
 import { BrushCleaning, Minus, Plus, Undo2, Redo2 } from 'lucide-react';
 import { useStore } from 'zustand';
@@ -21,7 +22,7 @@ import { StartNode } from '@/features/workflow-studio/nodes/StartNode';
 import { RouteEdge } from '@/features/workflow-studio/edges/RouteEdge';
 import { ChainEdge } from '@/features/workflow-studio/edges/ChainEdge';
 import { CanvasActionsContext } from '@/features/workflow-studio/CanvasActionsContext';
-import type { StudioMode } from '@/features/workflow-studio/StudioHeader';
+
 import type { StudioTaskType } from '@/features/workflow-studio/constants/taskPalette';
 import { STUDIO_TASK_DRAG_MIME } from '@/features/workflow-studio/constants/studioDrag';
 import {
@@ -90,9 +91,9 @@ import type { TriggerConfig } from '@/types/api';
 interface WorkflowCanvasProps {
     nodes: StudioCanvasNode[];
     chainEdges: Edge[];
-    mode: StudioMode;
+    readOnly?: boolean;
     triggerConfig?: TriggerConfig;
-    /** Allow node click → onTaskSelect while read-only (execution observability). */
+    /** Allow node click â†’ onTaskSelect while read-only (execution observability). */
     enableTaskSelection?: boolean;
     executionNodeStatuses?: Map<string, ExecutionNodeStatus>;
     taskValidationErrors?: Map<string, TaskParameterErrors>;
@@ -114,7 +115,7 @@ interface WorkflowCanvasProps {
 function WorkflowCanvasInner({
     nodes,
     chainEdges,
-    mode,
+    readOnly = false,
     triggerConfig,
     enableTaskSelection = false,
     executionNodeStatuses,
@@ -135,7 +136,7 @@ function WorkflowCanvasInner({
 }: WorkflowCanvasProps) {
     const reactFlowWrapper = useRef<HTMLDivElement>(null);
     const reactFlowInstance = useRef<ReactFlowInstance<StudioCanvasNode, Edge> | null>(null);
-    const readOnly = mode === 'inspect';
+    
     const hasFitViewRef = useRef(false);
 
     // Pull Zundo temporal state to disable buttons when there is no history
@@ -170,6 +171,9 @@ function WorkflowCanvasInner({
                 }
                 if (node.type !== 'task') return node;
                 const taskNode = node as Node<TaskNodeData>;
+                const isToolNode = chainEdges.some(
+                    (edge) => edge.target === node.id && edge.sourceHandle === 'tools'
+                );
                 const addHandleIds = [...resolveTaskOutputViews(taskNode.data).outputs]
                     .map((output) => output.handleId)
                     .filter((handleId) => addHandleKeys.has(inlineAddKey(node.id, handleId)));
@@ -180,6 +184,7 @@ function WorkflowCanvasInner({
                         studioGraph: {
                             onMainSpine: spineSet.has(node.id),
                             hasBranchChainOut: branchChainOut.has(node.id),
+                            isToolNode,
                             workflowTasks,
                             validationErrors: taskValidationErrors?.get(node.id),
                             addHandleIds,
@@ -243,7 +248,7 @@ function WorkflowCanvasInner({
     const handleInit = useCallback((instance: ReactFlowInstance<StudioCanvasNode, Edge>) => {
         reactFlowInstance.current = instance;
         if (!hasFitViewRef.current) {
-            instance.fitView({ padding: 0.2 });
+            instance.fitView({ padding: 0.2, maxZoom: 1 });
             hasFitViewRef.current = true;
         }
     }, []);
@@ -370,6 +375,10 @@ function WorkflowCanvasInner({
                 edgesReconnectable={false}
                 deleteKeyCode={readOnly ? null : 'Backspace'}
                 elementsSelectable
+                panOnScroll
+                selectionOnDrag={!readOnly}
+                selectionMode={SelectionMode.Partial}
+                panOnDrag={!readOnly ? [1, 2] : true}
                 defaultEdgeOptions={{
                     type: 'studioChain',
                     className: STUDIO_EDGE_CLASS,
@@ -403,7 +412,7 @@ function WorkflowCanvasInner({
                     <Hint content="Fit view">
                         <button
                             type="button"
-                            onClick={() => reactFlowInstance.current?.fitView({ padding: 0.2 })}
+                            onClick={() => reactFlowInstance.current?.fitView({ padding: 0.2, maxZoom: 1 })}
                             aria-label="Fit view"
                             className={CANVAS_TOOL_BUTTON_CLASS}
                         >
@@ -411,11 +420,11 @@ function WorkflowCanvasInner({
                         </button>
                     </Hint>
                     {!readOnly ? (
-                        <Hint content="Tidy up — auto-arrange the canvas">
+                        <Hint content="Tidy up - auto-arrange the canvas">
                             <button
                                 type="button"
                                 onClick={onTidyUp}
-                                aria-label="Tidy up — auto-arrange the canvas"
+                                aria-label="Tidy up - auto-arrange the canvas"
                                 className={CANVAS_TOOL_BUTTON_CLASS}
                             >
                                 <BrushCleaning className="h-4 w-4" strokeWidth={2.25} />

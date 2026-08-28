@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react';
 import type { LucideIcon } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import { cloneElement, isValidElement, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Hint } from '@/components/ui/hint';
 import { cn } from '@/lib/utils';
@@ -26,8 +27,11 @@ export type StudioNodeShellProps = {
     subLabel?: string;
     children?: ReactNode;
     hoverActions?: ReactNode;
+    bottomActions?: ReactNode;
     /** Stretch the visible card to the full handle column (parallel splits with 3+ branches). */
     stretchIconTile?: boolean;
+    /** Extra space to reserve below the icon box before the label for custom affordances. */
+    bottomAffordanceSpace?: number;
 };
 
 function tileOffset() {
@@ -59,16 +63,18 @@ export function StudioNodeShell({
     subLabel,
     children,
     hoverActions,
+    bottomActions,
     stretchIconTile = false,
+    bottomAffordanceSpace = 0,
 }: StudioNodeShellProps) {
     const { iconSize, iconGlyphSize } = N8N_NODE_LAYOUT;
     const [hovered, setHovered] = useState(false);
     const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const tilePosition = tileOffset();
     const tileHeight = stretchIconTile ? iconBoxHeight : iconSize;
-    const labelMarginTop = stretchIconTile
+    const labelMarginTop = (stretchIconTile
         ? N8N_NODE_LAYOUT.labelGap
-        : labelOffset(iconBoxHeight, iconSize);
+        : labelOffset(iconBoxHeight, iconSize)) + bottomAffordanceSpace;
 
     const setNodeHover = (active: boolean) => {
         if (hideTimerRef.current) {
@@ -151,19 +157,28 @@ export function StudioNodeShell({
                         />
                     )}
                 </div>
+                {errorMessage && (
+                    <Hint content={errorMessage}>
+                        <div className="absolute top-1 right-1 z-[15] pointer-events-auto">
+                            <AlertTriangle className="w-4 h-4 text-destructive drop-shadow-sm" strokeWidth={2.5} />
+                        </div>
+                    </Hint>
+                )}
                 {children}
             </div>
 
-            <Hint content={label}>
-                <p
-                    className="relative z-[1] line-clamp-2 w-full px-0.5 text-center text-[11px] font-normal leading-[14px] text-muted-foreground"
-                    style={{ marginTop: labelMarginTop }}
-                    onMouseEnter={() => setNodeHover(true)}
-                    onMouseLeave={() => setNodeHover(false)}
-                >
-                    {label}
-                </p>
-            </Hint>
+            {label ? (
+                <Hint content={label}>
+                    <p
+                        className="relative z-[1] line-clamp-2 w-full px-0.5 text-center text-[11px] font-normal leading-[14px] text-muted-foreground"
+                        style={{ marginTop: labelMarginTop }}
+                        onMouseEnter={() => setNodeHover(true)}
+                        onMouseLeave={() => setNodeHover(false)}
+                    >
+                        {label}
+                    </p>
+                </Hint>
+            ) : null}
 
             {subLabel ? (
                 <p
@@ -175,17 +190,7 @@ export function StudioNodeShell({
                 </p>
             ) : null}
 
-            {errorMessage ? (
-                <Hint content={errorMessage}>
-                    <p
-                        className="relative z-[1] mt-0.5 w-full truncate px-0.5 text-center text-[10px] font-medium leading-tight text-destructive"
-                        onMouseEnter={() => setNodeHover(true)}
-                        onMouseLeave={() => setNodeHover(false)}
-                    >
-                        {errorMessage}
-                    </p>
-                </Hint>
-            ) : null}
+            {bottomActions}
         </div>
     );
 }

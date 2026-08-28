@@ -19,6 +19,7 @@ export const STUDIO_TASK_TYPES = [
     'DATA_TRANSFORM',
     'SMTP_TASK',
     'CONNECTOR_TASK',
+    'AGENTS_TASK',
 ] as const;
 
 export type StudioTaskType = (typeof STUDIO_TASK_TYPES)[number];

@@ -8,4 +8,5 @@ public class WorkflowTask {
     private String taskId;
     private TaskType type;
     private TaskParameters parameters;
+    private Boolean isTool;
 }

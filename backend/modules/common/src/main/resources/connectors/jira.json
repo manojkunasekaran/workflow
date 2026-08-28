@@ -1,7 +1,7 @@
 {
     "connectorId":  "jira",
     "displayName":  "Jira Software",
-    "icon":  "https://cdn.iconscout.com/icon/free/png-256/jira-3628861-3030001.png",
+    "icon":  "https://cdn.simpleicons.org/jira/0052CC",
     "category":  "Project Management",
     "baseUrl":  "https://api.atlassian.com/ex/jira",
     "authType":  "OAUTH2",
@@ -162,3 +162,4 @@
                          "path":  "/"
                      }
 }
+

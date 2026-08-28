@@ -9,13 +9,9 @@ import {
     STUDIO_OUTLINE_BUTTON_CLASS,
 } from '@/features/workflow-studio/constants/studioUi';
 
-export type StudioMode = 'design' | 'inspect';
-
 interface StudioHeaderProps {
     workflowName: string;
     onWorkflowNameChange: (name: string) => void;
-    mode: StudioMode;
-    onModeChange: (mode: StudioMode) => void;
     isDirty: boolean;
     isSaving: boolean;
     isRunning: boolean;
@@ -28,8 +24,6 @@ interface StudioHeaderProps {
 export function StudioHeader({
     workflowName,
     onWorkflowNameChange,
-    mode,
-    onModeChange,
     isDirty,
     isSaving,
     isRunning,
@@ -79,35 +73,6 @@ export function StudioHeader({
             }
             actions={
                 <>
-                    <div className="flex items-center rounded-md border border-border bg-muted p-0.5">
-                        <button
-                            type="button"
-                            data-testid="mode-design-toggle"
-                            onClick={() => onModeChange('design')}
-                            className={cn(
-                                'rounded-sm px-3 py-1 text-xs font-medium transition-colors',
-                                mode === 'design'
-                                    ? 'bg-background text-foreground shadow-sm'
-                                    : 'text-muted-foreground hover:text-foreground',
-                            )}
-                        >
-                            Design
-                        </button>
-                        <button
-                            type="button"
-                            data-testid="mode-inspect-toggle"
-                            onClick={() => onModeChange('inspect')}
-                            className={cn(
-                                'rounded-sm px-3 py-1 text-xs font-medium transition-colors',
-                                mode === 'inspect'
-                                    ? 'bg-background text-foreground shadow-sm'
-                                    : 'text-muted-foreground hover:text-foreground',
-                            )}
-                        >
-                            Inspect
-                        </button>
-                    </div>
-
                     <Button
                         data-testid="save-workflow-btn"
                         variant="secondary"
@@ -115,11 +80,11 @@ export function StudioHeader({
                         onClick={onSave}
                         disabled={isSaving || !isDirty}
                     >
-                        {isSaving ? 'Saving…' : 'Save'}
+                        {isSaving ? 'Saving...' : 'Save'}
                     </Button>
-                    <Button data-testid="run-workflow-btn" size="sm" onClick={onRun} disabled={isRunning || mode === 'inspect'}>
+                    <Button data-testid="run-workflow-btn" size="sm" onClick={onRun} disabled={isRunning}>
                         <Play className="h-4 w-4 fill-current" />
-                        {isRunning ? 'Running…' : 'Run Workflow'}
+                        {isRunning ? 'Running...' : 'Run Workflow'}
                     </Button>
                     {lastExecutionId ? (
                         <Button data-testid="view-execution-link" variant="outline" size="sm" asChild className={STUDIO_OUTLINE_BUTTON_CLASS}>

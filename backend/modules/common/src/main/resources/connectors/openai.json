@@ -1,7 +1,7 @@
 {
     "connectorId":  "openai",
     "displayName":  "OpenAI",
-    "icon":  "https://cdn.iconscout.com/icon/free/png-256/openai-3628861-3030001.png",
+    "icon":  "https://cdn.simpleicons.org/openai/412991",
     "category":  "AI",
     "baseUrl":  "https://api.openai.com/v1",
     "authType":  "BEARER_TOKEN",
@@ -134,3 +134,4 @@
                          "path":  "/"
                      }
 }
+

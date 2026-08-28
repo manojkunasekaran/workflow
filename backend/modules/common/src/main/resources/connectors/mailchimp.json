@@ -1,7 +1,7 @@
 {
     "connectorId":  "mailchimp",
     "displayName":  "Mailchimp",
-    "icon":  "https://cdn.iconscout.com/icon/free/png-256/mailchimp-3628861-3030001.png",
+    "icon":  "https://cdn.simpleicons.org/mailchimp/FFE01B",
     "category":  "Email Marketing",
     "baseUrl":  "https://{dc}.api.mailchimp.com/3.0",
     "authType":  "BASIC_AUTH",
@@ -203,3 +203,4 @@
                          "path":  "/"
                      }
 }
+

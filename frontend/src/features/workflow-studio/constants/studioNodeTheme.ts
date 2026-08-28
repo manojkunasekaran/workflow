@@ -39,9 +39,6 @@ export function resolveStudioNodeBorder(state: StudioNodeBorderState): {
     className: string;
     style?: CSSProperties;
 } {
-    if (state.invalid) {
-        return { className: 'border-destructive' };
-    }
     if (state.statusBorderClass) {
         return { className: state.statusBorderClass };
     }

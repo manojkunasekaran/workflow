@@ -1,7 +1,7 @@
 {
     "connectorId":  "aws_s3",
     "displayName":  "AWS S3",
-    "icon":  "https://cdn.iconscout.com/icon/free/png-256/aws-3628861-3030001.png",
+    "icon":  "https://cdn.simpleicons.org/amazonaws/232F3E",
     "category":  "Cloud Storage",
     "baseUrl":  "https://{bucket}.s3.{region}.amazonaws.com",
     "authType":  "CUSTOM_HEADER",
@@ -167,3 +167,4 @@
                     }
                 ]
 }
+
