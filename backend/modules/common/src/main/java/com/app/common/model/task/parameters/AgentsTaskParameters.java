@@ -12,6 +12,8 @@ public class AgentsTaskParameters implements TaskParameters {
     private Double temperature;
     private Integer maxTokens;
     private Boolean stream;
+    private String agentMode; // 'REACT' or 'SINGLE_CALL'
+    private Integer maxLoops;
     private java.util.List<AgentTool> tools;
 
     @lombok.Data

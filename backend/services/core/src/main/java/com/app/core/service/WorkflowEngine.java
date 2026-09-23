@@ -142,13 +142,20 @@ public class WorkflowEngine {
                 definition);
 
         try {
-            String currentTaskId = execution.getCurrentTaskId() != null
+            String currentTaskId = execution.getCurrentTaskId() != null && !execution.getCurrentTaskId().isBlank()
                     ? execution.getCurrentTaskId()
                     : getFirstNonToolTaskId(tasks);
 
             execution.setCurrentTaskId(null);
 
+            int executionCount = 0;
+            final int MAX_TASKS = 10000;
+
             while (currentTaskId != null) {
+                if (executionCount++ > MAX_TASKS) {
+                    throw new IllegalStateException("Maximum task execution limit reached (possible infinite loop)");
+                }
+
                 WorkflowTask currentTask = findTaskById(tasks, currentTaskId);
                 if (currentTask == null) {
                     throw new IllegalArgumentException("Task not found: " + currentTaskId);
@@ -176,7 +183,7 @@ public class WorkflowEngine {
 
                 // PAUSED: set resume cursor and exit loop — finally persists once
                 if (result.getStatus() == TaskExecutionResult.Status.PAUSED) {
-                    execution.setCurrentTaskId(result.getNextTaskId() != null
+                    execution.setCurrentTaskId(result.getNextTaskId() != null && !result.getNextTaskId().isBlank()
                             ? result.getNextTaskId()
                             : currentTask.getTaskId());
                     execution.setStatus(WorkflowExecutionStatus.PAUSED);
@@ -207,9 +214,9 @@ public class WorkflowEngine {
                 }
 
                 // Next task
-                currentTaskId = result.getNextTaskId() != null
+                currentTaskId = result.getNextTaskId() != null && !result.getNextTaskId().isBlank()
                         ? result.getNextTaskId()
-                        : getNextTaskId(tasks, currentTask.getTaskId());
+                        : getNextTaskId(tasks, currentTask);
             }
 
             if (WorkflowExecutionStatus.RUNNING.equals(execution.getStatus())) {
@@ -305,8 +312,13 @@ public class WorkflowEngine {
     /**
      * Get the next task ID in sequence.
      */
-    private String getNextTaskId(List<WorkflowTask> tasks, String currentTaskId) {
-        for (int i = 0; i < tasks.size() - 1; i++) {
+    private String getNextTaskId(List<WorkflowTask> tasks, WorkflowTask currentTask) {
+        if (currentTask != null && currentTask.getNextTaskId() != null && !currentTask.getNextTaskId().isBlank()) {
+            return currentTask.getNextTaskId();
+        }
+
+        String currentTaskId = currentTask.getTaskId();
+        for (int i = 0; i < tasks.size(); i++) {
             if (tasks.get(i).getTaskId().equals(currentTaskId)) {
                 for (int j = i + 1; j < tasks.size(); j++) {
                     if (!Boolean.TRUE.equals(tasks.get(j).getIsTool())) {
@@ -419,6 +431,10 @@ public class WorkflowEngine {
 
         try {
             while (currentTaskId != null) {
+                if (tasksExecuted >= 10000) {
+                    throw new IllegalStateException("Maximum task execution limit reached in branch (possible infinite loop)");
+                }
+
                 // Stop before the JOIN task
                 if (joinTaskId != null && currentTaskId.equals(joinTaskId)) {
                     break;
@@ -460,9 +476,9 @@ public class WorkflowEngine {
                     break;
                 }
 
-                String nextTaskId = result.getNextTaskId() != null
+                String nextTaskId = result.getNextTaskId() != null && !result.getNextTaskId().isBlank()
                         ? result.getNextTaskId()
-                        : getNextTaskId(tasks, currentTask.getTaskId());
+                        : getNextTaskId(tasks, currentTask);
 
                 if (nextTaskId != null && isSiblingBranchStart(branchParams, branch, nextTaskId)) {
                     break;

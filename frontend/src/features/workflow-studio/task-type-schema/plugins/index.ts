@@ -10,6 +10,10 @@ import { smtpTaskPlugin } from './smtpTaskPlugin';
 import { waitTaskPlugin } from './waitTaskPlugin';
 import { connectorTaskPlugin } from './connectorTaskPlugin';
 import { agentsTaskPlugin } from './agentsTaskPlugin';
+import { dbTaskPlugin } from './dbTaskPlugin';
+import { mongoTaskPlugin } from './mongoTaskPlugin';
+import { redisTaskPlugin } from './redisTaskPlugin';
+import { neo4jTaskPlugin } from './neo4jTaskPlugin';
 import type { TaskTypePlugin } from '../pluginTypes';
 
 /** Single source of truth for all studio task types. */
@@ -26,4 +30,8 @@ export const TASK_PLUGINS: TaskTypePlugin[] = [
     smtpTaskPlugin,
     connectorTaskPlugin,
     agentsTaskPlugin,
+    dbTaskPlugin,
+    mongoTaskPlugin,
+    redisTaskPlugin,
+    neo4jTaskPlugin,
 ];

@@ -4,7 +4,7 @@ import { TaskTestPanel } from '../../task-config/TaskTestPanel';
 
 export const connectorTaskPlugin = defineTaskPlugin({
     type: 'CONNECTOR_TASK',
-    label: 'Integration',
+    label: 'App',
     icon: Puzzle,
     accentColor: '#0ea5e9',
     defaultTaskId: 'connector_task',
@@ -15,7 +15,7 @@ export const connectorTaskPlugin = defineTaskPlugin({
             ? params.connectorName
             : typeof params.connectorId === 'string' && params.connectorId
                 ? params.connectorId.charAt(0).toUpperCase() + params.connectorId.slice(1)
-                : 'Select Integration';
+                : 'Select App';
         const actionId = typeof params.actionId === 'string' ? params.actionId : '';
         return {
             primary: name,

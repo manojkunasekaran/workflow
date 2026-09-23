@@ -26,14 +26,52 @@ public class WorkflowDefinitionService {
     private final WorkflowExecutionService executionService;
     private final WorkflowExecutionRepository executionRepository;
 
+    @org.springframework.transaction.annotation.Transactional
     public WorkflowDefinition createWorkflowDefinition(@NonNull WorkflowDefinition definition) {
         validator.validate(definition);
         if (definition.getId() == null) {
             definition.setId(UUID.randomUUID().toString());
         }
+        if (definition.getWorkflowId() == null) {
+            definition.setWorkflowId(UUID.randomUUID().toString());
+        }
+        definition.setVersion(1);
+        definition.setLatest(true);
         WorkflowDefinition saved = repository.save(definition);
 
         // Sync schedule: register cron if SCHEDULE trigger is active, cancel otherwise
+        schedulerService.syncSchedule(saved);
+
+        return saved;
+    }
+
+    @org.springframework.transaction.annotation.Transactional
+    public WorkflowDefinition updateWorkflowDefinition(@NonNull String id, @NonNull WorkflowDefinition definition) {
+        validator.validate(definition);
+
+        WorkflowDefinition existing = repository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("WorkflowDefinition not found with ID: " + id));
+
+        // Mark existing as no longer the latest
+        existing.setLatest(false);
+        repository.save(existing);
+
+        // Create a new instance for the updated version
+        WorkflowDefinition newVersion = new WorkflowDefinition();
+        newVersion.setId(UUID.randomUUID().toString());
+        newVersion.setWorkflowId(existing.getWorkflowId());
+        newVersion.setVersion(existing.getVersion() + 1);
+        newVersion.setLatest(true);
+        
+        // Copy updated fields
+        newVersion.setName(definition.getName());
+        newVersion.setTasks(definition.getTasks());
+        newVersion.setTrigger(definition.getTrigger());
+        newVersion.setLayout(definition.getLayout());
+        newVersion.setVariables(definition.getVariables());
+        newVersion.setInputs(definition.getInputs());
+
+        WorkflowDefinition saved = repository.save(newVersion);
         schedulerService.syncSchedule(saved);
 
         return saved;

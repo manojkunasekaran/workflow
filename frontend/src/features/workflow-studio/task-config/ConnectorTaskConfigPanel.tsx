@@ -39,7 +39,7 @@ export function ConnectorTaskConfigPanel({ parameters, onChange, errors }: Props
 
     useEffect(() => {
         connectorApi.list().then(data => {
-            setManifests(data);
+            setManifests(data.filter(m => m.taskType === 'CONNECTOR_TASK'));
             setLoading(false);
 
             // Backfill connectorIcon for nodes saved before we tracked it
@@ -85,7 +85,7 @@ export function ConnectorTaskConfigPanel({ parameters, onChange, errors }: Props
         return (
             <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Loading integrations…
+                Loading apps…
             </div>
         );
     }
@@ -95,7 +95,7 @@ export function ConnectorTaskConfigPanel({ parameters, onChange, errors }: Props
             {/* Fallback if node created without a connectorId (shouldn't happen normally) */}
             {!selectedManifest && (
                 <div className="space-y-1.5">
-                    <Label>Integration</Label>
+                    <Label>App</Label>
                     <Select
                         value={connectorId}
                         onValueChange={val => {
@@ -105,7 +105,7 @@ export function ConnectorTaskConfigPanel({ parameters, onChange, errors }: Props
                         }}
                     >
                         <SelectTrigger>
-                            <SelectValue placeholder="Select an integration" />
+                            <SelectValue placeholder="Select an app" />
                         </SelectTrigger>
                         <SelectContent>
                             {manifests.map(m => {

@@ -3,6 +3,7 @@
     "displayName":  "Telegram",
     "icon":  "https://cdn.simpleicons.org/telegram/26A5E4",
     "category":  "Communication",
+    "taskType": "CONNECTOR_TASK",
     "baseUrl":  "https://api.telegram.org",
     "authType":  "NONE",
     "credentialGuide":  {

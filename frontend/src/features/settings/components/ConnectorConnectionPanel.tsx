@@ -203,7 +203,7 @@ export function ConnectorConnectionPanel({ open, onOpenChange, credential, onSav
                             <div className="relative">
                                 <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                                 <Input
-                                    placeholder="Search integrations or auth types..."
+                                    placeholder="Search apps or auth types..."
                                     value={searchQuery}
                                     onChange={e => setSearchQuery(e.target.value)}
                                     className="pl-9 h-9 bg-muted/30 border-muted"
@@ -214,7 +214,7 @@ export function ConnectorConnectionPanel({ open, onOpenChange, credential, onSav
                                     className={`pb-3 border-b-2 transition-colors font-medium ${activeTab === 'integrations' ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
                                     onClick={() => setActiveTab('integrations')}
                                 >
-                                    Integrations
+                                    Apps
                                 </button>
                                 <button 
                                     className={`pb-3 border-b-2 transition-colors font-medium ${activeTab === 'custom' ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'}`}

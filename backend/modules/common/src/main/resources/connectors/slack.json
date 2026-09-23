@@ -3,6 +3,7 @@
     "displayName":  "Slack",
     "icon":  "https://cdn.simpleicons.org/slack",
     "category":  "Communication",
+    "taskType": "CONNECTOR_TASK",
     "baseUrl":  "https://slack.com/api",
     "authType":  "OAUTH2",
     "oauth2Config":  {

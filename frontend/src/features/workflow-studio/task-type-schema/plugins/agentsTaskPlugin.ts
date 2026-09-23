@@ -16,26 +16,26 @@ export const agentsTaskPlugin = defineTaskPlugin({
     },
     fields: [
         {
+            key: 'credentialId',
+            label: 'Connection',
+            type: 'credential',
+            description: 'Select an AI provider connection.',
+            filterTypes: ['CONNECTOR:openai', 'CONNECTOR:anthropic', 'CONNECTOR:gemini', 'CONNECTOR:azure_openai', 'CONNECTOR:groq', 'CONNECTOR:mistral', 'BEARER_TOKEN', 'API_KEY']
+        },
+        {
             key: 'providerUrl',
             label: 'Provider URL (Optional)',
             type: 'text',
-            description: 'Defaults to https://api.openai.com/v1/chat/completions',
+            description: 'Overrides the base URL provided in the credential. Leave empty for default.',
             placeholder: 'https://api.openai.com/v1/chat/completions',
         },
         {
             key: 'model',
             label: 'Model',
             type: 'text',
-            description: 'The LLM model to use (e.g., gpt-4o, llama3).',
+            description: 'The LLM model to use (e.g., gpt-4o, claude-3-opus, gemini-1.5-pro).',
             defaultValue: 'gpt-3.5-turbo',
             required: true,
-        },
-        {
-            key: 'credentialId',
-            label: 'Credential / API Key',
-            type: 'credential',
-            description: 'Select an integration credential containing the API key.',
-            filterTypes: ['OPENAI']
         },
         {
             key: 'systemPrompt',
@@ -51,6 +51,25 @@ export const agentsTaskPlugin = defineTaskPlugin({
             description: 'The input prompt for the AI.',
             placeholder: 'Translate {{$input.text}} to French',
             required: true,
+        },
+        {
+            key: 'agentMode',
+            label: 'Agent Mode',
+            type: 'segmented',
+            options: [
+                { label: 'ReAct Loop', value: 'REACT' },
+                { label: 'Single Call', value: 'SINGLE_CALL' }
+            ],
+            defaultValue: 'REACT',
+            description: 'Choose if the agent should loop to execute tools (ReAct) or just call once.',
+        },
+        {
+            key: 'maxLoops',
+            label: 'Max Loops',
+            type: 'number',
+            defaultValue: 10,
+            description: 'Maximum number of iterations in ReAct mode.',
+            hideIf: (params) => params.agentMode !== 'REACT'
         },
         {
             key: 'temperature',
@@ -88,6 +107,9 @@ export const agentsTaskPlugin = defineTaskPlugin({
     normalize: (parameters) => {
         const next = { ...parameters };
         
+        if (!next.agentMode) next.agentMode = 'REACT';
+        if (next.maxLoops) next.maxLoops = Number(next.maxLoops);
+
         // Normalize stream to boolean
         if (next.stream === 'true') next.stream = true;
         if (next.stream === 'false') next.stream = false;

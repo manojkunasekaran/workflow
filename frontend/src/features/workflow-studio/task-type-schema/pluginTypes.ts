@@ -20,6 +20,10 @@ export const STUDIO_TASK_TYPES = [
     'SMTP_TASK',
     'CONNECTOR_TASK',
     'AGENTS_TASK',
+    'MONGO_TASK',
+    'REDIS_TASK',
+    'NEO4J_TASK',
+    'DB_TASK',
 ] as const;
 
 export type StudioTaskType = (typeof STUDIO_TASK_TYPES)[number];
@@ -28,6 +32,12 @@ export interface TaskPreview {
     primary?: string;
     secondary?: string;
     method?: string;
+}
+
+export interface TaskOutputVariable {
+    key: string;
+    label: string;
+    type: string;
 }
 
 export interface TaskTypePlugin {
@@ -53,6 +63,8 @@ export interface TaskTypePlugin {
     testComponent?: React.FC<{ parameters: Record<string, unknown> }>;
     /** Canvas handle + route-edge wiring (n8n-style). Omit for default main-flow only. */
     wiring?: TaskPluginWiring;
+    /** Output schemas for variable autocomplete. */
+    outputVariables?: (parameters: Record<string, unknown>) => TaskOutputVariable[];
 }
 
 export function defineTaskPlugin(plugin: TaskTypePlugin): TaskTypePlugin {

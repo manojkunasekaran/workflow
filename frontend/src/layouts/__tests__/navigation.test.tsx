@@ -26,7 +26,9 @@ describe('Navigation Layout Unit Tests', () => {
 
       expect(screen.getByTestId('nav-link-workflows')).toBeInTheDocument();
       expect(screen.getByTestId('nav-link-executions')).toBeInTheDocument();
-      expect(screen.getByTestId('nav-link-integrations')).toBeInTheDocument();
+      const appsLink = screen.getByTestId('nav-link-integrations');
+      expect(appsLink).toHaveAttribute('href', '/apps');
+      expect(appsLink).toBeInTheDocument();
       expect(screen.getByTestId('nav-link-credentials')).toBeInTheDocument();
       expect(screen.getByTestId('nav-link-settings')).toBeInTheDocument();
     });

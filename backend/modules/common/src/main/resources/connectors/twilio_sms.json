@@ -3,6 +3,7 @@
     "displayName":  "Twilio SMS",
     "icon":  "https://cdn.simpleicons.org/twilio/F22F46",
     "category":  "SMS / Comms",
+    "taskType": "CONNECTOR_TASK",
     "baseUrl":  "https://api.twilio.com/2010-04-01/Accounts/{AccountSid}",
     "authType":  "BASIC_AUTH",
     "credentialGuide":  {

@@ -1,0 +1,2 @@
+{"connectorId": "anthropic", "displayName": "Anthropic", "icon": "https://cdn.simpleicons.org/anthropic/d2a884", "category": "AI",
+ "taskType": "AGENTS_TASK", "baseUrl": "https://api.anthropic.com/v1", "authType": "API_KEY", "authHeaderName": "x-api-key", "credentialGuide": {"fields": [{"key": "apiKey", "label": "API Key", "hint": "Starts with sk-ant-"}]}, "actions": [], "connectionSetup": {"fields": [{"label": "API Key", "key": "apiKey", "sensitive": true}]}, "verifyAction": {"method": "GET", "path": "/"}}

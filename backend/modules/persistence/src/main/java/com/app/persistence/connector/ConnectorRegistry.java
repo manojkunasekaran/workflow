@@ -51,6 +51,7 @@ public class ConnectorRegistry {
                     entity.setDisplayName(manifest.getDisplayName());
                     entity.setIcon(manifest.getIcon());
                     entity.setCategory(manifest.getCategory());
+                    entity.setTaskType(manifest.getTaskType());
                     entity.setBaseUrl(manifest.getBaseUrl());
                     entity.setAuthType(manifest.getAuthType());
                     entity.setAuthHeaderName(manifest.getAuthHeaderName());
@@ -85,6 +86,7 @@ public class ConnectorRegistry {
         manifest.setDisplayName(entity.getDisplayName());
         manifest.setIcon(entity.getIcon());
         manifest.setCategory(entity.getCategory());
+        manifest.setTaskType(entity.getTaskType());
         manifest.setBaseUrl(entity.getBaseUrl());
         manifest.setAuthType(entity.getAuthType());
         manifest.setAuthHeaderName(entity.getAuthHeaderName());

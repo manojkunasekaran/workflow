@@ -110,6 +110,7 @@ export interface ConnectorManifest {
     connectionSetup?: ConnectionSetup;
     verifyAction?: VerifyAction;
     actions: ConnectorAction[];
+    taskType?: string;
     enabled?: boolean;
     systemConnectionConfigured?: boolean;
 }

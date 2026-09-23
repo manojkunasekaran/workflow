@@ -3,6 +3,7 @@
     "displayName":  "Jira Software",
     "icon":  "https://cdn.simpleicons.org/jira/0052CC",
     "category":  "Project Management",
+    "taskType": "CONNECTOR_TASK",
     "baseUrl":  "https://api.atlassian.com/ex/jira",
     "authType":  "OAUTH2",
     "oauth2Config":  {

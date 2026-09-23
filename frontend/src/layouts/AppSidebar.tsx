@@ -23,7 +23,7 @@ const items = [
     { title: 'Home', url: '/', icon: Home },
     { title: 'Workflows', url: '/workflows', icon: Workflow },
     { title: 'Executions', url: '/executions', icon: PlayCircle },
-    { title: 'Integrations', url: '/integrations', icon: Blocks },
+    { title: 'Apps', url: '/apps', icon: Blocks, testId: 'nav-link-integrations' },
     { title: 'Credentials', url: '/credentials', icon: KeyRound },
     { title: 'Settings', url: '/settings', icon: Settings },
 ];
@@ -91,7 +91,7 @@ export function AppSidebar() {
                                         }
                                         tooltip={item.title}
                                     >
-                                        <Link data-testid={`nav-link-${item.title.toLowerCase()}`} to={item.url}>
+                                        <Link data-testid={item.testId ?? `nav-link-${item.title.toLowerCase()}`} to={item.url}>
                                             <item.icon />
                                             <span>{item.title}</span>
                                         </Link>

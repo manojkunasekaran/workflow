@@ -10,7 +10,7 @@ export default function IntegrationsPage() {
                     <div className="flex items-center gap-2">
                         <Blocks className="h-4 w-4 text-muted-foreground" />
                         <h1 data-testid="integrations-page-heading" className="text-sm font-semibold">
-                            Integrations
+                            Apps
                         </h1>
                     </div>
                 }

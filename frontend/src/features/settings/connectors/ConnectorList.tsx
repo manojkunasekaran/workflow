@@ -34,6 +34,18 @@ function resolveAuthLabel(authType: ConnectorAuthType): string {
     return AUTH_LABELS[authType] ?? authType;
 }
 
+function getTaskTypeLabel(type?: string): string {
+    switch (type) {
+        case 'CONNECTOR_TASK': return 'HTTP Action';
+        case 'DB_TASK': return 'SQL Query';
+        case 'MONGO_TASK': return 'Mongo Query';
+        case 'REDIS_TASK': return 'Redis Command';
+        case 'NEO4J_TASK': return 'Graph Query';
+        case 'AGENTS_TASK': return 'AI Agent';
+        default: return 'Integration';
+    }
+}
+
 function ConnectorIcon({ connector, className }: { connector: ConnectorManifest, className?: string }) {
     const [imgError, setImgError] = useState(false);
 
@@ -96,7 +108,7 @@ export default function ConnectorList({ scope, onEdit, onCreate }: ConnectorList
             const data = scope === 'SYSTEM'
                 ? await connectorApi.adminList()
                 : await connectorApi.list();
-            setConnectors(data);
+            setConnectors(data.filter(c => c.taskType === 'CONNECTOR_TASK'));
         } catch (err) {
             console.error('Failed to load connectors', err);
         } finally {
@@ -140,10 +152,10 @@ export default function ConnectorList({ scope, onEdit, onCreate }: ConnectorList
             <div className="flex items-center justify-between pb-2">
                 <div>
                     <h3 className="text-lg font-medium text-foreground tracking-tight">
-                        Integrations Directory
+                        Apps Directory
                     </h3>
                     <p className="text-sm text-muted-foreground mt-0.5">
-                        Manage {connectors.length} integration{connectors.length !== 1 ? 's' : ''} available to this workspace.
+                        Manage {connectors.length} app{connectors.length !== 1 ? 's' : ''} available to this workspace.
                     </p>
                 </div>
                 <Button onClick={onCreate} size="sm" className="gap-2">
@@ -156,7 +168,7 @@ export default function ConnectorList({ scope, onEdit, onCreate }: ConnectorList
             {connectors.length === 0 ? (
                 <div className="flex flex-col items-center justify-center p-12 text-center border rounded-lg bg-muted/30">
                     <Settings className="h-10 w-10 text-muted-foreground/40 mb-3" />
-                    <h3 className="text-sm font-medium">No integrations found</h3>
+                    <h3 className="text-sm font-medium">No apps found</h3>
                     <p className="text-sm text-muted-foreground mt-1 mb-5">
                         Create a custom connector or install an official one to get started.
                     </p>
@@ -173,7 +185,7 @@ export default function ConnectorList({ scope, onEdit, onCreate }: ConnectorList
                                 <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-muted-foreground w-12"></th>
                                 <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">Name</th>
                                 <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-muted-foreground hidden md:table-cell">Category</th>
-                                <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">Actions</th>
+                                <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">Type</th>
                                 <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-muted-foreground hidden sm:table-cell">Auth Type</th>
                                 <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-muted-foreground text-right"></th>
                             </tr>
@@ -209,7 +221,9 @@ export default function ConnectorList({ scope, onEdit, onCreate }: ConnectorList
                                         )}
                                     </td>
                                     <td className="px-4 py-3 align-middle text-sm text-muted-foreground">
-                                        {connector.actions.length} action{connector.actions.length !== 1 ? 's' : ''}
+                                        <span className="px-2 py-1 text-xs rounded-full bg-muted">
+                                            {getTaskTypeLabel(connector.taskType)}
+                                        </span>
                                     </td>
                                     <td className="px-4 py-3 align-middle text-sm text-muted-foreground hidden sm:table-cell">
                                         {resolveAuthLabel(connector.authType)}

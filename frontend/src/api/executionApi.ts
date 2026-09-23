@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { ExecutionType } from '@/types/api';
+import type { ExecutionType, TriggerType } from '@/types/api';
 import { API_BASE_URL } from '@/api/config';
 
 export const executionStreamUrl = (executionId: string) =>
@@ -8,9 +8,15 @@ export const executionStreamUrl = (executionId: string) =>
 export interface WorkflowExecution {
     id: string;
     workflowId: string;
+    workflowDefinitionId?: string;
+    executionType?: ExecutionType;
+    triggeredBy?: TriggerType | 'TEST';
     status: string;
     startTime: string;
     endTime?: string;
+    currentTaskId?: string;
+    targetTaskId?: string;
+    nextTaskId?: string;
     taskExecutionSummaries?: Array<{
         taskExecutionId: string;
         taskDefinitionId: string;
@@ -39,6 +45,18 @@ export interface PageResponse<T> {
     totalPages: number;
     number: number;
     size: number;
+}
+
+export interface ExecutionPageParams {
+    page?: number;
+    size?: number;
+    status?: string;
+    workflowId?: string;
+    triggeredBy?: string;
+    executionType?: ExecutionType;
+    from?: string;
+    to?: string;
+    sort?: string;
 }
 
 export interface HumanTaskRespondRequest {
@@ -71,9 +89,22 @@ export const executionApi = {
     /**
      * Get all workflow executions (paginated API — returns content array)
      */
+    getPage: async (params: ExecutionPageParams = {}): Promise<PageResponse<WorkflowExecution>> => {
+        const response = await axios.get<PageResponse<WorkflowExecution>>(`${API_BASE_URL}/executions`, {
+            params,
+        });
+        return {
+            content: response.data.content ?? [],
+            totalElements: response.data.totalElements ?? 0,
+            totalPages: response.data.totalPages ?? 0,
+            number: response.data.number ?? params.page ?? 0,
+            size: response.data.size ?? params.size ?? 20,
+        };
+    },
+
     getAll: async (): Promise<WorkflowExecution[]> => {
-        const response = await axios.get<PageResponse<WorkflowExecution>>(`${API_BASE_URL}/executions`);
-        return response.data.content ?? [];
+        const page = await executionApi.getPage();
+        return page.content;
     },
 
     /**

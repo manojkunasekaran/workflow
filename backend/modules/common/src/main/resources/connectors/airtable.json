@@ -3,6 +3,7 @@
     "displayName":  "Airtable",
     "icon":  "https://cdn.simpleicons.org/airtable/18BFFF",
     "category":  "Productivity",
+    "taskType": "CONNECTOR_TASK",
     "baseUrl":  "https://api.airtable.com/v0",
     "authType":  "BEARER_TOKEN",
     "credentialGuide":  {

@@ -3,6 +3,7 @@
     "displayName":  "Linear",
     "icon":  "https://cdn.simpleicons.org/linear/5E6AD2",
     "category":  "Project Management",
+    "taskType": "CONNECTOR_TASK",
     "baseUrl":  "https://api.linear.app/graphql",
     "authType":  "BEARER_TOKEN",
     "authHeaderPrefix":  "Bearer ",

@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { type ConnectorAction } from '@/api/connectorApi';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -79,7 +79,7 @@ export default function ActionBuilder({ actions, onChange }: ActionBuilderProps)
         <div className="space-y-4">
             <div className="flex justify-between items-center">
                 <div>
-                    <h3 className="text-sm font-medium">Actions ({actions.length})</h3>
+                    <h3 className="text-sm font-medium">Actions ({(actions?.length || 0)})</h3>
                     <p className="text-xs text-muted-foreground">Define the operations this connector can perform.</p>
                 </div>
                 <Button variant="outline" size="sm" onClick={openCreate} className="h-8">
@@ -87,7 +87,7 @@ export default function ActionBuilder({ actions, onChange }: ActionBuilderProps)
                 </Button>
             </div>
 
-            {actions.length === 0 ? (
+            {(actions?.length || 0) === 0 ? (
                 <div className="p-8 border border-dashed rounded-lg text-center bg-muted/20">
                     <p className="text-sm text-muted-foreground mb-3">No actions defined yet.</p>
                     <Button variant="outline" size="sm" onClick={openCreate}>

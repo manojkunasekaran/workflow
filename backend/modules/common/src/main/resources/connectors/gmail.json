@@ -3,6 +3,7 @@
     "displayName":  "Gmail",
     "icon":  "https://cdn.simpleicons.org/gmail/EA4335",
     "category":  "Communication",
+    "taskType": "CONNECTOR_TASK",
     "baseUrl":  "https://gmail.googleapis.com/gmail/v1/users/me",
     "authType":  "OAUTH2",
     "oauth2Config":  {

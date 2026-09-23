@@ -3,6 +3,7 @@
     "displayName":  "HubSpot",
     "icon":  "https://cdn.simpleicons.org/hubspot/FF7A59",
     "category":  "CRM",
+    "taskType": "CONNECTOR_TASK",
     "baseUrl":  "https://api.hubapi.com",
     "authType":  "BEARER_TOKEN",
     "credentialGuide":  {

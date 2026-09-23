@@ -3,6 +3,7 @@
     "displayName":  "Mailchimp",
     "icon":  "https://cdn.simpleicons.org/mailchimp/FFE01B",
     "category":  "Email Marketing",
+    "taskType": "CONNECTOR_TASK",
     "baseUrl":  "https://{dc}.api.mailchimp.com/3.0",
     "authType":  "BASIC_AUTH",
     "credentialGuide":  {

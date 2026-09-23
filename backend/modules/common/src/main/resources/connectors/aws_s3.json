@@ -3,6 +3,7 @@
     "displayName":  "AWS S3",
     "icon":  "https://cdn.simpleicons.org/amazonaws/232F3E",
     "category":  "Cloud Storage",
+    "taskType": "CONNECTOR_TASK",
     "baseUrl":  "https://{bucket}.s3.{region}.amazonaws.com",
     "authType":  "CUSTOM_HEADER",
     "credentialGuide":  {
