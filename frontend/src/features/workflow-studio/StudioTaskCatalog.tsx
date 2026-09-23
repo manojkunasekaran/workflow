@@ -30,7 +30,9 @@ export function StudioTaskCatalog({
     const [connectors, setConnectors] = useState<ConnectorManifest[]>([]);
 
     useEffect(() => {
-        connectorApi.list().then(setConnectors).catch(console.error);
+        connectorApi.list()
+            .then(data => setConnectors(data.filter(c => c.taskType === 'CONNECTOR_TASK')))
+            .catch(console.error);
     }, []);
     
     const catalogItems = (allowedTypes
@@ -136,8 +138,8 @@ export function StudioTaskCatalog({
                         })}
                         {integrationItems.length > 0 && (!allowedTypes || allowedTypes.includes('CONNECTOR_TASK')) && (
                             <>
-                                <div className="px-2 py-1.5 mt-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                                    Integrations
+                                <div className="px-2 pb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                                    Apps
                                 </div>
                                 {integrationItems.map((item) => {
 

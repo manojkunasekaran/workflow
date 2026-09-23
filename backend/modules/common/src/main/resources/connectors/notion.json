@@ -3,6 +3,7 @@
     "displayName":  "Notion",
     "icon":  "https://cdn.simpleicons.org/notion/000000",
     "category":  "Productivity",
+    "taskType": "CONNECTOR_TASK",
     "baseUrl":  "https://api.notion.com/v1",
     "authType":  "BEARER_TOKEN",
     "credentialGuide":  {

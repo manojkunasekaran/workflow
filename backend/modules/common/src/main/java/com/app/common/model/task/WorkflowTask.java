@@ -9,4 +9,5 @@ public class WorkflowTask {
     private TaskType type;
     private TaskParameters parameters;
     private Boolean isTool;
+    private String nextTaskId;
 }

@@ -19,7 +19,6 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 import java.net.URI;
@@ -33,6 +32,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import com.app.core.executors.llm.LlmProviderAdapter;
+import com.app.core.model.llm.LlmRequestContext;
+import com.app.core.model.llm.LlmResponse;
+import com.app.core.model.llm.LlmStreamChunk;
+import com.app.common.entity.LlmProviderType;
+
+
 import org.springframework.context.annotation.Lazy;
 
 @Slf4j
@@ -44,6 +50,7 @@ public class AgentsTaskExecutor implements TaskExecutor {
     private final VariableResolver variableResolver;
     private final ObjectMapper objectMapper;
     private final ExecutionEventPublisher eventPublisher;
+    private final List<LlmProviderAdapter> adapters;
     
     @org.springframework.beans.factory.annotation.Autowired
     @Lazy
@@ -66,12 +73,65 @@ public class AgentsTaskExecutor implements TaskExecutor {
             throw new IllegalArgumentException("Invalid parameters for AGENTS task");
         }
 
-        String providerUrl = resolveString(params.getProviderUrl(), "https://api.openai.com/v1/chat/completions", context);
+        String providerUrl = resolveString(params.getProviderUrl(), null, context);
         String model = resolveString(params.getModel(), "gpt-3.5-turbo", context);
         String systemPrompt = resolveString(params.getSystemPrompt(), "", context);
         String userPrompt = resolveString(params.getUserPrompt(), "", context);
 
-        String token = resolveToken(params.getCredentialId(), context);
+        IntegrationCredential credential = resolveLlmCredential(params.getCredentialId(), context);
+        
+        LlmProviderType providerType = LlmProviderType.OPENAI;
+        String baseUrl = providerUrl;
+        Map<String, String> extraHeaders = null;
+        String apiKey = null;
+        
+        if (credential != null) {
+            Map<String, String> creds = credential.getCredentials();
+            if (creds != null) {
+                apiKey = creds.containsKey("token") ? creds.get("token") : creds.get("apiKey");
+                // Check multiple possible key names
+                if (apiKey == null && creds.containsKey("api_key")) apiKey = creds.get("api_key");
+            }
+            
+            String cId = credential.getConnectorId();
+            if (cId != null) {
+                switch(cId) {
+                    case "anthropic":
+                        providerType = LlmProviderType.ANTHROPIC;
+                        if (baseUrl == null || baseUrl.isEmpty()) baseUrl = "https://api.anthropic.com/v1";
+                        break;
+                    case "gemini":
+                        providerType = LlmProviderType.GEMINI;
+                        if (baseUrl == null || baseUrl.isEmpty()) baseUrl = "https://generativelanguage.googleapis.com/v1beta";
+                        break;
+                    case "openai":
+                    case "groq":
+                    case "mistral":
+                        providerType = LlmProviderType.OPENAI;
+                        if (baseUrl == null || baseUrl.isEmpty()) {
+                            if (cId.equals("groq")) baseUrl = "https://api.groq.com/openai/v1";
+                            else if (cId.equals("mistral")) baseUrl = "https://api.mistral.ai/v1";
+                            else baseUrl = "https://api.openai.com/v1";
+                        }
+                        break;
+                    case "azure_openai":
+                        providerType = LlmProviderType.OPENAI; // Uses same payload shape
+                        String azureBaseUrl = creds != null ? creds.get("baseUrl") : null;
+                        if (azureBaseUrl != null && !azureBaseUrl.isEmpty() && (baseUrl == null || baseUrl.isEmpty())) baseUrl = azureBaseUrl;
+                        if (extraHeaders == null) extraHeaders = new HashMap<>();
+                        if (apiKey != null) extraHeaders.put("api-key", apiKey);
+                        break;
+                }
+            }
+        }
+
+        if (baseUrl == null || baseUrl.isEmpty()) {
+            baseUrl = "https://api.openai.com/v1";
+        }
+
+        final LlmProviderType finalProviderType = providerType;
+        LlmProviderAdapter adapter = adapters.stream().filter(a -> a.supports(finalProviderType)).findFirst()
+                .orElseThrow(() -> new IllegalStateException("No adapter found for provider type " + finalProviderType));
 
         List<ObjectNode> messages = new ArrayList<>();
         if (!systemPrompt.isEmpty()) {
@@ -80,87 +140,83 @@ public class AgentsTaskExecutor implements TaskExecutor {
         if (!userPrompt.isEmpty()) {
             messages.add(createMessage("user", userPrompt));
         }
+        
+        List<ObjectNode> shapedTools = new ArrayList<>();
+        if (params.getTools() != null && !params.getTools().isEmpty()) {
+            for (AgentsTaskParameters.AgentTool toolDef : params.getTools()) {
+                ObjectNode toolNode = objectMapper.createObjectNode();
+                toolNode.put("type", "function");
+                ObjectNode functionNode = toolNode.putObject("function");
+                functionNode.put("name", toolDef.getName());
+                functionNode.put("description", toolDef.getDescription() != null ? toolDef.getDescription() : "");
+                boolean hasSchema = toolDef.getInputSchema() != null && !toolDef.getInputSchema().isEmpty();
+                WorkflowTask targetTask = toolDef.getTargetTaskId() != null ? context.getWorkflowDefinition().getTasks().stream()
+                        .filter(t -> t.getTaskId().equals(toolDef.getTargetTaskId()))
+                        .findFirst()
+                        .orElse(null) : null;
 
-        int maxLoops = 10;
+                if (!hasSchema && targetTask != null) {
+                    try {
+                        String targetParamsJson = objectMapper.writeValueAsString(targetTask.getParameters());
+                        java.util.regex.Pattern p = java.util.regex.Pattern.compile("\\{\\{\\$" + java.util.regex.Pattern.quote(toolDef.getTargetTaskId()) + "\\.([a-zA-Z0-9_\\-]+)\\}\\}");
+                        java.util.regex.Matcher m = p.matcher(targetParamsJson);
+                        ObjectNode propertiesNode = objectMapper.createObjectNode();
+                        ArrayNode requiredNode = objectMapper.createArrayNode();
+                        while (m.find()) {
+                            String varName = m.group(1);
+                            if (!propertiesNode.has(varName)) {
+                                propertiesNode.set(varName, objectMapper.createObjectNode().put("type", "string"));
+                                requiredNode.add(varName);
+                            }
+                        }
+                        ObjectNode schemaNode = objectMapper.createObjectNode().put("type", "object");
+                        schemaNode.set("properties", propertiesNode);
+                        if (requiredNode.size() > 0) {
+                            schemaNode.set("required", requiredNode);
+                        }
+                        functionNode.set("parameters", schemaNode);
+                    } catch (Exception e) {
+                        log.warn("Failed to generate schema for tool {}", toolDef.getName(), e);
+                        functionNode.set("parameters", objectMapper.createObjectNode().put("type", "object"));
+                    }
+                } else if (hasSchema) {
+                    functionNode.set("parameters", objectMapper.valueToTree(toolDef.getInputSchema()));
+                } else {
+                    functionNode.set("parameters", objectMapper.createObjectNode().put("type", "object"));
+                }
+                shapedTools.add(toolNode);
+            }
+        }
+
+        int maxLoops = params.getMaxLoops() != null ? params.getMaxLoops() : 10;
+        if ("SINGLE_CALL".equals(params.getAgentMode())) {
+            maxLoops = 1;
+        }
         int loopCount = 0;
         
         Integer promptTokens = 0;
         Integer completionTokens = 0;
         String finalGeneratedText = "";
         Map<String, Object> lastResponseBody = null;
+        boolean isStream = Boolean.TRUE.equals(params.getStream());
 
         while (loopCount < maxLoops) {
             loopCount++;
-            
-            ObjectNode requestBody = objectMapper.createObjectNode();
-            requestBody.put("model", model);
-            ArrayNode messagesArray = requestBody.putArray("messages");
-            messages.forEach(messagesArray::add);
 
-            if (params.getTemperature() != null) requestBody.put("temperature", params.getTemperature());
-            if (params.getMaxTokens() != null) requestBody.put("max_tokens", params.getMaxTokens());
-            
-            if (params.getTools() != null && !params.getTools().isEmpty()) {
-                ArrayNode toolsArray = requestBody.putArray("tools");
-                for (AgentsTaskParameters.AgentTool toolDef : params.getTools()) {
-                    ObjectNode toolNode = toolsArray.addObject();
-                    toolNode.put("type", "function");
-                    ObjectNode functionNode = toolNode.putObject("function");
-                    functionNode.put("name", toolDef.getName());
-                    functionNode.put("description", toolDef.getDescription() != null ? toolDef.getDescription() : "");
-                    boolean hasSchema = toolDef.getInputSchema() != null && !toolDef.getInputSchema().isEmpty();
-                    WorkflowTask targetTask = toolDef.getTargetTaskId() != null ? context.getWorkflowDefinition().getTasks().stream()
-                            .filter(t -> t.getTaskId().equals(toolDef.getTargetTaskId()))
-                            .findFirst()
-                            .orElse(null) : null;
-
-                    if (!hasSchema && targetTask != null) {
-                        try {
-                            String targetParamsJson = objectMapper.writeValueAsString(targetTask.getParameters());
-                            java.util.regex.Pattern p = java.util.regex.Pattern.compile("\\{\\{\\$" + java.util.regex.Pattern.quote(toolDef.getTargetTaskId()) + "\\.([a-zA-Z0-9_\\-]+)\\}\\}");
-                            java.util.regex.Matcher m = p.matcher(targetParamsJson);
-                            ObjectNode propertiesNode = objectMapper.createObjectNode();
-                            ArrayNode requiredNode = objectMapper.createArrayNode();
-                            while (m.find()) {
-                                String varName = m.group(1);
-                                if (!propertiesNode.has(varName)) {
-                                    propertiesNode.set(varName, objectMapper.createObjectNode().put("type", "string"));
-                                    requiredNode.add(varName);
-                                }
-                            }
-                            ObjectNode schemaNode = objectMapper.createObjectNode().put("type", "object");
-                            schemaNode.set("properties", propertiesNode);
-                            if (requiredNode.size() > 0) {
-                                schemaNode.set("required", requiredNode);
-                            }
-                            functionNode.set("parameters", schemaNode);
-                        } catch (Exception e) {
-                            log.warn("Failed to generate schema for tool {}", toolDef.getName(), e);
-                            functionNode.set("parameters", objectMapper.createObjectNode().put("type", "object"));
-                        }
-                    } else if (hasSchema) {
-                        functionNode.set("parameters", objectMapper.valueToTree(toolDef.getInputSchema()));
-                    } else {
-                        functionNode.set("parameters", objectMapper.createObjectNode().put("type", "object"));
-                    }
-                }
-            }
-
-            boolean isStream = Boolean.TRUE.equals(params.getStream());
-            requestBody.put("stream", isStream);
-
-            HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
-                    .uri(URI.create(providerUrl))
-                    .header("Content-Type", "application/json")
-                    .timeout(Duration.ofMinutes(5));
-            
-            if (token != null) {
-                requestBuilder.header("Authorization", "Bearer " + token);
-            }
+            LlmRequestContext ctx = LlmRequestContext.builder()
+                    .baseUrl(baseUrl)
+                    .model(model)
+                    .messages(messages)
+                    .tools(shapedTools)
+                    .temperature(params.getTemperature())
+                    .maxTokens(params.getMaxTokens())
+                    .stream(isStream)
+                    .apiKey(apiKey)
+                    .extraHeaders(extraHeaders)
+                    .build();
 
             try {
-                String reqJson = objectMapper.writeValueAsString(requestBody);
-                HttpRequest request = requestBuilder.POST(HttpRequest.BodyPublishers.ofString(reqJson)).build();
+                HttpRequest request = adapter.buildRequest(ctx);
 
                 if (isStream) {
                     HttpResponse<java.util.stream.Stream<String>> response = httpClient.send(request, HttpResponse.BodyHandlers.ofLines());
@@ -169,44 +225,37 @@ public class AgentsTaskExecutor implements TaskExecutor {
                     List<ObjectNode> toolCalls = new ArrayList<>();
                     
                     response.body().forEach(line -> {
-                        if (line.startsWith("data: ") && !line.equals("data: [DONE]")) {
-                            try {
-                                JsonNode chunk = objectMapper.readTree(line.substring(6));
-                                if (chunk.has("choices") && chunk.get("choices").isArray() && chunk.get("choices").size() > 0) {
-                                    JsonNode delta = chunk.get("choices").get(0).get("delta");
-                                    if (delta != null) {
-                                        if (delta.has("content") && !delta.get("content").isNull()) {
-                                            String content = delta.get("content").asText();
-                                            accumulatedText.append(content);
-                                            eventPublisher.publish(ExecutionEvent.chunk(execution.getId(), task.getTaskId(), content));
+                        try {
+                            LlmStreamChunk chunk = adapter.parseStreamChunk(line);
+                            if (chunk != null) {
+                                if (chunk.getText() != null) {
+                                    accumulatedText.append(chunk.getText());
+                                    eventPublisher.publish(ExecutionEvent.chunk(execution.getId(), task.getTaskId(), chunk.getText()));
+                                }
+                                if (chunk.getToolCalls() != null) {
+                                    for (ObjectNode tcDelta : chunk.getToolCalls()) {
+                                        int index = tcDelta.get("index").asInt();
+                                        while (toolCalls.size() <= index) {
+                                            toolCalls.add(objectMapper.createObjectNode());
                                         }
-                                        if (delta.has("tool_calls")) {
-                                            ArrayNode tcs = (ArrayNode) delta.get("tool_calls");
-                                            for (JsonNode tcDelta : tcs) {
-                                                int index = tcDelta.get("index").asInt();
-                                                while (toolCalls.size() <= index) {
-                                                    toolCalls.add(objectMapper.createObjectNode());
-                                                }
-                                                ObjectNode tc = toolCalls.get(index);
-                                                if (tcDelta.has("id") && !tcDelta.get("id").isNull()) tc.put("id", tcDelta.get("id").asText());
-                                                if (tcDelta.has("type") && !tcDelta.get("type").isNull()) tc.put("type", tcDelta.get("type").asText());
-                                                if (tcDelta.has("function")) {
-                                                    if (!tc.has("function")) tc.set("function", objectMapper.createObjectNode());
-                                                    ObjectNode func = (ObjectNode) tc.get("function");
-                                                    JsonNode funcDelta = tcDelta.get("function");
-                                                    if (funcDelta.has("name") && !funcDelta.get("name").isNull()) func.put("name", funcDelta.get("name").asText());
-                                                    if (funcDelta.has("arguments") && !funcDelta.get("arguments").isNull()) {
-                                                        String args = func.has("arguments") ? func.get("arguments").asText() : "";
-                                                        func.put("arguments", args + funcDelta.get("arguments").asText());
-                                                    }
-                                                }
+                                        ObjectNode tc = toolCalls.get(index);
+                                        if (tcDelta.has("id") && !tcDelta.get("id").isNull()) tc.put("id", tcDelta.get("id").asText());
+                                        if (tcDelta.has("type") && !tcDelta.get("type").isNull()) tc.put("type", tcDelta.get("type").asText());
+                                        if (tcDelta.has("function")) {
+                                            if (!tc.has("function")) tc.set("function", objectMapper.createObjectNode());
+                                            ObjectNode func = (ObjectNode) tc.get("function");
+                                            JsonNode funcDelta = tcDelta.get("function");
+                                            if (funcDelta.has("name") && !funcDelta.get("name").isNull()) func.put("name", funcDelta.get("name").asText());
+                                            if (funcDelta.has("arguments") && !funcDelta.get("arguments").isNull()) {
+                                                String args = func.has("arguments") ? func.get("arguments").asText() : "";
+                                                func.put("arguments", args + funcDelta.get("arguments").asText());
                                             }
                                         }
                                     }
                                 }
-                            } catch (Exception e) {
-                                log.warn("Error parsing SSE chunk: {}", e.getMessage());
                             }
+                        } catch (Exception e) {
+                            log.warn("Error parsing SSE chunk: {}", e.getMessage());
                         }
                     });
                     
@@ -226,36 +275,26 @@ public class AgentsTaskExecutor implements TaskExecutor {
                     }
                 } else {
                     HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-                    JsonNode responseNode = objectMapper.readTree(response.body());
-                    lastResponseBody = objectMapper.convertValue(responseNode, Map.class);
+                    LlmResponse llmResponse = adapter.parseResponse(response.body());
+                    lastResponseBody = llmResponse.getRawResponseBody();
                     
-                    if (responseNode.has("usage")) {
-                        JsonNode usageNode = responseNode.get("usage");
-                        if (usageNode.has("prompt_tokens")) promptTokens += usageNode.get("prompt_tokens").asInt();
-                        if (usageNode.has("completion_tokens")) completionTokens += usageNode.get("completion_tokens").asInt();
-                    }
+                    if (llmResponse.getPromptTokens() != null) promptTokens += llmResponse.getPromptTokens();
+                    if (llmResponse.getCompletionTokens() != null) completionTokens += llmResponse.getCompletionTokens();
 
-                    if (responseNode.has("choices") && responseNode.get("choices").isArray() && responseNode.get("choices").size() > 0) {
-                        JsonNode choice = responseNode.get("choices").get(0);
-                        JsonNode messageNode = choice.get("message");
-                        
-                        String finishReason = choice.has("finish_reason") ? choice.get("finish_reason").asText() : "";
-                        
-                        if ("tool_calls".equals(finishReason) || (messageNode != null && messageNode.has("tool_calls"))) {
-                            messages.add((ObjectNode) messageNode);
-                            List<ObjectNode> tcs = new ArrayList<>();
-                            if (messageNode.has("tool_calls")) {
-                                messageNode.get("tool_calls").forEach(tc -> tcs.add((ObjectNode) tc));
-                            }
-                            boolean executedAny = executeTools(tcs, params.getTools(), execution, context, messages);
-                            if (!executedAny) break;
-                        } else {
-                            if (messageNode != null && messageNode.has("content") && !messageNode.get("content").isNull()) {
-                                finalGeneratedText = messageNode.get("content").asText();
-                            }
-                            break;
+                    if (llmResponse.getToolCalls() != null && !llmResponse.getToolCalls().isEmpty()) {
+                        ObjectNode assistantMsg = objectMapper.createObjectNode();
+                        assistantMsg.put("role", "assistant");
+                        if (llmResponse.getGeneratedText() != null && !llmResponse.getGeneratedText().isEmpty()) {
+                            assistantMsg.put("content", llmResponse.getGeneratedText());
                         }
+                        ArrayNode tca = assistantMsg.putArray("tool_calls");
+                        llmResponse.getToolCalls().forEach(tca::add);
+                        messages.add(assistantMsg);
+
+                        boolean executedAny = executeTools(llmResponse.getToolCalls(), params.getTools(), execution, context, messages);
+                        if (!executedAny) break;
                     } else {
+                        finalGeneratedText = llmResponse.getGeneratedText();
                         break;
                     }
                 }
@@ -290,7 +329,7 @@ public class AgentsTaskExecutor implements TaskExecutor {
         
         boolean executedAny = false;
         for (ObjectNode tc : toolCalls) {
-            String toolCallId = tc.get("id").asText();
+            String toolCallId = tc.has("id") ? tc.get("id").asText() : "call_" + System.currentTimeMillis();
             ObjectNode func = (ObjectNode) tc.get("function");
             String name = func.get("name").asText();
             String arguments = func.has("arguments") ? func.get("arguments").asText() : "{}";
@@ -307,7 +346,6 @@ public class AgentsTaskExecutor implements TaskExecutor {
                             
                     if (targetTask != null) {
                         Map<String, Object> parsedArgs = objectMapper.readValue(arguments, Map.class);
-                        // Inject into task outputs safely without clearing
                         context.getTaskOutputs().put(targetTask.getTaskId(), parsedArgs);
                         
                         TaskExecutionResult result = workflowEngine.executeSubTask(targetTask, execution, context);
@@ -351,16 +389,11 @@ public class AgentsTaskExecutor implements TaskExecutor {
         return variableResolver.resolveString(value, context);
     }
 
-    private String resolveToken(String credentialId, ExecutionContext context) {
+    private IntegrationCredential resolveLlmCredential(String credentialId, ExecutionContext context) {
         if (credentialId != null && !credentialId.isEmpty()) {
             String resolvedCredentialId = variableResolver.resolveString(credentialId, context);
             Optional<IntegrationCredential> credentialOpt = credentialProvider.resolveCredential(resolvedCredentialId, null, context);
-            if (credentialOpt.isPresent()) {
-                Map<String, String> creds = credentialOpt.get().getCredentials();
-                if (creds != null) {
-                    return creds.containsKey("token") ? creds.get("token") : creds.get("api_key");
-                }
-            }
+            return credentialOpt.orElse(null);
         }
         return null;
     }

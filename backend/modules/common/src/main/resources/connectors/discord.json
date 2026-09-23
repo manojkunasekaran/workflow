@@ -3,6 +3,7 @@
     "displayName":  "Discord",
     "icon":  "https://cdn.simpleicons.org/discord/5865F2",
     "category":  "Communication",
+    "taskType": "CONNECTOR_TASK",
     "baseUrl":  "https://discord.com/api/v10",
     "authType":  "BEARER_TOKEN",
     "credentialGuide":  {

@@ -3,6 +3,7 @@
     "displayName":  "Google Sheets",
     "icon":  "https://cdn.simpleicons.org/googlesheets/0F9D58",
     "category":  "Productivity",
+    "taskType": "CONNECTOR_TASK",
     "baseUrl":  "https://sheets.googleapis.com/v4/spreadsheets",
     "authType":  "OAUTH2",
     "oauth2Config":  {

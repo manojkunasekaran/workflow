@@ -3,6 +3,7 @@
     "displayName":  "Stripe",
     "icon":  "https://cdn.simpleicons.org/stripe/008CDD",
     "category":  "Payments",
+    "taskType": "CONNECTOR_TASK",
     "baseUrl":  "https://api.stripe.com/v1",
     "authType":  "BEARER_TOKEN",
     "credentialGuide":  {

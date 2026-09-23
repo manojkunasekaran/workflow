@@ -34,6 +34,7 @@ public class ConnectorManifestEntity {
     private String displayName;
     private String icon;
     private String category;
+    private String taskType;
     private String baseUrl;
     
     private ConnectorAuthType authType;

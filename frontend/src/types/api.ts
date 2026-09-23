@@ -11,6 +11,10 @@ export const TaskType = {
     SMTP_TASK: 'SMTP_TASK',
     CONNECTOR_TASK: 'CONNECTOR_TASK',
     AGENTS_TASK: 'AGENTS_TASK',
+    MONGO_TASK: 'MONGO_TASK',
+    REDIS_TASK: 'REDIS_TASK',
+    NEO4J_TASK: 'NEO4J_TASK',
+    DB_TASK: 'DB_TASK',
 } as const;
 
 export type TaskType = typeof TaskType[keyof typeof TaskType];
@@ -24,6 +28,7 @@ export interface WorkflowTask {
     type: TaskType;
     parameters: TaskParameters;
     isTool?: boolean;
+    nextTaskId?: string;
 }
 
 export type ExecutionType = 'SYNC' | 'ASYNC';

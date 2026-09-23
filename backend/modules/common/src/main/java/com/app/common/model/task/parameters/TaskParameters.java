@@ -16,7 +16,11 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
         @JsonSubTypes.Type(value = DataTransformTaskParameters.class, name = "DATA_TRANSFORM"),
         @JsonSubTypes.Type(value = SmtpTaskParameters.class, name = "SMTP_TASK"),
         @JsonSubTypes.Type(value = ConnectorTaskParameters.class, name = "CONNECTOR_TASK"),
-        @JsonSubTypes.Type(value = AgentsTaskParameters.class, name = "AGENTS_TASK")
+        @JsonSubTypes.Type(value = AgentsTaskParameters.class, name = "AGENTS_TASK"),
+        @JsonSubTypes.Type(value = DbTaskParameters.class, name = "DB_TASK"),
+        @JsonSubTypes.Type(value = MongoTaskParameters.class, name = "MONGO_TASK"),
+        @JsonSubTypes.Type(value = RedisTaskParameters.class, name = "REDIS_TASK"),
+        @JsonSubTypes.Type(value = Neo4jTaskParameters.class, name = "NEO4J_TASK")
 })
 
 public interface TaskParameters {

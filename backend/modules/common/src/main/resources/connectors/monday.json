@@ -3,6 +3,7 @@
     "displayName":  "Monday.com",
     "icon":  "https://cdn.simpleicons.org/mondaydotcom/FF3D57",
     "category":  "Project Management",
+    "taskType": "CONNECTOR_TASK",
     "baseUrl":  "https://api.monday.com/v2",
     "authType":  "BEARER_TOKEN",
     "credentialGuide":  {

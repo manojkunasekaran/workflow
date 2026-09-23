@@ -1,0 +1,21 @@
+{
+  "connectorId": "oracle",
+  "displayName": "Oracle DB",
+  "icon": "https://cdn.simpleicons.org/oracle/F80000",
+  "category": "Database",
+  "taskType": "DB_TASK",
+  "baseUrl": "",
+  "authType": "NONE",
+  "connectionSetup": {
+    "fields": [
+      { "key": "host", "label": "Host", "type": "text", "required": true },
+      { "key": "port", "label": "Port", "type": "text", "required": false },
+      { "key": "database", "label": "Service Name / SID", "type": "text", "required": true },
+      { "key": "username", "label": "Username", "type": "text", "required": true },
+      { "key": "password", "label": "Password", "type": "password", "required": true, "sensitive": true }
+    ]
+  },
+  "credentialGuide": { "fields": [] },
+  "actions": [],
+  "verifyAction": null
+}

@@ -59,22 +59,24 @@ export function applyRoutingDefaults(
     spineIds: string[],
 ): WorkflowTask[] {
     return tasks.map((task, index) => {
-        if (task.type !== 'HUMAN_TASK') return task;
-        const params = { ...(task.parameters as Record<string, unknown>) };
-        const approved = String(params.approvedNextTaskId ?? '').trim();
-        if (approved) return task;
-
         const spineIndex = spineIds.indexOf(task.taskId);
         const nextSpineId = spineIndex >= 0 ? spineIds[spineIndex + 1] : tasks[index + 1]?.taskId;
-        if (!nextSpineId) return task;
 
-        return {
-            ...task,
-            parameters: injectParameterType('HUMAN_TASK', {
-                ...params,
-                approvedNextTaskId: nextSpineId,
-            }),
-        };
+        const updatedTask = { ...task };
+        updatedTask.nextTaskId = nextSpineId || undefined;
+
+        if (updatedTask.type === 'HUMAN_TASK') {
+            const params = updatedTask.parameters ? { ...(updatedTask.parameters as Record<string, unknown>) } : {};
+            const approved = String(params.approvedNextTaskId ?? '').trim();
+            if (!approved) {
+                updatedTask.parameters = injectParameterType('HUMAN_TASK', {
+                    ...params,
+                    approvedNextTaskId: nextSpineId || undefined,
+                });
+            }
+        }
+
+        return updatedTask;
     });
 }
 

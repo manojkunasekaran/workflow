@@ -11,16 +11,30 @@ import com.app.common.model.task.WorkflowTask;
 import com.app.common.model.trigger.TriggerConfig;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Version;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import java.util.List;
 import java.util.Map;
 import com.app.common.constant.CollectionNames;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @EqualsAndHashCode(callSuper = true)
 @Document(collection = CollectionNames.WORKFLOW_DEFINITIONS)
 public class WorkflowDefinition extends Auditable {
     @Id
     private String id;
+    
+    @Version
+    private Long optVersion;
+
+    private String workflowId;
+    private Integer version;
+    private boolean latest;
     private String name;
     private List<WorkflowTask> tasks;
 

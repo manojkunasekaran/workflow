@@ -1,0 +1,24 @@
+{
+    "connectorId": "groq",
+    "displayName": "Groq",
+    "icon": "https://cdn.simpleicons.org/openai/F55036", 
+    "category": "AI",
+    "taskType": "AGENTS_TASK",
+    "baseUrl": "https://api.groq.com/openai/v1",
+    "authType": "BEARER_TOKEN",
+    "credentialGuide": {
+        "fields": [
+            { "key": "token", "label": "API Key", "hint": "Groq API Key (gsk_...)" }
+        ]
+    },
+    "actions": [],
+    "connectionSetup": {
+        "fields": [
+            { "label": "API Key", "key": "token", "sensitive": true }
+        ]
+    },
+    "verifyAction": {
+        "method": "GET",
+        "path": "/models"
+    }
+}

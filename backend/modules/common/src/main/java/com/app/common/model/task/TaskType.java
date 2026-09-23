@@ -12,5 +12,9 @@ public enum TaskType {
     JOIN,
     SMTP_TASK,
     CONNECTOR_TASK,
-    AGENTS_TASK;
+    AGENTS_TASK,
+    DB_TASK,
+    MONGO_TASK,
+    REDIS_TASK,
+    NEO4J_TASK;
 }

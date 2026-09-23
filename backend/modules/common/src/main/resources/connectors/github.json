@@ -3,6 +3,7 @@
     "displayName":  "GitHub",
     "icon":  "https://cdn.simpleicons.org/github/181717",
     "category":  "Productivity",
+    "taskType": "CONNECTOR_TASK",
     "baseUrl":  "https://api.github.com",
     "authType":  "BEARER_TOKEN",
     "credentialGuide":  {

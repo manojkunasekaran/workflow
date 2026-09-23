@@ -1,0 +1,24 @@
+{
+  "connectorId": "mysql",
+  "displayName": "MySQL",
+  "icon": "https://cdn.simpleicons.org/mysql/4479A1",
+  "category": "Database",
+  "taskType": "DB_TASK",
+  "baseUrl": "",
+  "authType": "NONE",
+  "connectionSetup": {
+    "fields": [
+      { "key": "host", "label": "Host", "type": "text", "required": true },
+      { "key": "port", "label": "Port", "type": "text", "required": false },
+      { "key": "database", "label": "Database", "type": "text", "required": true },
+      { "key": "username", "label": "Username", "type": "text", "required": true },
+      { "key": "password", "label": "Password", "type": "password", "required": true, "sensitive": true },
+      { "key": "ssl", "label": "SSL Mode", "type": "text", "required": false, "description": "e.g., true or false" }
+    ]
+  },
+  "credentialGuide": {
+    "fields": []
+  },
+  "actions": [],
+  "verifyAction": null
+}

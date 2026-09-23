@@ -169,7 +169,7 @@ export default function ConnectorBuilder({ scope, initialData, onBack }: Connect
                         </h2>
                         <p className="text-sm text-muted-foreground mt-0.5">
                             {isEditing
-                                ? `Editing system integration • ${manifest.actions.length} action${manifest.actions.length !== 1 ? 's' : ''}`
+                                ? `Editing system integration • ${manifest.actions?.length || 0} action${(manifest.actions?.length || 0) !== 1 ? 's' : ''}`
                                 : 'Define a new API integration and its callable actions.'}
                         </p>
                     </div>
@@ -270,8 +270,7 @@ export default function ConnectorBuilder({ scope, initialData, onBack }: Connect
                             </div>
                         </div>
                         <p className="text-xs text-muted-foreground">
-                            Use any public image URL or upload one directly. SimpleIcons CDN recommended:{' '}
-                            <code className="text-xs bg-muted px-1 rounded">https://cdn.simpleicons.org/[name]/[hexcolor]</code>
+                            Provide a public URL or upload a custom logo to identify this integration.
                         </p>
                     </div>
 

@@ -3,6 +3,7 @@
     "displayName":  "Google Calendar",
     "icon":  "https://cdn.simpleicons.org/googlecalendar/4285F4",
     "category":  "Calendar",
+    "taskType": "CONNECTOR_TASK",
     "baseUrl":  "https://www.googleapis.com/calendar/v3",
     "authType":  "OAUTH2",
     "oauth2Config":  {

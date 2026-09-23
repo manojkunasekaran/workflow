@@ -1,0 +1,23 @@
+{
+  "connectorId": "redis",
+  "displayName": "Redis",
+  "icon": "https://cdn.simpleicons.org/redis/FF4438",
+  "category": "Database",
+  "taskType": "REDIS_TASK",
+  "baseUrl": "",
+  "authType": "NONE",
+  "connectionSetup": {
+    "fields": [
+      { "key": "host", "label": "Host", "type": "text", "required": true, "description": "Redis host address" },
+      { "key": "port", "label": "Port", "type": "text", "required": false, "description": "Redis port (default: 6379)" },
+      { "key": "database", "label": "Database Index", "type": "text", "required": false, "description": "Database index (default: 0)" },
+      { "key": "username", "label": "Username", "type": "text", "required": false },
+      { "key": "password", "label": "Password", "type": "password", "required": false, "sensitive": true }
+    ]
+  },
+  "credentialGuide": {
+    "fields": []
+  },
+  "actions": [],
+  "verifyAction": null
+}
