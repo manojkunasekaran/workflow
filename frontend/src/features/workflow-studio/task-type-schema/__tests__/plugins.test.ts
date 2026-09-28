@@ -126,29 +126,53 @@ describe('Task Plugin Schemas & Validation Utils', () => {
 
   describe('G-016 to G-019: joinTaskPlugin validation', () => {
     it('G-016: strategy WAIT_FOR_ALL passes', () => {
-      const res = validateTaskParameters(joinTaskPlugin, { branchTaskId: 't1', strategy: 'WAIT_FOR_ALL', timeout: 0 });
+      const res = validateTaskParameters(joinTaskPlugin, {
+        inboundTaskIds: ['a', 'b'],
+        failureStrategy: 'WAIT_FOR_ALL',
+      });
       expect(res.valid).toBe(true);
     });
 
     it('G-017: strategy FAIL_FAST passes', () => {
-      const res = validateTaskParameters(joinTaskPlugin, { branchTaskId: 't1', strategy: 'FAIL_FAST', timeout: 0 });
+      const res = validateTaskParameters(joinTaskPlugin, {
+        inboundTaskIds: ['a', 'b'],
+        failureStrategy: 'FAIL_FAST',
+      });
       expect(res.valid).toBe(true);
     });
 
     it('G-018: strategy REQUIRE_ALL passes', () => {
-      const res = validateTaskParameters(joinTaskPlugin, { branchTaskId: 't1', strategy: 'REQUIRE_ALL', timeout: 0 });
+      const res = validateTaskParameters(joinTaskPlugin, {
+        inboundTaskIds: ['a', 'b'],
+        failureStrategy: 'REQUIRE_ALL',
+      });
       expect(res.valid).toBe(true);
+    });
+
+    it('G-018b: legacy branchTaskId fails', () => {
+      const res = validateTaskParameters(joinTaskPlugin, { branchTaskId: 't1', inboundTaskIds: ['a'] });
+      expect(res.valid).toBe(false);
     });
 
     it('G-019: invalid failure strategy fails', () => {
       const res = validateTaskParameters(joinTaskPlugin, { failureStrategy: 'INVALID_STRATEGY' });
       expect(res.valid).toBe(false);
     });
+
+    it('G-019b: join plugin exposes connected inbounds read-only field', () => {
+      const inboundField = joinTaskPlugin.fields.find((field) => field.type === 'inboundList');
+      expect(inboundField?.label).toBe('Connected inbounds');
+    });
   });
 
   describe('G-020 to G-022: waitTaskPlugin validation', () => {
-    it('G-020: duration 30 with unit s passes', () => {
-      const res = validateTaskParameters(waitTaskPlugin, { duration: 3000 });
+    it('G-020: default duration (1 minute) passes', () => {
+      const res = validateTaskParameters(waitTaskPlugin, { duration: 60_000 });
+      expect(res.valid).toBe(true);
+    });
+
+    it('G-020b: duration in seconds passes', () => {
+      const res = validateTaskParameters(waitTaskPlugin, { duration: 5_000 });
       expect(res.valid).toBe(true);
     });
 

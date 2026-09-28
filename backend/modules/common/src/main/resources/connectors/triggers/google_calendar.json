@@ -1,0 +1,260 @@
+{
+  "connectorId": "google_calendar",
+  "triggers": [
+    {
+      "triggerId": "new_events",
+      "displayName": "New events",
+      "description": "Triggers when new events are created on a calendar.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "calendarId",
+          "label": "Calendar ID",
+          "type": "STRING",
+          "required": true,
+          "defaultValue": "primary",
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://www.googleapis.com/calendar/v3/calendars/{calendarId}/events?maxResults=50&orderBy=startTime&singleEvents=true"
+          },
+          "detection": {
+            "itemsPath": "$.items",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "updated_events",
+      "displayName": "Updated events",
+      "description": "Triggers when calendar events are updated.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "calendarId",
+          "label": "Calendar ID",
+          "type": "STRING",
+          "required": true,
+          "defaultValue": "primary",
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "UPDATED",
+          "http": {
+            "method": "GET",
+            "url": "https://www.googleapis.com/calendar/v3/calendars/{calendarId}/events?maxResults=50&orderBy=updated&singleEvents=true"
+          },
+          "detection": {
+            "itemsPath": "$.items",
+            "keyPaths": [
+              "id"
+            ],
+            "updateKeyPath": "updated"
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_calendars",
+      "displayName": "New calendars",
+      "description": "Triggers when new calendars are added to the account.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://www.googleapis.com/calendar/v3/users/me/calendarList?maxResults=50"
+          },
+          "detection": {
+            "itemsPath": "$.items",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_acl_rules",
+      "displayName": "New ACL rules",
+      "description": "Triggers when new access control rules are added to a calendar.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "calendarId",
+          "label": "Calendar ID",
+          "type": "STRING",
+          "required": true,
+          "defaultValue": "primary",
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://www.googleapis.com/calendar/v3/calendars/{calendarId}/acl?maxResults=50"
+          },
+          "detection": {
+            "itemsPath": "$.items",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "event_created",
+      "displayName": "Event created",
+      "description": "Triggers when a new event is created via push notification.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "calendarId",
+          "label": "Calendar ID",
+          "type": "STRING",
+          "required": true,
+          "defaultValue": "primary",
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://www.googleapis.com/calendar/v3/calendars/{calendarId}/events/watch",
+            "body": "{\"id\":\"{{subscriptionId}}\",\"type\":\"web_hook\",\"address\":\"{{callbackUrl}}\"}"
+          },
+          "unsubscribeHttp": {
+            "method": "POST",
+            "url": "https://www.googleapis.com/calendar/v3/channels/stop",
+            "body": "{\"id\":\"{{subscriptionId}}\",\"resourceId\":\"{{resourceId}}\"}"
+          },
+          "subscriptionIdPath": "$.resourceId",
+          "inbound": {
+            "verificationMode": "NONE",
+            "eventIdPath": "$.resourceState",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "event_updated",
+      "displayName": "Event updated",
+      "description": "Triggers when an event is updated via push notification.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "calendarId",
+          "label": "Calendar ID",
+          "type": "STRING",
+          "required": true,
+          "defaultValue": "primary",
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://www.googleapis.com/calendar/v3/calendars/{calendarId}/events/watch",
+            "body": "{\"id\":\"{{subscriptionId}}\",\"type\":\"web_hook\",\"address\":\"{{callbackUrl}}\"}"
+          },
+          "unsubscribeHttp": {
+            "method": "POST",
+            "url": "https://www.googleapis.com/calendar/v3/channels/stop",
+            "body": "{\"id\":\"{{subscriptionId}}\",\"resourceId\":\"{{resourceId}}\"}"
+          },
+          "subscriptionIdPath": "$.resourceId",
+          "inbound": {
+            "verificationMode": "NONE",
+            "eventIdPath": "$.resourceState",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "event_deleted",
+      "displayName": "Event deleted",
+      "description": "Triggers when an event is deleted via push notification.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "calendarId",
+          "label": "Calendar ID",
+          "type": "STRING",
+          "required": true,
+          "defaultValue": "primary",
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://www.googleapis.com/calendar/v3/calendars/{calendarId}/events/watch",
+            "body": "{\"id\":\"{{subscriptionId}}\",\"type\":\"web_hook\",\"address\":\"{{callbackUrl}}\"}"
+          },
+          "unsubscribeHttp": {
+            "method": "POST",
+            "url": "https://www.googleapis.com/calendar/v3/channels/stop",
+            "body": "{\"id\":\"{{subscriptionId}}\",\"resourceId\":\"{{resourceId}}\"}"
+          },
+          "subscriptionIdPath": "$.resourceId",
+          "inbound": {
+            "verificationMode": "NONE",
+            "eventIdPath": "$.resourceState",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "calendar_list_changed",
+      "displayName": "Calendar list changed",
+      "description": "Triggers when the calendar list changes.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://www.googleapis.com/calendar/v3/users/me/calendarList/watch",
+            "body": "{\"id\":\"{{subscriptionId}}\",\"type\":\"web_hook\",\"address\":\"{{callbackUrl}}\"}"
+          },
+          "unsubscribeHttp": {
+            "method": "POST",
+            "url": "https://www.googleapis.com/calendar/v3/channels/stop",
+            "body": "{\"id\":\"{{subscriptionId}}\",\"resourceId\":\"{{resourceId}}\"}"
+          },
+          "subscriptionIdPath": "$.resourceId",
+          "inbound": {
+            "verificationMode": "NONE",
+            "eventIdPath": "$.resourceState",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    }
+  ]
+}

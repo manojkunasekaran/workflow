@@ -1,0 +1,425 @@
+{
+  "connectorId": "slack",
+  "triggers": [
+    {
+      "triggerId": "new_channel_messages",
+      "displayName": "New channel messages",
+      "description": "Triggers when new messages appear in a channel (conversation history poll).",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "channel",
+          "label": "Channel ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://slack.com/api/conversations.history?channel={channel}&limit=50"
+          },
+          "detection": {
+            "itemsPath": "$.messages",
+            "keyPaths": [
+              "ts"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_thread_replies",
+      "displayName": "New thread replies",
+      "description": "Triggers when new replies are posted in a thread.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "channel",
+          "label": "Channel ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "thread_ts",
+          "label": "Thread Timestamp",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://slack.com/api/conversations.replies?channel={channel}&ts={thread_ts}&limit=50"
+          },
+          "detection": {
+            "itemsPath": "$.messages",
+            "keyPaths": [
+              "ts"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_reactions",
+      "displayName": "New reactions",
+      "description": "Triggers when new reactions are added to a message.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "channel",
+          "label": "Channel ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "timestamp",
+          "label": "Message Timestamp",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_OR_UPDATED",
+          "http": {
+            "method": "GET",
+            "url": "https://slack.com/api/reactions.get?channel={channel}&timestamp={timestamp}"
+          },
+          "detection": {
+            "itemsPath": "$.message.reactions",
+            "keyPaths": [
+              "name"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_files",
+      "displayName": "New files",
+      "description": "Triggers when new files are uploaded to the workspace.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "channel",
+          "label": "Channel ID",
+          "type": "STRING",
+          "required": false,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://slack.com/api/files.list?count=50&channel={channel}"
+          },
+          "detection": {
+            "itemsPath": "$.files",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "message_posted",
+      "displayName": "Message posted",
+      "description": "Triggers when a message is posted to a channel.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "channel",
+          "label": "Channel ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://slack.com/api/conversations.join",
+            "body": "{\"channel\":\"{channel}\"}"
+          },
+          "unsubscribeHttp": {
+            "method": "POST",
+            "url": "https://slack.com/api/conversations.leave",
+            "body": "{\"channel\":\"{channel}\"}"
+          },
+          "subscriptionIdPath": "$.channel",
+          "inbound": {
+            "verificationMode": "CHALLENGE",
+            "challengeQueryParam": "challenge",
+            "eventIdPath": "$.event_id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "app_mention",
+      "displayName": "App mention",
+      "description": "Triggers when the app is mentioned in a message.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "channel",
+          "label": "Channel ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://slack.com/api/conversations.join",
+            "body": "{\"channel\":\"{channel}\"}"
+          },
+          "unsubscribeHttp": {
+            "method": "POST",
+            "url": "https://slack.com/api/conversations.leave",
+            "body": "{\"channel\":\"{channel}\"}"
+          },
+          "subscriptionIdPath": "$.channel",
+          "inbound": {
+            "verificationMode": "CHALLENGE",
+            "challengeQueryParam": "challenge",
+            "eventIdPath": "$.event_id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "reaction_added",
+      "displayName": "Reaction added",
+      "description": "Triggers when a reaction is added to a message.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "channel",
+          "label": "Channel ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://slack.com/api/conversations.join",
+            "body": "{\"channel\":\"{channel}\"}"
+          },
+          "unsubscribeHttp": {
+            "method": "POST",
+            "url": "https://slack.com/api/conversations.leave",
+            "body": "{\"channel\":\"{channel}\"}"
+          },
+          "subscriptionIdPath": "$.channel",
+          "inbound": {
+            "verificationMode": "CHALLENGE",
+            "challengeQueryParam": "challenge",
+            "eventIdPath": "$.event_id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "member_joined_channel",
+      "displayName": "Member joined channel",
+      "description": "Triggers when a member joins a channel.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "channel",
+          "label": "Channel ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://slack.com/api/conversations.join",
+            "body": "{\"channel\":\"{channel}\"}"
+          },
+          "unsubscribeHttp": {
+            "method": "POST",
+            "url": "https://slack.com/api/conversations.leave",
+            "body": "{\"channel\":\"{channel}\"}"
+          },
+          "subscriptionIdPath": "$.channel",
+          "inbound": {
+            "verificationMode": "CHALLENGE",
+            "challengeQueryParam": "challenge",
+            "eventIdPath": "$.event_id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "file_shared",
+      "displayName": "File shared",
+      "description": "Triggers when a file is shared in a channel.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "channel",
+          "label": "Channel ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://slack.com/api/conversations.join",
+            "body": "{\"channel\":\"{channel}\"}"
+          },
+          "unsubscribeHttp": {
+            "method": "POST",
+            "url": "https://slack.com/api/conversations.leave",
+            "body": "{\"channel\":\"{channel}\"}"
+          },
+          "subscriptionIdPath": "$.channel",
+          "inbound": {
+            "verificationMode": "CHALLENGE",
+            "challengeQueryParam": "challenge",
+            "eventIdPath": "$.event_id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "channel_created",
+      "displayName": "Channel created",
+      "description": "Triggers when a new channel is created.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://slack.com/api/auth.test"
+          },
+          "unsubscribeHttp": {
+            "method": "POST",
+            "url": "https://slack.com/api/auth.test"
+          },
+          "subscriptionIdPath": "$.team_id",
+          "inbound": {
+            "verificationMode": "CHALLENGE",
+            "challengeQueryParam": "challenge",
+            "eventIdPath": "$.event_id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "message_changed",
+      "displayName": "Message changed",
+      "description": "Triggers when a message is edited.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "channel",
+          "label": "Channel ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://slack.com/api/conversations.join",
+            "body": "{\"channel\":\"{channel}\"}"
+          },
+          "unsubscribeHttp": {
+            "method": "POST",
+            "url": "https://slack.com/api/conversations.leave",
+            "body": "{\"channel\":\"{channel}\"}"
+          },
+          "subscriptionIdPath": "$.channel",
+          "inbound": {
+            "verificationMode": "CHALLENGE",
+            "challengeQueryParam": "challenge",
+            "eventIdPath": "$.event_id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "pin_added",
+      "displayName": "Pin added",
+      "description": "Triggers when a message is pinned.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "channel",
+          "label": "Channel ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://slack.com/api/conversations.join",
+            "body": "{\"channel\":\"{channel}\"}"
+          },
+          "unsubscribeHttp": {
+            "method": "POST",
+            "url": "https://slack.com/api/conversations.leave",
+            "body": "{\"channel\":\"{channel}\"}"
+          },
+          "subscriptionIdPath": "$.channel",
+          "inbound": {
+            "verificationMode": "CHALLENGE",
+            "challengeQueryParam": "challenge",
+            "eventIdPath": "$.event_id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    }
+  ]
+}

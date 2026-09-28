@@ -9,7 +9,6 @@ import { WorkflowCanvas } from '@/features/workflow-studio/WorkflowCanvas';
 import { useWorkflowStore } from '@/features/workflow-studio/store/workflowStore';
 import { TaskConfigDialog } from '@/features/workflow-studio/TaskConfigDialog';
 import { StudioTaskCatalog } from '@/features/workflow-studio/StudioTaskCatalog';
-import { applyTaskWithBranchJoinSync } from '@/features/workflow-studio/lib/branchJoinSync';
 import {
     applyRouteEdgeRemoval,
 } from '@/features/workflow-studio/lib/graphRouting';
@@ -34,6 +33,7 @@ import {
     removeTaskFromChain,
     syncWorkflowLayout,
     tidyUpWorkflowGraph,
+    updateTaskInChain,
     type StudioCanvasNode
 } from '@/features/workflow-studio/lib/workflowGraph';
 import { getTaskTypePlugin } from '@/features/workflow-studio/task-type-schema/registry';
@@ -94,7 +94,7 @@ export default function WorkflowStudioPage() {
     const loadGenerationRef = useRef(0);
     const allowNavigationRef = useRef(false);
 
-    const { nodes, edges, onNodesChange, onEdgesChange, setNodes, setEdges, resetCanvas } =
+    const { nodes, edges, onNodesChange, onEdgesChange, setCanvasState, resetCanvas } =
         useWorkflowStore();
 
     // Make sure we initialize the store with EMPTY_WORKFLOW once on mount if empty
@@ -341,11 +341,9 @@ export default function WorkflowStudioPage() {
             const result = applyStudioConnection(connection, workingNodes, edges);
             if (result) {
                 const syncedNodes = syncAllIteratorLoopBodies(result.nodes, result.edges);
-                setNodes(syncedNodes);
-                setEdges(result.edges);
-                const wiredSource = connection.source;
-                if (wiredSource && configDraft?.taskId === wiredSource) {
-                    const updated = syncedNodes.find((node) => node.id === wiredSource);
+                setCanvasState({ nodes: syncedNodes, edges: result.edges });
+                if (configDraft) {
+                    const updated = syncedNodes.find((node) => node.id === configDraft.taskId);
                     if (updated?.type === 'task') {
                         setConfigDraft(updated.data as TaskNodeData);
                     }
@@ -353,7 +351,7 @@ export default function WorkflowStudioPage() {
                 markDirty();
             }
         },
-        [configDraft, edges, markDirty, nodes, setEdges, setNodes],
+        [configDraft, edges, markDirty, nodes, setCanvasState],
     );
 
     const handleRouteEdgeRemove = useCallback(
@@ -368,8 +366,7 @@ export default function WorkflowStudioPage() {
             if (nextNodes) {
                 const { nodes: laid, edges: chain } = syncWorkflowLayout(nextNodes, edges);
                 const synced = syncAllIteratorLoopBodies(laid, chain);
-                setNodes(synced);
-                setEdges(chain);
+                setCanvasState({ nodes: synced, edges: chain });
                 if (edge.source && configDraft?.taskId === edge.source) {
                     const updated = nextNodes.find((node) => node.id === edge.source);
                     if (updated?.type === 'task') {
@@ -379,7 +376,7 @@ export default function WorkflowStudioPage() {
                 markDirty();
             }
         },
-        [configDraft, edges, markDirty, nodes, setEdges, setNodes],
+        [configDraft, edges, markDirty, nodes, setCanvasState],
     );
 
     const handleNodesChange = useCallback(
@@ -488,8 +485,7 @@ export default function WorkflowStudioPage() {
             const result = deleteStudioEdge(edge, workingNodes, edges);
             if (!result) return;
             const synced = syncAllIteratorLoopBodies(result.nodes, result.edges);
-            setNodes(synced);
-            setEdges(result.edges);
+            setCanvasState({ nodes: synced, edges: result.edges });
             if (edge.source && configDraft?.taskId === edge.source) {
                 const updated = result.nodes.find((node) => node.id === edge.source);
                 if (updated?.type === 'task') {
@@ -498,7 +494,7 @@ export default function WorkflowStudioPage() {
             }
             markDirty();
         },
-        [configDraft, edges, markDirty, mode, nodes, setEdges, setNodes],
+        [configDraft, edges, markDirty, mode, nodes, setCanvasState],
     );
 
     const handleTaskDrop = useCallback(
@@ -548,13 +544,12 @@ export default function WorkflowStudioPage() {
             };
 
             const result = placeDetachedTask(nodes, edges, draft, position);
-            const syncedNodes = applyTaskWithBranchJoinSync(result.nodes, taskId, draft);
+            const syncedNodes = updateTaskInChain(result.nodes, taskId, draft);
             const withIteratorSync = syncAllIteratorLoopBodies(syncedNodes, result.edges);
             const configTask =
                 getTaskNodes(withIteratorSync).find((node) => node.id === taskId)?.data ?? draft;
 
-            setNodes(withIteratorSync);
-            setEdges(result.edges);
+            setCanvasState({ nodes: withIteratorSync, edges: result.edges });
             setCreatingTask(configTask as TaskNodeData);
             setSelectedTaskId(taskId);
             setConfigOpen(true);
@@ -563,7 +558,7 @@ export default function WorkflowStudioPage() {
             setPendingEdgeInsert(null);
             markDirty();
         },
-        [catalogAllowedTypes, edges, markDirty, mode, nodes, setEdges, setNodes],
+        [catalogAllowedTypes, edges, markDirty, mode, nodes, setCanvasState],
     );
 
     const handleCatalogSelectType = useCallback(
@@ -638,14 +633,13 @@ export default function WorkflowStudioPage() {
 
             const placed = getTaskNodes(result.nodes).find((node) => node.id === taskId);
             const taskData = (placed?.data as TaskNodeData | undefined) ?? draft;
-            const syncedNodes = applyTaskWithBranchJoinSync(result.nodes, taskId, taskData);
+            const syncedNodes = updateTaskInChain(result.nodes, taskId, taskData);
             const laid = syncWorkflowLayout(syncedNodes, result.edges);
             const withIteratorSync = syncAllIteratorLoopBodies(laid.nodes, laid.edges);
             const configTask =
                 getTaskNodes(withIteratorSync).find((node) => node.id === taskId)?.data ?? taskData;
 
-            setNodes(withIteratorSync);
-            setEdges(laid.edges);
+            setCanvasState({ nodes: withIteratorSync, edges: laid.edges });
             setCreatingTask(configTask as TaskNodeData);
             setSelectedTaskId(taskId);
             setConfigOpen(true);
@@ -664,8 +658,7 @@ export default function WorkflowStudioPage() {
             nodes,
             pendingBranchWire,
             pendingEdgeInsert,
-            setEdges,
-            setNodes,
+            setCanvasState,
         ],
     );
 
@@ -696,6 +689,16 @@ export default function WorkflowStudioPage() {
     const handleConfigDraftChange = useCallback((draft: TaskNodeData | null) => {
         setConfigDraft(draft);
     }, []);
+
+    // Keep config draft wiring in sync when canvas connections update the store first.
+    useEffect(() => {
+        if (!configOpen || !configDraft) return;
+        const storeNode = getTaskNodes(nodes).find((node) => node.id === configDraft.taskId);
+        if (!storeNode) return;
+        const storeData = storeNode.data as TaskNodeData;
+        if (JSON.stringify(storeData.parameters) === JSON.stringify(configDraft.parameters)) return;
+        setConfigDraft(storeData);
+    }, [configDraft, configOpen, nodes]);
 
     const handleTaskApply = useCallback(
         (updated: TaskNodeData) => {
@@ -731,45 +734,42 @@ export default function WorkflowStudioPage() {
                     result = appendTaskToChainOrBranch(nodes, edges, updated);
                 }
                 if (!result) return;
-                nextNodes = applyTaskWithBranchJoinSync(result.nodes, updated.taskId, updated);
+                nextNodes = updateTaskInChain(result.nodes, updated.taskId, updated);
                 nextEdges = result.edges;
             } else {
-                nextNodes = applyTaskWithBranchJoinSync(nodes, updated.taskId, updated);
+                nextNodes = updateTaskInChain(nodes, updated.taskId, updated);
             }
 
             const synced = syncWorkflowLayout(nextNodes, nextEdges);
             const withIteratorSync = syncAllIteratorLoopBodies(synced.nodes, synced.edges);
-            setNodes(withIteratorSync);
-            setEdges(synced.edges);
+            setCanvasState({ nodes: withIteratorSync, edges: synced.edges });
             setCreatingTask(null);
             setPendingBranchWire(null);
             setPendingEdgeInsert(null);
             setSelectedTaskId(updated.taskId);
             markDirty();
         },
-        [creatingTask, edges, markDirty, nodes, pendingBranchWire, pendingEdgeInsert, setEdges, setNodes],
+        [creatingTask, edges, markDirty, nodes, pendingBranchWire, pendingEdgeInsert, setCanvasState],
     );
 
     const handleDeleteTask = useCallback(
         (taskId: string) => {
             const { nodes: nextNodes, edges: nextEdges } = removeTaskFromChain(nodes, edges, taskId);
-            setNodes(nextNodes);
-            setEdges(nextEdges);
+            setCanvasState({ nodes: nextNodes, edges: nextEdges });
             setCreatingTask(null);
             setSelectedTaskId(null);
             setConfigOpen(false);
             markDirty();
         },
-        [edges, markDirty, nodes, setEdges, setNodes],
+        [edges, markDirty, nodes, setCanvasState],
     );
 
     const handleTidyUp = useCallback(() => {
         if (mode === 'inspect') return;
         const { nodes: laid, edges: chain } = tidyUpWorkflowGraph(nodes, edges);
-        setNodes(laid);
-        setEdges(chain);
+        setCanvasState({ nodes: laid, edges: chain });
         markDirty();
-    }, [edges, markDirty, mode, nodes, setEdges, setNodes]);
+    }, [edges, markDirty, mode, nodes, setCanvasState]);
 
     const buildDefinition = useCallback((): WorkflowDefinition => {
         const nodesForExport =
@@ -834,8 +834,8 @@ export default function WorkflowStudioPage() {
             setWorkflowId(savedId);
             setSavedDefinition(saved);
             applyDefinition(saved);
-            setIsDirty(false);
             setMessage('Workflow saved');
+            setIsDirty(false);
             if (!workflowId && savedId) {
                 skipNextLoadRef.current = true;
                 navigate(`/workflows/${savedId}`, { replace: true });
@@ -943,6 +943,7 @@ export default function WorkflowStudioPage() {
                         <WorkflowCanvas
                         key={workflowId ?? routeId ?? 'studio'}
                         nodes={canvasNodes}
+                        edgeTopologyNodes={nodes}
                         chainEdges={edges}
                         triggerConfig={savedDefinition?.trigger}
                         taskValidationErrors={taskValidationErrors}

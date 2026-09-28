@@ -3,8 +3,11 @@ import { Input } from '@/components/ui/input';
 import { SimpleSelect } from '@/components/ui/select';
 import {
     msToWaitParts,
+    secondsToWaitParts,
+    DEFAULT_WAIT_DURATION_MS,
     WAIT_DURATION_UNITS,
     waitPartsToMs,
+    waitPartsToSeconds,
     type WaitDurationUnit,
 } from '@/features/workflow-studio/task-config/waitDuration';
 
@@ -14,20 +17,41 @@ interface WaitDurationFieldProps {
     valueMs: unknown;
     onChange: (durationMs: number) => void;
     error?: string;
+    /** When 'seconds', value/onChange use interval seconds instead of milliseconds. */
+    storageUnit?: 'ms' | 'seconds';
 }
 
-export function WaitDurationField({ id, label, valueMs, onChange, error }: WaitDurationFieldProps) {
-    const numericMs = typeof valueMs === 'number' ? valueMs : Number(valueMs);
-    const { amount, unit } = msToWaitParts(Number.isFinite(numericMs) ? numericMs : 1_000);
+export function WaitDurationField({
+    id,
+    label,
+    valueMs,
+    onChange,
+    error,
+    storageUnit = 'ms',
+}: WaitDurationFieldProps) {
+    const numericValue = typeof valueMs === 'number' ? valueMs : Number(valueMs);
+    const fallback = storageUnit === 'seconds' ? 60 : DEFAULT_WAIT_DURATION_MS;
+    const safeValue = Number.isFinite(numericValue) && numericValue > 0 ? numericValue : fallback;
+    const { amount, unit } = storageUnit === 'seconds'
+        ? secondsToWaitParts(safeValue)
+        : msToWaitParts(safeValue);
+
+    const emitChange = (nextAmount: number, nextUnit: WaitDurationUnit) => {
+        onChange(
+            storageUnit === 'seconds'
+                ? waitPartsToSeconds(nextAmount, nextUnit)
+                : waitPartsToMs(nextAmount, nextUnit),
+        );
+    };
 
     const updateAmount = (raw: string) => {
         const parsed = Number(raw);
         if (!Number.isFinite(parsed) || parsed <= 0) return;
-        onChange(waitPartsToMs(parsed, unit));
+        emitChange(parsed, unit);
     };
 
     const updateUnit = (nextUnit: string) => {
-        onChange(waitPartsToMs(amount, nextUnit as WaitDurationUnit));
+        emitChange(amount, nextUnit as WaitDurationUnit);
     };
 
     return (

@@ -1,17 +1,41 @@
 package com.app.api.validation;
 
+import com.app.api.config.properties.WorkflowApiProperties;
 import com.app.common.entity.WorkflowDefinition;
 import com.app.common.exception.ValidationException;
+import com.app.common.graph.WorkflowGraph;
+import com.app.common.graph.WorkflowTopologyResolver;
 import com.app.common.model.task.TaskType;
 import com.app.common.model.task.WorkflowTask;
+import com.app.common.model.task.parameters.BranchTaskParameters;
 import com.app.common.model.task.parameters.ConnectorTaskParameters;
 import com.app.common.model.task.parameters.HumanTaskParameters;
+import com.app.common.model.task.parameters.JoinTaskParameters;
+import com.app.common.model.task.parameters.JoinWaitPolicy;
+import com.app.common.model.task.parameters.WaitTaskParameters;
+import com.app.common.model.trigger.ChangeDetectionConfig;
+import com.app.common.model.trigger.PollConfig;
+import com.app.common.model.trigger.PollHttpConfig;
+import com.app.common.model.trigger.PollScheduleConfig;
+import com.app.common.model.trigger.PollScheduleMode;
+import com.app.common.model.trigger.PollEventSemantics;
+import com.app.common.model.trigger.TriggerConfig;
+import com.app.common.model.trigger.TriggerType;
+import com.app.common.model.trigger.WebhookConfig;
+import com.app.common.model.trigger.WebhookInboundConfig;
+import com.app.common.model.trigger.WebhookVerificationMode;
 import com.app.persistence.connector.ConnectorRegistry;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.support.CronExpression;
 import org.springframework.stereotype.Component;
 import lombok.RequiredArgsConstructor;
 
+import java.net.InetAddress;
+import java.net.URI;
+import java.net.UnknownHostException;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Component
@@ -19,6 +43,10 @@ import java.util.Set;
 public class WorkflowDefinitionValidator {
 
     private final ConnectorRegistry connectorRegistry;
+    private final WorkflowApiProperties apiProperties;
+
+    @Value("${spring.profiles.active:}")
+    private String activeProfiles;
 
     public void validate(WorkflowDefinition definition) {
         if (definition.getName() == null || definition.getName().isBlank()) {
@@ -47,10 +75,194 @@ public class WorkflowDefinitionValidator {
             } else if (task.getType() == TaskType.CONNECTOR_TASK
                     && task.getParameters() instanceof ConnectorTaskParameters params) {
                 validateConnectorTask(task.getTaskId(), params);
+            } else if (task.getType() == TaskType.WAIT
+                    && task.getParameters() instanceof WaitTaskParameters params) {
+                validateWaitTask(task.getTaskId(), params);
             }
         }
-        
+
         validateGraph(tasks, taskIds);
+        validateBranchJoinTopology(definition);
+
+        TriggerConfig trigger = definition.getTrigger();
+        if (trigger != null && trigger.getType() == TriggerType.POLL && trigger.getPoll() != null) {
+            validatePollTrigger(trigger);
+        }
+        if (trigger != null && trigger.getType() == TriggerType.WEBHOOK && trigger.getWebhook() != null) {
+            WebhookConfig webhook = trigger.getWebhook();
+            validateWebhookInbound(webhook);
+            if (webhook.isSubscribeMode()) {
+                validateWebhookSubscribe(webhook);
+            }
+        }
+    }
+
+    void validatePollTrigger(TriggerConfig trigger) {
+        PollConfig poll = trigger.getPoll();
+        if (!poll.isActive()) {
+            return;
+        }
+
+        PollHttpConfig http = poll.getHttp();
+        if (http == null || http.getUrl() == null || http.getUrl().isBlank()) {
+            throw new ValidationException("Poll trigger requires an HTTP URL when active");
+        }
+
+        validateExternalHttpUrl(http.getUrl());
+
+        PollScheduleConfig schedule = poll.getSchedule();
+        if (schedule == null) {
+            throw new ValidationException("Poll trigger requires a schedule configuration");
+        }
+
+        if (schedule.getMode() == PollScheduleMode.FIXED_INTERVAL) {
+            Long interval = schedule.getIntervalSeconds();
+            if (interval == null || interval <= 0) {
+                throw new ValidationException("Poll intervalSeconds must be a positive value");
+            }
+            long min = apiProperties.getPoll().getMinIntervalSeconds();
+            long max = apiProperties.getPoll().getMaxIntervalSeconds();
+            if (interval < min || interval > max) {
+                throw new ValidationException(
+                        "Poll interval must be between " + min + " and " + max + " seconds (got " + interval + ")");
+            }
+        } else if (schedule.getMode() == PollScheduleMode.CRON) {
+            String cron = schedule.getCronExpression();
+            if (cron == null || cron.isBlank()) {
+                throw new ValidationException("Poll cron expression is required for CRON schedule mode");
+            }
+            validateCronExpression(cron);
+        }
+
+        ChangeDetectionConfig detection = poll.getDetection();
+        if (detection != null && detection.getMaxItemsPerPoll() != null) {
+            int cap = apiProperties.getPoll().getMaxItemsPerPoll();
+            if (detection.getMaxItemsPerPoll() > cap) {
+                throw new ValidationException(
+                        "maxItemsPerPoll (" + detection.getMaxItemsPerPoll() + ") exceeds platform limit of " + cap);
+            }
+        }
+
+        if (poll.getSemantics() == PollEventSemantics.RESPONSE_CHANGED
+                && detection != null
+                && detection.getItemsPath() != null
+                && !detection.getItemsPath().isBlank()) {
+            // itemsPath is ignored for RESPONSE_CHANGED — no hard error in v1
+        }
+    }
+
+    void validateWebhookInbound(WebhookConfig webhook) {
+        if (!webhook.isActive()) {
+            return;
+        }
+        WebhookInboundConfig inbound = webhook.getInbound();
+        if (inbound == null) {
+            return;
+        }
+        validateInboundSettings(inbound);
+    }
+
+    void validateWebhookSubscribe(WebhookConfig webhook) {
+        if (!webhook.isActive()) {
+            return;
+        }
+
+        PollHttpConfig subscribeHttp = webhook.getSubscribeHttp();
+        if (subscribeHttp == null || subscribeHttp.getUrl() == null || subscribeHttp.getUrl().isBlank()) {
+            throw new ValidationException("Webhook subscribe trigger requires a subscribe HTTP URL when active");
+        }
+        validateExternalHttpUrl(subscribeHttp.getUrl());
+
+        PollHttpConfig unsubscribeHttp = webhook.getUnsubscribeHttp();
+        if (unsubscribeHttp == null || unsubscribeHttp.getUrl() == null || unsubscribeHttp.getUrl().isBlank()) {
+            throw new ValidationException("Webhook subscribe trigger requires an unsubscribe HTTP URL when active");
+        }
+        validateExternalHttpUrl(unsubscribeHttp.getUrl());
+
+        if (webhook.getSubscriptionIdPath() == null || webhook.getSubscriptionIdPath().isBlank()) {
+            throw new ValidationException(
+                    "Webhook subscribe trigger requires subscriptionIdPath when active");
+        }
+
+        if (webhook.getInbound() != null) {
+            validateInboundSettings(webhook.getInbound());
+        }
+    }
+
+    private void validateInboundSettings(WebhookInboundConfig inbound) {
+        if (inbound.isIgnoreDuplicates()
+                && (inbound.getEventIdPath() == null || inbound.getEventIdPath().isBlank())) {
+            throw new ValidationException(
+                    "Webhook inbound requires eventIdPath when ignoreDuplicates is enabled");
+        }
+
+        WebhookVerificationMode mode = inbound.getVerificationMode() != null
+                ? inbound.getVerificationMode()
+                : WebhookVerificationMode.NONE;
+
+        if (mode == WebhookVerificationMode.HEADER_SECRET || mode == WebhookVerificationMode.HMAC_SHA256) {
+            if (inbound.getHeaderName() == null || inbound.getHeaderName().isBlank()) {
+                throw new ValidationException("Webhook verification requires a header name");
+            }
+        }
+
+        if (mode == WebhookVerificationMode.CHALLENGE) {
+            if (inbound.getChallengeQueryParam() == null || inbound.getChallengeQueryParam().isBlank()) {
+                throw new ValidationException("Webhook challenge verification requires a challenge query parameter");
+            }
+        }
+    }
+
+    void validateExternalHttpUrl(String url) {
+        try {
+            URI uri = URI.create(url);
+            String scheme = uri.getScheme();
+            if (scheme == null || (!scheme.equalsIgnoreCase("http") && !scheme.equalsIgnoreCase("https"))) {
+                throw new ValidationException("External HTTP URL must use http or https scheme");
+            }
+
+            if (isProductionProfile()) {
+                String host = uri.getHost();
+                if (host != null) {
+                    validateHostNotPrivate(host);
+                }
+            }
+        } catch (IllegalArgumentException e) {
+            throw new ValidationException("Invalid external HTTP URL: " + e.getMessage());
+        }
+    }
+
+    private void validatePollUrl(String url) {
+        validateExternalHttpUrl(url);
+    }
+
+    private void validateHostNotPrivate(String host) {
+        if ("localhost".equalsIgnoreCase(host) || host.endsWith(".local")) {
+            throw new ValidationException("Poll URL must not target private or local addresses in production");
+        }
+        try {
+            InetAddress address = InetAddress.getByName(host);
+            if (address.isAnyLocalAddress()
+                    || address.isLoopbackAddress()
+                    || address.isLinkLocalAddress()
+                    || address.isSiteLocalAddress()) {
+                throw new ValidationException("Poll URL must not target private or local addresses in production");
+            }
+        } catch (UnknownHostException e) {
+            throw new ValidationException("Poll URL host could not be resolved: " + host);
+        }
+    }
+
+    private void validateCronExpression(String cron) {
+        try {
+            CronExpression.parse(cron);
+        } catch (IllegalArgumentException e) {
+            throw new ValidationException("Invalid poll cron expression: " + e.getMessage());
+        }
+    }
+
+    private boolean isProductionProfile() {
+        return activeProfiles != null && activeProfiles.contains("prod");
     }
 
     private void validateHumanRouting(String taskId, HumanTaskParameters params, Set<String> taskIds) {
@@ -77,14 +289,20 @@ public class WorkflowDefinitionValidator {
         if (params.getActionId() == null || params.getActionId().isBlank()) {
             throw new ValidationException("Action ID is required for connector task: " + taskId);
         }
-        // Verify connector exists
         var manifest = connectorRegistry.findById(params.getConnectorId())
                 .orElseThrow(() -> new ValidationException("Unknown connector ID '" + params.getConnectorId() + "' in task: " + taskId));
-        // Verify action exists
         manifest.getActions().stream()
                 .filter(a -> a.getActionId().equals(params.getActionId()))
                 .findFirst()
                 .orElseThrow(() -> new ValidationException("Unknown action ID '" + params.getActionId() + "' for connector '" + params.getConnectorId() + "' in task: " + taskId));
+    }
+
+    private void validateWaitTask(String taskId, WaitTaskParameters params) {
+        Long duration = params.getDuration();
+        if (duration == null || duration < WaitTaskParameters.MIN_DURATION_MS) {
+            throw new ValidationException(
+                    "Wait task " + taskId + " duration must be at least 1 second (1000 ms)");
+        }
     }
 
     private void validateGraph(List<WorkflowTask> tasks, Set<String> taskIds) {
@@ -94,12 +312,12 @@ public class WorkflowDefinitionValidator {
             String taskId = task.getTaskId();
             List<String> edges = new java.util.ArrayList<>();
             boolean hasExplicit = false;
-            
+
             if (task.getNextTaskId() != null && !task.getNextTaskId().isBlank()) {
                 edges.add(task.getNextTaskId());
                 hasExplicit = true;
             }
-            
+
             if (task.getType() == TaskType.CONDITIONAL && task.getParameters() instanceof com.app.common.model.task.parameters.ConditionalTaskParameters params) {
                 hasExplicit = true;
                 if (params.getDefaultNextTaskId() != null && !params.getDefaultNextTaskId().isBlank()) {
@@ -120,17 +338,19 @@ public class WorkflowDefinitionValidator {
                 if (params.getRejectedNextTaskId() != null && !params.getRejectedNextTaskId().isBlank()) {
                     edges.add(params.getRejectedNextTaskId());
                 }
-            } else if (task.getType() == TaskType.BRANCH && task.getParameters() instanceof com.app.common.model.task.parameters.BranchTaskParameters params) {
+            } else if (task.getType() == TaskType.BRANCH && task.getParameters() instanceof BranchTaskParameters params) {
                 hasExplicit = true;
-                if (params.getJoinTaskId() != null && !params.getJoinTaskId().isBlank()) {
-                    edges.add(params.getJoinTaskId());
-                }
                 if (params.getBranches() != null) {
                     for (var branch : params.getBranches()) {
                         if (branch.getStartTaskId() != null && !branch.getStartTaskId().isBlank()) {
                             edges.add(branch.getStartTaskId());
                         }
                     }
+                }
+            } else if (task.getType() == TaskType.JOIN && task.getParameters() instanceof JoinTaskParameters params) {
+                hasExplicit = true;
+                if (params.getNextTaskId() != null && !params.getNextTaskId().isBlank()) {
+                    edges.add(params.getNextTaskId());
                 }
             } else if (task.getType() == TaskType.ITERATOR_TASK && task.getParameters() instanceof com.app.common.model.task.parameters.IteratorTaskParameters params) {
                 hasExplicit = true;
@@ -147,13 +367,13 @@ public class WorkflowDefinitionValidator {
                     }
                 }
             }
-            
+
             for (String edge : edges) {
                 if (!taskIds.contains(edge)) {
                     throw new ValidationException("Task " + taskId + " references unknown task: " + edge);
                 }
             }
-            
+
             adjList.put(taskId, edges);
         }
 
@@ -171,13 +391,73 @@ public class WorkflowDefinitionValidator {
         }
     }
 
+    void validateBranchJoinTopology(WorkflowDefinition definition) {
+        List<WorkflowTask> tasks = definition.getTasks();
+        if (tasks == null) {
+            return;
+        }
+
+        WorkflowGraph graph = WorkflowTopologyResolver.graphFromDefinition(definition);
+        Map<String, String> inboundOwner = new java.util.HashMap<>();
+
+        for (WorkflowTask task : tasks) {
+            if (task.getType() == TaskType.JOIN && task.getParameters() instanceof JoinTaskParameters params) {
+                String joinId = task.getTaskId();
+                List<String> declared = params.getInboundTaskIds() != null
+                        ? params.getInboundTaskIds()
+                        : List.of();
+                List<String> resolved = WorkflowTopologyResolver.resolveJoinInbounds(joinId, graph);
+
+                if (declared.isEmpty()) {
+                    throw new ValidationException("JOIN task " + joinId + " requires at least one inbound task");
+                }
+
+                if (!declared.equals(resolved)) {
+                    throw new ValidationException(
+                            "JOIN task " + joinId + " inboundTaskIds do not match topology wires");
+                }
+
+                Set<String> seen = new HashSet<>();
+                for (String inboundId : declared) {
+                    if (!seen.add(inboundId)) {
+                        throw new ValidationException("JOIN task " + joinId + " has duplicate inbound: " + inboundId);
+                    }
+                    if (inboundId.equals(joinId)) {
+                        throw new ValidationException("JOIN task " + joinId + " cannot reference itself as inbound");
+                    }
+                    if (!graph.getTasksById().containsKey(inboundId)) {
+                        throw new ValidationException(
+                                "JOIN task " + joinId + " references unknown inbound task: " + inboundId);
+                    }
+                    if (!WorkflowTopologyResolver.isLeafInbound(inboundId, joinId, graph)) {
+                        throw new ValidationException(
+                                "JOIN task " + joinId + " inbound " + inboundId + " must be a leaf task (not BRANCH/JOIN)");
+                    }
+                    String previousOwner = inboundOwner.put(inboundId, joinId);
+                    if (previousOwner != null) {
+                        throw new ValidationException(
+                                "Task " + inboundId + " is an inbound for multiple JOIN tasks");
+                    }
+                }
+
+                if (params.getWaitPolicy() == JoinWaitPolicy.QUORUM) {
+                    Integer quorum = params.getQuorumCount();
+                    if (quorum == null || quorum < 1 || quorum > declared.size()) {
+                        throw new ValidationException(
+                                "JOIN task " + joinId + " quorumCount must be between 1 and inbound count");
+                    }
+                }
+            }
+        }
+    }
+
     private boolean hasCycle(String startNode, java.util.Map<String, List<String>> adjList, java.util.Map<String, Integer> state) {
         java.util.Stack<String> stack = new java.util.Stack<>();
         stack.push(startNode);
-        
+
         while (!stack.isEmpty()) {
             String node = stack.peek();
-            
+
             if (state.get(node) == 0) {
                 state.put(node, 1);
                 List<String> edges = adjList.getOrDefault(node, List.of());
@@ -195,7 +475,7 @@ public class WorkflowDefinitionValidator {
                     continue;
                 }
             }
-            
+
             if (state.get(node) == 1) {
                 state.put(node, 2);
             }

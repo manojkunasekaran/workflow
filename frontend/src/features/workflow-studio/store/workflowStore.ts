@@ -6,6 +6,7 @@ import type { StudioCanvasNode } from '@/features/workflow-studio/lib/workflowGr
 export interface WorkflowState {
     nodes: StudioCanvasNode[];
     edges: Edge[];
+    setCanvasState: (state: { nodes: StudioCanvasNode[]; edges: Edge[] }) => void;
     setNodes: (nodes: StudioCanvasNode[] | ((prev: StudioCanvasNode[]) => StudioCanvasNode[])) => void;
     setEdges: (edges: Edge[] | ((prev: Edge[]) => Edge[])) => void;
     onNodesChange: (changes: NodeChange<StudioCanvasNode>[]) => void;
@@ -19,6 +20,9 @@ export const useWorkflowStore = create<WorkflowState>()(
         (set) => ({
             nodes: [],
             edges: [],
+            setCanvasState: ({ nodes, edges }) => {
+                set({ nodes, edges });
+            },
             setNodes: (nodesOrUpdater) => {
                 set((state) => ({
                     nodes:

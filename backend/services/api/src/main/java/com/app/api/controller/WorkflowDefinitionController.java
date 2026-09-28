@@ -21,6 +21,16 @@ public class WorkflowDefinitionController {
         return service.createWorkflowDefinition(definition);
     }
 
+    @PutMapping("/{id}")
+    public WorkflowDefinition update(
+            @NonNull @PathVariable String id,
+            @NonNull @RequestBody WorkflowDefinition definition) {
+        if (service.getWorkflowDefinitionById(id).isEmpty()) {
+            throw new ResourceNotFoundException("WorkflowDefinition", id);
+        }
+        return service.updateWorkflowDefinition(id, definition);
+    }
+
     @GetMapping
     public List<WorkflowDefinition> list() {
         return service.getAllWorkflowDefinitions();

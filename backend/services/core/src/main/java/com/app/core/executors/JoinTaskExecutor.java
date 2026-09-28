@@ -2,6 +2,7 @@ package com.app.core.executors;
 
 import com.app.common.entity.WorkflowExecution;
 import com.app.common.model.task.execution.JoinTaskExecutionData;
+import com.app.common.model.task.parameters.JoinMergeMode;
 import com.app.common.model.task.parameters.JoinTaskParameters;
 import com.app.common.constant.TaskExecutionStatus;
 import com.app.common.model.task.execution.TaskExecutionResult;
@@ -17,7 +18,9 @@ import org.springframework.stereotype.Component;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -50,42 +53,68 @@ public class JoinTaskExecutor implements TaskExecutor {
 
         // Branch results are injected into the context by the WorkflowEngine
         // before this executor is called. They are stored under a special key.
+        String joinTaskId = task.getTaskId();
+
         @SuppressWarnings("unchecked")
         Map<String, JoinTaskExecutionData.BranchResult> branchResults = (Map<String, JoinTaskExecutionData.BranchResult>) context
                 .getTaskOutputs()
-                .getOrDefault("__branchResults__" + params.getBranchTaskId(), new HashMap<>());
+                .getOrDefault("__joinArrivals__" + joinTaskId, new HashMap<>());
 
         Instant joinStart = (Instant) context.getTaskOutputs()
-                .getOrDefault("__branchStartTime__" + params.getBranchTaskId(), Instant.now());
+                .getOrDefault("__joinStartTime__" + joinTaskId, Instant.now());
         Instant joinEnd = Instant.now();
 
-        int totalBranches = branchResults.size();
-        int successfulBranches = 0;
-        int failedBranches = 0;
+        int totalInbounds = branchResults.size();
+        int successfulInbounds = 0;
+        int failedInbounds = 0;
 
         for (JoinTaskExecutionData.BranchResult result : branchResults.values()) {
             if (TaskExecutionStatus.COMPLETED.equals(result.getStatus())) {
-                successfulBranches++;
+                successfulInbounds++;
             } else {
-                failedBranches++;
+                failedInbounds++;
             }
         }
 
         log.info("Join task {} — total={}, successful={}, failed={}",
-                task.getTaskId(), totalBranches, successfulBranches, failedBranches);
+                task.getTaskId(), totalInbounds, successfulInbounds, failedInbounds);
 
         // Apply failure strategy
         boolean shouldFail = switch (params.getFailureStrategy()) {
-            case FAIL_FAST, REQUIRE_ALL -> failedBranches > 0;
-            case WAIT_FOR_ALL -> successfulBranches == 0;
+            case FAIL_FAST, REQUIRE_ALL -> failedInbounds > 0;
+            case WAIT_FOR_ALL -> successfulInbounds == 0;
         };
 
+        JoinMergeMode mergeMode = params.getMergeMode() != null
+                ? params.getMergeMode()
+                : JoinMergeMode.PASS_THROUGH;
+        List<String> expectedInboundIds = params.getInboundTaskIds() != null
+                ? new ArrayList<>(params.getInboundTaskIds())
+                : List.of();
+        List<String> arrivedInboundIds = new ArrayList<>();
+        for (String inboundId : expectedInboundIds) {
+            if (branchResults.containsKey(inboundId)) {
+                arrivedInboundIds.add(inboundId);
+            }
+        }
+        for (String inboundId : branchResults.keySet()) {
+            if (!arrivedInboundIds.contains(inboundId)) {
+                arrivedInboundIds.add(inboundId);
+            }
+        }
+
         JoinTaskExecutionData executionData = JoinTaskExecutionData.builder()
-                .branchTaskId(params.getBranchTaskId())
-                .totalBranches(totalBranches)
-                .successfulBranches(successfulBranches)
-                .failedBranches(failedBranches)
-                .branchResults(branchResults)
+                .joinTaskId(joinTaskId)
+                .totalInbounds(totalInbounds)
+                .successfulInbounds(successfulInbounds)
+                .failedInbounds(failedInbounds)
+                .inboundResults(branchResults)
+                .waitPolicy(params.getWaitPolicy())
+                .quorumCount(params.getQuorumCount())
+                .failureStrategy(params.getFailureStrategy())
+                .mergeMode(mergeMode)
+                .expectedInboundIds(expectedInboundIds)
+                .arrivedInboundIds(arrivedInboundIds)
                 .joinStartTime(joinStart)
                 .joinEndTime(joinEnd)
                 .joinDurationMs(Duration.between(joinStart, joinEnd).toMillis())

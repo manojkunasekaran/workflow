@@ -1,4 +1,5 @@
 export const CRON_PRESETS = [
+    { label: 'Every 1 minute', value: '0 */1 * * * *' },
     { label: 'Every 5 minutes', value: '0 */5 * * * *' },
     { label: 'Every 15 minutes', value: '0 */15 * * * *' },
     { label: 'Every 30 minutes', value: '0 */30 * * * *' },

@@ -24,6 +24,21 @@ describe('Zustand Workflow Store & History', () => {
       expect(edges[0].id).toBe('edge-1');
     });
 
+    it('D-003a: setCanvasState updates nodes and edges in one undo step', () => {
+      useWorkflowStore.getState().setCanvasState({
+        nodes: [{ id: 'n1', position: { x: 0, y: 0 }, data: {} }] as any,
+        edges: [{ id: 'e1', source: 'n1', target: 'n2' }],
+      });
+
+      const { nodes, edges } = useWorkflowStore.getState();
+      expect(nodes).toHaveLength(1);
+      expect(edges).toHaveLength(1);
+
+      useWorkflowStore.temporal.getState().undo();
+      expect(useWorkflowStore.getState().nodes).toHaveLength(0);
+      expect(useWorkflowStore.getState().edges).toHaveLength(0);
+    });
+
     it('D-003: resetCanvas updates nodes and edges simultaneously', () => {
       useWorkflowStore.getState().resetCanvas(
         [{ id: 'n1', position: { x: 0, y: 0 }, data: { label: 'N1' } }] as any,

@@ -1,0 +1,398 @@
+{
+  "connectorId": "telegram",
+  "triggers": [
+    {
+      "triggerId": "new_updates",
+      "displayName": "New bot updates",
+      "description": "Polls Telegram for new updates (messages, callbacks, etc.).",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "token",
+          "label": "Bot Token",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://api.telegram.org/bot{token}/getUpdates?limit=100"
+          },
+          "detection": {
+            "itemsPath": "$.result",
+            "keyPaths": [
+              "update_id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_messages_poll",
+      "displayName": "New messages (poll)",
+      "description": "Polls for new text messages only.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "token",
+          "label": "Bot Token",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://api.telegram.org/bot{token}/getUpdates?limit=100&allowed_updates=%5B%22message%22%5D"
+          },
+          "detection": {
+            "itemsPath": "$.result",
+            "keyPaths": [
+              "update_id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "message_received",
+      "displayName": "Message received",
+      "description": "Registers a webhook for new messages sent to the bot.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "token",
+          "label": "Bot Token",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.telegram.org/bot{token}/setWebhook",
+            "body": "{\"url\":\"{{callbackUrl}}\",\"secret_token\":\"{{secret}}\",\"allowed_updates\":[\"message\"]}"
+          },
+          "unsubscribeHttp": {
+            "method": "POST",
+            "url": "https://api.telegram.org/bot{token}/deleteWebhook",
+            "body": "{}"
+          },
+          "subscriptionIdPath": "$.result",
+          "inbound": {
+            "verificationMode": "HEADER_SECRET",
+            "headerName": "X-Telegram-Bot-Api-Secret-Token",
+            "eventIdPath": "$.update_id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "edited_message",
+      "displayName": "Message edited",
+      "description": "Registers a webhook when messages are edited.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "token",
+          "label": "Bot Token",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.telegram.org/bot{token}/setWebhook",
+            "body": "{\"url\":\"{{callbackUrl}}\",\"secret_token\":\"{{secret}}\",\"allowed_updates\":[\"edited_message\"]}"
+          },
+          "unsubscribeHttp": {
+            "method": "POST",
+            "url": "https://api.telegram.org/bot{token}/deleteWebhook",
+            "body": "{}"
+          },
+          "subscriptionIdPath": "$.result",
+          "inbound": {
+            "verificationMode": "HEADER_SECRET",
+            "headerName": "X-Telegram-Bot-Api-Secret-Token",
+            "eventIdPath": "$.update_id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "channel_post",
+      "displayName": "Channel post",
+      "description": "Registers a webhook for new channel posts.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "token",
+          "label": "Bot Token",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.telegram.org/bot{token}/setWebhook",
+            "body": "{\"url\":\"{{callbackUrl}}\",\"secret_token\":\"{{secret}}\",\"allowed_updates\":[\"channel_post\"]}"
+          },
+          "unsubscribeHttp": {
+            "method": "POST",
+            "url": "https://api.telegram.org/bot{token}/deleteWebhook",
+            "body": "{}"
+          },
+          "subscriptionIdPath": "$.result",
+          "inbound": {
+            "verificationMode": "HEADER_SECRET",
+            "headerName": "X-Telegram-Bot-Api-Secret-Token",
+            "eventIdPath": "$.update_id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "callback_query",
+      "displayName": "Callback button pressed",
+      "description": "Registers a webhook for inline keyboard button presses.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "token",
+          "label": "Bot Token",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.telegram.org/bot{token}/setWebhook",
+            "body": "{\"url\":\"{{callbackUrl}}\",\"secret_token\":\"{{secret}}\",\"allowed_updates\":[\"callback_query\"]}"
+          },
+          "unsubscribeHttp": {
+            "method": "POST",
+            "url": "https://api.telegram.org/bot{token}/deleteWebhook",
+            "body": "{}"
+          },
+          "subscriptionIdPath": "$.result",
+          "inbound": {
+            "verificationMode": "HEADER_SECRET",
+            "headerName": "X-Telegram-Bot-Api-Secret-Token",
+            "eventIdPath": "$.update_id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "inline_query",
+      "displayName": "Inline query",
+      "description": "Registers a webhook for inline mode queries.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "token",
+          "label": "Bot Token",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.telegram.org/bot{token}/setWebhook",
+            "body": "{\"url\":\"{{callbackUrl}}\",\"secret_token\":\"{{secret}}\",\"allowed_updates\":[\"inline_query\"]}"
+          },
+          "unsubscribeHttp": {
+            "method": "POST",
+            "url": "https://api.telegram.org/bot{token}/deleteWebhook",
+            "body": "{}"
+          },
+          "subscriptionIdPath": "$.result",
+          "inbound": {
+            "verificationMode": "HEADER_SECRET",
+            "headerName": "X-Telegram-Bot-Api-Secret-Token",
+            "eventIdPath": "$.update_id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "poll_answer",
+      "displayName": "Poll answer",
+      "description": "Registers a webhook when users answer a poll.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "token",
+          "label": "Bot Token",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.telegram.org/bot{token}/setWebhook",
+            "body": "{\"url\":\"{{callbackUrl}}\",\"secret_token\":\"{{secret}}\",\"allowed_updates\":[\"poll_answer\"]}"
+          },
+          "unsubscribeHttp": {
+            "method": "POST",
+            "url": "https://api.telegram.org/bot{token}/deleteWebhook",
+            "body": "{}"
+          },
+          "subscriptionIdPath": "$.result",
+          "inbound": {
+            "verificationMode": "HEADER_SECRET",
+            "headerName": "X-Telegram-Bot-Api-Secret-Token",
+            "eventIdPath": "$.update_id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "chat_member_updated",
+      "displayName": "Chat member updated",
+      "description": "Registers a webhook when a chat member's status changes.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "token",
+          "label": "Bot Token",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.telegram.org/bot{token}/setWebhook",
+            "body": "{\"url\":\"{{callbackUrl}}\",\"secret_token\":\"{{secret}}\",\"allowed_updates\":[\"chat_member\"]}"
+          },
+          "unsubscribeHttp": {
+            "method": "POST",
+            "url": "https://api.telegram.org/bot{token}/deleteWebhook",
+            "body": "{}"
+          },
+          "subscriptionIdPath": "$.result",
+          "inbound": {
+            "verificationMode": "HEADER_SECRET",
+            "headerName": "X-Telegram-Bot-Api-Secret-Token",
+            "eventIdPath": "$.update_id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "my_chat_member",
+      "displayName": "Bot added or removed",
+      "description": "Registers a webhook when the bot is added to or removed from a chat.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "token",
+          "label": "Bot Token",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.telegram.org/bot{token}/setWebhook",
+            "body": "{\"url\":\"{{callbackUrl}}\",\"secret_token\":\"{{secret}}\",\"allowed_updates\":[\"my_chat_member\"]}"
+          },
+          "unsubscribeHttp": {
+            "method": "POST",
+            "url": "https://api.telegram.org/bot{token}/deleteWebhook",
+            "body": "{}"
+          },
+          "subscriptionIdPath": "$.result",
+          "inbound": {
+            "verificationMode": "HEADER_SECRET",
+            "headerName": "X-Telegram-Bot-Api-Secret-Token",
+            "eventIdPath": "$.update_id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "message_reaction",
+      "displayName": "Message reaction",
+      "description": "Registers a webhook when users react to messages.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "token",
+          "label": "Bot Token",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.telegram.org/bot{token}/setWebhook",
+            "body": "{\"url\":\"{{callbackUrl}}\",\"secret_token\":\"{{secret}}\",\"allowed_updates\":[\"message_reaction\"]}"
+          },
+          "unsubscribeHttp": {
+            "method": "POST",
+            "url": "https://api.telegram.org/bot{token}/deleteWebhook",
+            "body": "{}"
+          },
+          "subscriptionIdPath": "$.result",
+          "inbound": {
+            "verificationMode": "HEADER_SECRET",
+            "headerName": "X-Telegram-Bot-Api-Secret-Token",
+            "eventIdPath": "$.update_id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    }
+  ]
+}

@@ -31,21 +31,21 @@ import {
     applyStudioChainOutToLayout,
     orderTaskIdsForExport,
     restoreBranchChainEdges,
-    syncBranchEndTaskIdsFromChains,
 } from '@/features/workflow-studio/lib/branchChainPersistence';
+import {
+    addJoinInbound,
+    buildWorkflowGraphFromCanvas,
+    resolveJoinInbounds,
+} from '@/features/workflow-studio/lib/workflowTopology';
 import { resolveTaskDisplayName } from '@/features/workflow-studio/lib/taskDisplayName';
 import { getTaskNodes, type StudioCanvasNode } from '@/features/workflow-studio/lib/canvasNodeUtils';
 import { applyGraphConnection, clearTaskWireReferences, ensureRoutingListRows, listRoutingEndpoints, resolveWireTargetHandle, terminatesMainSpine } from '@/features/workflow-studio/lib/graphRouting';
 import {
-    findBranchTaskForChainTask,
-    resolveBranchIndexForEndTask,
     isAllowedBranchChainEdge,
     sanitizeDanglingBranchJoinReferences,
     sanitizeBranchSpineConflicts,
     sanitizeInvalidBranchChainEdges,
     stripLegacyBranchNextTaskId,
-    syncBranchJoinPair,
-    writeBranchEndTaskId,
 } from '@/features/workflow-studio/lib/joinWiring';
 import {
     STUDIO_EDGE_CLASS,
@@ -155,15 +155,15 @@ function relayoutAndRebuild(
     spineIds: string[],
     existingEdges: Edge[] = [],
 ): { nodes: StudioCanvasNode[]; edges: Edge[] } {
-    const repaired = repairJoinBranchChainEdges(nodes, existingEdges);
-    const sanitized = sanitizeDanglingBranchJoinReferences(repaired.nodes);
+    const filteredEdges = stripJoinBranchChainEdges(nodes, existingEdges);
+    const sanitized = sanitizeDanglingBranchJoinReferences(nodes);
     const withAddTask = sanitized.some((node) => node.id === ADD_TASK_NODE_ID)
         ? sanitized
         : [...sanitized, createAddTaskNode({ x: 0, y: 0 })];
     const types = taskTypeById(withAddTask);
     const showMainAdd = shouldShowMainAddTask(spineIds, types);
-    const nextNodes = relayoutWorkflow(withAddTask, spineIds, showMainAdd, repaired.edges);
-    return { nodes: nextNodes, edges: rebuildChainEdges(spineIds, types, repaired.edges) };
+    const nextNodes = relayoutWorkflow(withAddTask, spineIds, showMainAdd, filteredEdges);
+    return { nodes: nextNodes, edges: rebuildChainEdges(spineIds, types, filteredEdges) };
 }
 
 /**
@@ -178,12 +178,12 @@ function rebuildPreserving(
     _spineIds: string[],
     existingEdges: Edge[] = [],
 ): { nodes: StudioCanvasNode[]; edges: Edge[] } {
-    const repaired = repairJoinBranchChainEdges(nodes, existingEdges);
-    const sanitized = sanitizeDanglingBranchJoinReferences(repaired.nodes);
+    const filteredEdges = stripJoinBranchChainEdges(nodes, existingEdges);
+    const sanitized = sanitizeDanglingBranchJoinReferences(nodes);
     const stripped = stripLegacyBranchNextTaskId(sanitized);
-    const branchSanitized = sanitizeBranchSpineConflicts(stripped, repaired.edges);
-    const layoutNodes = repairOrphanBranchSplitLayout(branchSanitized, repaired.edges);
-    const chainEdges = sanitizeInvalidBranchChainEdges(layoutNodes, repaired.edges);
+    const branchSanitized = sanitizeBranchSpineConflicts(stripped, filteredEdges);
+    const layoutNodes = repairOrphanBranchSplitLayout(branchSanitized, filteredEdges);
+    const chainEdges = sanitizeInvalidBranchChainEdges(layoutNodes, filteredEdges);
     const resolvedSpine = resolveMainSpineIds(layoutNodes, chainEdges);
     const withAddTask = layoutNodes.some((node) => node.id === ADD_TASK_NODE_ID)
         ? layoutNodes
@@ -244,39 +244,13 @@ function updateBranchTaskParameters(
     });
 }
 
-/** Branch-chain edges to JOIN nodes are invalid — convert to endTaskId + split/join link. */
-function repairJoinBranchChainEdges(
-    nodes: StudioCanvasNode[],
-    edges: Edge[],
-): { nodes: StudioCanvasNode[]; edges: Edge[] } {
-    let nextNodes = nodes;
-    const removeIds = new Set<string>();
-
-    for (const edge of edges) {
-        if (!isBranchChainEdgeId(edge.id)) continue;
+/** Branch-chain edges to JOIN nodes are invalid — drop them (validation rejects on save). */
+function stripJoinBranchChainEdges(nodes: StudioCanvasNode[], edges: Edge[]): Edge[] {
+    return edges.filter((edge) => {
+        if (!isBranchChainEdgeId(edge.id)) return true;
         const targetNode = getTaskNodes(nodes).find((node) => node.id === edge.target);
-        if (!targetNode || targetNode.data.type !== 'JOIN') continue;
-
-        const branchData = findBranchTaskForChainTask(nodes, edge.source, edges);
-        if (!branchData) continue;
-
-        const branchIndex = resolveBranchIndexForEndTask(branchData, edge.source, edges);
-        if (branchIndex === null) continue;
-
-        nextNodes = updateBranchTaskParameters(
-            nextNodes,
-            branchData.taskId,
-            writeBranchEndTaskId(branchData, branchIndex, edge.source),
-        );
-        nextNodes = syncBranchJoinPair(nextNodes, branchData.taskId, targetNode.id);
-        removeIds.add(edge.id);
-    }
-
-    if (removeIds.size === 0) return { nodes, edges };
-    return {
-        nodes: nextNodes,
-        edges: edges.filter((edge) => !removeIds.has(edge.id)),
-    };
+        return targetNode?.data.type !== 'JOIN';
+    });
 }
 
 export function definitionToFlow(
@@ -358,15 +332,15 @@ export function flowToDefinition(
         syncAllIteratorLoopBodies(nodes, edges),
         edges,
     );
-    const withEndTasks = syncBranchEndTaskIdsFromChains(syncedNodes, edges);
-    const loopBodyIds = collectAllIteratorLoopBodyTaskIds(withEndTasks, edges);
+    const loopBodyIds = collectAllIteratorLoopBodyTaskIds(syncedNodes, edges);
+    const topologyGraph = buildWorkflowGraphFromCanvas(syncedNodes, edges);
 
     const layout: Record<string, { x: number; y: number; displayName?: string }> = {};
-    const startPosition = nodePositionById(withEndTasks, WORKFLOW_START_ID);
+    const startPosition = nodePositionById(syncedNodes, WORKFLOW_START_ID);
     if (startPosition) {
         layout[WORKFLOW_START_ID] = { x: startPosition.x, y: startPosition.y };
     }
-    for (const node of getTaskNodes(withEndTasks)) {
+    for (const node of getTaskNodes(syncedNodes)) {
         if (node.position) {
             const data = node.data as TaskNodeData;
             const entry: {
@@ -389,7 +363,7 @@ export function flowToDefinition(
     const layoutWithChains = applyStudioChainOutToLayout(layout, edges);
 
     const taskPayloadById = new Map<string, WorkflowTask>();
-    for (const node of getTaskNodes(withEndTasks)) {
+    for (const node of getTaskNodes(syncedNodes)) {
         if (loopBodyIds.has(node.data.taskId)) continue;
         const data = node.data as TaskNodeData;
         const stripped =
@@ -400,7 +374,13 @@ export function flowToDefinition(
             data.type === 'ITERATOR_TASK'
                 ? normalizeIteratorParamsForExport(stripped)
                 : stripped;
-        const parameters = normalizeTaskParametersForExport(data.type as TaskType, prepared);
+        let parameters = normalizeTaskParametersForExport(data.type as TaskType, prepared);
+        if (data.type === 'JOIN') {
+            parameters = normalizeTaskParametersForExport('JOIN', {
+                ...parameters,
+                inboundTaskIds: resolveJoinInbounds(data.taskId, topologyGraph),
+            });
+        }
         const isToolTarget = edges.some((e) => (e.sourceHandle === 'tools' || e.sourceHandle?.startsWith('tool-')) && e.target === data.taskId);
         taskPayloadById.set(data.taskId, {
             isTool: isToolTarget ? true : undefined,
@@ -410,12 +390,12 @@ export function flowToDefinition(
         });
     }
 
-    const orderedIds = orderTaskIdsForExport(withEndTasks, edges);
+    const orderedIds = orderTaskIdsForExport(syncedNodes, edges);
     const tasks: WorkflowTask[] = applyRoutingDefaults(
         orderedIds
             .map((taskId) => taskPayloadById.get(taskId))
             .filter((task): task is WorkflowTask => Boolean(task)),
-        getMainSpineIdsFromEdges(withEndTasks, edges),
+        getMainSpineIdsFromEdges(syncedNodes, edges),
     );
 
     return {
@@ -621,11 +601,8 @@ export function appendJoinAtBranchEnd(
     joinDraft: TaskNodeData,
     sourceTaskId: string,
 ): { nodes: StudioCanvasNode[]; edges: Edge[] } | null {
-    const branchData = findBranchTaskForChainTask(nodes, sourceTaskId, edges);
-    if (!branchData) return null;
-
-    const branchIndex = resolveBranchIndexForEndTask(branchData, sourceTaskId, edges);
-    if (branchIndex === null) return null;
+    const sourceNode = nodes.find((node) => node.id === sourceTaskId && node.type === 'task');
+    if (!sourceNode) return null;
 
     const spineIds = getMainSpineIdsFromEdges(nodes, edges);
     const start = nodes.find((node) => node.id === WORKFLOW_START_ID);
@@ -642,23 +619,13 @@ export function appendJoinAtBranchEnd(
         position: chainContinuationPosition(anchor),
         data: {
             ...joinDraft,
-            parameters: injectParameterType('JOIN', {
-                ...joinDraft.parameters,
-                branchTaskId: branchData.taskId,
-            }),
+            parameters: injectParameterType('JOIN', addJoinInbound(joinDraft.parameters, sourceTaskId)),
         },
     };
 
-    let baseNodes = [start, ...existingTasks, joinNode, addTask].filter(
+    const baseNodes = [start, ...existingTasks, joinNode, addTask].filter(
         (node): node is StudioCanvasNode => Boolean(node),
     );
-
-    baseNodes = updateBranchTaskParameters(
-        baseNodes,
-        branchData.taskId,
-        writeBranchEndTaskId(branchData, branchIndex, sourceTaskId),
-    );
-    baseNodes = syncBranchJoinPair(baseNodes, branchData.taskId, joinDraft.taskId);
 
     return rebuildPreserving(baseNodes, spineIds, edges);
 }
@@ -870,9 +837,9 @@ export function syncWorkflowLayout(
     edges: Edge[],
     realignParents?: string[],
 ): { nodes: StudioCanvasNode[]; edges: Edge[] } {
-    const repaired = repairJoinBranchChainEdges(nodes, edges);
-    const branchSanitized = sanitizeBranchSpineConflicts(repaired.nodes, repaired.edges);
-    const spineIds = resolveMainSpineIds(branchSanitized, repaired.edges);
+    const filteredEdges = stripJoinBranchChainEdges(nodes, edges);
+    const branchSanitized = sanitizeBranchSpineConflicts(nodes, filteredEdges);
+    const spineIds = resolveMainSpineIds(branchSanitized, filteredEdges);
     let nextNodes = branchSanitized;
 
     if (realignParents && realignParents.length > 0) {
@@ -887,10 +854,9 @@ export function syncWorkflowLayout(
         }
     }
 
-    const withEndTasks = syncBranchEndTaskIdsFromChains(nextNodes, repaired.edges);
-    const withJoinLayout = repositionLinkedJoinNodes(withEndTasks, repaired.edges);
+    const withJoinLayout = repositionLinkedJoinNodes(nextNodes, filteredEdges);
 
-    return rebuildPreserving(withJoinLayout, spineIds, repaired.edges);
+    return rebuildPreserving(withJoinLayout, spineIds, filteredEdges);
 }
 
 /**

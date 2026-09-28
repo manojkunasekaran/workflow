@@ -1,0 +1,394 @@
+{
+  "connectorId": "twilio_sms",
+  "triggers": [
+    {
+      "triggerId": "new_inbound_messages",
+      "displayName": "New inbound SMS",
+      "description": "Triggers when new SMS messages are received on a phone number.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "AccountSid",
+          "label": "Account SID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "To",
+          "label": "Phone Number (To)",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://api.twilio.com/2010-04-01/Accounts/{AccountSid}/Messages.json?To={To}&PageSize=50"
+          },
+          "detection": {
+            "itemsPath": "$.messages",
+            "keyPaths": [
+              "sid"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_outbound_messages",
+      "displayName": "New outbound SMS",
+      "description": "Triggers when new outbound SMS messages are sent from a number.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "AccountSid",
+          "label": "Account SID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "From",
+          "label": "Phone Number (From)",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://api.twilio.com/2010-04-01/Accounts/{AccountSid}/Messages.json?From={From}&PageSize=50"
+          },
+          "detection": {
+            "itemsPath": "$.messages",
+            "keyPaths": [
+              "sid"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "message_status_updates",
+      "displayName": "Message status changed",
+      "description": "Triggers when SMS delivery status changes (sent, delivered, failed).",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "AccountSid",
+          "label": "Account SID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "From",
+          "label": "Phone Number (From)",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "UPDATED",
+          "http": {
+            "method": "GET",
+            "url": "https://api.twilio.com/2010-04-01/Accounts/{AccountSid}/Messages.json?From={From}&PageSize=50"
+          },
+          "detection": {
+            "itemsPath": "$.messages",
+            "keyPaths": [
+              "sid"
+            ],
+            "updateKeyPath": "status"
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_failed_messages",
+      "displayName": "Failed messages",
+      "description": "Triggers when new failed SMS messages appear.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "AccountSid",
+          "label": "Account SID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "From",
+          "label": "Phone Number (From)",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://api.twilio.com/2010-04-01/Accounts/{AccountSid}/Messages.json?From={From}&Status=failed&PageSize=50"
+          },
+          "detection": {
+            "itemsPath": "$.messages",
+            "keyPaths": [
+              "sid"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_calls",
+      "displayName": "New calls",
+      "description": "Triggers when new phone calls are logged.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "AccountSid",
+          "label": "Account SID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "To",
+          "label": "Phone Number (To)",
+          "type": "STRING",
+          "required": false,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://api.twilio.com/2010-04-01/Accounts/{AccountSid}/Calls.json?PageSize=50"
+          },
+          "detection": {
+            "itemsPath": "$.calls",
+            "keyPaths": [
+              "sid"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "call_status_updates",
+      "displayName": "Call status changed",
+      "description": "Triggers when call status changes (ringing, in-progress, completed).",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "AccountSid",
+          "label": "Account SID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "UPDATED",
+          "http": {
+            "method": "GET",
+            "url": "https://api.twilio.com/2010-04-01/Accounts/{AccountSid}/Calls.json?PageSize=50"
+          },
+          "detection": {
+            "itemsPath": "$.calls",
+            "keyPaths": [
+              "sid"
+            ],
+            "updateKeyPath": "status"
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "inbound_sms",
+      "displayName": "Inbound SMS received",
+      "description": "Registers an SMS webhook URL on a Twilio phone number.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "AccountSid",
+          "label": "Account SID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "PhoneNumberSid",
+          "label": "Phone Number SID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.twilio.com/2010-04-01/Accounts/{AccountSid}/IncomingPhoneNumbers/{PhoneNumberSid}.json",
+            "body": "SmsUrl={{callbackUrl}}&SmsMethod=POST"
+          },
+          "unsubscribeHttp": {
+            "method": "POST",
+            "url": "https://api.twilio.com/2010-04-01/Accounts/{AccountSid}/IncomingPhoneNumbers/{PhoneNumberSid}.json",
+            "body": "SmsUrl="
+          },
+          "subscriptionIdPath": "$.sid",
+          "inbound": {
+            "verificationMode": "NONE",
+            "eventIdPath": "$.MessageSid",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "inbound_sms_status",
+      "displayName": "SMS status callback",
+      "description": "Registers a status callback URL for SMS delivery updates.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "AccountSid",
+          "label": "Account SID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "PhoneNumberSid",
+          "label": "Phone Number SID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.twilio.com/2010-04-01/Accounts/{AccountSid}/IncomingPhoneNumbers/{PhoneNumberSid}.json",
+            "body": "StatusCallback={{callbackUrl}}&StatusCallbackMethod=POST"
+          },
+          "unsubscribeHttp": {
+            "method": "POST",
+            "url": "https://api.twilio.com/2010-04-01/Accounts/{AccountSid}/IncomingPhoneNumbers/{PhoneNumberSid}.json",
+            "body": "StatusCallback="
+          },
+          "subscriptionIdPath": "$.sid",
+          "inbound": {
+            "verificationMode": "NONE",
+            "eventIdPath": "$.MessageSid",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "inbound_voice",
+      "displayName": "Incoming call",
+      "description": "Registers a voice webhook URL for incoming calls.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "AccountSid",
+          "label": "Account SID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "PhoneNumberSid",
+          "label": "Phone Number SID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.twilio.com/2010-04-01/Accounts/{AccountSid}/IncomingPhoneNumbers/{PhoneNumberSid}.json",
+            "body": "VoiceUrl={{callbackUrl}}&VoiceMethod=POST"
+          },
+          "unsubscribeHttp": {
+            "method": "POST",
+            "url": "https://api.twilio.com/2010-04-01/Accounts/{AccountSid}/IncomingPhoneNumbers/{PhoneNumberSid}.json",
+            "body": "VoiceUrl="
+          },
+          "subscriptionIdPath": "$.sid",
+          "inbound": {
+            "verificationMode": "NONE",
+            "eventIdPath": "$.CallSid",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "call_status_callback",
+      "displayName": "Call status callback",
+      "description": "Registers a status callback URL for voice call events.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "AccountSid",
+          "label": "Account SID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "PhoneNumberSid",
+          "label": "Phone Number SID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.twilio.com/2010-04-01/Accounts/{AccountSid}/IncomingPhoneNumbers/{PhoneNumberSid}.json",
+            "body": "StatusCallback={{callbackUrl}}&StatusCallbackMethod=POST"
+          },
+          "unsubscribeHttp": {
+            "method": "POST",
+            "url": "https://api.twilio.com/2010-04-01/Accounts/{AccountSid}/IncomingPhoneNumbers/{PhoneNumberSid}.json",
+            "body": "StatusCallback="
+          },
+          "subscriptionIdPath": "$.sid",
+          "inbound": {
+            "verificationMode": "NONE",
+            "eventIdPath": "$.CallSid",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    }
+  ]
+}

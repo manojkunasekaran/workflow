@@ -1,0 +1,566 @@
+{
+  "connectorId": "jira",
+  "triggers": [
+    {
+      "triggerId": "new_issues",
+      "displayName": "New issues",
+      "description": "Triggers when new issues are created in a project.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "cloudId",
+          "label": "Cloud ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "projectKey",
+          "label": "Project Key",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "POST",
+            "url": "https://api.atlassian.com/ex/jira/{cloudId}/rest/api/3/search",
+            "body": "{\"jql\":\"project = {projectKey} ORDER BY created DESC\",\"maxResults\":50,\"fields\":[\"summary\",\"status\",\"created\"]}"
+          },
+          "detection": {
+            "itemsPath": "$.issues",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "updated_issues",
+      "displayName": "Updated issues",
+      "description": "Triggers when issues are updated in a project.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "cloudId",
+          "label": "Cloud ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "projectKey",
+          "label": "Project Key",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "UPDATED",
+          "http": {
+            "method": "POST",
+            "url": "https://api.atlassian.com/ex/jira/{cloudId}/rest/api/3/search",
+            "body": "{\"jql\":\"project = {projectKey} ORDER BY updated DESC\",\"maxResults\":50,\"fields\":[\"summary\",\"status\",\"updated\"]}"
+          },
+          "detection": {
+            "itemsPath": "$.issues",
+            "keyPaths": [
+              "id"
+            ],
+            "updateKeyPath": "fields.updated"
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_comments",
+      "displayName": "New comments",
+      "description": "Triggers when new comments are added to issues.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "cloudId",
+          "label": "Cloud ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "issueIdOrKey",
+          "label": "Issue ID or Key",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://api.atlassian.com/ex/jira/{cloudId}/rest/api/3/issue/{issueIdOrKey}/comment?maxResults=50&orderBy=-created"
+          },
+          "detection": {
+            "itemsPath": "$.comments",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_sprints",
+      "displayName": "New sprints",
+      "description": "Triggers when new sprints are created on a board.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "cloudId",
+          "label": "Cloud ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "boardId",
+          "label": "Board ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://api.atlassian.com/ex/jira/{cloudId}/rest/agile/1.0/board/{boardId}/sprint?state=active,future"
+          },
+          "detection": {
+            "itemsPath": "$.values",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_worklogs",
+      "displayName": "New worklogs",
+      "description": "Triggers when new worklogs are added to an issue.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "cloudId",
+          "label": "Cloud ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "issueIdOrKey",
+          "label": "Issue ID or Key",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://api.atlassian.com/ex/jira/{cloudId}/rest/api/3/issue/{issueIdOrKey}/worklog?maxResults=50"
+          },
+          "detection": {
+            "itemsPath": "$.worklogs",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_attachments",
+      "displayName": "New attachments",
+      "description": "Triggers when new attachments are added to an issue.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "cloudId",
+          "label": "Cloud ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "issueIdOrKey",
+          "label": "Issue ID or Key",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://api.atlassian.com/ex/jira/{cloudId}/rest/api/3/issue/{issueIdOrKey}?fields=attachment"
+          },
+          "detection": {
+            "itemsPath": "$.fields.attachment",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "issue_created",
+      "displayName": "Issue created",
+      "description": "Triggers when a new issue is created.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "cloudId",
+          "label": "Cloud ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "projectKey",
+          "label": "Project Key",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.atlassian.com/ex/jira/{cloudId}/rest/api/3/webhook",
+            "body": "{\"url\":\"{{callbackUrl}}\",\"webhooks\":[{\"events\":[\"jira:issue_created\"],\"jqlFilter\":\"project = {projectKey}\"}]}"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://api.atlassian.com/ex/jira/{cloudId}/rest/api/3/webhook?webhookIds={{subscriptionId}}"
+          },
+          "subscriptionIdPath": "$.webhookRegistrationResult[0].createdWebhookId",
+          "inbound": {
+            "verificationMode": "NONE",
+            "eventIdPath": "$.issue.id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "issue_updated",
+      "displayName": "Issue updated",
+      "description": "Triggers when an issue is updated.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "cloudId",
+          "label": "Cloud ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "projectKey",
+          "label": "Project Key",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.atlassian.com/ex/jira/{cloudId}/rest/api/3/webhook",
+            "body": "{\"url\":\"{{callbackUrl}}\",\"webhooks\":[{\"events\":[\"jira:issue_updated\"],\"jqlFilter\":\"project = {projectKey}\"}]}"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://api.atlassian.com/ex/jira/{cloudId}/rest/api/3/webhook?webhookIds={{subscriptionId}}"
+          },
+          "subscriptionIdPath": "$.webhookRegistrationResult[0].createdWebhookId",
+          "inbound": {
+            "verificationMode": "NONE",
+            "eventIdPath": "$.issue.id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "issue_deleted",
+      "displayName": "Issue deleted",
+      "description": "Triggers when an issue is deleted.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "cloudId",
+          "label": "Cloud ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "projectKey",
+          "label": "Project Key",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.atlassian.com/ex/jira/{cloudId}/rest/api/3/webhook",
+            "body": "{\"url\":\"{{callbackUrl}}\",\"webhooks\":[{\"events\":[\"jira:issue_deleted\"],\"jqlFilter\":\"project = {projectKey}\"}]}"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://api.atlassian.com/ex/jira/{cloudId}/rest/api/3/webhook?webhookIds={{subscriptionId}}"
+          },
+          "subscriptionIdPath": "$.webhookRegistrationResult[0].createdWebhookId",
+          "inbound": {
+            "verificationMode": "NONE",
+            "eventIdPath": "$.issue.id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "comment_created",
+      "displayName": "Comment created",
+      "description": "Triggers when a comment is added to an issue.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "cloudId",
+          "label": "Cloud ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "projectKey",
+          "label": "Project Key",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.atlassian.com/ex/jira/{cloudId}/rest/api/3/webhook",
+            "body": "{\"url\":\"{{callbackUrl}}\",\"webhooks\":[{\"events\":[\"comment_created\"],\"jqlFilter\":\"project = {projectKey}\"}]}"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://api.atlassian.com/ex/jira/{cloudId}/rest/api/3/webhook?webhookIds={{subscriptionId}}"
+          },
+          "subscriptionIdPath": "$.webhookRegistrationResult[0].createdWebhookId",
+          "inbound": {
+            "verificationMode": "NONE",
+            "eventIdPath": "$.comment.id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "sprint_started",
+      "displayName": "Sprint started",
+      "description": "Triggers when a sprint is started.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "cloudId",
+          "label": "Cloud ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "projectKey",
+          "label": "Project Key",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.atlassian.com/ex/jira/{cloudId}/rest/api/3/webhook",
+            "body": "{\"url\":\"{{callbackUrl}}\",\"webhooks\":[{\"events\":[\"sprint_started\"],\"jqlFilter\":\"project = {projectKey}\"}]}"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://api.atlassian.com/ex/jira/{cloudId}/rest/api/3/webhook?webhookIds={{subscriptionId}}"
+          },
+          "subscriptionIdPath": "$.webhookRegistrationResult[0].createdWebhookId",
+          "inbound": {
+            "verificationMode": "NONE",
+            "eventIdPath": "$.sprint.id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "sprint_closed",
+      "displayName": "Sprint closed",
+      "description": "Triggers when a sprint is closed.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "cloudId",
+          "label": "Cloud ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "projectKey",
+          "label": "Project Key",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.atlassian.com/ex/jira/{cloudId}/rest/api/3/webhook",
+            "body": "{\"url\":\"{{callbackUrl}}\",\"webhooks\":[{\"events\":[\"sprint_closed\"],\"jqlFilter\":\"project = {projectKey}\"}]}"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://api.atlassian.com/ex/jira/{cloudId}/rest/api/3/webhook?webhookIds={{subscriptionId}}"
+          },
+          "subscriptionIdPath": "$.webhookRegistrationResult[0].createdWebhookId",
+          "inbound": {
+            "verificationMode": "NONE",
+            "eventIdPath": "$.sprint.id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "worklog_created",
+      "displayName": "Worklog created",
+      "description": "Triggers when a worklog is added to an issue.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "cloudId",
+          "label": "Cloud ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "projectKey",
+          "label": "Project Key",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.atlassian.com/ex/jira/{cloudId}/rest/api/3/webhook",
+            "body": "{\"url\":\"{{callbackUrl}}\",\"webhooks\":[{\"events\":[\"worklog_created\"],\"jqlFilter\":\"project = {projectKey}\"}]}"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://api.atlassian.com/ex/jira/{cloudId}/rest/api/3/webhook?webhookIds={{subscriptionId}}"
+          },
+          "subscriptionIdPath": "$.webhookRegistrationResult[0].createdWebhookId",
+          "inbound": {
+            "verificationMode": "NONE",
+            "eventIdPath": "$.worklog.id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "board_configuration_changed",
+      "displayName": "Board configuration changed",
+      "description": "Triggers when board configuration changes.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "cloudId",
+          "label": "Cloud ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "projectKey",
+          "label": "Project Key",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.atlassian.com/ex/jira/{cloudId}/rest/api/3/webhook",
+            "body": "{\"url\":\"{{callbackUrl}}\",\"webhooks\":[{\"events\":[\"board_configuration_changed\"],\"jqlFilter\":\"project = {projectKey}\"}]}"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://api.atlassian.com/ex/jira/{cloudId}/rest/api/3/webhook?webhookIds={{subscriptionId}}"
+          },
+          "subscriptionIdPath": "$.webhookRegistrationResult[0].createdWebhookId",
+          "inbound": {
+            "verificationMode": "NONE",
+            "eventIdPath": "$.timestamp",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    }
+  ]
+}

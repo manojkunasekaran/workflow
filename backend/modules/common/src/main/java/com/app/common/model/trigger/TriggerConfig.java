@@ -29,4 +29,8 @@ public class TriggerConfig {
 
     /** Schedule-specific config. Only relevant when type = SCHEDULE. */
     private ScheduleConfig schedule;
+
+    /** Poll-specific config. Only relevant when type = POLL. */
+    private PollConfig poll;
 }
+

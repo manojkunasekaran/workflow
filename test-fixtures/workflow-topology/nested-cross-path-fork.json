@@ -1,0 +1,79 @@
+{
+  "name": "nested-cross-path-fork",
+  "graph": {
+    "tasks": {
+      "outer": {
+        "type": "BRANCH",
+        "parameters": {
+          "branches": [
+            { "branchName": "Path 1", "startTaskId": "http" },
+            { "branchName": "Path 2", "startTaskId": "wait2" },
+            { "branchName": "Path 3", "startTaskId": "script" }
+          ]
+        }
+      },
+      "inner": {
+        "type": "BRANCH",
+        "parameters": {
+          "branches": [
+            { "branchName": "Branch 1", "startTaskId": "transform" },
+            { "branchName": "Branch 2", "startTaskId": "wait3" }
+          ]
+        }
+      },
+      "http": { "type": "HTTP_TASK", "parameters": {} },
+      "transform": { "type": "DATA_TRANSFORM", "parameters": {} },
+      "wait2": { "type": "WAIT", "parameters": {} },
+      "wait3": { "type": "WAIT", "parameters": {} },
+      "script": { "type": "SCRIPT", "parameters": {} }
+    },
+    "chainOut": {
+      "http": "inner",
+      "wait2": "wait3",
+      "script": "wait3"
+    }
+  },
+  "expectations": {
+    "resolveBranchForkWires": [
+      {
+        "branchTaskId": "outer",
+        "rowIndex": 0,
+        "targetTaskId": "http",
+        "label": "Path 1",
+        "sourceHandle": "par-0"
+      },
+      {
+        "branchTaskId": "outer",
+        "rowIndex": 1,
+        "targetTaskId": "wait2",
+        "label": "Path 2",
+        "sourceHandle": "par-1"
+      },
+      {
+        "branchTaskId": "outer",
+        "rowIndex": 2,
+        "targetTaskId": "script",
+        "label": "Path 3",
+        "sourceHandle": "par-2"
+      },
+      {
+        "branchTaskId": "inner",
+        "rowIndex": 0,
+        "targetTaskId": "transform",
+        "label": "Branch 1",
+        "sourceHandle": "par-0"
+      },
+      {
+        "branchTaskId": "inner",
+        "rowIndex": 1,
+        "targetTaskId": "wait3",
+        "label": "Branch 2",
+        "sourceHandle": "par-1"
+      }
+    ],
+    "isValidBranchForkTarget": {
+      "inner:wait3": true,
+      "inner:outer": false
+    }
+  }
+}

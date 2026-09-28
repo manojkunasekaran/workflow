@@ -22,6 +22,7 @@ public class ConnectorManifest {
     private VerifyAction verifyAction;
     private OAuth2Config oauth2Config;
     private List<ConnectorAction> actions;
+    private List<ConnectorTrigger> triggers;
     private boolean enabled = true;
     private boolean systemConnectionConfigured; // Added for phase 4, transient field representing env var presence
 }

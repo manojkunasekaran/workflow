@@ -1,13 +1,17 @@
-
 services:
+
+  # ── Infrastructure ──────────────────────────────────────────────────────────
+
   qa-mongo:
     image: mongo:latest
     ports:
       - "27017:27017"
+
   qa-redis:
     image: redis:latest
     ports:
       - "6379:6379"
+
   qa-neo4j:
     image: neo4j:latest
     environment:
@@ -15,6 +19,7 @@ services:
     ports:
       - "7687:7687"
       - "7474:7474"
+
   qa-postgres:
     image: postgres:latest
     environment:
@@ -22,3 +27,51 @@ services:
     ports:
       - "5432:5432"
 
+  # ── Test runners ────────────────────────────────────────────────────────────
+  # Shared fixtures live at repo-root test-fixtures/ (not mounted on dev compose).
+
+  qa-build-libs:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.build-libs
+    volumes:
+      - ./backend:/app
+      - ./test-fixtures:/app/test-fixtures
+      - maven-repo:/root/.m2
+    restart: "no"
+
+  qa-backend-test:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.build-libs
+    volumes:
+      - ./backend:/app
+      - ./test-fixtures:/app/test-fixtures
+      - maven-repo:/root/.m2
+    entrypoint: ["sh", "-c"]
+    command: ["mvn -N install -DskipTests && mvn -f modules/pom.xml test"]
+    restart: "no"
+
+  qa-frontend-unit:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./frontend:/app
+      - ./test-fixtures:/test-fixtures
+      - /app/node_modules
+    entrypoint: ["yarn", "test:unit:run"]
+    restart: "no"
+
+  qa-frontend-e2e:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.test
+    volumes:
+      - ./frontend:/app
+      - ./test-fixtures:/test-fixtures
+      - /app/node_modules
+    restart: "no"
+
+volumes:
+  maven-repo:
