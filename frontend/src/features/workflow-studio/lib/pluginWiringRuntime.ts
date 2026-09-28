@@ -59,12 +59,6 @@ export type RouteEdgeData = {
     strokeColor?: string;
 };
 
-function workflowContextFromNodes(nodes: StudioCanvasNode[]): WireGraphContext {
-    return {
-        workflowTasks: getTaskNodes(nodes).map((node) => node.data as TaskNodeData),
-    };
-}
-
 function getWiring(type: string): TaskPluginWiring {
     return getTaskTypePlugin(type)?.wiring ?? DEFAULT_TASK_WIRING;
 }
@@ -756,7 +750,7 @@ export function applyGraphConnection(
 export function applyRouteEdgeRemoval(
     edge: Edge,
     nodes: StudioCanvasNode[],
-    chainEdges: Edge[] = [],
+    _chainEdges: Edge[] = [],
 ): StudioCanvasNode[] | null {
     if (!isRouteEdgeId(edge.id)) return null;
     const { source, sourceHandle, target, targetHandle } = edge;

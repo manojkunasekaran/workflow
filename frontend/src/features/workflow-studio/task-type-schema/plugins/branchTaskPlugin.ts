@@ -101,7 +101,7 @@ export const branchTaskPlugin = defineTaskPlugin({
             secondary: 'Fan-out only',
         };
     },
-    executionSummary({ parameters, executionData }) {
+    executionSummary({ executionData }) {
         const data = recordFromUnknown(executionData);
         const branchIds = Array.isArray(data?.branchIds) ? data.branchIds : [];
         return {

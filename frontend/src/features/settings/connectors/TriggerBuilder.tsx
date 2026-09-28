@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { ConnectorTrigger } from '@/api/connectorApi';
-import type { PollEventSemantics, WebhookConfig } from '@/types/api';
+import type { PollConfig, PollEventSemantics, WebhookConfig } from '@/types/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -45,6 +45,9 @@ function emptyTrigger(triggerType: 'POLL' | 'WEBHOOK'): ConnectorTrigger {
             preset: {
                 poll: {
                     semantics: 'NEW_ITEMS',
+                    schedule: { mode: 'FIXED_INTERVAL', intervalSeconds: 300 },
+                    epoch: 'NOW',
+                    runMode: 'PER_ITEM',
                     http: { method: 'GET', url: '' },
                     detection: { keyPaths: ['id'] },
                 },
@@ -121,13 +124,14 @@ export default function TriggerBuilder({ triggers, onChange }: TriggerBuilderPro
         setConfirmDeleteIndex(null);
     };
 
-    const updatePollPreset = (patch: Record<string, unknown>) => {
-        if (!editingTrigger) return;
+    const updatePollPreset = (patch: Partial<PollConfig>) => {
+        if (!editingTrigger?.preset?.poll) return;
+        const poll: PollConfig = { ...editingTrigger.preset.poll, ...patch };
         setEditingTrigger({
             ...editingTrigger,
             preset: {
                 ...editingTrigger.preset,
-                poll: { ...editingTrigger.preset?.poll, ...patch },
+                poll,
             },
         });
     };
@@ -338,7 +342,9 @@ export default function TriggerBuilder({ triggers, onChange }: TriggerBuilderPro
                                             <Label className="text-xs">Semantics</Label>
                                             <Select
                                                 value={editingTrigger.preset?.poll?.semantics ?? 'NEW_ITEMS'}
-                                                onValueChange={(val) => updatePollPreset({ semantics: val })}
+                                                onValueChange={(val) =>
+                                                    updatePollPreset({ semantics: val as PollEventSemantics })
+                                                }
                                             >
                                                 <SelectTrigger className="h-9">
                                                     <SelectValue />

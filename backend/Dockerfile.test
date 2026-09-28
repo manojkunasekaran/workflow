@@ -1,0 +1,10 @@
+# =============================================================================
+# Backend test runner — run via docker compose -f docker-compose-qa.yml
+# =============================================================================
+
+FROM maven:3.9.6-eclipse-temurin-21
+
+WORKDIR /app
+
+# Install parent POM, then run the full reactor test suite (modules + services).
+CMD ["sh", "-c", "mvn -N install -DskipTests && mvn test"]

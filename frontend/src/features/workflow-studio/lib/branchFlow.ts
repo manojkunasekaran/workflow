@@ -38,16 +38,6 @@ function routingParentIconHeight(parentType: string | undefined, outputCount: nu
     return studioIconBoxHeight(outputCount, true);
 }
 
-function branchChainTip(startId: string, edges: Edge[]): string {
-    let current = startId;
-    while (true) {
-        const next = edges.find((edge) => isBranchChainEdgeId(edge.id) && edge.source === current)
-            ?.target;
-        if (!next) return current;
-        current = next;
-    }
-}
-
 function resolveBranchTipTaskId(
     branchData: TaskNodeData,
     index: number,
