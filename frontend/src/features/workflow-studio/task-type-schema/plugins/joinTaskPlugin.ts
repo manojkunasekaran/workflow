@@ -2,7 +2,7 @@ import { Merge } from 'lucide-react';
 import { defineTaskPlugin } from '../pluginTypes';
 import { normalizeOptionalTaskRef } from '../taskRefs';
 import { JOIN_FAILURE_STRATEGIES } from './shared';
-import type { JoinMergeMode, JoinWaitPolicy, TaskParameterErrors, TaskValidationContext } from '../types';
+import type { JoinMergeMode, JoinWaitPolicy, TaskParameterErrors } from '../types';
 import { JOIN_TASK_WIRING } from './wiring';
 import { formatDurationMs, formatPrimitive, recordFromUnknown } from '@/features/executions/lib/executionSummaryUtils';
 
