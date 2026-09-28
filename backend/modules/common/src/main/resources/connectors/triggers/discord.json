@@ -1,0 +1,389 @@
+{
+  "connectorId": "discord",
+  "triggers": [
+    {
+      "triggerId": "new_channel_messages",
+      "displayName": "New channel messages",
+      "description": "Triggers when new messages appear in a Discord channel.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "channelId",
+          "label": "Channel ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://discord.com/api/v10/channels/{channelId}/messages?limit=100"
+          },
+          "detection": {
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "updated_channel_messages",
+      "displayName": "Updated channel messages",
+      "description": "Triggers when existing messages are edited in a channel.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "channelId",
+          "label": "Channel ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "UPDATED",
+          "http": {
+            "method": "GET",
+            "url": "https://discord.com/api/v10/channels/{channelId}/messages?limit=100"
+          },
+          "detection": {
+            "keyPaths": [
+              "id"
+            ],
+            "updateKeyPath": "edited_timestamp"
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_thread_messages",
+      "displayName": "New thread messages",
+      "description": "Triggers when new messages are posted in a thread.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "channelId",
+          "label": "Channel ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://discord.com/api/v10/channels/{channelId}/threads/active"
+          },
+          "detection": {
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_guild_members",
+      "displayName": "New guild members",
+      "description": "Triggers when new members join a Discord server.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "guildId",
+          "label": "Guild ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://discord.com/api/v10/guilds/{guildId}/members?limit=1000"
+          },
+          "detection": {
+            "keyPaths": [
+              "user.id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_guild_channels",
+      "displayName": "New guild channels",
+      "description": "Triggers when new channels are created in a server.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "guildId",
+          "label": "Guild ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://discord.com/api/v10/guilds/{guildId}/channels"
+          },
+          "detection": {
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_guild_roles",
+      "displayName": "New guild roles",
+      "description": "Triggers when new roles are created in a server.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "guildId",
+          "label": "Guild ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://discord.com/api/v10/guilds/{guildId}/roles"
+          },
+          "detection": {
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_guild_bans",
+      "displayName": "New guild bans",
+      "description": "Triggers when users are banned from a server.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "guildId",
+          "label": "Guild ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://discord.com/api/v10/guilds/{guildId}/bans?limit=1000"
+          },
+          "detection": {
+            "keyPaths": [
+              "user.id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "interaction_slash_command",
+      "displayName": "Slash command used",
+      "description": "Registers the interactions endpoint for slash commands.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "application_id",
+          "label": "Application ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "PATCH",
+            "url": "https://discord.com/api/v10/applications/{application_id}",
+            "body": "{\"interactions_endpoint_url\":\"{{callbackUrl}}\"}"
+          },
+          "unsubscribeHttp": {
+            "method": "PATCH",
+            "url": "https://discord.com/api/v10/applications/{application_id}",
+            "body": "{\"interactions_endpoint_url\":null}"
+          },
+          "subscriptionIdPath": "$.id",
+          "inbound": {
+            "verificationMode": "NONE",
+            "eventIdPath": "$.id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "interaction_button_click",
+      "displayName": "Button clicked",
+      "description": "Registers the interactions endpoint for button components.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "application_id",
+          "label": "Application ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "PATCH",
+            "url": "https://discord.com/api/v10/applications/{application_id}",
+            "body": "{\"interactions_endpoint_url\":\"{{callbackUrl}}\"}"
+          },
+          "unsubscribeHttp": {
+            "method": "PATCH",
+            "url": "https://discord.com/api/v10/applications/{application_id}",
+            "body": "{\"interactions_endpoint_url\":null}"
+          },
+          "subscriptionIdPath": "$.id",
+          "inbound": {
+            "verificationMode": "NONE",
+            "eventIdPath": "$.id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "interaction_select_menu",
+      "displayName": "Select menu used",
+      "description": "Registers the interactions endpoint for select menu components.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "application_id",
+          "label": "Application ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "PATCH",
+            "url": "https://discord.com/api/v10/applications/{application_id}",
+            "body": "{\"interactions_endpoint_url\":\"{{callbackUrl}}\"}"
+          },
+          "unsubscribeHttp": {
+            "method": "PATCH",
+            "url": "https://discord.com/api/v10/applications/{application_id}",
+            "body": "{\"interactions_endpoint_url\":null}"
+          },
+          "subscriptionIdPath": "$.id",
+          "inbound": {
+            "verificationMode": "NONE",
+            "eventIdPath": "$.id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "interaction_modal_submit",
+      "displayName": "Modal submitted",
+      "description": "Registers the interactions endpoint for modal submissions.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "application_id",
+          "label": "Application ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "PATCH",
+            "url": "https://discord.com/api/v10/applications/{application_id}",
+            "body": "{\"interactions_endpoint_url\":\"{{callbackUrl}}\"}"
+          },
+          "unsubscribeHttp": {
+            "method": "PATCH",
+            "url": "https://discord.com/api/v10/applications/{application_id}",
+            "body": "{\"interactions_endpoint_url\":null}"
+          },
+          "subscriptionIdPath": "$.id",
+          "inbound": {
+            "verificationMode": "NONE",
+            "eventIdPath": "$.id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "interaction_autocomplete",
+      "displayName": "Autocomplete requested",
+      "description": "Registers the interactions endpoint for autocomplete interactions.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "application_id",
+          "label": "Application ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "PATCH",
+            "url": "https://discord.com/api/v10/applications/{application_id}",
+            "body": "{\"interactions_endpoint_url\":\"{{callbackUrl}}\"}"
+          },
+          "unsubscribeHttp": {
+            "method": "PATCH",
+            "url": "https://discord.com/api/v10/applications/{application_id}",
+            "body": "{\"interactions_endpoint_url\":null}"
+          },
+          "subscriptionIdPath": "$.id",
+          "inbound": {
+            "verificationMode": "NONE",
+            "eventIdPath": "$.id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    }
+  ]
+}

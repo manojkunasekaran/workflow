@@ -156,10 +156,35 @@ describe('Workflow Graph Utilities', () => {
       expect(res).toBeDefined();
     });
 
-    it('E-013: appendJoinAtBranchEnd — creates JOIN node linked to upstream BRANCH', () => {
-      const initial = definitionToFlow({ id: 'wf-1', name: 'wf', tasks: [{ taskId: 'fork1', type: 'FORK_JOIN', forkTasks: [], parameters: {} }] } as any);
-      const res = appendJoinAtBranchEnd(initial.nodes, initial.edges, 'fork1');
+    it('E-013: appendJoinAtBranchEnd — creates JOIN with source in inboundTaskIds', () => {
+      const initial = definitionToFlow({
+        id: 'wf-1',
+        name: 'wf',
+        tasks: [
+          {
+            taskId: 'branch1',
+            type: 'BRANCH',
+            parameters: {
+              branches: [{ branchName: 'A', startTaskId: 'tip1' }],
+            },
+          },
+          { taskId: 'tip1', type: 'HTTP_TASK', parameters: { url: 'https://example.com' } },
+        ],
+      } as any);
+      const res = appendJoinAtBranchEnd(
+        initial.nodes,
+        initial.edges,
+        {
+          taskId: 'join1',
+          type: 'JOIN',
+          displayName: 'Join',
+          parameters: { inboundTaskIds: [], nextTaskId: '' },
+        } as any,
+        'tip1',
+      );
       expect(res).toBeDefined();
+      const joinNode = getTaskNodes(res!.nodes).find((node) => node.id === 'join1');
+      expect(joinNode?.data.parameters.inboundTaskIds).toEqual(['tip1']);
     });
   });
 
@@ -176,9 +201,14 @@ describe('Workflow Graph Utilities', () => {
       expect(res).toBeNull();
     });
 
-    it('E-015: appendJoinAtBranchEnd with no upstream BRANCH node — returns null', () => {
+    it('E-015: appendJoinAtBranchEnd with missing source task — returns null', () => {
       const initial = definitionToFlow({ id: 'wf-1', name: 'wf', tasks: [{ taskId: 't1', type: 'WAIT', parameters: {} }] } as any);
-      const res = appendJoinAtBranchEnd(initial.nodes, initial.edges, 't1');
+      const res = appendJoinAtBranchEnd(
+        initial.nodes,
+        initial.edges,
+        { taskId: 'join1', type: 'JOIN', displayName: 'Join', parameters: {} } as any,
+        'missing',
+      );
       expect(res).toBeNull();
     });
 

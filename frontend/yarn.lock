@@ -900,6 +900,11 @@
   dependencies:
     "@babel/runtime" "^7.12.5"
 
+"@testing-library/user-event@^14.6.1":
+  version "14.6.7"
+  resolved "https://registry.yarnpkg.com/@testing-library/user-event/-/user-event-14.6.7.tgz#c453ccfcaffed110cc79048ed18fccb0f4224f3b"
+  integrity sha512-MPCpX8bxe8zS+JmmTwLp8jd0dy1rAm60Te/SL8JrQM3qvQJcBOs1d7IefJMyZzqM3EWBrDn/LWDt1BCGu4ASfg==
+
 "@types/aria-query@^5.0.1":
   version "5.0.4"
   resolved "https://registry.yarnpkg.com/@types/aria-query/-/aria-query-5.0.4.tgz#1a31c3d378850d2778dabb6374d036dcba4ba708"
@@ -2666,11 +2671,6 @@ react-router-dom@^7.10.1:
   dependencies:
     react-router "7.18.2"
 
-react-virtuoso@^4.18.13:
-  version "4.18.13"
-  resolved "https://registry.yarnpkg.com/react-virtuoso/-/react-virtuoso-4.18.13.tgz#bce98859a172ce99b7863c55c0832c2a8568a354"
-  integrity sha512-M4kP7zbV7JmLrnJYs0X2FBA8gnNlHisSYuKMyeJVYtWz31CAJeP57dgPJzfneUdKDKmL9SiqvcBQ32si8CfQSQ==
-
 react-router@7.18.2:
   version "7.18.2"
   resolved "https://registry.yarnpkg.com/react-router/-/react-router-7.18.2.tgz#a76c46ce9e5edacd4f51289d5a71f71305db9152"
@@ -2686,6 +2686,11 @@ react-style-singleton@^2.2.2, react-style-singleton@^2.2.3:
   dependencies:
     get-nonce "^1.0.0"
     tslib "^2.0.0"
+
+react-virtuoso@^4.18.13:
+  version "4.18.13"
+  resolved "https://registry.yarnpkg.com/react-virtuoso/-/react-virtuoso-4.18.13.tgz#bce98859a172ce99b7863c55c0832c2a8568a354"
+  integrity sha512-M4kP7zbV7JmLrnJYs0X2FBA8gnNlHisSYuKMyeJVYtWz31CAJeP57dgPJzfneUdKDKmL9SiqvcBQ32si8CfQSQ==
 
 react@^19.2.0:
   version "19.2.8"

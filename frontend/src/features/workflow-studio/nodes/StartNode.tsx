@@ -1,11 +1,16 @@
 import { memo } from 'react';
 import { type NodeProps } from '@xyflow/react';
-import { Play, Webhook, Clock } from 'lucide-react';
+import { Play, Webhook, Clock, RefreshCw, PlugZap } from 'lucide-react';
 import { MAIN_OUT } from '@/features/workflow-studio/lib/graphHandles';
 import { EdgePortHandle } from '@/features/workflow-studio/nodes/EdgePortHandle';
 import { StudioNodeShell } from '@/features/workflow-studio/nodes/StudioNodeShell';
 import { useCanvasActions } from '@/features/workflow-studio/CanvasActionsContext';
-import { TRIGGER_ACCENT_COLOR, WEBHOOK_ACCENT_COLOR, SCHEDULE_ACCENT_COLOR } from '@/features/workflow-studio/constants/studioNodeTheme';
+import {
+    TRIGGER_ACCENT_COLOR,
+    WEBHOOK_ACCENT_COLOR,
+    SCHEDULE_ACCENT_COLOR,
+    POLL_ACCENT_COLOR,
+} from '@/features/workflow-studio/constants/studioNodeTheme';
 import { studioIconBoxHeight, studioTaskNodeHeight } from '@/features/workflow-studio/constants/taskNodeLayout';
 import type { TriggerConfig } from '@/types/api';
 
@@ -28,13 +33,18 @@ function StartNodeComponent({ data, selected }: NodeProps & { data: StartNodeDat
     let defaultLabel = 'Manual Trigger';
 
     if (triggerType === 'WEBHOOK') {
-        Icon = Webhook;
+        const subscribeMode = data.triggerConfig?.webhook?.deliveryMode === 'SUBSCRIBE';
+        Icon = subscribeMode ? PlugZap : Webhook;
         accentColor = WEBHOOK_ACCENT_COLOR;
-        defaultLabel = 'Webhook Trigger';
+        defaultLabel = subscribeMode ? 'App registers for you' : 'Webhook';
     } else if (triggerType === 'SCHEDULE') {
         Icon = Clock;
         accentColor = SCHEDULE_ACCENT_COLOR;
         defaultLabel = 'Schedule Trigger';
+    } else if (triggerType === 'POLL') {
+        Icon = RefreshCw;
+        accentColor = POLL_ACCENT_COLOR;
+        defaultLabel = 'Poll Trigger';
     }
 
     const label = data.label || defaultLabel;

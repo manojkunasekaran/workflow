@@ -1,0 +1,425 @@
+{
+  "connectorId": "stripe",
+  "triggers": [
+    {
+      "triggerId": "payment_intent_succeeded",
+      "displayName": "Payment intent succeeded",
+      "description": "Triggers when a payment intent succeeds.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.stripe.com/v1/webhook_endpoints",
+            "body": "url={{callbackUrl}}&enabled_events[]=payment_intent.succeeded"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://api.stripe.com/v1/webhook_endpoints/{{subscriptionId}}"
+          },
+          "subscriptionIdPath": "$.id",
+          "inbound": {
+            "verificationMode": "HMAC_SHA256",
+            "headerName": "Stripe-Signature",
+            "eventIdPath": "$.id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "payment_intent_failed",
+      "displayName": "Payment intent failed",
+      "description": "Triggers when a payment intent fails.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.stripe.com/v1/webhook_endpoints",
+            "body": "url={{callbackUrl}}&enabled_events[]=payment_intent.payment_failed"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://api.stripe.com/v1/webhook_endpoints/{{subscriptionId}}"
+          },
+          "subscriptionIdPath": "$.id",
+          "inbound": {
+            "verificationMode": "HMAC_SHA256",
+            "headerName": "Stripe-Signature",
+            "eventIdPath": "$.id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "charge_succeeded",
+      "displayName": "Charge succeeded",
+      "description": "Triggers when a charge succeeds.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.stripe.com/v1/webhook_endpoints",
+            "body": "url={{callbackUrl}}&enabled_events[]=charge.succeeded"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://api.stripe.com/v1/webhook_endpoints/{{subscriptionId}}"
+          },
+          "subscriptionIdPath": "$.id",
+          "inbound": {
+            "verificationMode": "HMAC_SHA256",
+            "headerName": "Stripe-Signature",
+            "eventIdPath": "$.id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "charge_failed",
+      "displayName": "Charge failed",
+      "description": "Triggers when a charge fails.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.stripe.com/v1/webhook_endpoints",
+            "body": "url={{callbackUrl}}&enabled_events[]=charge.failed"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://api.stripe.com/v1/webhook_endpoints/{{subscriptionId}}"
+          },
+          "subscriptionIdPath": "$.id",
+          "inbound": {
+            "verificationMode": "HMAC_SHA256",
+            "headerName": "Stripe-Signature",
+            "eventIdPath": "$.id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "customer_created",
+      "displayName": "Customer created",
+      "description": "Triggers when a new customer is created.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.stripe.com/v1/webhook_endpoints",
+            "body": "url={{callbackUrl}}&enabled_events[]=customer.created"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://api.stripe.com/v1/webhook_endpoints/{{subscriptionId}}"
+          },
+          "subscriptionIdPath": "$.id",
+          "inbound": {
+            "verificationMode": "HMAC_SHA256",
+            "headerName": "Stripe-Signature",
+            "eventIdPath": "$.id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "customer_updated",
+      "displayName": "Customer updated",
+      "description": "Triggers when a customer is updated.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.stripe.com/v1/webhook_endpoints",
+            "body": "url={{callbackUrl}}&enabled_events[]=customer.updated"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://api.stripe.com/v1/webhook_endpoints/{{subscriptionId}}"
+          },
+          "subscriptionIdPath": "$.id",
+          "inbound": {
+            "verificationMode": "HMAC_SHA256",
+            "headerName": "Stripe-Signature",
+            "eventIdPath": "$.id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "customer_deleted",
+      "displayName": "Customer deleted",
+      "description": "Triggers when a customer is deleted.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.stripe.com/v1/webhook_endpoints",
+            "body": "url={{callbackUrl}}&enabled_events[]=customer.deleted"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://api.stripe.com/v1/webhook_endpoints/{{subscriptionId}}"
+          },
+          "subscriptionIdPath": "$.id",
+          "inbound": {
+            "verificationMode": "HMAC_SHA256",
+            "headerName": "Stripe-Signature",
+            "eventIdPath": "$.id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "invoice_paid",
+      "displayName": "Invoice paid",
+      "description": "Triggers when an invoice is paid.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.stripe.com/v1/webhook_endpoints",
+            "body": "url={{callbackUrl}}&enabled_events[]=invoice.paid"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://api.stripe.com/v1/webhook_endpoints/{{subscriptionId}}"
+          },
+          "subscriptionIdPath": "$.id",
+          "inbound": {
+            "verificationMode": "HMAC_SHA256",
+            "headerName": "Stripe-Signature",
+            "eventIdPath": "$.id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "invoice_payment_failed",
+      "displayName": "Invoice payment failed",
+      "description": "Triggers when an invoice payment fails.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.stripe.com/v1/webhook_endpoints",
+            "body": "url={{callbackUrl}}&enabled_events[]=invoice.payment_failed"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://api.stripe.com/v1/webhook_endpoints/{{subscriptionId}}"
+          },
+          "subscriptionIdPath": "$.id",
+          "inbound": {
+            "verificationMode": "HMAC_SHA256",
+            "headerName": "Stripe-Signature",
+            "eventIdPath": "$.id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "subscription_created",
+      "displayName": "Subscription created",
+      "description": "Triggers when a subscription is created.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.stripe.com/v1/webhook_endpoints",
+            "body": "url={{callbackUrl}}&enabled_events[]=customer.subscription.created"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://api.stripe.com/v1/webhook_endpoints/{{subscriptionId}}"
+          },
+          "subscriptionIdPath": "$.id",
+          "inbound": {
+            "verificationMode": "HMAC_SHA256",
+            "headerName": "Stripe-Signature",
+            "eventIdPath": "$.id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "subscription_updated",
+      "displayName": "Subscription updated",
+      "description": "Triggers when a subscription is updated.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.stripe.com/v1/webhook_endpoints",
+            "body": "url={{callbackUrl}}&enabled_events[]=customer.subscription.updated"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://api.stripe.com/v1/webhook_endpoints/{{subscriptionId}}"
+          },
+          "subscriptionIdPath": "$.id",
+          "inbound": {
+            "verificationMode": "HMAC_SHA256",
+            "headerName": "Stripe-Signature",
+            "eventIdPath": "$.id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "subscription_deleted",
+      "displayName": "Subscription deleted",
+      "description": "Triggers when a subscription is cancelled or deleted.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.stripe.com/v1/webhook_endpoints",
+            "body": "url={{callbackUrl}}&enabled_events[]=customer.subscription.deleted"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://api.stripe.com/v1/webhook_endpoints/{{subscriptionId}}"
+          },
+          "subscriptionIdPath": "$.id",
+          "inbound": {
+            "verificationMode": "HMAC_SHA256",
+            "headerName": "Stripe-Signature",
+            "eventIdPath": "$.id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "checkout_session_completed",
+      "displayName": "Checkout session completed",
+      "description": "Triggers when a Checkout session is completed.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.stripe.com/v1/webhook_endpoints",
+            "body": "url={{callbackUrl}}&enabled_events[]=checkout.session.completed"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://api.stripe.com/v1/webhook_endpoints/{{subscriptionId}}"
+          },
+          "subscriptionIdPath": "$.id",
+          "inbound": {
+            "verificationMode": "HMAC_SHA256",
+            "headerName": "Stripe-Signature",
+            "eventIdPath": "$.id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "refund_created",
+      "displayName": "Refund created",
+      "description": "Triggers when a refund is created.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.stripe.com/v1/webhook_endpoints",
+            "body": "url={{callbackUrl}}&enabled_events[]=charge.refunded"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://api.stripe.com/v1/webhook_endpoints/{{subscriptionId}}"
+          },
+          "subscriptionIdPath": "$.id",
+          "inbound": {
+            "verificationMode": "HMAC_SHA256",
+            "headerName": "Stripe-Signature",
+            "eventIdPath": "$.id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "dispute_created",
+      "displayName": "Dispute created",
+      "description": "Triggers when a payment dispute is created.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.stripe.com/v1/webhook_endpoints",
+            "body": "url={{callbackUrl}}&enabled_events[]=charge.dispute.created"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://api.stripe.com/v1/webhook_endpoints/{{subscriptionId}}"
+          },
+          "subscriptionIdPath": "$.id",
+          "inbound": {
+            "verificationMode": "HMAC_SHA256",
+            "headerName": "Stripe-Signature",
+            "eventIdPath": "$.id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    }
+  ]
+}

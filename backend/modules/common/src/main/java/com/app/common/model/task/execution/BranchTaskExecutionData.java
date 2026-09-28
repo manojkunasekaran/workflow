@@ -26,8 +26,8 @@ public class BranchTaskExecutionData implements TaskExecutionData {
     /** IDs of the branches that were created (for tracking/correlation). */
     private List<String> branchIds;
 
-    /** ID of the JOIN task that will gather branches (may be null). */
-    private String joinTaskId;
+    /** Display names of the branch rows that were spawned. */
+    private List<String> branchNames;
 
     /** Timestamp when branches were spawned. */
     private Instant branchStartTime;
@@ -42,7 +42,7 @@ public class BranchTaskExecutionData implements TaskExecutionData {
         Map<String, Object> output = new HashMap<>();
         output.put("branchesCreated", branchesCreated);
         output.put("branchIds", branchIds);
-        output.put("joinTaskId", joinTaskId);
+        output.put("branchNames", branchNames);
         return output;
     }
 }

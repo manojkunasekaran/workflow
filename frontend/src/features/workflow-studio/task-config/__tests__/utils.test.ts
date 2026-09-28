@@ -1,6 +1,13 @@
 // Should read the rules before creating/updating the test files
 import { describe, it, expect } from 'vitest';
-import { waitPartsToMs, msToWaitParts, formatWaitPreview } from '../waitDuration';
+import {
+    waitPartsToMs,
+    waitPartsToSeconds,
+    msToWaitParts,
+    secondsToWaitParts,
+    formatWaitPreview,
+    formatIntervalSecondsPreview,
+} from '../waitDuration';
 import { formatTaskOptionLabel, filterTaskPickCandidates, taskLabelById } from '../taskRefUtils';
 import type { TaskValidationContext } from '@/features/workflow-studio/task-type-schema/types';
 
@@ -26,6 +33,15 @@ describe('Task Config Utils', () => {
     it('waitPartsToMs converts back to ms', () => {
       expect(waitPartsToMs(90, 'seconds')).toBe(90000);
       expect(waitPartsToMs(2, 'minutes')).toBe(120000);
+    });
+
+    it('supports days unit for interval conversion', () => {
+      expect(waitPartsToMs(2, 'days')).toBe(172800000);
+      expect(waitPartsToSeconds(2, 'days')).toBe(172800);
+      expect(msToWaitParts(172800000)).toEqual({ amount: 2, unit: 'days' });
+      expect(secondsToWaitParts(172800)).toEqual({ amount: 2, unit: 'days' });
+      expect(formatIntervalSecondsPreview(3600)).toBe('Approximately every 1 hr');
+      expect(formatWaitPreview(172800000)).toBe('2 days');
     });
   });
 

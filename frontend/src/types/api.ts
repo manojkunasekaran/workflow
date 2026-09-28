@@ -49,12 +49,35 @@ export interface VariableValue {
     value?: any;
 }
 
-export type TriggerType = 'MANUAL' | 'WEBHOOK' | 'SCHEDULE';
+export type TriggerType = 'MANUAL' | 'WEBHOOK' | 'SCHEDULE' | 'POLL';
+
+export type WebhookDeliveryMode = 'PASSIVE' | 'SUBSCRIBE';
+
+export type WebhookVerificationMode = 'NONE' | 'HEADER_SECRET' | 'HMAC_SHA256' | 'CHALLENGE';
+
+export interface WebhookInboundConfig {
+    verificationMode?: WebhookVerificationMode;
+    headerName?: string;
+    secret?: string;
+    eventIdPath?: string;
+    payloadPath?: string;
+    ignoreDuplicates?: boolean;
+    challengeQueryParam?: string;
+    challengeResponseField?: string;
+}
 
 export interface WebhookConfig {
+    deliveryMode?: WebhookDeliveryMode;
     path?: string;
     method?: string;
     active?: boolean;
+    inbound?: WebhookInboundConfig;
+    subscribeHttp?: PollHttpConfig;
+    unsubscribeHttp?: PollHttpConfig;
+    subscriptionIdPath?: string;
+    connectorId?: string;
+    connectorTriggerId?: string;
+    connectorInputs?: Record<string, string>;
 }
 
 export interface ScheduleConfig {
@@ -63,10 +86,66 @@ export interface ScheduleConfig {
     active?: boolean;
 }
 
+export type PollScheduleMode = 'FIXED_INTERVAL' | 'CRON';
+export type PollEventSemantics = 'NEW_ITEMS' | 'UPDATED' | 'NEW_OR_UPDATED' | 'RESPONSE_CHANGED';
+export type PollEpoch = 'NOW' | 'ALL' | 'FROM_DATE';
+export type PollRunMode = 'PER_ITEM' | 'BATCH';
+
+export interface PollScheduleConfig {
+    mode: PollScheduleMode;
+    intervalSeconds?: number;
+    cronExpression?: string;
+    timezone?: string;
+}
+
+export interface PollHttpConfig {
+    url?: string;
+    method?: string;
+    headers?: Record<string, string>;
+    body?: string;
+    timeoutMs?: number;
+    credentialId?: string;
+}
+
+export type UniqueKeyMode = 'FIELD' | 'CONTENT_HASH';
+
+export interface ChangeDetectionConfig {
+    itemsPath?: string;
+    keyPaths?: string[];
+    updateKeyPath?: string;
+    hashIgnorePaths?: string[];
+    uniqueKeyMode?: UniqueKeyMode;
+    contentHashPaths?: string[];
+    timestampPath?: string;
+    maxItemsPerPoll?: number;
+}
+
+export interface PollFilter {
+    field?: string;
+    operator?: string;
+    value?: unknown;
+}
+
+export interface PollConfig {
+    active?: boolean;
+    schedule: PollScheduleConfig;
+    semantics: PollEventSemantics;
+    epoch: PollEpoch;
+    epochDate?: string;
+    runMode: PollRunMode;
+    http: PollHttpConfig;
+    detection?: ChangeDetectionConfig;
+    filters?: PollFilter[];
+    connectorId?: string;
+    connectorTriggerId?: string;
+    connectorInputs?: Record<string, string>;
+}
+
 export interface TriggerConfig {
     type?: TriggerType;
     webhook?: WebhookConfig;
     schedule?: ScheduleConfig;
+    poll?: PollConfig;
 }
 
 export interface WorkflowDefinition {

@@ -1,6 +1,7 @@
 package com.app.persistence.entity;
 
 import com.app.common.connector.ConnectorAction;
+import com.app.common.connector.ConnectorTrigger;
 import com.app.common.connector.ConnectorAuthType;
 import com.app.common.connector.ConnectorScope;
 import com.app.common.connector.CredentialGuide;
@@ -46,7 +47,8 @@ public class ConnectorManifestEntity {
     private VerifyAction verifyAction;
     
     private List<ConnectorAction> actions;
-    
+    private List<ConnectorTrigger> triggers;
+
     private boolean enabled = true;
     
     private String createdBy;

@@ -1,0 +1,120 @@
+{
+  "connectorId": "mailchimp",
+  "triggers": [
+    {
+      "triggerId": "new_subscribers",
+      "displayName": "New subscribers",
+      "description": "Triggers when new subscribers are added to a list.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {"key": "dc", "label": "Data Center", "type": "STRING", "required": true, "description": "From API key suffix (e.g. us6)", "supportsExpression": false},
+        {"key": "listId", "label": "List ID", "type": "STRING", "required": true, "supportsExpression": false}
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {"method": "GET", "url": "https://{dc}.api.mailchimp.com/3.0/lists/{listId}/members?count=100&status=subscribed"},
+          "detection": {"itemsPath": "$.members", "keyPaths": ["id"]}
+        }
+      }
+    },
+    {
+      "triggerId": "new_unsubscribes",
+      "displayName": "New unsubscribes",
+      "description": "Triggers when subscribers unsubscribe from a list.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {"key": "dc", "label": "Data Center", "type": "STRING", "required": true, "supportsExpression": false},
+        {"key": "listId", "label": "List ID", "type": "STRING", "required": true, "supportsExpression": false}
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {"method": "GET", "url": "https://{dc}.api.mailchimp.com/3.0/lists/{listId}/members?count=100&status=unsubscribed"},
+          "detection": {"itemsPath": "$.members", "keyPaths": ["id"]}
+        }
+      }
+    },
+    {
+      "triggerId": "new_campaigns",
+      "displayName": "New campaigns",
+      "description": "Triggers when new campaigns are created.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {"key": "dc", "label": "Data Center", "type": "STRING", "required": true, "supportsExpression": false}
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {"method": "GET", "url": "https://{dc}.api.mailchimp.com/3.0/campaigns?count=100&status=sent,save,schedule"},
+          "detection": {"itemsPath": "$.campaigns", "keyPaths": ["id"]}
+        }
+      }
+    },
+    {
+      "triggerId": "new_automations",
+      "displayName": "New automations",
+      "description": "Triggers when new automations are created.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {"key": "dc", "label": "Data Center", "type": "STRING", "required": true, "supportsExpression": false}
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {"method": "GET", "url": "https://{dc}.api.mailchimp.com/3.0/automations?count=100"},
+          "detection": {"itemsPath": "$.automations", "keyPaths": ["id"]}
+        }
+      }
+    },
+    {
+      "triggerId": "new_templates",
+      "displayName": "New templates",
+      "description": "Triggers when new email templates are created.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {"key": "dc", "label": "Data Center", "type": "STRING", "required": true, "supportsExpression": false}
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {"method": "GET", "url": "https://{dc}.api.mailchimp.com/3.0/templates?count=100"},
+          "detection": {"itemsPath": "$.templates", "keyPaths": ["id"]}
+        }
+      }
+    },
+    {
+      "triggerId": "new_lists",
+      "displayName": "New lists",
+      "description": "Triggers when new audience lists are created.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {"key": "dc", "label": "Data Center", "type": "STRING", "required": true, "supportsExpression": false}
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {"method": "GET", "url": "https://{dc}.api.mailchimp.com/3.0/lists?count=100"},
+          "detection": {"itemsPath": "$.lists", "keyPaths": ["id"]}
+        }
+      }
+    },
+    {
+      "triggerId": "new_segments",
+      "displayName": "New segments",
+      "description": "Triggers when new segments are created on a list.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {"key": "dc", "label": "Data Center", "type": "STRING", "required": true, "supportsExpression": false},
+        {"key": "listId", "label": "List ID", "type": "STRING", "required": true, "supportsExpression": false}
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {"method": "POST", "url": "https://{dc}.api.mailchimp.com/3.0/lists/{listId}/segments", "body": "{\"count\":100}"},
+          "detection": {"itemsPath": "$.segments", "keyPaths": ["id"]}
+        }
+      }
+    }
+  ]
+}

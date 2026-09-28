@@ -1,11 +1,12 @@
-import { useState, useRef } from 'react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { connectorApi, type ConnectorManifest, type ConnectorAuthType } from '@/api/connectorApi';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Save, ArrowLeft, Loader2, Globe, Lock, KeyRound, User, Shield, AlertCircle, CheckCircle2, ImageIcon, Upload } from 'lucide-react';
+import { Globe, Lock, KeyRound, User, Shield, ImageIcon, Upload } from 'lucide-react';
 import ActionBuilder from './ActionBuilder';
+import TriggerBuilder from './TriggerBuilder';
 
 // --- Constants ---------------------------------------------------------------
 
@@ -44,18 +45,35 @@ const EMPTY_MANIFEST: Omit<ConnectorManifest, 'scope'> = {
     baseUrl: '',
     authType: 'NONE',
     actions: [],
+    triggers: [],
     enabled: true,
 };
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
+export interface ConnectorBuilderHeaderState {
+    isSaving: boolean;
+    isDirty: boolean;
+    saveStatus: 'idle' | 'success' | 'error';
+    saveError: string | null;
+    title: string;
+}
+
+export interface ConnectorBuilderHandle {
+    save: () => void;
+}
+
 interface ConnectorBuilderProps {
     scope: 'SYSTEM' | 'TENANT';
     initialData?: ConnectorManifest | null;
-    onBack: () => void;
+    onSaved: () => void;
+    onHeaderStateChange?: (state: ConnectorBuilderHeaderState) => void;
 }
 
-export default function ConnectorBuilder({ scope, initialData, onBack }: ConnectorBuilderProps) {
+const ConnectorBuilder = forwardRef<ConnectorBuilderHandle, ConnectorBuilderProps>(function ConnectorBuilder(
+    { scope, initialData, onSaved, onHeaderStateChange },
+    ref,
+) {
     const [manifest, setManifest] = useState<ConnectorManifest>(
         initialData ?? { ...EMPTY_MANIFEST, scope }
     );
@@ -77,6 +95,17 @@ export default function ConnectorBuilder({ scope, initialData, onBack }: Connect
     };
 
     const isEditing = !!initialData;
+    const pageTitle = manifest.displayName.trim() || (isEditing ? manifest.displayName : 'New Connector');
+
+    useEffect(() => {
+        onHeaderStateChange?.({
+            isSaving,
+            isDirty,
+            saveStatus,
+            saveError,
+            title: pageTitle,
+        });
+    }, [isSaving, isDirty, saveStatus, saveError, pageTitle, onHeaderStateChange]);
 
     const handleChange = <K extends keyof ConnectorManifest>(field: K, value: ConnectorManifest[K]) => {
         setManifest(prev => ({ ...prev, [field]: value }));
@@ -93,7 +122,7 @@ export default function ConnectorBuilder({ scope, initialData, onBack }: Connect
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleSave = async () => {
+    const handleSave = useCallback(async () => {
         if (!validate()) return;
         setIsSaving(true);
         setSaveStatus('idle');
@@ -104,41 +133,66 @@ export default function ConnectorBuilder({ scope, initialData, onBack }: Connect
                 payload.connectorId = slugify(payload.displayName);
             }
 
-            // Ensure all actions have an actionId silently generated
             if (payload.actions) {
                 payload.actions = payload.actions.map((a, idx) => {
                     const actionId = a.actionId || slugify(a.displayName) || `action_${idx + 1}`;
-                    
-                    // Also ensure all input schema fields have keys
+
                     const inputSchema = (a.inputSchema || []).map((f, fIdx) => ({
                         ...f,
-                        key: f.key || slugify(f.label) || `field_${fIdx + 1}`
+                        key: f.key || slugify(f.label) || `field_${fIdx + 1}`,
                     }));
 
                     return {
                         ...a,
                         actionId,
-                        inputSchema
+                        inputSchema,
                     };
                 });
             }
-            
-            // Route to admin API if the connector is a SYSTEM connector
-            const effectiveScope = manifest.scope || scope;
-            
-            if (effectiveScope === 'SYSTEM') {
-                isEditing
-                    ? await connectorApi.adminUpdate(payload.connectorId, payload)
-                    : await connectorApi.adminCreate(payload);
-            } else {
-                isEditing
-                    ? await connectorApi.update(payload.connectorId, payload)
-                    : await connectorApi.create(payload);
+
+            if (payload.triggers) {
+                payload.triggers = payload.triggers.map((t, idx) => {
+                    const triggerId = t.triggerId || slugify(t.displayName) || `trigger_${idx + 1}`;
+                    const inputSchema = (t.inputSchema || []).map((f, fIdx) => ({
+                        ...f,
+                        key: f.key || slugify(f.label) || `field_${fIdx + 1}`,
+                    }));
+
+                    const preset = t.preset
+                        ? {
+                            ...t.preset,
+                            webhook: t.preset.webhook
+                                ? { ...t.preset.webhook, deliveryMode: 'SUBSCRIBE' as const }
+                                : undefined,
+                        }
+                        : undefined;
+
+                    return {
+                        ...t,
+                        triggerId,
+                        inputSchema,
+                        preset,
+                    };
+                });
             }
-            setManifest(payload); // update local state with generated ID
+
+            const effectiveScope = manifest.scope || scope;
+
+            if (effectiveScope === 'SYSTEM') {
+                if (isEditing) {
+                    await connectorApi.adminUpdate(payload.connectorId, payload);
+                } else {
+                    await connectorApi.adminCreate(payload);
+                }
+            } else if (isEditing) {
+                await connectorApi.update(payload.connectorId, payload);
+            } else {
+                await connectorApi.create(payload);
+            }
+            setManifest(payload);
             setSaveStatus('success');
             setIsDirty(false);
-            setTimeout(() => onBack(), 800);
+            setTimeout(() => onSaved(), 800);
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'An unknown error occurred. Please try again.';
             setSaveStatus('error');
@@ -146,60 +200,14 @@ export default function ConnectorBuilder({ scope, initialData, onBack }: Connect
         } finally {
             setIsSaving(false);
         }
-    };
+    }, [isEditing, manifest, onSaved, scope]);
 
-    const handleBack = () => {
-        if (isDirty && !confirm('You have unsaved changes. Leave without saving?')) return;
-        onBack();
-    };
+    useImperativeHandle(ref, () => ({ save: handleSave }), [handleSave]);
 
     const authInfo = AUTH_TYPE_INFO[manifest.authType];
 
     return (
         <div className="space-y-8 pb-16">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <Button variant="ghost" size="icon" onClick={handleBack} aria-label="Back">
-                        <ArrowLeft className="h-4 w-4" />
-                    </Button>
-                    <div>
-                        <h2 className="text-xl font-semibold tracking-tight">
-                            {isEditing ? manifest.displayName : 'New Connector'}
-                        </h2>
-                        <p className="text-sm text-muted-foreground mt-0.5">
-                            {isEditing
-                                ? `Editing system integration • ${manifest.actions?.length || 0} action${(manifest.actions?.length || 0) !== 1 ? 's' : ''}`
-                                : 'Define a new API integration and its callable actions.'}
-                        </p>
-                    </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                    {saveStatus === 'success' && (
-                        <span className="flex items-center gap-1.5 text-sm text-emerald-600 dark:text-emerald-400">
-                            <CheckCircle2 className="h-4 w-4" /> Saved
-                        </span>
-                    )}
-                    <Button onClick={handleSave} disabled={isSaving} className="gap-2 min-w-[120px]">
-                        {isSaving
-                            ? <><Loader2 className="h-4 w-4 animate-spin" /> Saving...</>
-                            : <><Save className="h-4 w-4" /> Save</>}
-                    </Button>
-                </div>
-            </div>
-
-            {/* Save error banner */}
-            {saveStatus === 'error' && saveError && (
-                <div className="flex items-start gap-3 p-4 rounded-lg border border-destructive/30 bg-destructive/10 text-destructive text-sm">
-                    <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
-                    <div>
-                        <p className="font-medium">Failed to save connector</p>
-                        <p className="text-xs mt-0.5 opacity-80">{saveError}</p>
-                    </div>
-                </div>
-            )}
-
             {/* Section 1: Identity */}
             <section className="space-y-5">
                 <div className="border-b pb-2">
@@ -344,7 +352,18 @@ export default function ConnectorBuilder({ scope, initialData, onBack }: Connect
                 </div>
             </section>
 
-            {/* Section 3: Actions */}
+            {/* Section 3: Triggers */}
+            <section className="space-y-5">
+                <div className="border-b pb-2">
+                    <h3 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">Triggers</h3>
+                </div>
+                <TriggerBuilder
+                    triggers={manifest.triggers ?? []}
+                    onChange={triggers => handleChange('triggers', triggers)}
+                />
+            </section>
+
+            {/* Section 4: Actions */}
             <section className="space-y-5">
                 <div className="border-b pb-2">
                     <h3 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">Actions</h3>
@@ -356,7 +375,9 @@ export default function ConnectorBuilder({ scope, initialData, onBack }: Connect
             </section>
         </div>
     );
-}
+});
+
+export default ConnectorBuilder;
 
 
 

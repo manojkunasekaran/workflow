@@ -89,10 +89,7 @@ export default function ActionBuilder({ actions, onChange }: ActionBuilderProps)
 
             {(actions?.length || 0) === 0 ? (
                 <div className="p-8 border border-dashed rounded-lg text-center bg-muted/20">
-                    <p className="text-sm text-muted-foreground mb-3">No actions defined yet.</p>
-                    <Button variant="outline" size="sm" onClick={openCreate}>
-                        <Plus className="h-3.5 w-3.5 mr-1.5" /> Create first action
-                    </Button>
+                    <p className="text-sm text-muted-foreground">No actions defined yet.</p>
                 </div>
             ) : (
                 <div className="grid gap-2">

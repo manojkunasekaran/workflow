@@ -1,0 +1,87 @@
+{
+  "connectorId": "google_sheets",
+  "triggers": [
+    {
+      "triggerId": "new_rows",
+      "displayName": "New rows",
+      "description": "Triggers when new rows are added to a sheet range.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {"key": "spreadsheetId", "label": "Spreadsheet ID", "type": "STRING", "required": true, "supportsExpression": false},
+        {"key": "range", "label": "Range (e.g. Sheet1!A:Z)", "type": "STRING", "required": true, "supportsExpression": false}
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {"method": "GET", "url": "https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}/values/{range}"},
+          "detection": {"itemsPath": "$.values", "keyPaths": ["0"], "uniqueKeyMode": "CONTENT_HASH"}
+        }
+      }
+    },
+    {
+      "triggerId": "sheet_changed",
+      "displayName": "Sheet changed",
+      "description": "Triggers when values in a sheet range change.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {"key": "spreadsheetId", "label": "Spreadsheet ID", "type": "STRING", "required": true, "supportsExpression": false},
+        {"key": "range", "label": "Range (e.g. Sheet1!A:Z)", "type": "STRING", "required": true, "supportsExpression": false}
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "RESPONSE_CHANGED",
+          "http": {"method": "GET", "url": "https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}/values/{range}"},
+          "detection": {"hashIgnorePaths": ["$.range"]}
+        }
+      }
+    },
+    {
+      "triggerId": "new_sheets",
+      "displayName": "New sheets",
+      "description": "Triggers when new sheets (tabs) are added to a spreadsheet.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {"key": "spreadsheetId", "label": "Spreadsheet ID", "type": "STRING", "required": true, "supportsExpression": false}
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {"method": "GET", "url": "https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}?fields=sheets.properties"},
+          "detection": {"itemsPath": "$.sheets", "keyPaths": ["properties.sheetId"]}
+        }
+      }
+    },
+    {
+      "triggerId": "new_named_ranges",
+      "displayName": "New named ranges",
+      "description": "Triggers when new named ranges are defined.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {"key": "spreadsheetId", "label": "Spreadsheet ID", "type": "STRING", "required": true, "supportsExpression": false}
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {"method": "GET", "url": "https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}?fields=namedRanges"},
+          "detection": {"itemsPath": "$.namedRanges", "keyPaths": ["namedRangeId"]}
+        }
+      }
+    },
+    {
+      "triggerId": "new_developer_metadata",
+      "displayName": "New developer metadata",
+      "description": "Triggers when new developer metadata entries are added.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {"key": "spreadsheetId", "label": "Spreadsheet ID", "type": "STRING", "required": true, "supportsExpression": false}
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {"method": "GET", "url": "https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}/developerMetadata"},
+          "detection": {"itemsPath": "$.developerMetadata", "keyPaths": ["metadataId"]}
+        }
+      }
+    }
+  ]
+}

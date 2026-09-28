@@ -90,6 +90,8 @@ import type { TriggerConfig } from '@/types/api';
 
 interface WorkflowCanvasProps {
     nodes: StudioCanvasNode[];
+    /** Authoritative store nodes for fork/converge route edges; avoids stale config-draft overlay. */
+    edgeTopologyNodes?: StudioCanvasNode[];
     chainEdges: Edge[];
     readOnly?: boolean;
     triggerConfig?: TriggerConfig;
@@ -114,6 +116,7 @@ interface WorkflowCanvasProps {
 
 function WorkflowCanvasInner({
     nodes,
+    edgeTopologyNodes,
     chainEdges,
     readOnly = false,
     triggerConfig,
@@ -195,8 +198,10 @@ function WorkflowCanvasInner({
             });
     }, [chainEdges, executionNodeStatuses, nodes, taskValidationErrors, triggerConfig]);
 
+    const topologyNodes = edgeTopologyNodes ?? nodes;
+
     const displayEdges = useMemo((): Edge[] => {
-        const merged = mergeDisplayEdges(chainEdges, nodes);
+        const merged = mergeDisplayEdges(chainEdges, topologyNodes);
         return merged.map((edge) => {
             const routeData = edge.data as RouteEdgeData | undefined;
             const routeKind = routeData?.routeKind;
@@ -214,11 +219,11 @@ function WorkflowCanvasInner({
                 markerEnd,
                 data: {
                     ...(edge.data ?? {}),
-                    studioActionKind: classifyStudioEdge(edge, nodes, chainEdges),
+                    studioActionKind: classifyStudioEdge(edge, topologyNodes, chainEdges),
                 },
             };
         });
-    }, [chainEdges, nodes]);
+    }, [chainEdges, topologyNodes]);
 
     const [rfNodes, setRfNodes, onRfNodesChange] = useNodesState(displayNodes);
     const [rfEdges, setRfEdges, onRfEdgesChange] = useEdgesState(displayEdges);

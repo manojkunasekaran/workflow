@@ -1,6 +1,6 @@
 import { Globe } from 'lucide-react';
 import { defineTaskPlugin } from '../pluginTypes';
-import { HTTP_METHODS } from './shared';
+import { HTTP_REQUEST_FIELDS } from './httpRequestFields';
 import {
     formatDurationMs,
     formatPrimitive,
@@ -17,45 +17,7 @@ export const httpTaskPlugin = defineTaskPlugin({
     accentColor: '#7c3aed',
     defaultTaskId: 'http_task',
     testComponent: TaskTestPanel,
-    fields: [
-        {
-            key: 'credentialId',
-            label: 'Authentication',
-            type: 'credential',
-            filterTypes: ['BEARER_TOKEN', 'BASIC_AUTH'],
-            description: 'Select a saved credential to authenticate this request automatically.',
-        },
-        {
-            key: 'method',
-            label: 'Method',
-            type: 'segmented',
-            defaultValue: 'GET',
-            options: HTTP_METHODS,
-        },
-        {
-            key: 'url',
-            label: 'URL',
-            type: 'text',
-            required: true,
-            mono: true,
-            defaultValue: 'https://api.example.com',
-            placeholder: 'https://api.example.com/resource',
-        },
-        {
-            key: 'headers',
-            label: 'Headers',
-            type: 'keyValue',
-            defaultValue: {},
-        },
-        {
-            key: 'body',
-            label: 'Body',
-            type: 'textarea',
-            mono: true,
-            rows: 6,
-            placeholder: '{"key": "value"} or plain text',
-        },
-    ],
+    fields: HTTP_REQUEST_FIELDS,
     normalize(parameters) {
         const next = { ...parameters };
         if (typeof next.body === 'string' && next.body.trim()) {

@@ -37,16 +37,18 @@ import { ITERATOR_NESTED_TYPES } from '@/features/workflow-studio/task-type-sche
 import { ITER_LOOP_OUT } from '@/features/workflow-studio/lib/graphHandles';
 import { studioRouteMarkerEnd } from '@/features/workflow-studio/edges/studioEdgeTheme';
 import {
-    findBranchTaskForChainTask,
-    readBranchEndTaskId,
-    resolveLinkedBranchData,
-    resolveBranchIndexForEndTask,
-    syncBranchJoinPair,
-    writeBranchEndTaskId,
     isInvalidParallelBranchTarget,
     collectOffSpineTaskIds,
     type WireGraphContext,
 } from '@/features/workflow-studio/lib/joinWiring';
+import {
+    addJoinInbound,
+    buildWorkflowGraphFromCanvas,
+    removeJoinInbound,
+    resolveBranchForkWires,
+    resolveJoinInbounds,
+    wireBranchFork,
+} from '@/features/workflow-studio/lib/workflowTopology';
 
 export type { WireGraphContext };
 
@@ -206,56 +208,16 @@ export function clearTaskWireReferences(
     let next = nodes;
 
     for (const node of getTaskNodes(nodes)) {
-        if (node.data.type === 'BRANCH') {
-            const branchParams = node.data.parameters;
-            const joinTaskId = String(branchParams.joinTaskId ?? '').trim();
-            let changed = false;
-            let nextParams = branchParams;
-
-            if (joinTaskId === removedTaskId) {
-                changed = true;
-                const rows = listRows(branchParams, 'branches').map((row) => ({
-                    ...row,
-                    endTaskId: null,
-                }));
-                nextParams = injectParameterType('BRANCH', {
-                    ...branchParams,
-                    joinTaskId: null,
-                    branches: rows,
-                });
-            } else {
-                const rows = listRows(branchParams, 'branches');
-                const nextRows = rows.map((row) => {
-                    if (String(row.endTaskId ?? '').trim() === removedTaskId) {
-                        changed = true;
-                        return { ...row, endTaskId: '' };
-                    }
-                    return row;
-                });
-                if (changed) {
-                    nextParams = injectParameterType('BRANCH', {
-                        ...branchParams,
-                        branches: nextRows,
-                    });
-                }
-            }
-
-            if (changed) {
-                next = updateTaskNode(next, node.id, nextParams);
-            }
-        }
-
         if (node.data.type === 'JOIN') {
             const joinParams = node.data.parameters;
-            const branchTaskId = String(joinParams.branchTaskId ?? '').trim();
-            if (branchTaskId === removedTaskId) {
+            const inboundIds = Array.isArray(joinParams.inboundTaskIds)
+                ? joinParams.inboundTaskIds.map((id) => String(id ?? '').trim())
+                : [];
+            if (inboundIds.includes(removedTaskId)) {
                 next = updateTaskNode(
                     next,
                     node.id,
-                    injectParameterType('JOIN', {
-                        ...joinParams,
-                        branchTaskId: null,
-                    }),
+                    injectParameterType('JOIN', removeJoinInbound(joinParams, removedTaskId)),
                 );
             }
         }
@@ -341,7 +303,6 @@ function defaultListRow(def: ListWireOutput, rowIndex: number): Record<string, u
         return {
             branchName: def.fallbackLabel(rowIndex),
             startTaskId: '',
-            endTaskId: '',
         };
     }
     return {
@@ -497,6 +458,24 @@ function makeRouteEdge(
     };
 }
 
+function buildBranchForkRouteEdges(nodes: StudioCanvasNode[]): Edge[] {
+    const taskIds = new Set(getTaskNodes(nodes).map((node) => node.id));
+    const graph = buildWorkflowGraphFromCanvas(nodes, []);
+    const edges: Edge[] = [];
+
+    for (const wire of resolveBranchForkWires(graph)) {
+        if (!taskIds.has(wire.branchTaskId) || !taskIds.has(wire.targetTaskId)) continue;
+        edges.push(
+            makeRouteEdge(wire.branchTaskId, wire.sourceHandle, wire.targetTaskId, MAIN_IN, {
+                label: wire.label,
+                routeKind: 'parallel',
+            }),
+        );
+    }
+
+    return edges;
+}
+
 export function buildRouteEdgesFromNodes(nodes: StudioCanvasNode[]): Edge[] {
     const edges: Edge[] = [];
 
@@ -514,6 +493,9 @@ export function buildRouteEdgesFromNodes(nodes: StudioCanvasNode[]): Edge[] {
                         routeKind: output.routeKind,
                     }),
                 );
+            } else if (type === 'BRANCH' && output.routeKind === 'parallel') {
+                // BRANCH fork routes are owned by workflowTopology.resolveBranchForkWires
+                continue;
             } else {
                 const rows = listRows(parameters, output.listParam);
                 rows.forEach((_, index) => {
@@ -550,51 +532,28 @@ export function buildRouteEdgesFromNodes(nodes: StudioCanvasNode[]): Edge[] {
         }
     }
 
-    return edges;
+    return [...edges, ...buildBranchForkRouteEdges(nodes)];
 }
 
 export function buildJoinConvergeEdges(nodes: StudioCanvasNode[]): Edge[] {
     const edges: Edge[] = [];
-    const context = workflowContextFromNodes(nodes);
     const taskIds = new Set(getTaskNodes(nodes).map((node) => node.id));
+    const graph = buildWorkflowGraphFromCanvas(nodes, []);
     const added = new Set<string>();
-
-    const pushConverge = (endTaskId: string, joinTaskId: string) => {
-        if (!endTaskId || !joinTaskId || !taskIds.has(endTaskId) || !taskIds.has(joinTaskId)) {
-            return;
-        }
-        const key = `${endTaskId}:${joinTaskId}`;
-        if (added.has(key)) return;
-        added.add(key);
-        edges.push(
-            makeRouteEdge(endTaskId, MAIN_OUT, joinTaskId, JOIN_MERGE_IN, {
-                routeKind: 'join',
-            }),
-        );
-    };
 
     for (const node of getTaskNodes(nodes)) {
         if (node.data.type !== 'JOIN') continue;
-        const joinData = node.data as TaskNodeData;
-        const branchData = resolveLinkedBranchData(joinData, context);
-        if (!branchData) continue;
-
-        const rows = listRows(branchData.parameters, 'branches');
-        rows.forEach((_, index) => {
-            pushConverge(readBranchEndTaskId(branchData, index), joinData.taskId);
-        });
-    }
-
-    for (const node of getTaskNodes(nodes)) {
-        if (node.data.type !== 'BRANCH') continue;
-        const branchData = node.data as TaskNodeData;
-        const joinTaskId = String(branchData.parameters.joinTaskId ?? '').trim();
-        if (!joinTaskId) continue;
-
-        const rows = listRows(branchData.parameters, 'branches');
-        rows.forEach((_, index) => {
-            pushConverge(readBranchEndTaskId(branchData, index), joinTaskId);
-        });
+        for (const inboundId of resolveJoinInbounds(node.id, graph)) {
+            if (!inboundId || !taskIds.has(inboundId) || !taskIds.has(node.id)) continue;
+            const key = `${inboundId}:${node.id}`;
+            if (added.has(key)) continue;
+            added.add(key);
+            edges.push(
+                makeRouteEdge(inboundId, MAIN_OUT, node.id, JOIN_MERGE_IN, {
+                    routeKind: 'join',
+                }),
+            );
+        }
     }
 
     return edges;
@@ -724,22 +683,11 @@ export function applyGraphConnection(
     }
 
     if (targetData.type === 'JOIN' && isJoinMergeInput(targetHandle) && sourceHandle === MAIN_OUT) {
-        const context = workflowContextFromNodes(nodes);
-        let branchData =
-            resolveLinkedBranchData(targetData, context) ??
-            findBranchTaskForChainTask(nodes, source, chainEdges);
-        if (!branchData) return null;
-
-        const branchIndex = resolveBranchIndexForEndTask(branchData, source, chainEdges);
-        if (branchIndex === null) return null;
-
-        let next = updateTaskNode(
-            nodes,
-            branchData.taskId,
-            writeBranchEndTaskId(branchData, branchIndex, source),
+        return updateTaskNode(
+            preparedNodes,
+            targetData.taskId,
+            injectParameterType('JOIN', addJoinInbound(targetData.parameters, source)),
         );
-        next = syncBranchJoinPair(next, branchData.taskId, targetData.taskId);
-        return next;
     }
 
     const wiring = getWiring(sourceData.type);
@@ -786,10 +734,13 @@ export function applyGraphConnection(
     if (
         sourceData.type === 'BRANCH' &&
         match.def.kind === 'list' &&
-        match.def.routeKind === 'parallel' &&
-        isInvalidParallelBranchTarget(nodes, chainEdges, source, target)
+        match.def.routeKind === 'parallel'
     ) {
-        return null;
+        if (isInvalidParallelBranchTarget(preparedNodes, chainEdges, source, target)) {
+            return null;
+        }
+        if (match.index === undefined) return null;
+        return wireBranchFork(preparedNodes, source, match.index, target);
     }
 
     const nextParams = writeTargetId(
@@ -815,19 +766,11 @@ export function applyRouteEdgeRemoval(
         const targetNode = nodes.find((n) => n.id === target && n.type === 'task');
         if (!targetNode) return null;
         const targetData = targetNode.data as TaskNodeData;
-        const context = workflowContextFromNodes(nodes);
-        const branchData =
-            resolveLinkedBranchData(targetData, context) ??
-            findBranchTaskForChainTask(nodes, source, chainEdges);
-        if (!branchData) return null;
-
-        const branchIndex = resolveBranchIndexForEndTask(branchData, source, chainEdges);
-        if (branchIndex === null) return null;
 
         return updateTaskNode(
             nodes,
-            branchData.taskId,
-            writeBranchEndTaskId(branchData, branchIndex, null),
+            targetData.taskId,
+            injectParameterType('JOIN', removeJoinInbound(targetData.parameters, source)),
         );
     }
 

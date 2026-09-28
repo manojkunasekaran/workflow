@@ -6,6 +6,7 @@ import { workflowApi } from '@/api/workflowApi';
 import type { WorkflowDefinition, WorkflowTask } from '@/types/api';
 import { PageHeader } from '@/layouts/PageHeader';
 import { Button } from '@/components/ui/button';
+import { ErrorBanner } from '@/components/ui/error-banner';
 import { Hint } from '@/components/ui/hint';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
@@ -19,13 +20,26 @@ import { taskTypeLabel } from '@/features/workflow-studio/lib/taskDisplayName';
 
 const PAGE_SIZE = 30;
 
-const VIRTUOSO_TABLE_COMPONENTS: TableComponents<WorkflowExecution> = {
-    Table: ({ style, children }) => (
-        <table style={style} className="w-full table-fixed border-separate border-spacing-0">
-            {children}
-        </table>
-    ),
-};
+function createVirtuosoTableComponents(
+    onRowClick: (execution: WorkflowExecution) => void,
+): TableComponents<WorkflowExecution> {
+    return {
+        Table: ({ style, children }) => (
+            <table style={style} className="w-full table-fixed border-separate border-spacing-0">
+                {children}
+            </table>
+        ),
+        TableRow: ({ item, children, ...props }) => (
+            <tr
+                {...props}
+                className={cn('cursor-pointer transition-colors hover:bg-muted/40', props.className)}
+                onClick={() => onRowClick(item)}
+            >
+                {children}
+            </tr>
+        ),
+    };
+}
 
 function findFailedStepId(execution: WorkflowExecution): string | null {
     const failed = execution.taskExecutionSummaries?.find(
@@ -35,7 +49,7 @@ function findFailedStepId(execution: WorkflowExecution): string | null {
 }
 
 function executionDefinitionId(execution: WorkflowExecution): string {
-    return execution.workflowDefinitionId ?? execution.workflowId;
+    return execution.workflowId;
 }
 
 function resolveWorkflowName(
@@ -144,12 +158,11 @@ function renderProgress(
 
 function triggerLabel(execution: WorkflowExecution): string {
     if (execution.targetTaskId) return 'Test';
-    const triggeredBy = execution.triggeredBy ?? 'MANUAL';
+    const triggeredBy = (execution.triggeredBy ?? 'MANUAL').toUpperCase();
+    if (triggeredBy === 'POLL') return 'Poll';
+    if (triggeredBy === 'WEBHOOK') return 'Webhook';
+    if (triggeredBy === 'WEBHOOK_SUBSCRIBE') return 'App registers';
     return triggeredBy.charAt(0).toUpperCase() + triggeredBy.slice(1).toLowerCase();
-}
-
-function executionTypeLabel(execution: WorkflowExecution): string {
-    return execution.executionType ? execution.executionType.toUpperCase() : '—';
 }
 
 export default function ExecutionsList() {
@@ -192,7 +205,8 @@ export default function ExecutionsList() {
         } catch (err) {
             console.error('Failed to load executions', err);
             if (mode === 'replace') {
-                setError('Failed to load executions');
+                setExecutions([]);
+                setError("We couldn't load executions right now.");
             } else {
                 setNextPageError('Could not load more executions');
             }
@@ -264,6 +278,11 @@ export default function ExecutionsList() {
         [executions],
     );
 
+    const virtuosoTableComponents = useMemo(
+        () => createVirtuosoTableComponents((execution) => navigate(`/executions/${execution.id}`)),
+        [navigate],
+    );
+
     const hasMore = totalPages === 0 ? false : page < totalPages - 1;
 
     const loadMore = useCallback(() => {
@@ -296,9 +315,11 @@ export default function ExecutionsList() {
 
             <div className="flex flex-1 flex-col overflow-hidden p-6">
                 {error ? (
-                    <div data-testid="executions-error-banner" className="mb-4 shrink-0 rounded-lg border border-red-200 bg-red-50 p-4 text-red-600">
-                        {error}
-                    </div>
+                    <ErrorBanner
+                        data-testid="executions-error-banner"
+                        message={error}
+                        className="mb-4 shrink-0"
+                    />
                 ) : null}
 
                 {sortedExecutions.length === 0 && !error ? (
@@ -312,7 +333,7 @@ export default function ExecutionsList() {
                             endReached={loadMore}
                             overscan={360}
                             style={{ height: '100%' }}
-                            components={VIRTUOSO_TABLE_COMPONENTS}
+                            components={virtuosoTableComponents}
                             fixedHeaderContent={() => (
                                 <tr className="border-b border-border bg-muted/50">
                                     <th className="w-[24%] px-4 py-3 text-left text-xs font-medium uppercase text-muted-foreground">
@@ -371,7 +392,6 @@ export default function ExecutionsList() {
                                         <td
                                             data-testid={`execution-row-${execution.id}`}
                                             className="border-b border-border px-4 py-3"
-                                            onClick={() => navigate(`/executions/${execution.id}`)}
                                         >
                                             <div
                                                 data-testid={`execution-workflow-name-${execution.id}`}
@@ -379,47 +399,43 @@ export default function ExecutionsList() {
                                             >
                                                 {resolveWorkflowName(execution, definitions, failedDefinitionIds)}
                                             </div>
-                                            <div className="mt-1 truncate text-xs text-muted-foreground">
-                                                {executionTypeLabel(execution)}
-                                            </div>
                                         </td>
                                         <td
                                             data-testid={`execution-status-cell-${execution.id}`}
                                             className="border-b border-border px-4 py-3"
-                                            onClick={() => navigate(`/executions/${execution.id}`)}
                                         >
                                             <ExecutionStatusBadge status={execution.status} size="lg" />
                                         </td>
-                                        <td className="border-b border-border px-4 py-3 text-sm text-muted-foreground" onClick={() => navigate(`/executions/${execution.id}`)}>
+                                        <td className="border-b border-border px-4 py-3 text-sm text-muted-foreground">
                                             {triggerLabel(execution)}
                                         </td>
-                                        <td className="border-b border-border px-4 py-3 text-sm text-muted-foreground" onClick={() => navigate(`/executions/${execution.id}`)}>
+                                        <td className="border-b border-border px-4 py-3 text-sm text-muted-foreground">
                                             {renderProgress(execution, definitions, failedDefinitionIds)}
                                         </td>
                                         <td
                                             data-testid={`execution-timestamp-${execution.id}`}
                                             className="border-b border-border px-4 py-3 text-sm text-muted-foreground"
-                                            onClick={() => navigate(`/executions/${execution.id}`)}
                                         >
                                             {formatExecutionTimestamp(execution.startTime)}
                                         </td>
                                         <td
                                             data-testid={`execution-duration-${execution.id}`}
                                             className="border-b border-border px-4 py-3 text-sm text-muted-foreground"
-                                            onClick={() => navigate(`/executions/${execution.id}`)}
                                         >
                                             {duration}
                                         </td>
                                         <td
                                             data-testid={`execution-failed-step-${execution.id}`}
                                             className="border-b border-border px-4 py-3 text-sm text-muted-foreground"
-                                            onClick={() => navigate(`/executions/${execution.id}`)}
                                         >
                                             <div className="truncate">
                                                 {renderStepLabel(execution, definitions, failedDefinitionIds)}
                                             </div>
                                         </td>
-                                        <td className="border-b border-border px-4 py-3">
+                                        <td
+                                            className="border-b border-border px-4 py-3"
+                                            onClick={(event) => event.stopPropagation()}
+                                        >
                                             <div className="flex items-center justify-end gap-1">
                                                 <Hint content="View execution details">
                                                     <Button

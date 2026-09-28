@@ -9,6 +9,7 @@ import ExecutionsList from '@/features/executions/ExecutionsList';
 import ExecutionDetail from '@/features/executions/ExecutionDetail';
 import SettingsPage from '@/features/settings/SettingsPage';
 import IntegrationsPage from '@/features/integrations/IntegrationsPage';
+import ConnectorBuilderPage from '@/features/settings/connectors/ConnectorBuilderPage';
 import CredentialsPage from '@/features/credentials/CredentialsPage';
 import OAuthCallbackPage from '@/features/oauth/OAuthCallbackPage';
 
@@ -27,6 +28,8 @@ const router = createBrowserRouter([
             { path: 'executions', element: <ExecutionsList /> },
             { path: 'executions/:id', element: <ExecutionDetail /> },
             { path: 'apps', element: <IntegrationsPage /> },
+            { path: 'apps/:connectorId', element: <ConnectorBuilderPage scope="TENANT" /> },
+            { path: 'integrations', element: <Navigate to="/apps" replace /> },
             { path: 'credentials', element: <CredentialsPage /> },
             { path: 'settings', element: <SettingsPage /> },
             { path: 'admin', element: <Navigate to="/apps" replace /> },

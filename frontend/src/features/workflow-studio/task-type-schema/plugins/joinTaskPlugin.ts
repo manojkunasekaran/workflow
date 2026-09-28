@@ -2,21 +2,22 @@ import { Merge } from 'lucide-react';
 import { defineTaskPlugin } from '../pluginTypes';
 import { normalizeOptionalTaskRef } from '../taskRefs';
 import { JOIN_FAILURE_STRATEGIES } from './shared';
-import type { TaskParameterErrors, TaskValidationContext } from '../types';
+import type { JoinMergeMode, JoinWaitPolicy, TaskParameterErrors, TaskValidationContext } from '../types';
 import { JOIN_TASK_WIRING } from './wiring';
 import { formatDurationMs, formatPrimitive, recordFromUnknown } from '@/features/executions/lib/executionSummaryUtils';
 
 const FAILURE_STRATEGY_SET = new Set<string>(JOIN_FAILURE_STRATEGIES.map((s) => s.value));
-
-function findWorkflowTask(context: TaskValidationContext | undefined, taskId: string) {
-    return context?.workflowTasks.find((task) => task.taskId === taskId);
-}
+const WAIT_POLICY_SET = new Set<JoinWaitPolicy>(['ALL', 'ANY', 'QUORUM']);
+const MERGE_MODE_SET = new Set<JoinMergeMode>(['PASS_THROUGH', 'COLLECT_OUTPUTS']);
 
 function validateJoinParameters(
     parameters: Record<string, unknown>,
     errors: TaskParameterErrors,
-    context?: TaskValidationContext,
 ): void {
+    if ('branchTaskId' in parameters) {
+        errors.branchTaskId = 'branchTaskId is no longer supported; use inboundTaskIds';
+    }
+
     const strategy = parameters.failureStrategy;
     if (
         strategy !== undefined &&
@@ -27,21 +28,35 @@ function validateJoinParameters(
         errors.failureStrategy = 'Invalid failure strategy';
     }
 
-    if (!context?.currentTaskId) return;
+    const waitPolicy = String(parameters.waitPolicy ?? 'ALL') as JoinWaitPolicy;
+    if (!WAIT_POLICY_SET.has(waitPolicy)) {
+        errors.waitPolicy = 'Invalid wait policy';
+    }
 
-    const branchTaskId = String(parameters.branchTaskId ?? '').trim();
-    if (!branchTaskId) return;
+    const mergeMode = String(parameters.mergeMode ?? 'PASS_THROUGH') as JoinMergeMode;
+    if (!MERGE_MODE_SET.has(mergeMode)) {
+        errors.mergeMode = 'Invalid merge mode';
+    }
 
-    const branchTask = findWorkflowTask(context, branchTaskId);
-    if (!branchTask || branchTask.type !== 'BRANCH') return;
+    const inboundTaskIds = Array.isArray(parameters.inboundTaskIds) ? parameters.inboundTaskIds : [];
+    const seen = new Set<string>();
+    for (let i = 0; i < inboundTaskIds.length; i += 1) {
+        const inboundId = String(inboundTaskIds[i] ?? '').trim();
+        if (!inboundId) {
+            errors[`inboundTaskIds.${i}`] = 'Inbound task ID is required';
+            continue;
+        }
+        if (seen.has(inboundId)) {
+            errors[`inboundTaskIds.${i}`] = 'Duplicate inbound task ID';
+        }
+        seen.add(inboundId);
+    }
 
-    const branchJoinTarget = branchTask.parameters.joinTaskId;
-    if (
-        branchJoinTarget != null &&
-        String(branchJoinTarget).trim() !== '' &&
-        String(branchJoinTarget) !== context.currentTaskId
-    ) {
-        errors.branchTaskId = `Split into branches task "${branchTaskId}" points to join task "${branchJoinTarget}", not this task`;
+    if (waitPolicy === 'QUORUM') {
+        const quorum = Number(parameters.quorumCount);
+        if (!Number.isInteger(quorum) || quorum < 1 || quorum > inboundTaskIds.length) {
+            errors.quorumCount = 'quorumCount must be between 1 and the number of inbounds';
+        }
     }
 }
 
@@ -54,6 +69,24 @@ export const joinTaskPlugin = defineTaskPlugin({
     wiring: JOIN_TASK_WIRING,
     fields: [
         {
+            key: 'waitPolicy',
+            label: 'Wait policy',
+            type: 'select',
+            defaultValue: 'ALL',
+            options: [
+                { label: 'All inbounds', value: 'ALL' },
+                { label: 'Any inbound', value: 'ANY' },
+                { label: 'Quorum', value: 'QUORUM' },
+            ],
+        },
+        {
+            key: 'quorumCount',
+            label: 'Quorum count',
+            type: 'number',
+            min: 1,
+            hideIf: (parameters) => parameters.waitPolicy !== 'QUORUM',
+        },
+        {
             key: 'failureStrategy',
             label: 'When branches fail',
             type: 'select',
@@ -62,31 +95,62 @@ export const joinTaskPlugin = defineTaskPlugin({
             description:
                 'Drag from each branch’s last task (Next / main-out) into the Branches input on this node.',
         },
+        {
+            key: 'mergeMode',
+            label: 'Merge mode',
+            type: 'select',
+            defaultValue: 'PASS_THROUGH',
+            options: [
+                { label: 'Pass through', value: 'PASS_THROUGH' },
+                { label: 'Collect outputs', value: 'COLLECT_OUTPUTS' },
+            ],
+        },
+        {
+            key: '_connectedInbounds',
+            label: 'Connected inbounds',
+            type: 'inboundList',
+            description: 'Tasks wired into this JOIN via the Branches input on the canvas.',
+        },
     ],
-    validate(parameters, context, errors) {
-        validateJoinParameters(parameters, errors, context);
+    validate(parameters, _context, errors) {
+        validateJoinParameters(parameters, errors);
     },
     normalize(parameters) {
         const next = { ...parameters };
-        next.branchTaskId = normalizeOptionalTaskRef(next.branchTaskId);
+        delete next.branchTaskId;
         next.nextTaskId = normalizeOptionalTaskRef(next.nextTaskId);
+        next.waitPolicy = String(next.waitPolicy ?? 'ALL');
+        next.mergeMode = String(next.mergeMode ?? 'PASS_THROUGH');
+        if (Array.isArray(next.inboundTaskIds)) {
+            next.inboundTaskIds = next.inboundTaskIds
+                .map((id) => normalizeOptionalTaskRef(id))
+                .filter((id): id is string => Boolean(id));
+        } else {
+            next.inboundTaskIds = [];
+        }
+        if (next.waitPolicy !== 'QUORUM') {
+            delete next.quorumCount;
+        }
         return next;
     },
     preview(params) {
-        const branch = params.branchTaskId ? 'connected' : 'not connected';
+        const inboundCount = Array.isArray(params.inboundTaskIds) ? params.inboundTaskIds.length : 0;
         const strategy = String(params.failureStrategy ?? 'FAIL_FAST').replace(/_/g, ' ').toLowerCase();
-        return { primary: `Split ${branch}`, secondary: strategy };
+        return {
+            primary: inboundCount === 1 ? '1 inbound' : `${inboundCount} inbounds`,
+            secondary: strategy,
+        };
     },
     executionSummary({ parameters, executionData }) {
         const data = recordFromUnknown(executionData);
-        const total = data?.totalBranches;
-        const success = data?.successfulBranches;
-        const failed = data?.failedBranches;
+        const total = data?.totalInbounds ?? data?.totalBranches;
+        const success = data?.successfulInbounds ?? data?.successfulBranches;
+        const failed = data?.failedInbounds ?? data?.failedBranches;
         const strategy = String(parameters.failureStrategy ?? 'FAIL_FAST').replace(/_/g, ' ').toLowerCase();
         return {
             lines: [
                 {
-                    label: 'Branches',
+                    label: 'Inbounds',
                     value:
                         success != null && total != null
                             ? `${String(success)} / ${String(total)} succeeded`

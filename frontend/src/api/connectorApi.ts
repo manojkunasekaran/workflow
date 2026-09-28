@@ -49,6 +49,22 @@ export interface CredentialGuide {
     fields: CredentialGuideField[];
 }
 
+export type ConnectorTriggerType = 'POLL' | 'WEBHOOK';
+
+export interface ConnectorTriggerPreset {
+    poll?: import('@/types/api').PollConfig;
+    webhook?: import('@/types/api').WebhookConfig;
+}
+
+export interface ConnectorTrigger {
+    triggerId: string;
+    displayName: string;
+    description?: string;
+    triggerType: ConnectorTriggerType;
+    inputSchema?: ConnectorInputField[];
+    preset?: ConnectorTriggerPreset;
+}
+
 export interface ConnectorAction {
     actionId: string;
     displayName: string;
@@ -110,6 +126,7 @@ export interface ConnectorManifest {
     connectionSetup?: ConnectionSetup;
     verifyAction?: VerifyAction;
     actions: ConnectorAction[];
+    triggers?: ConnectorTrigger[];
     taskType?: string;
     enabled?: boolean;
     systemConnectionConfigured?: boolean;

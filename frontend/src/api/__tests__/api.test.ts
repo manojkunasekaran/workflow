@@ -4,6 +4,9 @@ import axios from 'axios';
 import { workflowApi } from '../workflowApi';
 import { executionApi } from '../executionApi';
 import { healthApi } from '../healthApi';
+import { pollTriggerApi } from '../pollTriggerApi';
+import { webhookTriggerApi } from '../webhookTriggerApi';
+import { subscribeTriggerApi } from '../subscribeTriggerApi';
 
 vi.mock('axios');
 const mockedAxios = vi.mocked(axios, true);
@@ -37,11 +40,14 @@ describe('API Client Layer', () => {
       expect(mockedAxios.post).toHaveBeenCalledWith(expect.stringContaining('/rest/workflows'), { id: '', name: 'New WF', tasks: [] });
     });
 
-    it('C-004: workflowApi.update(id, def) sends POST payload with id', async () => {
-      mockedAxios.post.mockResolvedValueOnce({ data: { id: 'wf-1', name: 'Updated WF', tasks: [] } });
+    it('C-004: workflowApi.update(id, def) sends PUT payload', async () => {
+      mockedAxios.put.mockResolvedValueOnce({ data: { id: 'wf-1', name: 'Updated WF', tasks: [] } });
       const res = await workflowApi.update('wf-1', { id: 'wf-1', name: 'Updated WF', tasks: [] } as any);
       expect(res.name).toBe('Updated WF');
-      expect(mockedAxios.post).toHaveBeenCalledWith(expect.stringContaining('/rest/workflows'), { id: 'wf-1', name: 'Updated WF', tasks: [] });
+      expect(mockedAxios.put).toHaveBeenCalledWith(
+        expect.stringContaining('/rest/workflows/wf-1'),
+        { id: 'wf-1', name: 'Updated WF', tasks: [] },
+      );
     });
 
     it('C-005: workflowApi.delete(id) sends DELETE request to /rest/workflows/:id', async () => {
@@ -63,7 +69,10 @@ describe('API Client Layer', () => {
       mockedAxios.get.mockResolvedValueOnce({ data: { content: [{ id: 'exec-1' }], totalElements: 1 } });
       const list = await executionApi.getAll();
       expect(list).toHaveLength(1);
-      expect(mockedAxios.get).toHaveBeenCalledWith(expect.stringContaining('/rest/executions'));
+      expect(mockedAxios.get).toHaveBeenCalledWith(
+        expect.stringContaining('/rest/executions'),
+        expect.objectContaining({ params: {} }),
+      );
     });
 
     it('C-011: executionApi.getById(id) returns execution detail', async () => {
@@ -91,6 +100,130 @@ describe('API Client Layer', () => {
         actionId: 'approve',
         respondedBy: 'test@example.com',
       });
+    });
+  });
+
+  describe('Happy Path — pollTriggerApi', () => {
+    it('pollTriggerApi.testPoll(workflowId) sends POST to poll test endpoint', async () => {
+      mockedAxios.post.mockResolvedValueOnce({
+        data: {
+          success: true,
+          durationMs: 120,
+          itemsFetched: 5,
+          itemsNew: 2,
+          itemsUpdated: 0,
+          itemsSkipped: 3,
+        },
+      });
+      const res = await pollTriggerApi.testPoll('wf-1');
+      expect(res.itemsFetched).toBe(5);
+      expect(res.itemsNew).toBe(2);
+      expect(mockedAxios.post).toHaveBeenCalledWith(
+        expect.stringContaining('/rest/workflows/wf-1/trigger/poll/test'),
+      );
+    });
+
+    it('pollTriggerApi.getPollState(workflowId) sends GET to poll state endpoint', async () => {
+      mockedAxios.get.mockResolvedValueOnce({
+        data: { seenKeyCount: 10, baselineEstablished: true },
+      });
+      const res = await pollTriggerApi.getPollState('wf-1');
+      expect(res.seenKeyCount).toBe(10);
+      expect(mockedAxios.get).toHaveBeenCalledWith(
+        expect.stringContaining('/rest/workflows/wf-1/trigger/poll/state'),
+      );
+    });
+
+    it('pollTriggerApi.getLogs(workflowId, page, size) sends GET to poll logs endpoint', async () => {
+      mockedAxios.get.mockResolvedValueOnce({
+        data: {
+          content: [{ id: 'log-1', itemsFetched: 5, itemsNew: 1 }],
+          totalElements: 1,
+          totalPages: 1,
+          number: 0,
+          size: 20,
+        },
+      });
+      const res = await pollTriggerApi.getLogs('wf-1', 0, 20);
+      expect(res.content).toHaveLength(1);
+      expect(res.content[0].itemsNew).toBe(1);
+      expect(mockedAxios.get).toHaveBeenCalledWith(
+        expect.stringContaining('/rest/workflows/wf-1/trigger/poll/logs'),
+        expect.objectContaining({ params: { page: 0, size: 20, sort: 'polledAt,desc' } }),
+      );
+    });
+  });
+
+  describe('Happy Path — webhookTriggerApi', () => {
+    it('webhookTriggerApi.getWebhookState(workflowId) sends GET to webhook state endpoint', async () => {
+      mockedAxios.get.mockResolvedValueOnce({
+        data: { webhookUrl: 'https://api.example.com/webhook-events/abc', status: 'ACTIVE' },
+      });
+      const res = await webhookTriggerApi.getWebhookState('wf-1');
+      expect(res.webhookUrl).toContain('/webhook-events/');
+      expect(mockedAxios.get).toHaveBeenCalledWith(
+        expect.stringContaining('/rest/workflows/wf-1/trigger/webhook/state'),
+      );
+    });
+
+    it('webhookTriggerApi.getLogs(workflowId, page, size) sends GET to webhook logs endpoint', async () => {
+      mockedAxios.get.mockResolvedValueOnce({
+        data: {
+          content: [{ id: 'log-1', success: true, triggeredExecution: true }],
+          totalElements: 1,
+          totalPages: 1,
+          number: 0,
+          size: 20,
+        },
+      });
+      const res = await webhookTriggerApi.getLogs('wf-1', 0, 20);
+      expect(res.content).toHaveLength(1);
+      expect(mockedAxios.get).toHaveBeenCalledWith(
+        expect.stringContaining('/rest/workflows/wf-1/trigger/webhook/logs'),
+        expect.objectContaining({ params: { page: 0, size: 20, sort: 'timestamp,desc' } }),
+      );
+    });
+  });
+
+  describe('Happy Path — subscribeTriggerApi', () => {
+    it('subscribeTriggerApi.getState(workflowId) sends GET to subscribe state endpoint', async () => {
+      mockedAxios.get.mockResolvedValueOnce({
+        data: { status: 'ACTIVE', hasExternalSubscription: true },
+      });
+      const res = await subscribeTriggerApi.getState('wf-1');
+      expect(res.hasExternalSubscription).toBe(true);
+      expect(mockedAxios.get).toHaveBeenCalledWith(
+        expect.stringContaining('/rest/workflows/wf-1/trigger/subscribe/state'),
+      );
+    });
+
+    it('subscribeTriggerApi.testSubscribe(workflowId) sends POST to subscribe test endpoint', async () => {
+      mockedAxios.post.mockResolvedValueOnce({
+        data: { success: true, durationMs: 80, statusCode: 200 },
+      });
+      const res = await subscribeTriggerApi.testSubscribe('wf-1');
+      expect(res.success).toBe(true);
+      expect(mockedAxios.post).toHaveBeenCalledWith(
+        expect.stringContaining('/rest/workflows/wf-1/trigger/subscribe/test'),
+      );
+    });
+
+    it('subscribeTriggerApi.getLogs(workflowId, page, size) sends GET to subscribe logs endpoint', async () => {
+      mockedAxios.get.mockResolvedValueOnce({
+        data: {
+          content: [{ id: 'log-1', eventType: 'SUBSCRIBE', success: true }],
+          totalElements: 1,
+          totalPages: 1,
+          number: 0,
+          size: 20,
+        },
+      });
+      const res = await subscribeTriggerApi.getLogs('wf-1', 0, 20);
+      expect(res.content[0].eventType).toBe('SUBSCRIBE');
+      expect(mockedAxios.get).toHaveBeenCalledWith(
+        expect.stringContaining('/rest/workflows/wf-1/trigger/subscribe/logs'),
+        expect.objectContaining({ params: { page: 0, size: 20, sort: 'timestamp,desc' } }),
+      );
     });
   });
 

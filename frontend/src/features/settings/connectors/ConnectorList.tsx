@@ -1,14 +1,15 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
-    Plus,
     Settings2,
     Trash2,
     MoreVertical,
     ArrowRight,
-    Settings,
+    Blocks,
 } from 'lucide-react';
 import { connectorApi, type ConnectorManifest, type ConnectorAuthType } from '@/api/connectorApi';
 import { Button } from '@/components/ui/button';
+import { ErrorBanner } from '@/components/ui/error-banner';
 import { Hint } from '@/components/ui/hint';
 import {
     DropdownMenu,
@@ -92,18 +93,26 @@ function ConnectorIcon({ connector, className }: { connector: ConnectorManifest,
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-interface ConnectorListProps {
-    scope: 'SYSTEM' | 'TENANT';
-    onEdit: (connector: ConnectorManifest) => void;
-    onCreate: () => void;
+export interface ConnectorListHandle {
+    refresh: () => Promise<void>;
 }
 
-export default function ConnectorList({ scope, onEdit, onCreate }: ConnectorListProps) {
+interface ConnectorListProps {
+    scope: 'SYSTEM' | 'TENANT';
+}
+
+const ConnectorList = forwardRef<ConnectorListHandle, ConnectorListProps>(function ConnectorList(
+    { scope },
+    ref,
+) {
+    const navigate = useNavigate();
     const [connectors, setConnectors] = useState<ConnectorManifest[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     const loadConnectors = useCallback(async () => {
         setIsLoading(true);
+        setError(null);
         try {
             const data = scope === 'SYSTEM'
                 ? await connectorApi.adminList()
@@ -111,6 +120,8 @@ export default function ConnectorList({ scope, onEdit, onCreate }: ConnectorList
             setConnectors(data.filter(c => c.taskType === 'CONNECTOR_TASK'));
         } catch (err) {
             console.error('Failed to load connectors', err);
+            setConnectors([]);
+            setError("We couldn't load apps right now.");
         } finally {
             setIsLoading(false);
         }
@@ -119,6 +130,8 @@ export default function ConnectorList({ scope, onEdit, onCreate }: ConnectorList
     useEffect(() => {
         loadConnectors();
     }, [loadConnectors]);
+
+    useImperativeHandle(ref, () => ({ refresh: loadConnectors }), [loadConnectors]);
 
     const handleDelete = async (connectorId: string, displayName: string, e: React.MouseEvent) => {
         e.stopPropagation();
@@ -148,36 +161,19 @@ export default function ConnectorList({ scope, onEdit, onCreate }: ConnectorList
 
     return (
         <div className="space-y-4">
-            {/* Header Toolbar */}
-            <div className="flex items-center justify-between pb-2">
-                <div>
-                    <h3 className="text-lg font-medium text-foreground tracking-tight">
-                        Apps Directory
-                    </h3>
-                    <p className="text-sm text-muted-foreground mt-0.5">
-                        Manage {connectors.length} app{connectors.length !== 1 ? 's' : ''} available to this workspace.
-                    </p>
-                </div>
-                <Button onClick={onCreate} size="sm" className="gap-2">
-                    <Plus className="h-4 w-4" />
-                    New Connector
-                </Button>
-            </div>
+            {error ? (
+                <ErrorBanner data-testid="connector-list-error" message={error} />
+            ) : null}
 
-            {/* Empty state or Table */}
-            {connectors.length === 0 ? (
-                <div className="flex flex-col items-center justify-center p-12 text-center border rounded-lg bg-muted/30">
-                    <Settings className="h-10 w-10 text-muted-foreground/40 mb-3" />
-                    <h3 className="text-sm font-medium">No apps found</h3>
-                    <p className="text-sm text-muted-foreground mt-1 mb-5">
-                        Create a custom connector or install an official one to get started.
+            {!error && connectors.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 text-center">
+                    <Blocks className="mb-4 h-12 w-12 text-muted-foreground/40" />
+                    <p className="mb-1 font-medium text-foreground">No apps yet</p>
+                    <p className="text-sm text-muted-foreground">
+                        Create your first connector to get started.
                     </p>
-                    <Button onClick={onCreate} variant="outline" size="sm">
-                        <Plus className="h-4 w-4 mr-2" />
-                        New Connector
-                    </Button>
                 </div>
-            ) : (
+            ) : !error ? (
                 <div className="overflow-hidden rounded-lg border border-border bg-card">
                     <table className="w-full text-left">
                         <thead className="border-b border-border bg-muted/50">
@@ -196,7 +192,7 @@ export default function ConnectorList({ scope, onEdit, onCreate }: ConnectorList
                                 <tr
                                     key={connector.connectorId}
                                     className="transition-colors hover:bg-muted/30 group cursor-pointer"
-                                    onClick={() => onEdit(connector)}
+                                    onClick={() => navigate(`/apps/${connector.connectorId}`)}
                                 >
                                     <td className="px-4 py-3 align-middle">
                                         <ConnectorIcon connector={connector} className="h-8 w-8" />
@@ -237,7 +233,7 @@ export default function ConnectorList({ scope, onEdit, onCreate }: ConnectorList
                                                     </Button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end">
-                                                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(connector); }}>
+                                                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate(`/apps/${connector.connectorId}`); }}>
                                                         <Settings2 className="h-4 w-4 mr-2" />
                                                         Configure
                                                     </DropdownMenuItem>
@@ -256,7 +252,7 @@ export default function ConnectorList({ scope, onEdit, onCreate }: ConnectorList
                                                     variant="ghost"
                                                     size="icon"
                                                     className="h-8 w-8 text-muted-foreground hover:bg-muted hover:text-foreground"
-                                                    onClick={(e) => { e.stopPropagation(); onEdit(connector); }}
+                                                    onClick={(e) => { e.stopPropagation(); navigate(`/apps/${connector.connectorId}`); }}
                                                 >
                                                     <ArrowRight className="h-4 w-4" />
                                                 </Button>
@@ -268,8 +264,10 @@ export default function ConnectorList({ scope, onEdit, onCreate }: ConnectorList
                         </tbody>
                     </table>
                 </div>
-            )}
+            ) : null}
         </div>
     );
-}
+});
+
+export default ConnectorList;
 

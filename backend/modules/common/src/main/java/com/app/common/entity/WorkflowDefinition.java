@@ -11,14 +11,12 @@ import com.app.common.model.task.WorkflowTask;
 import com.app.common.model.trigger.TriggerConfig;
 
 import org.springframework.data.annotation.Id;
-import org.springframework.data.annotation.Version;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import java.util.List;
 import java.util.Map;
 import com.app.common.constant.CollectionNames;
-
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -28,13 +26,7 @@ import com.app.common.constant.CollectionNames;
 public class WorkflowDefinition extends Auditable {
     @Id
     private String id;
-    
-    @Version
-    private Long optVersion;
 
-    private String workflowId;
-    private Integer version;
-    private boolean latest;
     private String name;
     private List<WorkflowTask> tasks;
 
@@ -89,5 +81,10 @@ public class WorkflowDefinition extends Auditable {
          * Mirrors {@code ITERATOR_TASK.doneNextTaskId} so canvas routing survives API round-trips.
          */
         private String studioDoneWire;
+        /**
+         * Studio-only branch-path successor (off-spine MAIN_OUT → MAIN_IN).
+         * Persists nested branch chains across save/load.
+         */
+        private String studioChainOut;
     }
 }

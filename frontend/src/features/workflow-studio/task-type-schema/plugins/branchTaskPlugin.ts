@@ -14,6 +14,10 @@ function validateBranchParameters(
     errors: TaskParameterErrors,
     context?: TaskValidationContext,
 ): void {
+    if ('joinTaskId' in parameters) {
+        errors.joinTaskId = 'joinTaskId is no longer supported; wire paths directly to JOIN';
+    }
+
     const branches = parameters.branches;
     if (!Array.isArray(branches) || branches.length === 0) {
         errors.branches = 'At least one parallel branch is required';
@@ -21,7 +25,6 @@ function validateBranchParameters(
     }
 
     const names = new Set<string>();
-    const joinTaskId = String(parameters.joinTaskId ?? '').trim();
 
     for (let i = 0; i < branches.length; i++) {
         const entry = branches[i];
@@ -30,7 +33,11 @@ function validateBranchParameters(
             continue;
         }
 
-        const row = entry as ParallelBranchRow;
+        const row = entry as ParallelBranchRow & { endTaskId?: string };
+        if ('endTaskId' in row && row.endTaskId) {
+            errors[`branches.${i}.endTaskId`] = 'endTaskId is no longer supported; use canvas wiring';
+        }
+
         const branchName = String(row.branchName ?? '').trim();
         const startTaskId = String(row.startTaskId ?? '').trim();
 
@@ -48,36 +55,10 @@ function validateBranchParameters(
                 errors[`branches.${i}.startTaskId`] = 'Task not found in this workflow';
             } else if (startTaskId === context.currentTaskId) {
                 errors[`branches.${i}.startTaskId`] = 'Cannot start at the Split into branches task itself';
-            } else if (joinTaskId && startTaskId === joinTaskId) {
+            } else if (startTask.type === 'JOIN') {
                 errors[`branches.${i}.startTaskId`] = 'Cannot start at the Join branches task';
-            } else if (context.taskOrder && context.currentTaskId) {
-                const branchIndex = context.taskOrder.indexOf(context.currentTaskId);
-                const startIndex = context.taskOrder.indexOf(startTaskId);
-                if (branchIndex >= 0 && startIndex >= 0 && startIndex <= branchIndex) {
-                    errors[`branches.${i}.startTaskId`] =
-                        'Start task must come after Split into branches in the workflow';
-                }
             }
         }
-    }
-
-    if (!joinTaskId || !context?.currentTaskId) return;
-
-    const joinTask = findWorkflowTask(context, joinTaskId);
-    if (!joinTask) return;
-
-    if (joinTask.type !== 'JOIN') {
-        errors.joinTaskId = 'Must reference a Join branches task';
-        return;
-    }
-
-    const joinBranchRef = joinTask.parameters.branchTaskId;
-    if (
-        joinBranchRef != null &&
-        String(joinBranchRef).trim() !== '' &&
-        String(joinBranchRef) !== context.currentTaskId
-    ) {
-        errors.joinTaskId = `Join branches task "${joinTaskId}" references split "${joinBranchRef}", not this task`;
     }
 }
 
@@ -102,24 +83,22 @@ export const branchTaskPlugin = defineTaskPlugin({
     },
     normalize(parameters) {
         const next = { ...parameters };
+        delete next.joinTaskId;
         if (Array.isArray(next.branches)) {
             next.branches = (next.branches as ParallelBranchRow[]).map((row) => ({
                 branchName: String(row.branchName ?? '').trim(),
                 startTaskId: normalizeOptionalTaskRef(row.startTaskId),
-                endTaskId: normalizeOptionalTaskRef(row.endTaskId),
             }));
         }
-        next.joinTaskId = normalizeOptionalTaskRef(next.joinTaskId);
         delete next.nextTaskId;
         return next;
     },
     preview(params) {
         const branchList = Array.isArray(params.branches) ? params.branches : [];
         const count = branchList.length;
-        const join = params.joinTaskId ? 'Join connected' : 'No join';
         return {
             primary: count === 1 ? '1 branch' : `${count} branches`,
-            secondary: join,
+            secondary: 'Fan-out only',
         };
     },
     executionSummary({ parameters, executionData }) {
@@ -131,7 +110,6 @@ export const branchTaskPlugin = defineTaskPlugin({
                     label: 'Branches',
                     value: formatPrimitive(data?.branchesCreated ?? branchIds.length),
                 },
-                { label: 'Join step', value: formatPrimitive(data?.joinTaskId ?? parameters.joinTaskId) },
                 { label: 'Started', value: formatPrimitive(data?.branchStartTime) },
             ],
         };
