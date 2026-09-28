@@ -25,7 +25,7 @@
       "transform": { "type": "DATA_TRANSFORM", "parameters": {} },
       "wait2": { "type": "WAIT", "parameters": {} },
       "wait3": { "type": "WAIT", "parameters": {} },
-      "script": { "type": "SCRIPT", "parameters": {} }
+      "script": { "type": "SCRIPT_TASK", "parameters": {} }
     },
     "chainOut": {
       "http": "inner",

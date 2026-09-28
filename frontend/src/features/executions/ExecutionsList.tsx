@@ -32,7 +32,7 @@ function createVirtuosoTableComponents(
         TableRow: ({ item, children, ...props }) => (
             <tr
                 {...props}
-                className={cn('cursor-pointer transition-colors hover:bg-muted/40', props.className)}
+                className="cursor-pointer transition-colors hover:bg-muted/40"
                 onClick={() => onRowClick(item)}
             >
                 {children}

@@ -1,5 +1,5 @@
 import type { Edge } from '@xyflow/react';
-import type { NodePosition, WorkflowDefinition, WorkflowTask } from '@/types/api';
+import type { NodePosition, WorkflowDefinition } from '@/types/api';
 import { getTaskNodes, type StudioCanvasNode } from '@/features/workflow-studio/lib/canvasNodeUtils';
 import {
     BRANCH_CHAIN_PREFIX,

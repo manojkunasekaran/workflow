@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { AlertTriangle, Check, ChevronDown, ChevronUp, Copy, Loader2 } from 'lucide-react';
+import { Check, ChevronDown, ChevronUp, Copy, Loader2 } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';

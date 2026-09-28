@@ -233,17 +233,6 @@ function nodePositionById(
     return nodes.find((node) => node.id === id)?.position;
 }
 
-function updateBranchTaskParameters(
-    nodes: StudioCanvasNode[],
-    branchTaskId: string,
-    parameters: Record<string, unknown>,
-): StudioCanvasNode[] {
-    return nodes.map((node) => {
-        if (node.type !== 'task' || node.id !== branchTaskId) return node;
-        return { ...node, data: { ...(node.data as TaskNodeData), parameters } };
-    });
-}
-
 /** Branch-chain edges to JOIN nodes are invalid — drop them (validation rejects on save). */
 function stripJoinBranchChainEdges(nodes: StudioCanvasNode[], edges: Edge[]): Edge[] {
     return edges.filter((edge) => {

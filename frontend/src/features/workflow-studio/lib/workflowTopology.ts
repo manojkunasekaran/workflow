@@ -140,29 +140,6 @@ function isReachableOnBranchPath(
     return false;
 }
 
-/** BRANCH that owns `taskId` on a fork path (split node or any task reachable from a branch row). */
-function findEnclosingBranchTaskId(taskId: string, graph: WorkflowGraph): string | null {
-    const normalized = normalize(taskId);
-    if (!normalized) return null;
-
-    for (const task of graph.tasks.values()) {
-        if (task.type !== 'BRANCH') continue;
-        if (normalized === task.taskId) {
-            const parent = findEnclosingBranchTaskIdForSplit(task.taskId, graph);
-            return parent ?? task.taskId;
-        }
-        for (const row of listBranchRows(task.parameters)) {
-            const rowStart = normalize(row.startTaskId);
-            if (!rowStart) continue;
-            if (normalized === rowStart) return task.taskId;
-            if (isReachableOnBranchPath(rowStart, normalized, task.taskId, graph)) {
-                return task.taskId;
-            }
-        }
-    }
-    return null;
-}
-
 function findEnclosingBranchTaskIdForSplit(splitTaskId: string, graph: WorkflowGraph): string | null {
     for (const task of graph.tasks.values()) {
         if (task.type !== 'BRANCH') continue;
