@@ -1,0 +1,50 @@
+{
+  "name": "flat-branch-join",
+  "graph": {
+    "tasks": {
+      "branch_split": {
+        "type": "BRANCH",
+        "parameters": {
+          "branches": [
+            { "branchName": "Left", "startTaskId": "task_left" },
+            { "branchName": "Right", "startTaskId": "task_right" }
+          ]
+        }
+      },
+      "task_left": { "type": "HTTP_TASK", "parameters": {} },
+      "task_right": { "type": "HTTP_TASK", "parameters": {} },
+      "join_merge": {
+        "type": "JOIN",
+        "parameters": {
+          "inboundTaskIds": ["task_left", "task_right"],
+          "waitPolicy": "ALL",
+          "mergeMode": "PASS_THROUGH",
+          "nextTaskId": "task_after"
+        }
+      },
+      "task_after": { "type": "HTTP_TASK", "parameters": {} }
+    },
+    "chainOut": {},
+    "joinInbounds": {
+      "join_merge": ["task_left", "task_right"]
+    }
+  },
+  "expectations": {
+    "resolveJoinInbounds": {
+      "join_merge": ["task_left", "task_right"]
+    },
+    "resolveBranchPaths": {
+      "branch_split": [
+        { "branchIndex": 0, "startTaskId": "task_left", "tipTaskId": "task_left" },
+        { "branchIndex": 1, "startTaskId": "task_right", "tipTaskId": "task_right" }
+      ]
+    },
+    "isLeafInbound": {
+      "join_merge:task_left": true,
+      "join_merge:task_right": true
+    },
+    "collectSpawnTree": {
+      "branch_split": ["branch_split", "task_left", "task_right"]
+    }
+  }
+}

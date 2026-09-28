@@ -21,13 +21,9 @@ import {
     terminatesMainSpine,
     type RouteEdgeData,
 } from '@/features/workflow-studio/lib/graphRouting';
-import {
-    findBranchTaskForChainTask,
-    readBranchEndTaskId,
-    resolveBranchIndexForEndTask,
-    writeBranchEndTaskId,
-} from '@/features/workflow-studio/lib/joinWiring';
+import { addJoinInbound, removeJoinInbound } from '@/features/workflow-studio/lib/workflowTopology';
 import { relayoutWorkflowGraph } from '@/features/workflow-studio/lib/workflowGraph';
+import { injectParameterType } from '@/features/workflow-studio/task-type-schema/utils';
 import { normalizeStudioEdge } from '@/features/workflow-studio/edges/edgeFromProps';
 import { STUDIO_EDGE_CLASS, STUDIO_SEQUENCE_STROKE, studioEdgeMarkerEnd } from '@/features/workflow-studio/edges/studioEdgeTheme';
 
@@ -219,29 +215,7 @@ function insertOnBranchChainEdge(
         branchChainEdge(draft.taskId, target),
     ];
 
-    let nextNodes = baseNodes;
-    const branchData = findBranchTaskForChainTask(baseNodes, source, edges);
-    if (branchData) {
-        const branchIndex = resolveBranchIndexForEndTask(branchData, source, edges);
-        if (branchIndex !== null && readBranchEndTaskId(branchData, branchIndex) === source) {
-            nextNodes = nextNodes.map((node) => {
-                if (node.type !== 'task' || node.id !== branchData.taskId) return node;
-                return {
-                    ...node,
-                    data: {
-                        ...(node.data as TaskNodeData),
-                        parameters: writeBranchEndTaskId(
-                            node.data as TaskNodeData,
-                            branchIndex,
-                            draft.taskId,
-                        ),
-                    },
-                };
-            });
-        }
-    }
-
-    return relayoutWorkflowGraph(nextNodes, nextEdges);
+    return relayoutWorkflowGraph(baseNodes, nextEdges);
 }
 
 function insertOnRouteEdge(
@@ -291,6 +265,7 @@ function insertOnRouteEdge(
     return relayoutWorkflowGraph(baseNodes, nextEdges);
 }
 
+// Inserting on a join-merge edge swaps the wired inbound: remove the edge source, add the new task.
 function insertOnJoinMergeEdge(
     edge: Edge,
     draft: TaskNodeData,
@@ -300,30 +275,27 @@ function insertOnJoinMergeEdge(
     const { source } = edge;
     if (!source) return null;
 
-    const branchData = findBranchTaskForChainTask(nodes, source, edges);
-    if (!branchData) return null;
-    const branchIndex = resolveBranchIndexForEndTask(branchData, source, edges);
-    if (branchIndex === null) return null;
+    const joinNode = nodes.find((node) => node.id === edge.target && node.type === 'task');
+    if (!joinNode || (joinNode.data as TaskNodeData).type !== 'JOIN') return null;
 
     const baseNodes = addTaskNode(nodes, draft, midpointPosition(nodes, source, edge.target ?? source));
     const nextEdges = [...edges, branchChainEdge(source, draft.taskId)];
 
-    const withEnd = baseNodes.map((node) => {
-        if (node.type !== 'task' || node.id !== branchData.taskId) return node;
+    const withInbound = baseNodes.map((node) => {
+        if (node.type !== 'task' || node.id !== joinNode.id) return node;
+        const joinData = node.data as TaskNodeData;
+        // Swap inbound: prior source is replaced by the inserted task in inboundTaskIds.
+        const withoutSource = removeJoinInbound(joinData.parameters, source);
         return {
             ...node,
             data: {
-                ...(node.data as TaskNodeData),
-                parameters: writeBranchEndTaskId(
-                    node.data as TaskNodeData,
-                    branchIndex,
-                    draft.taskId,
-                ),
+                ...joinData,
+                parameters: injectParameterType('JOIN', addJoinInbound(withoutSource, draft.taskId)),
             },
         };
     });
 
-    return relayoutWorkflowGraph(withEnd, nextEdges);
+    return relayoutWorkflowGraph(withInbound, nextEdges);
 }
 
 export function insertTaskOnStudioEdge(

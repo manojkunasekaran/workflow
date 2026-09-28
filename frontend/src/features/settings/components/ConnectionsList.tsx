@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { connectionApi } from '@/api/connectionApi';
 import type { IntegrationCredential } from '@/types/api';
 import { Button } from '@/components/ui/button';
+import { ErrorBanner } from '@/components/ui/error-banner';
 import { Loader2, Plus, KeyRound, Trash2, Edit2 } from 'lucide-react';
 import { ConnectorConnectionPanel } from './ConnectorConnectionPanel';
 import {
@@ -16,16 +17,20 @@ import {
 export function ConnectionsList() {
     const [credentials, setCredentials] = useState<IntegrationCredential[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [selectedCred, setSelectedCred] = useState<IntegrationCredential | undefined>();
 
     const loadCredentials = async () => {
         setIsLoading(true);
+        setError(null);
         try {
             const data = await connectionApi.getAll();
             setCredentials(data);
-        } catch (error) {
-            console.error('Failed to load connections', error);
+        } catch (err) {
+            console.error('Failed to load connections', err);
+            setCredentials([]);
+            setError("We couldn't load connections right now.");
         } finally {
             setIsLoading(false);
         }
@@ -87,6 +92,11 @@ export function ConnectionsList() {
                 </Button>
             </div>
 
+            {error ? (
+                <ErrorBanner data-testid="connections-list-error" message={error} />
+            ) : null}
+
+            {!error ? (
             <div className="rounded-xl border bg-card text-card-foreground shadow-sm">
                 {isLoading ? (
                     <div className="flex justify-center p-8">
@@ -140,6 +150,7 @@ export function ConnectionsList() {
                     </Table>
                 )}
             </div>
+            ) : null}
 
             <ConnectorConnectionPanel
                 open={isDialogOpen}

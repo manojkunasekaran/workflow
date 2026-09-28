@@ -22,29 +22,27 @@ public class WorkflowDefinitionService {
 
     private final WorkflowDefinitionRepository repository;
     private final WorkflowDefinitionValidator validator;
-    private final WorkflowSchedulerService schedulerService;
+    private final TriggerActivationService triggerActivationService;
     private final WorkflowExecutionService executionService;
     private final WorkflowExecutionRepository executionRepository;
 
+    /**
+     * Create a new workflow with a stable id. Triggers are activated immediately on save.
+     */
     @org.springframework.transaction.annotation.Transactional
     public WorkflowDefinition createWorkflowDefinition(@NonNull WorkflowDefinition definition) {
         validator.validate(definition);
         if (definition.getId() == null) {
             definition.setId(UUID.randomUUID().toString());
         }
-        if (definition.getWorkflowId() == null) {
-            definition.setWorkflowId(UUID.randomUUID().toString());
-        }
-        definition.setVersion(1);
-        definition.setLatest(true);
         WorkflowDefinition saved = repository.save(definition);
-
-        // Sync schedule: register cron if SCHEDULE trigger is active, cancel otherwise
-        schedulerService.syncSchedule(saved);
-
+        triggerActivationService.sync(saved);
         return saved;
     }
 
+    /**
+     * Update the workflow in place. The id never changes.
+     */
     @org.springframework.transaction.annotation.Transactional
     public WorkflowDefinition updateWorkflowDefinition(@NonNull String id, @NonNull WorkflowDefinition definition) {
         validator.validate(definition);
@@ -52,28 +50,15 @@ public class WorkflowDefinitionService {
         WorkflowDefinition existing = repository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("WorkflowDefinition not found with ID: " + id));
 
-        // Mark existing as no longer the latest
-        existing.setLatest(false);
-        repository.save(existing);
+        existing.setName(definition.getName());
+        existing.setTasks(definition.getTasks());
+        existing.setTrigger(definition.getTrigger());
+        existing.setLayout(definition.getLayout());
+        existing.setVariables(definition.getVariables());
+        existing.setInputs(definition.getInputs());
 
-        // Create a new instance for the updated version
-        WorkflowDefinition newVersion = new WorkflowDefinition();
-        newVersion.setId(UUID.randomUUID().toString());
-        newVersion.setWorkflowId(existing.getWorkflowId());
-        newVersion.setVersion(existing.getVersion() + 1);
-        newVersion.setLatest(true);
-        
-        // Copy updated fields
-        newVersion.setName(definition.getName());
-        newVersion.setTasks(definition.getTasks());
-        newVersion.setTrigger(definition.getTrigger());
-        newVersion.setLayout(definition.getLayout());
-        newVersion.setVariables(definition.getVariables());
-        newVersion.setInputs(definition.getInputs());
-
-        WorkflowDefinition saved = repository.save(newVersion);
-        schedulerService.syncSchedule(saved);
-
+        WorkflowDefinition saved = repository.save(existing);
+        triggerActivationService.sync(saved);
         return saved;
     }
 
@@ -86,34 +71,29 @@ public class WorkflowDefinitionService {
     }
 
     public void deleteWorkflowDefinition(@NonNull String id) {
-        schedulerService.cancelSchedule(id);
+        triggerActivationService.deactivate(id);
         repository.deleteById(id);
     }
 
     public com.app.api.dto.TestNodeResponse testNode(com.app.api.dto.TestNodeRequest request) {
-        // 1. Save temporary draft workflow
         WorkflowDefinition draft = request.getDraftDefinition();
         draft.setId("draft_" + UUID.randomUUID().toString());
-        // Skip schedule sync and deep validation for drafts
         repository.save(draft);
 
         try {
-            // 2. Trigger test execution
             WorkflowExecution result = executionService.triggerTestExecution(
                 draft.getId(), 
                 request.getTargetTaskId(), 
                 request.getCachedSampleData()
             );
 
-            // 3. Return outputs
             com.app.api.dto.TestNodeResponse response = new com.app.api.dto.TestNodeResponse();
             response.setNewSampleData(result.getTaskOutputs());
             
             if (com.app.common.constant.WorkflowExecutionStatus.FAILED.equals(result.getStatus())) {
                 response.setSuccess(false);
-                response.setError("Execution failed."); // Fallback
+                response.setError("Execution failed.");
                 
-                // Find which task failed
                 List<com.app.common.entity.WorkflowTaskExecution> taskExecutions = executionService.getTaskExecutions(result.getId());
                 for (com.app.common.entity.WorkflowTaskExecution te : taskExecutions) {
                     if (com.app.common.constant.TaskExecutionStatus.FAILED.equals(te.getStatus())) {
@@ -132,7 +112,6 @@ public class WorkflowDefinitionService {
             }
             return response;
         } finally {
-            // 4. Cleanup temporary draft
             repository.deleteById(draft.getId());
         }
     }

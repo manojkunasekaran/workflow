@@ -10,8 +10,7 @@ import java.util.List;
 
 /**
  * Parameters for BRANCH task type.
- * Creates multiple parallel execution paths that can optionally
- * be gathered by a JOIN task.
+ * Creates multiple parallel execution paths (fan-out only).
  */
 @Data
 @Builder
@@ -25,18 +24,6 @@ public class BranchTaskParameters implements TaskParameters {
      */
     private List<ParallelBranch> branches;
 
-    /**
-     * OPTIONAL: ID of the JOIN task that will gather all branches.
-     * - If specified: Each branch executes until it reaches the join task.
-     * - If null: Each branch executes to the end of the workflow or until
-     * completion.
-     */
-    private String joinTaskId;
-
-    public void setJoinTaskId(String joinTaskId) {
-        this.joinTaskId = TaskRefs.normalize(joinTaskId);
-    }
-
     @Data
     @Builder
     @NoArgsConstructor
@@ -49,15 +36,6 @@ public class BranchTaskParameters implements TaskParameters {
 
         public void setStartTaskId(String startTaskId) {
             this.startTaskId = TaskRefs.normalize(startTaskId);
-        }
-
-        /**
-         * OPTIONAL: Task ID of the last task in this branch — wired into Join branches on the canvas.
-         */
-        private String endTaskId;
-
-        public void setEndTaskId(String endTaskId) {
-            this.endTaskId = TaskRefs.normalize(endTaskId);
         }
     }
 }

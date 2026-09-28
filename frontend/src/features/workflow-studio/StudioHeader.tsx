@@ -32,6 +32,7 @@ export function StudioHeader({
     onRun,
     onBack,
 }: StudioHeaderProps) {
+
     return (
         <PageHeader
             title={
@@ -64,8 +65,8 @@ export function StudioHeader({
                             aria-label="Workflow name"
                         />
                         {isDirty ? (
-                            <span data-testid="draft-badge" className="shrink-0 rounded-md border border-border/70 bg-muted/60 px-2 py-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                                Draft
+                            <span data-testid="unsaved-badge" className="shrink-0 rounded-md border border-border/70 bg-muted/60 px-2 py-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                                Unsaved
                             </span>
                         ) : null}
                     </div>

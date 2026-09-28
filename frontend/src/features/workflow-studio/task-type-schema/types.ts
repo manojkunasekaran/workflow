@@ -20,15 +20,20 @@ export type TaskFieldType =
     | 'iteratorActionList'
     | 'toolsList'
     | 'wiredRef'
+    | 'inboundList'
     | 'waitDuration'
     | 'credential';
+
+/** How many inbounds a JOIN waits for before continuing. */
+export type JoinWaitPolicy = 'ALL' | 'ANY' | 'QUORUM';
+
+/** How JOIN merges inbound outputs. */
+export type JoinMergeMode = 'PASS_THROUGH' | 'COLLECT_OUTPUTS';
 
 /** One parallel path in a BRANCH task — matches backend ParallelBranch. */
 export interface ParallelBranchRow {
     branchName: string;
     startTaskId: string;
-    /** Last task in this branch chain — wires into Join’s Branches input when a join is linked. */
-    endTaskId?: string;
 }
 
 export interface TaskFieldSchema {

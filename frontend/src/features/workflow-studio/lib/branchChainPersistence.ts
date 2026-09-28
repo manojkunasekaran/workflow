@@ -10,7 +10,6 @@ import {
 import { resolveMainSpineTaskIds } from '@/features/workflow-studio/lib/joinWiring';
 import type { TaskNodeData } from '@/features/workflow-studio/nodes/TaskNode';
 import type { ParallelBranchRow } from '@/features/workflow-studio/task-type-schema/types';
-import { injectParameterType } from '@/features/workflow-studio/task-type-schema/utils';
 import {
     STUDIO_EDGE_CLASS,
     STUDIO_SEQUENCE_STROKE,
@@ -60,110 +59,9 @@ export function buildBranchChainEdgesFromLayout(
     return edges;
 }
 
-/** Fallback when older workflows lack studioChainOut — infer from task array order. */
-export function inferBranchChainEdgesFromTaskOrder(tasks: WorkflowTask[]): Edge[] {
-    const taskIds = tasks.map((task) => task.taskId);
-    const types = new Map(tasks.map((task) => [task.taskId, task.type]));
-    const edges: Edge[] = [];
-
-    for (const task of tasks) {
-        if (task.type !== 'BRANCH') continue;
-        const params = task.parameters as Record<string, unknown>;
-        const rows = listBranchRows(params);
-        const joinId = String(params.joinTaskId ?? '').trim();
-        const starts = new Set(
-            rows.map((row) => String(row.startTaskId ?? '').trim()).filter(Boolean),
-        );
-
-        for (const row of rows) {
-            const startId = String(row.startTaskId ?? '').trim();
-            if (!startId) continue;
-            const startIdx = taskIds.indexOf(startId);
-            if (startIdx < 0) continue;
-
-            let current = startId;
-            const endId = String(row.endTaskId ?? '').trim();
-
-            for (let i = startIdx + 1; i < taskIds.length; i++) {
-                const nextId = taskIds[i];
-                if (starts.has(nextId) && nextId !== startId) break;
-                if (joinId && nextId === joinId) break;
-                if ((types.get(nextId) ?? '') === 'JOIN') break;
-
-                const nextType = types.get(nextId) ?? '';
-                edges.push(makeBranchChainEdge(current, nextId));
-                current = nextId;
-
-                if (endId && nextId === endId) break;
-                if (nextType === 'BRANCH') break;
-            }
-        }
-    }
-
-    return edges;
-}
-
 export function restoreBranchChainEdges(definition: WorkflowDefinition): Edge[] {
     const taskIds = new Set(definition.tasks.map((task) => task.taskId));
-    const fromInfer = inferBranchChainEdgesFromTaskOrder(definition.tasks);
-    const fromLayout = buildBranchChainEdgesFromLayout(definition.layout, taskIds);
-    const merged = new Map<string, Edge>();
-    for (const edge of fromInfer) merged.set(edge.id, edge);
-    for (const edge of fromLayout) merged.set(edge.id, edge);
-    return [...merged.values()];
-}
-
-function branchChainTip(startId: string, edges: Edge[]): string {
-    let current = startId;
-    while (true) {
-        const next = edges.find((edge) => isBranchChainEdgeId(edge.id) && edge.source === current)
-            ?.target;
-        if (!next) return current;
-        current = next;
-    }
-}
-
-/** Keep branch endTaskId aligned with the last step on each branch path. */
-export function syncBranchEndTaskIdsFromChains(
-    nodes: StudioCanvasNode[],
-    edges: Edge[],
-): StudioCanvasNode[] {
-    let next = nodes;
-
-    for (const node of getTaskNodes(nodes)) {
-        if (node.data.type !== 'BRANCH') continue;
-        const branchData = node.data as TaskNodeData;
-        const rows = listBranchRows(branchData.parameters);
-        let changed = false;
-
-        const nextRows = rows.map((row) => {
-            const startId = String(row.startTaskId ?? '').trim();
-            if (!startId) return row;
-            const tip = branchChainTip(startId, edges);
-            const currentEnd = String(row.endTaskId ?? '').trim();
-            if (currentEnd === tip) return row;
-            changed = true;
-            return { ...row, endTaskId: tip };
-        });
-
-        if (!changed) continue;
-
-        next = next.map((item) => {
-            if (item.type !== 'task' || item.id !== branchData.taskId) return item;
-            return {
-                ...item,
-                data: {
-                    ...branchData,
-                    parameters: injectParameterType('BRANCH', {
-                        ...branchData.parameters,
-                        branches: nextRows,
-                    }),
-                },
-            };
-        });
-    }
-
-    return next;
+    return buildBranchChainEdgesFromLayout(definition.layout, taskIds);
 }
 
 /** Persist branch-chain successors into layout (mirrors iterator studioDoneWire). */

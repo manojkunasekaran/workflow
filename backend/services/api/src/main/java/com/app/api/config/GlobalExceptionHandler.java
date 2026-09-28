@@ -1,6 +1,7 @@
 package com.app.api.config;
 
 import com.app.api.dto.ApiErrorResponse;
+import com.app.api.exception.WebhookInboundException;
 import com.app.common.constant.ResponseStatus;
 import com.app.common.exception.ResourceNotFoundException;
 import com.app.common.exception.ValidationException;
@@ -10,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @Slf4j
 @RestControllerAdvice
@@ -37,6 +39,30 @@ public class GlobalExceptionHandler {
                 .message(ex.getMessage())
                 .build();
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ApiErrorResponse> handleNoResourceFound(NoResourceFoundException ex) {
+        log.warn("Resource not found: {}", ex.getMessage());
+        ApiErrorResponse response = ApiErrorResponse.builder()
+                .status(ResponseStatus.FAILURE)
+                .errorCode("RESOURCE_NOT_FOUND")
+                .error("Not Found")
+                .message("Not Found")
+                .build();
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+    }
+
+    @ExceptionHandler(WebhookInboundException.class)
+    public ResponseEntity<ApiErrorResponse> handleWebhookInbound(WebhookInboundException ex) {
+        log.warn("Webhook inbound rejected: {}", ex.getMessage());
+        ApiErrorResponse response = ApiErrorResponse.builder()
+                .status(ResponseStatus.FAILURE)
+                .errorCode("WEBHOOK_INBOUND_REJECTED")
+                .error(ex.getStatus().getReasonPhrase())
+                .message(ex.getMessage())
+                .build();
+        return ResponseEntity.status(ex.getStatus()).body(response);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

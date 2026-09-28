@@ -1,0 +1,99 @@
+{
+  "connectorId": "notion",
+  "triggers": [
+    {
+      "triggerId": "new_database_records",
+      "displayName": "New database records",
+      "description": "Triggers when new records are added to a Notion database.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {"key": "database_id", "label": "Database ID", "type": "STRING", "required": true, "supportsExpression": false}
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {"method": "POST", "url": "https://api.notion.com/v1/databases/{database_id}/query", "body": "{\"page_size\":100,\"sorts\":[{\"timestamp\":\"created_time\",\"direction\":\"descending\"}]}"},
+          "detection": {"itemsPath": "$.results", "keyPaths": ["id"]}
+        }
+      }
+    },
+    {
+      "triggerId": "updated_database_records",
+      "displayName": "Updated database records",
+      "description": "Triggers when database records are updated.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {"key": "database_id", "label": "Database ID", "type": "STRING", "required": true, "supportsExpression": false}
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "UPDATED",
+          "http": {"method": "POST", "url": "https://api.notion.com/v1/databases/{database_id}/query", "body": "{\"page_size\":100,\"sorts\":[{\"timestamp\":\"last_edited_time\",\"direction\":\"descending\"}]}"},
+          "detection": {"itemsPath": "$.results", "keyPaths": ["id"], "updateKeyPath": "last_edited_time"}
+        }
+      }
+    },
+    {
+      "triggerId": "new_pages",
+      "displayName": "New pages",
+      "description": "Triggers when new pages are created.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {"key": "query", "label": "Search Query", "type": "STRING", "required": false, "defaultValue": "", "supportsExpression": false}
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {"method": "POST", "url": "https://api.notion.com/v1/search", "body": "{\"query\":\"{query}\",\"filter\":{\"value\":\"page\",\"property\":\"object\"},\"page_size\":100,\"sort\":{\"direction\":\"descending\",\"timestamp\":\"last_edited_time\"}}"},
+          "detection": {"itemsPath": "$.results", "keyPaths": ["id"]}
+        }
+      }
+    },
+    {
+      "triggerId": "new_comments",
+      "displayName": "New comments",
+      "description": "Triggers when new comments are added to a page.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {"key": "block_id", "label": "Block or Page ID", "type": "STRING", "required": true, "supportsExpression": false}
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {"method": "GET", "url": "https://api.notion.com/v1/comments?block_id={block_id}&page_size=100"},
+          "detection": {"itemsPath": "$.results", "keyPaths": ["id"]}
+        }
+      }
+    },
+    {
+      "triggerId": "new_users",
+      "displayName": "New workspace users",
+      "description": "Triggers when new users appear in the workspace.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {"method": "GET", "url": "https://api.notion.com/v1/users?page_size=100"},
+          "detection": {"itemsPath": "$.results", "keyPaths": ["id"]}
+        }
+      }
+    },
+    {
+      "triggerId": "new_blocks",
+      "displayName": "New blocks",
+      "description": "Triggers when new child blocks are added to a page.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {"key": "block_id", "label": "Parent Block ID", "type": "STRING", "required": true, "supportsExpression": false}
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {"method": "GET", "url": "https://api.notion.com/v1/blocks/{block_id}/children?page_size=100"},
+          "detection": {"itemsPath": "$.results", "keyPaths": ["id"]}
+        }
+      }
+    }
+  ]
+}

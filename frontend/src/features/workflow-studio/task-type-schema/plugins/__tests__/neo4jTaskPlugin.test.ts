@@ -3,7 +3,7 @@ import { neo4jTaskPlugin } from '../neo4jTaskPlugin';
 describe('neo4jTaskPlugin', () => {
     it('exports correct type and label', () => {
         expect(neo4jTaskPlugin.type).toBe('NEO4J_TASK');
-        expect(neo4jTaskPlugin.label).toBe('Neo4j Operation');
+        expect(neo4jTaskPlugin.label).toBe('Neo4j Database');
     });
 
     it('contains Connection and Cypher Query fields', () => {

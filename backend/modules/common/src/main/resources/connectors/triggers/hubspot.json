@@ -1,0 +1,469 @@
+{
+  "connectorId": "hubspot",
+  "triggers": [
+    {
+      "triggerId": "new_contacts",
+      "displayName": "New contacts",
+      "description": "Triggers when new contacts are created.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://api.hubapi.com/crm/v3/objects/contacts?limit=100&properties=email,firstname,lastname,createdate"
+          },
+          "detection": {
+            "itemsPath": "$.results",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_deals",
+      "displayName": "New deals",
+      "description": "Triggers when new deals are created.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://api.hubapi.com/crm/v3/objects/deals?limit=100&properties=dealname,dealstage,amount,createdate"
+          },
+          "detection": {
+            "itemsPath": "$.results",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_companies",
+      "displayName": "New companies",
+      "description": "Triggers when new companies are created.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://api.hubapi.com/crm/v3/objects/companies?limit=100&properties=name,domain,createdate"
+          },
+          "detection": {
+            "itemsPath": "$.results",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_tickets",
+      "displayName": "New tickets",
+      "description": "Triggers when new support tickets are created.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://api.hubapi.com/crm/v3/objects/tickets?limit=100&properties=subject,content,hs_pipeline_stage,createdate"
+          },
+          "detection": {
+            "itemsPath": "$.results",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_products",
+      "displayName": "New products",
+      "description": "Triggers when new products are created.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://api.hubapi.com/crm/v3/objects/products?limit=100&properties=name,price,createdate"
+          },
+          "detection": {
+            "itemsPath": "$.results",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_quotes",
+      "displayName": "New quotes",
+      "description": "Triggers when new quotes are created.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://api.hubapi.com/crm/v3/objects/quotes?limit=100&properties=hs_title,hs_status,createdate"
+          },
+          "detection": {
+            "itemsPath": "$.results",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_line_items",
+      "displayName": "New line items",
+      "description": "Triggers when new line items are created.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://api.hubapi.com/crm/v3/objects/line_items?limit=100&properties=name,quantity,price,createdate"
+          },
+          "detection": {
+            "itemsPath": "$.results",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_notes",
+      "displayName": "New notes",
+      "description": "Triggers when new notes are created.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://api.hubapi.com/crm/v3/objects/notes?limit=100&properties=hs_note_body,hs_createdate"
+          },
+          "detection": {
+            "itemsPath": "$.results",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "contact_created",
+      "displayName": "Contact created",
+      "description": "Triggers when a contact is created.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "appId",
+          "label": "App ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.hubapi.com/webhooks/v3/{appId}/subscriptions",
+            "body": "{\"eventType\":\"contact.creation\",\"active\":true}"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://api.hubapi.com/webhooks/v3/{appId}/subscriptions/{{subscriptionId}}"
+          },
+          "subscriptionIdPath": "$.id",
+          "inbound": {
+            "verificationMode": "HMAC_SHA256",
+            "headerName": "X-HubSpot-Signature-v3",
+            "eventIdPath": "$.objectId",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "contact_property_changed",
+      "displayName": "Contact property changed",
+      "description": "Triggers when a contact property changes.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "appId",
+          "label": "App ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.hubapi.com/webhooks/v3/{appId}/subscriptions",
+            "body": "{\"eventType\":\"contact.propertyChange\",\"active\":true}"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://api.hubapi.com/webhooks/v3/{appId}/subscriptions/{{subscriptionId}}"
+          },
+          "subscriptionIdPath": "$.id",
+          "inbound": {
+            "verificationMode": "HMAC_SHA256",
+            "headerName": "X-HubSpot-Signature-v3",
+            "eventIdPath": "$.objectId",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "deal_created",
+      "displayName": "Deal created",
+      "description": "Triggers when a deal is created.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "appId",
+          "label": "App ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.hubapi.com/webhooks/v3/{appId}/subscriptions",
+            "body": "{\"eventType\":\"deal.creation\",\"active\":true}"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://api.hubapi.com/webhooks/v3/{appId}/subscriptions/{{subscriptionId}}"
+          },
+          "subscriptionIdPath": "$.id",
+          "inbound": {
+            "verificationMode": "HMAC_SHA256",
+            "headerName": "X-HubSpot-Signature-v3",
+            "eventIdPath": "$.objectId",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "deal_property_changed",
+      "displayName": "Deal property changed",
+      "description": "Triggers when a deal property changes.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "appId",
+          "label": "App ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.hubapi.com/webhooks/v3/{appId}/subscriptions",
+            "body": "{\"eventType\":\"deal.propertyChange\",\"active\":true}"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://api.hubapi.com/webhooks/v3/{appId}/subscriptions/{{subscriptionId}}"
+          },
+          "subscriptionIdPath": "$.id",
+          "inbound": {
+            "verificationMode": "HMAC_SHA256",
+            "headerName": "X-HubSpot-Signature-v3",
+            "eventIdPath": "$.objectId",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "company_created",
+      "displayName": "Company created",
+      "description": "Triggers when a company is created.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "appId",
+          "label": "App ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.hubapi.com/webhooks/v3/{appId}/subscriptions",
+            "body": "{\"eventType\":\"company.creation\",\"active\":true}"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://api.hubapi.com/webhooks/v3/{appId}/subscriptions/{{subscriptionId}}"
+          },
+          "subscriptionIdPath": "$.id",
+          "inbound": {
+            "verificationMode": "HMAC_SHA256",
+            "headerName": "X-HubSpot-Signature-v3",
+            "eventIdPath": "$.objectId",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "ticket_created",
+      "displayName": "Ticket created",
+      "description": "Triggers when a support ticket is created.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "appId",
+          "label": "App ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.hubapi.com/webhooks/v3/{appId}/subscriptions",
+            "body": "{\"eventType\":\"ticket.creation\",\"active\":true}"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://api.hubapi.com/webhooks/v3/{appId}/subscriptions/{{subscriptionId}}"
+          },
+          "subscriptionIdPath": "$.id",
+          "inbound": {
+            "verificationMode": "HMAC_SHA256",
+            "headerName": "X-HubSpot-Signature-v3",
+            "eventIdPath": "$.objectId",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "conversation_new_message",
+      "displayName": "Conversation new message",
+      "description": "Triggers when a new message is received in a conversation.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "appId",
+          "label": "App ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.hubapi.com/webhooks/v3/{appId}/subscriptions",
+            "body": "{\"eventType\":\"conversation.newMessage\",\"active\":true}"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://api.hubapi.com/webhooks/v3/{appId}/subscriptions/{{subscriptionId}}"
+          },
+          "subscriptionIdPath": "$.id",
+          "inbound": {
+            "verificationMode": "HMAC_SHA256",
+            "headerName": "X-HubSpot-Signature-v3",
+            "eventIdPath": "$.messageId",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "contact_deleted",
+      "displayName": "Contact deleted",
+      "description": "Triggers when a contact is deleted.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "appId",
+          "label": "App ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.hubapi.com/webhooks/v3/{appId}/subscriptions",
+            "body": "{\"eventType\":\"contact.deletion\",\"active\":true}"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://api.hubapi.com/webhooks/v3/{appId}/subscriptions/{{subscriptionId}}"
+          },
+          "subscriptionIdPath": "$.id",
+          "inbound": {
+            "verificationMode": "HMAC_SHA256",
+            "headerName": "X-HubSpot-Signature-v3",
+            "eventIdPath": "$.objectId",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    }
+  ]
+}

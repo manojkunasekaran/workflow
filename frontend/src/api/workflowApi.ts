@@ -18,12 +18,8 @@ export const workflowApi = {
         return response.data;
     },
 
-    /** Backend upserts by id via POST /workflows (no separate PUT endpoint). */
     update: async (id: string, definition: WorkflowDefinition): Promise<WorkflowDefinition> => {
-        const response = await axios.post<WorkflowDefinition>(`${API_BASE_URL}/workflows`, {
-            ...definition,
-            id,
-        });
+        const response = await axios.put<WorkflowDefinition>(`${API_BASE_URL}/workflows/${id}`, definition);
         return response.data;
     },
 

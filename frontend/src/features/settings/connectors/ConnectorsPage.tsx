@@ -1,35 +1,52 @@
-import { useState } from 'react';
-import ConnectorList from './ConnectorList';
-import ConnectorBuilder from './ConnectorBuilder';
-import { type ConnectorManifest } from '@/api/connectorApi';
+import { useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Plus, RefreshCw } from 'lucide-react';
+import ConnectorList, { type ConnectorListHandle } from './ConnectorList';
+import { PageHeader } from '@/layouts/PageHeader';
+import { Button } from '@/components/ui/button';
 
 interface ConnectorsPageProps {
     scope: 'SYSTEM' | 'TENANT';
 }
 
-/**
- * Shared page shell for both Admin (SYSTEM) and Workspace (TENANT) connector management.
- * Handles the list ↔ builder navigation state.
- */
 export default function ConnectorsPage({ scope }: ConnectorsPageProps) {
-    // null = show list, 'NEW' = create form, ConnectorManifest = edit form
-    const [view, setView] = useState<'LIST' | 'NEW' | ConnectorManifest>('LIST');
-
-    if (view === 'LIST') {
-        return (
-            <ConnectorList
-                scope={scope}
-                onCreate={() => setView('NEW')}
-                onEdit={(connector) => setView(connector)}
-            />
-        );
-    }
+    const navigate = useNavigate();
+    const listRef = useRef<ConnectorListHandle>(null);
 
     return (
-        <ConnectorBuilder
-            scope={scope}
-            initialData={view === 'NEW' ? null : view}
-            onBack={() => setView('LIST')}
-        />
+        <div className="flex h-full flex-col bg-background">
+            <PageHeader
+                title={
+                    <h1 data-testid="integrations-page-heading" className="text-sm font-semibold">
+                        Apps
+                    </h1>
+                }
+                actions={
+                    <>
+                        <Button
+                            data-testid="refresh-connectors-btn"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => void listRef.current?.refresh()}
+                        >
+                            <RefreshCw className="h-4 w-4" />
+                            Refresh
+                        </Button>
+                        <Button
+                            data-testid="new-connector-btn-header"
+                            size="sm"
+                            onClick={() => navigate('/apps/new')}
+                        >
+                            <Plus className="h-4 w-4" />
+                            New Connector
+                        </Button>
+                    </>
+                }
+            />
+
+            <div className="flex-1 overflow-auto p-6">
+                <ConnectorList ref={listRef} scope={scope} />
+            </div>
+        </div>
     );
 }

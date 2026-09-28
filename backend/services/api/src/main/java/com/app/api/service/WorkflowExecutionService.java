@@ -75,11 +75,11 @@ public class WorkflowExecutionService {
     public WorkflowExecution triggerExecution(
             String definitionId, Map<String, VariableValue> inputs,
             ExecutionType executionType, TriggerType triggeredBy) {
-        definitionRepository.findById(definitionId)
+        var definition = definitionRepository.findById(definitionId)
                 .orElseThrow(() -> new ResourceNotFoundException("WorkflowDefinition", definitionId));
 
         WorkflowExecution execution = createQueuedExecution(
-                definitionId, executionType, inputs, triggeredBy);
+                definition, executionType, inputs, triggeredBy);
         String executionId = execution.getId();
 
         if (executionType == ExecutionType.SYNC) {
@@ -116,8 +116,9 @@ public class WorkflowExecutionService {
     }
 
     private WorkflowExecution createQueuedExecution(
-            String definitionId, ExecutionType executionType,
+            com.app.common.entity.WorkflowDefinition definition, ExecutionType executionType,
             Map<String, VariableValue> inputs, TriggerType triggeredBy) {
+        String definitionId = definition.getId();
         WorkflowExecution execution = new WorkflowExecution();
         execution.setWorkflowId(definitionId);
         execution.setWorkflowDefinitionId(definitionId);

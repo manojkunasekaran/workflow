@@ -1,5 +1,6 @@
 import { Trash2 } from 'lucide-react';
 import { BranchListField } from '@/features/workflow-studio/task-config/BranchListField';
+import { InboundListField } from '@/features/workflow-studio/task-config/InboundListField';
 import { ConditionalBranchListField } from '@/features/workflow-studio/task-config/ConditionalBranchListField';
 import { HumanActionListField } from '@/features/workflow-studio/task-config/HumanActionListField';
 import { WaitDurationField } from '@/features/workflow-studio/task-config/WaitDurationField';
@@ -169,6 +170,16 @@ export function TaskFieldRenderer({
                 description={field.description}
                 // If filterTypes exists, pass the first one, e.g. "SMTP"
                 filterType={field.filterTypes?.[0]}
+            />
+        );
+    }
+
+    if (field.type === 'inboundList') {
+        return (
+            <InboundListField
+                label={field.label}
+                description={field.description}
+                inboundTaskIds={parameters.inboundTaskIds}
             />
         );
     }

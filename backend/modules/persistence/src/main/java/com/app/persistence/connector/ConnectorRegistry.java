@@ -1,21 +1,16 @@
 package com.app.persistence.connector;
 
 import com.app.common.connector.ConnectorAction;
+import com.app.common.connector.ConnectorTrigger;
+import com.app.common.connector.ConnectorTriggerType;
 import com.app.common.connector.ConnectorManifest;
 import com.app.common.connector.ConnectorScope;
 import com.app.persistence.entity.ConnectorManifestEntity;
 import com.app.persistence.repository.ConnectorManifestRepository;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
-import org.springframework.core.env.Environment;
 
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -23,60 +18,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ConnectorRegistry {
 
-    private final ObjectMapper objectMapper;
     private final ConnectorManifestRepository repository;
-    private final Environment environment;
 
-    @PostConstruct
-    public void seedSystemManifests() {
-        log.info("Scanning classpath for system connector manifests...");
-        try {
-            PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
-            Resource[] resources = resolver.getResources("classpath:connectors/*.json");
-            for (Resource resource : resources) {
-                try (InputStream is = resource.getInputStream()) {
-                    ConnectorManifest manifest = objectMapper.readValue(is, ConnectorManifest.class);
-                    
-                    ConnectorManifestEntity entity = repository
-                            .findByConnectorIdAndScopeAndOrganizationId(manifest.getConnectorId(), ConnectorScope.SYSTEM, null)
-                            .orElse(new ConnectorManifestEntity());
-                            
-                    entity.setScope(ConnectorScope.SYSTEM);
-                    entity.setConnectorId(manifest.getConnectorId());
-                    entity.setDisplayName(manifest.getDisplayName());
-                    entity.setIcon(manifest.getIcon());
-                    entity.setCategory(manifest.getCategory());
-                    entity.setTaskType(manifest.getTaskType());
-                    entity.setBaseUrl(manifest.getBaseUrl());
-                    entity.setAuthType(manifest.getAuthType());
-                    entity.setAuthHeaderName(manifest.getAuthHeaderName());
-                    entity.setAuthHeaderPrefix(manifest.getAuthHeaderPrefix());
-                    entity.setOauth2Config(manifest.getOauth2Config());
-                    entity.setCredentialGuide(manifest.getCredentialGuide());
-                    entity.setConnectionSetup(manifest.getConnectionSetup());
-                    entity.setVerifyAction(manifest.getVerifyAction());
-                    entity.setActions(manifest.getActions());
-                    // Don't overwrite enabled status if updating existing entity
-                    if (entity.getId() == null) {
-                        entity.setEnabled(true);
-                    }
-                    
-                    repository.save(entity);
-                    log.info("Upserted system connector: {}", entity.getConnectorId());
-                } catch (Exception e) {
-                    log.error("Failed to seed connector manifest: {}", resource.getFilename(), e);
-                }
-            }
-        } catch (Exception e) {
-            log.error("Failed to scan for connector manifests to seed", e);
-        }
-    }
-    
     private ConnectorManifest mapToDomain(ConnectorManifestEntity entity) {
         ConnectorManifest manifest = new ConnectorManifest();
         manifest.setId(entity.getId());
@@ -96,8 +43,9 @@ public class ConnectorRegistry {
         manifest.setConnectionSetup(entity.getConnectionSetup());
         manifest.setVerifyAction(entity.getVerifyAction());
         manifest.setActions(entity.getActions());
+        manifest.setTriggers(entity.getTriggers());
         manifest.setEnabled(entity.isEnabled());
-        
+
         return manifest;
     }
 
@@ -159,6 +107,21 @@ public class ConnectorRegistry {
                         "Action '" + actionId + "' not found in connector '" + connectorId + "'"));
     }
     
+    public ConnectorTrigger findTrigger(
+            String connectorId, String triggerId, ConnectorTriggerType triggerType, String organizationId) {
+        ConnectorManifest manifest = findById(connectorId, organizationId)
+                .orElseThrow(() -> new IllegalArgumentException("Unknown connector: " + connectorId));
+        if (manifest.getTriggers() == null) {
+            throw new IllegalArgumentException(
+                    "Trigger '" + triggerId + "' not found in connector '" + connectorId + "'");
+        }
+        return manifest.getTriggers().stream()
+                .filter(t -> t.getTriggerId().equals(triggerId) && t.getTriggerType() == triggerType)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Trigger '" + triggerId + "' not found in connector '" + connectorId + "'"));
+    }
+
     public ConnectorAction findAction(String connectorId, String actionId, String organizationId) {
         ConnectorManifest manifest = findById(connectorId, organizationId).orElseThrow(() -> new IllegalArgumentException("Unknown connector: " + connectorId));
         return manifest.getActions().stream()
@@ -192,8 +155,9 @@ public class ConnectorRegistry {
         entity.setConnectionSetup(manifest.getConnectionSetup());
         entity.setVerifyAction(manifest.getVerifyAction());
         entity.setActions(manifest.getActions());
+        entity.setTriggers(manifest.getTriggers());
         entity.setEnabled(manifest.isEnabled());
-        
+
         ConnectorManifestEntity saved = repository.save(entity);
         return mapToDomain(saved);
     }

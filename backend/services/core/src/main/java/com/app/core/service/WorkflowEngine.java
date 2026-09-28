@@ -11,7 +11,10 @@ import com.app.common.model.task.TaskType;
 import com.app.common.model.task.WorkflowTask;
 import com.app.common.model.task.execution.TaskExecutionResult;
 import com.app.common.model.task.execution.JoinTaskExecutionData;
+import com.app.common.graph.WorkflowGraph;
+import com.app.common.graph.WorkflowTopologyResolver;
 import com.app.common.model.task.parameters.BranchTaskParameters;
+import com.app.common.model.task.parameters.JoinTaskParameters;
 
 import com.app.core.model.ExecutionContext;
 import com.app.persistence.repository.WorkflowDefinitionRepository;
@@ -26,7 +29,6 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 
 /**
@@ -44,6 +46,7 @@ public class WorkflowEngine {
     private final ExecutionEventPublisher eventPublisher;
 
     private final ExecutorService executor;
+    private final long defaultJoinBarrierTimeoutMs;
 
     public WorkflowEngine(List<TaskExecutor> taskExecutors,
             WorkflowExecutionRepository executionRepository,
@@ -52,12 +55,14 @@ public class WorkflowEngine {
             ExecutionEventPublisher eventPublisher,
             @org.springframework.beans.factory.annotation.Value("${workflow.engine.core-pool-size:10}") int corePoolSize,
             @org.springframework.beans.factory.annotation.Value("${workflow.engine.max-pool-size:50}") int maxPoolSize,
-            @org.springframework.beans.factory.annotation.Value("${workflow.engine.queue-capacity:200}") int queueCapacity) {
+            @org.springframework.beans.factory.annotation.Value("${workflow.engine.queue-capacity:200}") int queueCapacity,
+            @org.springframework.beans.factory.annotation.Value("${workflow.engine.join-barrier-timeout-ms:300000}") long defaultJoinBarrierTimeoutMs) {
         this.taskExecutors = taskExecutors;
         this.definitionRepository = definitionRepository;
         this.executionRepository = executionRepository;
         this.taskExecutionRepository = taskExecutionRepository;
         this.eventPublisher = eventPublisher;
+        this.defaultJoinBarrierTimeoutMs = defaultJoinBarrierTimeoutMs;
         this.executor = new java.util.concurrent.ThreadPoolExecutor(
                 corePoolSize, maxPoolSize, 60L, java.util.concurrent.TimeUnit.SECONDS,
                 new java.util.concurrent.LinkedBlockingQueue<>(queueCapacity),
@@ -141,6 +146,9 @@ public class WorkflowEngine {
                 execution.getId(),
                 definition);
 
+        WorkflowGraph graph = WorkflowTopologyResolver.graphFromDefinition(definition);
+        JoinBarrier joinBarrier = new JoinBarrier();
+
         try {
             String currentTaskId = execution.getCurrentTaskId() != null && !execution.getCurrentTaskId().isBlank()
                     ? execution.getCurrentTaskId()
@@ -159,6 +167,22 @@ public class WorkflowEngine {
                 WorkflowTask currentTask = findTaskById(tasks, currentTaskId);
                 if (currentTask == null) {
                     throw new IllegalArgumentException("Task not found: " + currentTaskId);
+                }
+
+                if (currentTask.getType() == TaskType.JOIN) {
+                    String joinNext = executeJoinWhenBarrierReady(
+                            currentTask,
+                            tasks,
+                            execution,
+                            context,
+                            graph,
+                            joinBarrier);
+                    if (joinNext == null) {
+                        execution.setStatus(WorkflowExecutionStatus.FAILED);
+                        break;
+                    }
+                    currentTaskId = joinNext;
+                    continue;
                 }
 
                 // Execute the task
@@ -197,19 +221,61 @@ public class WorkflowEngine {
                     break;
                 }
 
-                // BRANCHED: execute branches in parallel
+                recordSequentialInboundArrival(
+                        currentTask.getTaskId(),
+                        result,
+                        graph,
+                        joinBarrier);
+
+                // BRANCHED: spawn parallel paths, await barrier, then run JOIN
                 if (result.getStatus() == TaskExecutionResult.Status.BRANCHED) {
                     BranchTaskParameters branchParams = (BranchTaskParameters) currentTask.getParameters();
-                    boolean branchSuccess = executeParallelBranches(
-                            currentTask.getTaskId(), branchParams, tasks, execution, context, result);
+                    String joinTaskId = resolveContinuationJoinId(currentTask, tasks, graph);
 
-                    if (!branchSuccess) {
+                    Instant branchStartTime = Instant.now();
+                    List<CompletableFuture<JoinTaskExecutionData.BranchResult>> branchFutures = spawnParallelBranches(
+                            currentTask.getTaskId(),
+                            branchParams,
+                            tasks,
+                            execution,
+                            context,
+                            result,
+                            definition,
+                            graph,
+                            joinTaskId,
+                            joinBarrier,
+                            branchStartTime);
+
+                    if (joinTaskId == null || joinTaskId.isBlank()) {
+                        log.error("BRANCH task {} has no continuation JOIN", currentTask.getTaskId());
                         execution.setStatus(WorkflowExecutionStatus.FAILED);
                         break;
                     }
 
-                    // After branches complete, jump to JOIN task (or end)
-                    currentTaskId = branchParams.getJoinTaskId();
+                    WorkflowTask joinTask = findTaskById(tasks, joinTaskId);
+                    if (joinTask == null || joinTask.getType() != TaskType.JOIN
+                            || !(joinTask.getParameters() instanceof JoinTaskParameters)) {
+                        log.error("Continuation task {} is not a valid JOIN", joinTaskId);
+                        execution.setStatus(WorkflowExecutionStatus.FAILED);
+                        break;
+                    }
+
+                    String joinNext = executeJoinWhenBarrierReady(
+                            joinTask,
+                            tasks,
+                            execution,
+                            context,
+                            graph,
+                            joinBarrier,
+                            branchStartTime);
+                    drainBranchFutures(branchFutures);
+
+                    if (joinNext == null) {
+                        execution.setStatus(WorkflowExecutionStatus.FAILED);
+                        break;
+                    }
+
+                    currentTaskId = joinNext;
                     continue;
                 }
 
@@ -340,104 +406,310 @@ public class WorkflowEngine {
         return null;
     }
 
+    private String resolveNextTaskId(
+            WorkflowTask currentTask,
+            List<WorkflowTask> tasks,
+            WorkflowGraph graph,
+            TaskExecutionResult result) {
+        if (result.getNextTaskId() != null && !result.getNextTaskId().isBlank()) {
+            return result.getNextTaskId();
+        }
+
+        String chainNext = graph.getChainOut(currentTask.getTaskId());
+        if (chainNext != null && !chainNext.isBlank()) {
+            return chainNext;
+        }
+
+        return getNextTaskId(tasks, currentTask);
+    }
+
+    private String resolveContinuationJoinId(
+            WorkflowTask branchTask,
+            List<WorkflowTask> tasks,
+            WorkflowGraph graph) {
+        if (branchTask.getNextTaskId() != null && !branchTask.getNextTaskId().isBlank()) {
+            WorkflowTask nextTask = findTaskById(tasks, branchTask.getNextTaskId());
+            if (nextTask != null && nextTask.getType() == TaskType.JOIN) {
+                return nextTask.getTaskId();
+            }
+        }
+
+        String spineNext = getNextTaskId(tasks, branchTask);
+        if (spineNext != null) {
+            WorkflowTask nextTask = findTaskById(tasks, spineNext);
+            if (nextTask != null && nextTask.getType() == TaskType.JOIN) {
+                return spineNext;
+            }
+        }
+
+        for (WorkflowTask task : tasks) {
+            if (task.getType() != TaskType.JOIN) {
+                continue;
+            }
+            List<String> inbounds = WorkflowTopologyResolver.resolveJoinInbounds(task.getTaskId(), graph);
+            if (inbounds.isEmpty()) {
+                continue;
+            }
+            List<WorkflowTopologyResolver.BranchPath> paths =
+                    WorkflowTopologyResolver.resolveBranchPaths(branchTask.getTaskId(), graph);
+            Set<String> tips = new HashSet<>();
+            for (WorkflowTopologyResolver.BranchPath path : paths) {
+                if (path.tipTaskId() != null && !path.tipTaskId().isBlank()) {
+                    tips.add(path.tipTaskId());
+                }
+            }
+            if (!tips.isEmpty() && inbounds.containsAll(tips)) {
+                return task.getTaskId();
+            }
+        }
+
+        return spineNext;
+    }
+
+    private void injectJoinArrivals(
+            ExecutionContext context,
+            String joinTaskId,
+            JoinBarrier joinBarrier,
+            Instant joinStartTime) {
+        context.getTaskOutputs().put(
+                "__joinArrivals__" + joinTaskId,
+                new HashMap<>(joinBarrier.getArrivals(joinTaskId)));
+        context.getTaskOutputs().put("__joinStartTime__" + joinTaskId, joinStartTime);
+
+        for (JoinTaskExecutionData.BranchResult arrival : joinBarrier.getArrivals(joinTaskId).values()) {
+            if (arrival.getOutput() != null) {
+                context.getTaskOutputs().putAll(arrival.getOutput());
+            }
+        }
+    }
+
+    private long resolveBarrierTimeoutMs(JoinTaskParameters joinParams) {
+        if (joinParams.getBarrierTimeoutMs() != null && joinParams.getBarrierTimeoutMs() > 0) {
+            return joinParams.getBarrierTimeoutMs();
+        }
+        return defaultJoinBarrierTimeoutMs;
+    }
+
+    private boolean awaitJoinBarrier(
+            String joinTaskId,
+            JoinTaskParameters joinParams,
+            List<String> expectedInbounds,
+            JoinBarrier joinBarrier) throws InterruptedException {
+        long timeoutMs = resolveBarrierTimeoutMs(joinParams);
+        long deadline = System.currentTimeMillis() + timeoutMs;
+        long pollIntervalMs = 50L;
+
+        while (!joinBarrier.isSatisfied(
+                joinTaskId,
+                joinParams.getWaitPolicy(),
+                joinParams.getQuorumCount(),
+                expectedInbounds)) {
+            if (System.currentTimeMillis() >= deadline) {
+                log.error(
+                        "Join barrier timeout for {} after {} ms — arrivals {}/{}",
+                        joinTaskId,
+                        timeoutMs,
+                        joinBarrier.countArrivals(joinTaskId, expectedInbounds),
+                        expectedInbounds.size());
+                return false;
+            }
+            Thread.sleep(pollIntervalMs);
+        }
+        return true;
+    }
+
+    /**
+     * Records an arrival when a sequential (non-branch) task that is wired as a JOIN inbound completes.
+     */
+    private void recordSequentialInboundArrival(
+            String completedTaskId,
+            TaskExecutionResult result,
+            WorkflowGraph graph,
+            JoinBarrier joinBarrier) {
+        if (completedTaskId == null || completedTaskId.isBlank() || graph == null) {
+            return;
+        }
+
+        for (Map.Entry<String, List<String>> entry : graph.getJoinInboundsMap().entrySet()) {
+            String joinTaskId = entry.getKey();
+            if (!WorkflowTopologyResolver.isInboundForJoin(completedTaskId, joinTaskId, graph)) {
+                continue;
+            }
+
+            TaskExecutionStatus arrivalStatus = result.getStatus() == TaskExecutionResult.Status.FAILED
+                    ? TaskExecutionStatus.FAILED
+                    : TaskExecutionStatus.COMPLETED;
+
+            Map<String, Object> output = result.getOutput() != null
+                    ? new HashMap<>(result.getOutput())
+                    : new HashMap<>();
+
+            JoinTaskExecutionData.BranchResult arrival = JoinTaskExecutionData.BranchResult.builder()
+                    .branchName(completedTaskId)
+                    .status(arrivalStatus)
+                    .lastTaskId(completedTaskId)
+                    .errorMessage(result.getErrorMessage())
+                    .output(output)
+                    .build();
+            joinBarrier.recordArrival(joinTaskId, completedTaskId, arrival);
+        }
+    }
+
+    /**
+     * Waits for the join barrier, injects arrivals, executes JOIN, and returns the next task ID.
+     *
+     * @return next task ID after JOIN, or null on failure/timeout
+     */
+    private String executeJoinWhenBarrierReady(
+            WorkflowTask joinTask,
+            List<WorkflowTask> tasks,
+            WorkflowExecution execution,
+            ExecutionContext context,
+            WorkflowGraph graph,
+            JoinBarrier joinBarrier) {
+        return executeJoinWhenBarrierReady(
+                joinTask, tasks, execution, context, graph, joinBarrier, Instant.now());
+    }
+
+    private String executeJoinWhenBarrierReady(
+            WorkflowTask joinTask,
+            List<WorkflowTask> tasks,
+            WorkflowExecution execution,
+            ExecutionContext context,
+            WorkflowGraph graph,
+            JoinBarrier joinBarrier,
+            Instant joinWaitStart) {
+        if (!(joinTask.getParameters() instanceof JoinTaskParameters joinParams)) {
+            log.error("Task {} is not a valid JOIN", joinTask.getTaskId());
+            return null;
+        }
+
+        String joinTaskId = joinTask.getTaskId();
+        List<String> expectedInbounds = WorkflowTopologyResolver.resolveJoinInbounds(joinTaskId, graph);
+
+        try {
+            if (!awaitJoinBarrier(joinTaskId, joinParams, expectedInbounds, joinBarrier)) {
+                return null;
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.error("Interrupted while waiting for join barrier {}", joinTaskId);
+            return null;
+        }
+
+        injectJoinArrivals(context, joinTaskId, joinBarrier, joinWaitStart);
+
+        Instant joinStartTime = Instant.now();
+        TaskExecutionResult joinResult = executeTask(joinTask, execution, context);
+        recordTaskExecution(execution, joinTask, joinResult, joinStartTime);
+
+        if (joinResult.getOutput() != null) {
+            execution.getTaskOutputs().put(joinTask.getTaskId(), joinResult.getOutput());
+        }
+
+        if (joinResult.getStatus() == TaskExecutionResult.Status.FAILED) {
+            return null;
+        }
+
+        return joinResult.getNextTaskId() != null && !joinResult.getNextTaskId().isBlank()
+                ? joinResult.getNextTaskId()
+                : getNextTaskId(tasks, joinTask);
+    }
+
+    private void drainBranchFutures(List<CompletableFuture<JoinTaskExecutionData.BranchResult>> futures) {
+        if (futures == null || futures.isEmpty()) {
+            return;
+        }
+        try {
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+        } catch (Exception e) {
+            log.warn("One or more branch futures completed with errors: {}", e.getMessage());
+        }
+    }
+
     // ── Parallel branch execution ──
 
     /**
-     * Execute parallel branches concurrently using CompletableFuture.
-     * Each branch runs in an isolated ExecutionContext.
-     *
-     * @return true if all branches succeeded, false if any failed
+     * Spawn parallel branch paths. Shared by the main thread and nested BRANCHED segments.
+     * Caller awaits the join barrier separately so ANY/QUORUM can proceed early.
      */
-    private boolean executeParallelBranches(
+    private List<CompletableFuture<JoinTaskExecutionData.BranchResult>> spawnParallelBranches(
             String branchTaskId,
             BranchTaskParameters branchParams,
             List<WorkflowTask> tasks,
             WorkflowExecution execution,
             ExecutionContext parentContext,
-            TaskExecutionResult branchResult) {
+            TaskExecutionResult branchResult,
+            WorkflowDefinition definition,
+            WorkflowGraph graph,
+            String joinTaskId,
+            JoinBarrier joinBarrier,
+            Instant branchStartTime) {
 
         List<BranchTaskParameters.ParallelBranch> branches = branchParams.getBranches();
         List<String> branchIds = branchResult.getParallelBranchIds();
-        String joinTaskId = branchParams.getJoinTaskId();
 
-        Map<String, JoinTaskExecutionData.BranchResult> branchResults = new ConcurrentHashMap<>();
-        Instant branchStartTime = Instant.now();
-
-        // Spawn each branch as a CompletableFuture
-        List<CompletableFuture<Void>> futures = new ArrayList<>();
+        List<CompletableFuture<JoinTaskExecutionData.BranchResult>> futures = new ArrayList<>();
 
         for (int i = 0; i < branches.size(); i++) {
             BranchTaskParameters.ParallelBranch branch = branches.get(i);
             String branchId = branchIds.get(i);
 
-            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+            CompletableFuture<JoinTaskExecutionData.BranchResult> future = CompletableFuture.supplyAsync(() -> {
                 ExecutionContext branchContext = ExecutionContext.createBranch(
                         parentContext, branchId, branch.getBranchName());
 
-                JoinTaskExecutionData.BranchResult result = executeBranch(
-                        branchParams, branch, branchId, tasks, execution, branchContext, joinTaskId);
-
-                branchResults.put(branch.getBranchName(), result);
+                return executePathSegment(
+                        branch.getStartTaskId(),
+                        branchParams,
+                        branch,
+                        branchId,
+                        tasks,
+                        execution,
+                        branchContext,
+                        graph,
+                        joinTaskId,
+                        joinBarrier,
+                        branchStartTime,
+                        definition);
             }, executor);
 
             futures.add(future);
         }
 
-        // Wait for all branches to complete
-        try {
-            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-        } catch (Exception e) {
-            log.error("Error waiting for parallel branches: {}", e.getMessage(), e);
-        }
-
-        // Store branch results in context for the JOIN executor (keyed by BRANCH task id)
-        parentContext.getTaskOutputs().put(
-                "__branchResults__" + branchTaskId, branchResults);
-        parentContext.getTaskOutputs().put(
-                "__branchStartTime__" + branchTaskId, branchStartTime);
-
-        // Merge branch task outputs into parent context
-        for (JoinTaskExecutionData.BranchResult br : branchResults.values()) {
-            if (br.getOutput() != null) {
-                parentContext.getTaskOutputs().putAll(br.getOutput());
-            }
-        }
-
-        // Always return true — the JoinTaskExecutor will apply the failure
-        // strategy (FAIL_FAST, WAIT_FOR_ALL, REQUIRE_ALL) and decide whether
-        // the workflow should fail.
-        return true;
+        return futures;
     }
 
     /**
-     * Execute a single branch sequentially until it reaches the join task or ends.
+     * Execute a branch path until it reaches a join inbound, a sibling branch start, or a terminal task.
+     * Handles nested BRANCHED tasks by recursively spawning inner parallel paths.
      */
-    private JoinTaskExecutionData.BranchResult executeBranch(
+    private JoinTaskExecutionData.BranchResult executePathSegment(
+            String startTaskId,
             BranchTaskParameters branchParams,
             BranchTaskParameters.ParallelBranch branch,
             String branchId,
             List<WorkflowTask> tasks,
             WorkflowExecution execution,
             ExecutionContext branchContext,
-            String joinTaskId) {
+            WorkflowGraph graph,
+            String joinTaskId,
+            JoinBarrier joinBarrier,
+            Instant branchStartTime,
+            WorkflowDefinition definition) {
 
         log.info("Starting branch '{}' (ID: {}) at task: {}",
-                branch.getBranchName(), branchId, branch.getStartTaskId());
+                branch.getBranchName(), branchId, startTaskId);
 
-        String currentTaskId = branch.getStartTaskId();
+        String currentTaskId = startTaskId;
         int tasksExecuted = 0;
         String lastTaskId = null;
         Map<String, Object> branchOutputs = new HashMap<>();
 
         try {
-            while (currentTaskId != null) {
+            while (currentTaskId != null && !currentTaskId.isBlank()) {
                 if (tasksExecuted >= 10000) {
                     throw new IllegalStateException("Maximum task execution limit reached in branch (possible infinite loop)");
-                }
-
-                // Stop before the JOIN task
-                if (joinTaskId != null && currentTaskId.equals(joinTaskId)) {
-                    break;
                 }
 
                 WorkflowTask currentTask = findTaskById(tasks, currentTaskId);
@@ -451,13 +723,11 @@ public class WorkflowEngine {
                 tasksExecuted++;
                 lastTaskId = currentTaskId;
 
-                // Store output in branch context
                 if (result.getOutput() != null) {
                     branchContext.getTaskOutputs().put(currentTask.getTaskId(), result.getOutput());
                     branchOutputs.put(currentTask.getTaskId(), result.getOutput());
                 }
 
-                // Record task execution (thread-safe via repository)
                 recordTaskExecution(execution, currentTask, result, taskStartTime);
 
                 if (result.getStatus() == TaskExecutionResult.Status.FAILED) {
@@ -471,14 +741,41 @@ public class WorkflowEngine {
                             .build();
                 }
 
-                if (branch.getEndTaskId() != null && !branch.getEndTaskId().isBlank()
-                        && currentTaskId.equals(branch.getEndTaskId().trim())) {
-                    break;
+                if (result.getStatus() == TaskExecutionResult.Status.BRANCHED) {
+                    BranchTaskParameters innerParams = (BranchTaskParameters) currentTask.getParameters();
+                    List<CompletableFuture<JoinTaskExecutionData.BranchResult>> innerFutures = spawnParallelBranches(
+                            currentTask.getTaskId(),
+                            innerParams,
+                            tasks,
+                            execution,
+                            branchContext,
+                            result,
+                            definition,
+                            graph,
+                            joinTaskId,
+                            joinBarrier,
+                            branchStartTime);
+
+                    drainBranchFutures(innerFutures);
+
+                    currentTaskId = resolveNextTaskId(currentTask, tasks, graph, result);
+                    continue;
                 }
 
-                String nextTaskId = result.getNextTaskId() != null && !result.getNextTaskId().isBlank()
-                        ? result.getNextTaskId()
-                        : getNextTaskId(tasks, currentTask);
+                if (joinTaskId != null && !joinTaskId.isBlank()
+                        && WorkflowTopologyResolver.isInboundForJoin(currentTaskId, joinTaskId, graph)) {
+                    JoinTaskExecutionData.BranchResult arrival = JoinTaskExecutionData.BranchResult.builder()
+                            .branchName(branch.getBranchName())
+                            .status(TaskExecutionStatus.COMPLETED)
+                            .tasksExecuted(tasksExecuted)
+                            .lastTaskId(lastTaskId)
+                            .output(branchOutputs)
+                            .build();
+                    joinBarrier.recordArrival(joinTaskId, currentTaskId, arrival);
+                    return arrival;
+                }
+
+                String nextTaskId = resolveNextTaskId(currentTask, tasks, graph, result);
 
                 if (nextTaskId != null && isSiblingBranchStart(branchParams, branch, nextTaskId)) {
                     break;

@@ -6,8 +6,10 @@ package com.app.common.model.trigger;
 public enum TriggerType {
     /** User clicks "Run" or calls POST /executions/{id}. */
     MANUAL,
-    /** External systems POST to a generated webhook URL. */
+    /** External systems POST to a generated webhook URL (passive or app-managed subscribe). */
     WEBHOOK,
     /** Platform auto-triggers on a cron schedule. */
-    SCHEDULE
+    SCHEDULE,
+    /** Platform polls an HTTP endpoint on a schedule and triggers on data changes. */
+    POLL
 }

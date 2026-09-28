@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
 import { credentialApi } from '@/api/credentialApi';
 import type { IntegrationCredential } from '@/types/api';
 import { Button } from '@/components/ui/button';
-import { Loader2, Plus, KeyRound, Server, ShieldCheck, Trash2, Edit2 } from 'lucide-react';
+import { ErrorBanner } from '@/components/ui/error-banner';
+import { Loader2, KeyRound, Server, ShieldCheck, Trash2, Edit2 } from 'lucide-react';
 import { ConnectorConnectionPanel } from './ConnectorConnectionPanel';
 import {
     Table,
@@ -13,19 +14,28 @@ import {
     TableRow,
 } from '@/components/ui/table';
 
-export function CredentialsList() {
+export interface CredentialsListHandle {
+    refresh: () => Promise<void>;
+    openCreate: () => void;
+}
+
+export const CredentialsList = forwardRef<CredentialsListHandle>(function CredentialsList(_, ref) {
     const [credentials, setCredentials] = useState<IntegrationCredential[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [selectedCred, setSelectedCred] = useState<IntegrationCredential | undefined>();
 
     const loadCredentials = async () => {
         setIsLoading(true);
+        setError(null);
         try {
             const data = await credentialApi.getAll();
             setCredentials(data);
-        } catch (error) {
-            console.error('Failed to load credentials', error);
+        } catch (err) {
+            console.error('Failed to load credentials', err);
+            setCredentials([]);
+            setError("We couldn't load credentials right now.");
         } finally {
             setIsLoading(false);
         }
@@ -65,6 +75,11 @@ export function CredentialsList() {
         setIsDialogOpen(true);
     };
 
+    useImperativeHandle(ref, () => ({
+        refresh: loadCredentials,
+        openCreate,
+    }), [loadCredentials]);
+
     const getTypeIcon = (type: string) => {
         switch (type) {
             case 'SMTP':
@@ -78,16 +93,11 @@ export function CredentialsList() {
 
     return (
         <div className="space-y-4">
-            <div className="flex justify-between items-center">
-                <div>
-                    <h2 data-testid="credentials-section" className="text-lg font-medium tracking-tight">Credentials Directory</h2>
-                    <p className="text-sm text-muted-foreground">Manage authorized accounts, API keys, and secrets for your integrations.</p>
-                </div>
-                <Button onClick={openCreate} size="sm">
-                    <Plus className="mr-2 h-4 w-4" /> Add Credential
-                </Button>
-            </div>
+            {error ? (
+                <ErrorBanner data-testid="credentials-list-error" message={error} />
+            ) : null}
 
+            {!error ? (
             <div className="border rounded-lg bg-card overflow-hidden">
                 {isLoading ? (
                     <div className="flex items-center justify-center p-8">
@@ -97,7 +107,6 @@ export function CredentialsList() {
                     <div className="flex flex-col items-center justify-center p-8 text-center text-muted-foreground border rounded-lg bg-muted/20">
                         <KeyRound className="h-10 w-10 mb-4 opacity-20" />
                         <p>No credentials found.</p>
-                        <p className="text-sm">Click "Add Credential" to securely link your integration accounts.</p>
                     </div>
                 ) : (
                     <Table>
@@ -136,6 +145,7 @@ export function CredentialsList() {
                     </Table>
                 )}
             </div>
+            ) : null}
 
             <ConnectorConnectionPanel
                 open={isDialogOpen}
@@ -145,4 +155,4 @@ export function CredentialsList() {
             />
         </div>
     );
-}
+});

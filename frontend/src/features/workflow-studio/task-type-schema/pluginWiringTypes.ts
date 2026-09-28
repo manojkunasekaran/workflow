@@ -48,24 +48,9 @@ export interface ParamWireOutput {
 
 export type WireOutputDef = ListWireOutput | ParamWireOutput;
 
-/** Dynamic join inputs — one per branch on the linked Split into branches task. */
-export interface BranchJoinListInput {
-    kind: 'branchJoinList';
-    /** JOIN parameter that references the BRANCH task id. */
-    branchTaskParam: string;
-    /** BRANCH list parameter (branches). */
-    branchesParam: string;
-    /** Field on each branch row storing the terminal task id. */
-    endTaskParam: string;
-    handlePrefix: string;
-    labelField: string;
-    fallbackLabel: (index: number) => string;
-    color?: string;
-}
+export type WireInputDef = WireHandle;
 
-export type WireInputDef = WireHandle | BranchJoinListInput;
-
-/** Keeps two tasks in sync when connected (BRANCH.joinTaskId ↔ JOIN.branchTaskId). */
+/** Keeps two tasks in sync when connected (paired parameter refs). */
 export interface BilateralWireRule {
     sourceHandle: string;
     targetHandle: string;
@@ -95,14 +80,3 @@ export const DEFAULT_TASK_WIRING: TaskPluginWiring = {
 
 export const MAIN_FLOW_INPUT: WireHandle = { id: MAIN_IN, label: 'in' };
 export const MAIN_FLOW_OUTPUT: WireHandle = { id: MAIN_OUT, label: 'flow', color: '#64748b' };
-
-export const JOIN_BRANCH_JOIN_LIST_INPUT: BranchJoinListInput = {
-    kind: 'branchJoinList',
-    branchTaskParam: 'branchTaskId',
-    branchesParam: 'branches',
-    endTaskParam: 'endTaskId',
-    handlePrefix: 'join-in',
-    labelField: 'branchName',
-    fallbackLabel: (index) => `Branch ${index + 1}`,
-    color: '#d97706',
-};

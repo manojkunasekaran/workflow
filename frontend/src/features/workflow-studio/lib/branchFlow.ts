@@ -21,7 +21,12 @@ import {
     listRoutingEndpoints,
     terminatesMainSpine,
 } from '@/features/workflow-studio/lib/pluginWiringRuntime';
-import { readBranchEndTaskId, resolveMainSpineTaskIds } from '@/features/workflow-studio/lib/joinWiring';
+import { resolveMainSpineTaskIds } from '@/features/workflow-studio/lib/joinWiring';
+import {
+    buildWorkflowGraphFromCanvas,
+    resolveBranchTipForRow,
+    resolveJoinInbounds,
+} from '@/features/workflow-studio/lib/workflowTopology';
 import { resolveTaskOutputViews } from '@/features/workflow-studio/lib/graphRouting';
 import { isBranchChainEdgeId } from '@/features/workflow-studio/lib/graphHandles';
 import type { StudioCanvasNode } from '@/features/workflow-studio/lib/canvasNodeUtils';
@@ -46,18 +51,23 @@ function branchChainTip(startId: string, edges: Edge[]): string {
 function resolveBranchTipTaskId(
     branchData: TaskNodeData,
     index: number,
+    nodes: StudioCanvasNode[],
     edges: Edge[],
 ): string {
-    const endId = readBranchEndTaskId(branchData, index);
-    if (endId) return endId;
+    return resolveBranchTipForRow(branchData, index, nodes, edges);
+}
 
-    const raw = branchData.parameters.branches;
-    if (!Array.isArray(raw)) return '';
-    const row = raw[index];
-    if (!row || typeof row !== 'object') return '';
-    const startId = String((row as { startTaskId?: string }).startTaskId ?? '').trim();
-    if (!startId) return '';
-    return branchChainTip(startId, edges);
+function resolveJoinAfterBranch(
+    branchTaskId: string,
+    nodes: StudioCanvasNode[],
+    edges: Edge[],
+): string {
+    const spineIds = resolveMainSpineTaskIds(nodes, edges);
+    const branchIndex = spineIds.indexOf(branchTaskId);
+    if (branchIndex < 0) return '';
+    const nextId = spineIds[branchIndex + 1] ?? '';
+    const nextNode = getTaskNodes(nodes).find((node) => node.id === nextId);
+    return nextNode?.data.type === 'JOIN' ? nextId : '';
 }
 
 function branchRowCount(parameters: Record<string, unknown>): number {
@@ -75,19 +85,16 @@ function joinContinuationPosition(
     };
 }
 
-/** Place join to the right of branch tips, vertically centered between them. */
-function layoutJoinAfterBranchEnds(
-    branchData: TaskNodeData,
-    branchTop: { x: number; y: number },
-    branchIconHeight: number,
+/** Place join to the right of inbound tips, vertically centered between them. */
+function layoutJoinFromInboundTips(
+    inboundTaskIds: string[],
     positions: Map<string, { x: number; y: number }>,
     taskById: Map<string, Node<TaskNodeData>>,
-    edges: Edge[],
+    fallback: { x: number; y: number },
 ): { x: number; y: number } {
     const endMetrics: { x: number; centerY: number }[] = [];
 
-    for (let index = 0; index < branchRowCount(branchData.parameters); index += 1) {
-        const tipId = resolveBranchTipTaskId(branchData, index, edges);
+    for (const tipId of inboundTaskIds) {
         const pos = positions.get(tipId);
         const node = taskById.get(tipId);
         if (!pos || !node) continue;
@@ -102,7 +109,7 @@ function layoutJoinAfterBranchEnds(
     }
 
     if (endMetrics.length === 0) {
-        return joinContinuationPosition(branchTop, branchIconHeight);
+        return fallback;
     }
 
     const maxX = Math.max(...endMetrics.map((entry) => entry.x));
@@ -114,6 +121,29 @@ function layoutJoinAfterBranchEnds(
         x: maxX + CHAIN_LAYOUT.gap,
         y: joinCenterY - N8N_NODE_LAYOUT.iconSize / 2,
     };
+}
+
+/** Place join to the right of branch tips, vertically centered between them. */
+function layoutJoinAfterBranchEnds(
+    branchData: TaskNodeData,
+    branchTop: { x: number; y: number },
+    branchIconHeight: number,
+    positions: Map<string, { x: number; y: number }>,
+    taskById: Map<string, Node<TaskNodeData>>,
+    nodes: StudioCanvasNode[],
+    edges: Edge[],
+): { x: number; y: number } {
+    const inboundTips: string[] = [];
+    for (let index = 0; index < branchRowCount(branchData.parameters); index += 1) {
+        inboundTips.push(resolveBranchTipTaskId(branchData, index, nodes, edges));
+    }
+
+    return layoutJoinFromInboundTips(
+        inboundTips,
+        positions,
+        taskById,
+        joinContinuationPosition(branchTop, branchIconHeight),
+    );
 }
 
 function joinNextContinuationPosition(joinTop: { x: number; y: number }): {
@@ -590,17 +620,19 @@ export function positionForRoutingWire(
     );
 }
 
-/** Reposition JOIN (and its continuation) after branch children move or branch count changes. */
+/** Reposition JOIN (and its continuation) from topology inbounds or spine-after-BRANCH. */
 export function repositionLinkedJoinNodes(
     nodes: StudioCanvasNode[],
     edges: Edge[] = [],
 ): StudioCanvasNode[] {
     const taskById = new Map(getTaskNodes(nodes).map((node) => [node.id, node]));
     const positions = new Map(nodes.map((node) => [node.id, { ...node.position }]));
+    const positionedJoins = new Set<string>();
+    const topologyGraph = buildWorkflowGraphFromCanvas(nodes, edges);
 
     for (const node of getTaskNodes(nodes)) {
         if (node.data.type !== 'BRANCH') continue;
-        const joinTaskId = String(node.data.parameters.joinTaskId ?? '').trim();
+        const joinTaskId = resolveJoinAfterBranch(node.id, nodes, edges);
         if (!joinTaskId) continue;
 
         const parentTop = positions.get(node.id);
@@ -615,12 +647,30 @@ export function repositionLinkedJoinNodes(
             parentIconHeight,
             positions,
             taskById,
+            nodes,
             edges,
         );
         positions.set(joinTaskId, joinPos);
+        positionedJoins.add(joinTaskId);
 
         const joinNode = taskById.get(joinTaskId);
         const nextTaskId = String(joinNode?.data.parameters.nextTaskId ?? '').trim();
+        if (nextTaskId) {
+            positions.set(nextTaskId, joinNextContinuationPosition(joinPos));
+        }
+    }
+
+    for (const node of getTaskNodes(nodes)) {
+        if (node.data.type !== 'JOIN' || positionedJoins.has(node.id)) continue;
+
+        const inboundTaskIds = resolveJoinInbounds(node.id, topologyGraph);
+        if (inboundTaskIds.length === 0) continue;
+
+        const fallback = positions.get(node.id) ?? { x: CHAIN_LAYOUT.startX, y: CHAIN_LAYOUT.y };
+        const joinPos = layoutJoinFromInboundTips(inboundTaskIds, positions, taskById, fallback);
+        positions.set(node.id, joinPos);
+
+        const nextTaskId = String(node.data.parameters.nextTaskId ?? '').trim();
         if (nextTaskId) {
             positions.set(nextTaskId, joinNextContinuationPosition(joinPos));
         }
@@ -771,7 +821,7 @@ export function relayoutWorkflow(
 
     for (const node of getTaskNodes(nodes)) {
         if (node.data.type !== 'BRANCH') continue;
-        const joinTaskId = String(node.data.parameters.joinTaskId ?? '').trim();
+        const joinTaskId = resolveJoinAfterBranch(node.id, nodes, edges);
         if (!joinTaskId) continue;
 
         const parentTop = positions.get(node.id);
@@ -786,6 +836,7 @@ export function relayoutWorkflow(
             parentIconHeight,
             positions,
             taskById,
+            nodes,
             edges,
         );
 

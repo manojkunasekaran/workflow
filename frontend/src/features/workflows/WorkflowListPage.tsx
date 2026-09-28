@@ -5,6 +5,7 @@ import type { WorkflowDefinition } from '@/types/api';
 import { cn } from '@/lib/utils';
 import { PageHeader } from '@/layouts/PageHeader';
 import { Button } from '@/components/ui/button';
+import { ErrorBanner } from '@/components/ui/error-banner';
 import { Hint } from '@/components/ui/hint';
 import { ArrowRight, Loader2, Plus, RefreshCw, Workflow } from 'lucide-react';
 
@@ -22,7 +23,8 @@ export default function WorkflowListPage() {
             setWorkflows([...data].reverse());
         } catch (err) {
             console.error('Failed to load workflows', err);
-            setError('Failed to load workflows');
+            setWorkflows([]);
+            setError("We couldn't load workflows right now.");
         } finally {
             setIsLoading(false);
         }
@@ -69,11 +71,9 @@ export default function WorkflowListPage() {
             />
 
             <div className="flex-1 overflow-auto p-6">
-                {error && (
-                    <div data-testid="workflow-list-error" className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-red-600">
-                        {error}
-                    </div>
-                )}
+                {error ? (
+                    <ErrorBanner data-testid="workflow-list-error" message={error} />
+                ) : null}
 
                 {workflows.length === 0 && !error ? (
                     <div data-testid="empty-state-container" className="flex flex-col items-center justify-center py-16 text-center">

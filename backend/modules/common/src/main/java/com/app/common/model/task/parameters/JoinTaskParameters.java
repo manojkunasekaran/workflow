@@ -6,10 +6,12 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Parameters for JOIN task type.
- * Gathers parallel branches created by a BRANCH task and synchronizes
- * them before the workflow continues.
+ * Gathers wired inbound tasks and synchronizes them before the workflow continues.
  */
 @Data
 @Builder
@@ -18,29 +20,61 @@ import lombok.NoArgsConstructor;
 public class JoinTaskParameters implements TaskParameters {
 
     /**
-     * ID of the BRANCH task that created the parallel branches.
-     * Used to identify which branches to wait for.
+     * Ordered list of task IDs wired into join-merge (fan-in sources).
      */
-    private String branchTaskId;
+    @Builder.Default
+    private List<String> inboundTaskIds = new ArrayList<>();
 
-    public void setBranchTaskId(String branchTaskId) {
-        this.branchTaskId = TaskRefs.normalize(branchTaskId);
-    }
+    /**
+     * How many inbounds must arrive before JOIN continues.
+     */
+    @Builder.Default
+    private JoinWaitPolicy waitPolicy = JoinWaitPolicy.ALL;
+
+    /**
+     * Required when {@link #waitPolicy} is {@link JoinWaitPolicy#QUORUM}.
+     */
+    private Integer quorumCount;
 
     /**
      * Strategy when a branch fails.
-     * Defaults to FAIL_FAST.
      */
     @Builder.Default
     private FailureStrategy failureStrategy = FailureStrategy.FAIL_FAST;
 
     /**
-     * Next task ID to execute after all branches complete.
+     * How inbound outputs are merged.
+     */
+    @Builder.Default
+    private JoinMergeMode mergeMode = JoinMergeMode.PASS_THROUGH;
+
+    /**
+     * Optional per-JOIN barrier wait timeout in milliseconds.
+     * When unset, the engine default ({@code workflow.engine.join-barrier-timeout-ms}) applies.
+     */
+    private Long barrierTimeoutMs;
+
+    /**
+     * Next task ID to execute after the join barrier is satisfied.
      */
     private String nextTaskId;
 
     public void setNextTaskId(String nextTaskId) {
         this.nextTaskId = TaskRefs.normalize(nextTaskId);
+    }
+
+    public void setInboundTaskIds(List<String> inboundTaskIds) {
+        if (inboundTaskIds == null) {
+            this.inboundTaskIds = new ArrayList<>();
+            return;
+        }
+        this.inboundTaskIds = new ArrayList<>();
+        for (String id : inboundTaskIds) {
+            String normalized = TaskRefs.normalize(id);
+            if (normalized != null && !normalized.isBlank()) {
+                this.inboundTaskIds.add(normalized);
+            }
+        }
     }
 
     public enum FailureStrategy {

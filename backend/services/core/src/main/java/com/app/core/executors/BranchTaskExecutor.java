@@ -50,21 +50,19 @@ public class BranchTaskExecutor implements TaskExecutor {
         }
 
         List<String> branchIds = new ArrayList<>();
+        List<String> branchNames = new ArrayList<>();
         for (int i = 0; i < params.getBranches().size(); i++) {
             branchIds.add(UUID.randomUUID().toString());
+            branchNames.add(params.getBranches().get(i).getBranchName());
         }
 
         log.info("Branch task {} creating {} parallel branches: {}",
-                task.getTaskId(), params.getBranches().size(),
-                params.getBranches().stream()
-                        .map(BranchTaskParameters.ParallelBranch::getBranchName)
-                        .collect(Collectors.toList()));
+                task.getTaskId(), params.getBranches().size(), branchNames);
 
-        // Build execution data for audit trail
         BranchTaskExecutionData executionData = BranchTaskExecutionData.builder()
                 .branchesCreated(params.getBranches().size())
                 .branchIds(branchIds)
-                .joinTaskId(params.getJoinTaskId())
+                .branchNames(branchNames)
                 .branchStartTime(Instant.now())
                 .build();
 
@@ -73,7 +71,6 @@ public class BranchTaskExecutor implements TaskExecutor {
                 .executionData(executionData)
                 .output(buildOutput(executionData))
                 .parallelBranchIds(branchIds)
-                .nextTaskId(params.getJoinTaskId())
                 .build();
     }
 }

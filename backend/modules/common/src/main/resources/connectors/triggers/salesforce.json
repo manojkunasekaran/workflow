@@ -1,0 +1,149 @@
+{
+  "connectorId": "salesforce",
+  "triggers": [
+    {
+      "triggerId": "new_leads",
+      "displayName": "New leads",
+      "description": "Triggers when new leads are created.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {"key": "instance_url", "label": "Instance URL", "type": "STRING", "required": true, "supportsExpression": false}
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {"method": "GET", "url": "https://{instance_url}/services/data/v60.0/query?q=SELECT+Id,CreatedDate,LastName,Company+FROM+Lead+ORDER+BY+CreatedDate+DESC+LIMIT+100"},
+          "detection": {"itemsPath": "$.records", "keyPaths": ["Id"]}
+        }
+      }
+    },
+    {
+      "triggerId": "new_contacts",
+      "displayName": "New contacts",
+      "description": "Triggers when new contacts are created.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {"key": "instance_url", "label": "Instance URL", "type": "STRING", "required": true, "supportsExpression": false}
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {"method": "GET", "url": "https://{instance_url}/services/data/v60.0/query?q=SELECT+Id,CreatedDate,LastName,Email+FROM+Contact+ORDER+BY+CreatedDate+DESC+LIMIT+100"},
+          "detection": {"itemsPath": "$.records", "keyPaths": ["Id"]}
+        }
+      }
+    },
+    {
+      "triggerId": "new_opportunities",
+      "displayName": "New opportunities",
+      "description": "Triggers when new opportunities are created.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {"key": "instance_url", "label": "Instance URL", "type": "STRING", "required": true, "supportsExpression": false}
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {"method": "GET", "url": "https://{instance_url}/services/data/v60.0/query?q=SELECT+Id,CreatedDate,Name,StageName,Amount+FROM+Opportunity+ORDER+BY+CreatedDate+DESC+LIMIT+100"},
+          "detection": {"itemsPath": "$.records", "keyPaths": ["Id"]}
+        }
+      }
+    },
+    {
+      "triggerId": "new_accounts",
+      "displayName": "New accounts",
+      "description": "Triggers when new accounts are created.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {"key": "instance_url", "label": "Instance URL", "type": "STRING", "required": true, "supportsExpression": false}
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {"method": "GET", "url": "https://{instance_url}/services/data/v60.0/query?q=SELECT+Id,CreatedDate,Name+FROM+Account+ORDER+BY+CreatedDate+DESC+LIMIT+100"},
+          "detection": {"itemsPath": "$.records", "keyPaths": ["Id"]}
+        }
+      }
+    },
+    {
+      "triggerId": "new_cases",
+      "displayName": "New cases",
+      "description": "Triggers when new support cases are created.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {"key": "instance_url", "label": "Instance URL", "type": "STRING", "required": true, "supportsExpression": false}
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {"method": "GET", "url": "https://{instance_url}/services/data/v60.0/query?q=SELECT+Id,CreatedDate,Subject,Status+FROM+Case+ORDER+BY+CreatedDate+DESC+LIMIT+100"},
+          "detection": {"itemsPath": "$.records", "keyPaths": ["Id"]}
+        }
+      }
+    },
+    {
+      "triggerId": "updated_opportunities",
+      "displayName": "Updated opportunities",
+      "description": "Triggers when opportunities are updated.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {"key": "instance_url", "label": "Instance URL", "type": "STRING", "required": true, "supportsExpression": false}
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "UPDATED",
+          "http": {"method": "GET", "url": "https://{instance_url}/services/data/v60.0/query?q=SELECT+Id,LastModifiedDate,Name,StageName+FROM+Opportunity+ORDER+BY+LastModifiedDate+DESC+LIMIT+100"},
+          "detection": {"itemsPath": "$.records", "keyPaths": ["Id"], "updateKeyPath": "LastModifiedDate"}
+        }
+      }
+    },
+    {
+      "triggerId": "new_tasks",
+      "displayName": "New tasks",
+      "description": "Triggers when new tasks are created.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {"key": "instance_url", "label": "Instance URL", "type": "STRING", "required": true, "supportsExpression": false}
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {"method": "GET", "url": "https://{instance_url}/services/data/v60.0/query?q=SELECT+Id,CreatedDate,Subject,Status+FROM+Task+ORDER+BY+CreatedDate+DESC+LIMIT+100"},
+          "detection": {"itemsPath": "$.records", "keyPaths": ["Id"]}
+        }
+      }
+    },
+    {
+      "triggerId": "new_events",
+      "displayName": "New events",
+      "description": "Triggers when new calendar events are created.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {"key": "instance_url", "label": "Instance URL", "type": "STRING", "required": true, "supportsExpression": false}
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {"method": "GET", "url": "https://{instance_url}/services/data/v60.0/query?q=SELECT+Id,CreatedDate,Subject,StartDateTime+FROM+Event+ORDER+BY+CreatedDate+DESC+LIMIT+100"},
+          "detection": {"itemsPath": "$.records", "keyPaths": ["Id"]}
+        }
+      }
+    },
+    {
+      "triggerId": "new_campaigns",
+      "displayName": "New campaigns",
+      "description": "Triggers when new marketing campaigns are created.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {"key": "instance_url", "label": "Instance URL", "type": "STRING", "required": true, "supportsExpression": false}
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {"method": "GET", "url": "https://{instance_url}/services/data/v60.0/query?q=SELECT+Id,CreatedDate,Name,Status+FROM+Campaign+ORDER+BY+CreatedDate+DESC+LIMIT+100"},
+          "detection": {"itemsPath": "$.records", "keyPaths": ["Id"]}
+        }
+      }
+    }
+  ]
+}

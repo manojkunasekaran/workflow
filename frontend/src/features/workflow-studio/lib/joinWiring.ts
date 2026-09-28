@@ -13,6 +13,12 @@ import {
     ITERATOR_LOOP_BODY_START_PARAM,
 } from '@/features/workflow-studio/lib/iteratorLoopSync';
 import { parseIteratorActions } from '@/features/workflow-studio/task-type-schema/iteratorTask';
+import {
+    buildWorkflowGraphFromCanvas,
+    isInboundForJoin,
+    isValidBranchForkTarget,
+    resolveBranchTipForRow,
+} from '@/features/workflow-studio/lib/workflowTopology';
 
 /** Matches terminatesMainSpine() — stops linear spine walks. */
 const ROUTING_TERMINATOR_TYPES = new Set([
@@ -49,83 +55,32 @@ function listBranchRows(parameters: Record<string, unknown>): ParallelBranchRow[
     return raw.filter((item): item is ParallelBranchRow => Boolean(item) && typeof item === 'object');
 }
 
-export function resolveLinkedBranchData(
-    joinData: TaskNodeData,
-    context?: WireGraphContext,
-): TaskNodeData | null {
-    if (!context) return null;
-
-    const branchTaskId = String(joinData.parameters.branchTaskId ?? '').trim();
-    if (branchTaskId) {
-        const linked = context.workflowTasks.find((task) => task.taskId === branchTaskId);
-        if (linked) return linked;
-    }
-
-    return (
-        context.workflowTasks.find(
-            (task) =>
-                task.type === 'BRANCH' &&
-                String(task.parameters.joinTaskId ?? '').trim() === joinData.taskId,
-        ) ?? null
-    );
-}
-
 export function isTaskBranchEnd(
     nodes: StudioCanvasNode[],
     taskId: string,
     chainEdges: Edge[],
 ): boolean {
-    const taskIds = new Set(getTaskNodes(nodes).map((node) => node.id));
-
+    const graph = buildWorkflowGraphFromCanvas(nodes, chainEdges);
     for (const node of getTaskNodes(nodes)) {
-        if (node.data.type !== 'BRANCH') continue;
-        const branchData = node.data as TaskNodeData;
-        const joinTaskId = String(branchData.parameters.joinTaskId ?? '').trim();
-        if (!joinTaskId || !taskIds.has(joinTaskId)) continue;
-
-        const index = resolveBranchIndexForEndTask(branchData, taskId, chainEdges);
-        if (index === null) continue;
-        if (readBranchEndTaskId(branchData, index) === taskId) return true;
+        if (node.data.type !== 'JOIN') continue;
+        if (isInboundForJoin(taskId, node.id, graph)) return true;
     }
     return false;
 }
 
-/** Clear stale split/join links when a referenced task no longer exists on the canvas. */
+/** Clear stale JOIN inbound references when a wired task no longer exists on the canvas. */
 export function sanitizeDanglingBranchJoinReferences(nodes: StudioCanvasNode[]): StudioCanvasNode[] {
     const taskIds = new Set(getTaskNodes(nodes).map((node) => node.id));
     let next = nodes;
 
     for (const node of getTaskNodes(next)) {
-        if (node.data.type !== 'BRANCH') continue;
-        const branchData = node.data as TaskNodeData;
-        const joinTaskId = String(branchData.parameters.joinTaskId ?? '').trim();
-        if (!joinTaskId || taskIds.has(joinTaskId)) continue;
-
-        const rows = listBranchRows(branchData.parameters).map((row) => ({
-            ...row,
-            endTaskId: null,
-        }));
-        next = next.map((item) => {
-            if (item.type !== 'task' || item.id !== branchData.taskId) return item;
-            return {
-                ...item,
-                data: {
-                    ...(item.data as TaskNodeData),
-                    parameters: injectParameterType('BRANCH', {
-                        ...branchData.parameters,
-                        joinTaskId: null,
-                        branches: rows,
-                    }),
-                },
-            };
-        });
-    }
-
-    for (const node of getTaskNodes(next)) {
         if (node.data.type !== 'JOIN') continue;
         const joinData = node.data as TaskNodeData;
-        const branchTaskId = String(joinData.parameters.branchTaskId ?? '').trim();
-        if (!branchTaskId || taskIds.has(branchTaskId)) continue;
+        const inboundIds = Array.isArray(joinData.parameters.inboundTaskIds)
+            ? joinData.parameters.inboundTaskIds.map((id) => String(id ?? '').trim()).filter(Boolean)
+            : [];
+        const filtered = inboundIds.filter((id) => taskIds.has(id));
+        if (filtered.length === inboundIds.length) continue;
 
         next = next.map((item) => {
             if (item.type !== 'task' || item.id !== joinData.taskId) return item;
@@ -135,7 +90,7 @@ export function sanitizeDanglingBranchJoinReferences(nodes: StudioCanvasNode[]):
                     ...(item.data as TaskNodeData),
                     parameters: injectParameterType('JOIN', {
                         ...joinData.parameters,
-                        branchTaskId: null,
+                        inboundTaskIds: filtered,
                     }),
                 },
             };
@@ -145,26 +100,13 @@ export function sanitizeDanglingBranchJoinReferences(nodes: StudioCanvasNode[]):
     return next;
 }
 
-export function readBranchEndTaskId(branchData: TaskNodeData, index: number): string {
-    const rows = listBranchRows(branchData.parameters);
-    const row = rows[index];
-    if (!row) return '';
-    return String(row.endTaskId ?? '').trim();
-}
-
-export function writeBranchEndTaskId(
+export function readBranchPathTip(
     branchData: TaskNodeData,
     index: number,
-    endTaskId: string | null,
-): Record<string, unknown> {
-    const rows = listBranchRows(branchData.parameters);
-    const nextRows = rows.map((row, i) =>
-        i === index ? { ...row, endTaskId: endTaskId ?? '' } : row,
-    );
-    return injectParameterType(branchData.type, {
-        ...branchData.parameters,
-        branches: nextRows,
-    });
+    nodes: StudioCanvasNode[],
+    edges: Edge[],
+): string {
+    return resolveBranchTipForRow(branchData, index, nodes, edges);
 }
 
 /**
@@ -301,33 +243,16 @@ export function resolveMainSpineTaskIds(nodes: StudioCanvasNode[], chainEdges: E
     return fromOrder;
 }
 
-/** True when a parallel branch wire would target a main-spine step at or before the split node. */
+/** True when a parallel branch fork target is invalid (delegates to workflowTopology). */
 export function isInvalidParallelBranchTarget(
     nodes: StudioCanvasNode[],
     chainEdges: Edge[],
     branchTaskId: string,
     targetTaskId: string,
 ): boolean {
+    const graph = buildWorkflowGraphFromCanvas(nodes, chainEdges);
     const spineIds = resolveMainSpineTaskIds(nodes, chainEdges);
-    const branchIndex = spineIds.indexOf(branchTaskId);
-
-    // Nested splits live off the main spine — spine index is meaningless for them.
-    if (branchIndex < 0) {
-        if (spineIds.includes(targetTaskId)) return true;
-
-        const parentBranch = findBranchTaskForChainTask(nodes, branchTaskId, chainEdges);
-        if (parentBranch && parentBranch.taskId !== branchTaskId) {
-            for (const row of listBranchRows(parentBranch.parameters)) {
-                const siblingStart = String(row.startTaskId ?? '').trim();
-                if (siblingStart && siblingStart === targetTaskId) return true;
-            }
-        }
-        return false;
-    }
-
-    const targetIndex = spineIds.indexOf(targetTaskId);
-    if (targetIndex < 0) return false;
-    return targetIndex <= branchIndex;
+    return !isValidBranchForkTarget(branchTaskId, targetTaskId, graph, spineIds);
 }
 
 /** Whether a branch-chain edge may target a routing node (e.g. a later Split). */
@@ -480,43 +405,3 @@ export function findBranchTaskForChainTask(
     return null;
 }
 
-export function syncBranchJoinPair(
-    nodes: StudioCanvasNode[],
-    branchTaskId: string,
-    joinTaskId: string,
-): StudioCanvasNode[] {
-    const branchNode = getTaskNodes(nodes).find((node) => node.id === branchTaskId);
-    const joinNode = getTaskNodes(nodes).find((node) => node.id === joinTaskId);
-    if (!branchNode || !joinNode) return nodes;
-
-    const branchData = branchNode.data as TaskNodeData;
-    const joinData = joinNode.data as TaskNodeData;
-
-    return nodes.map((node) => {
-        if (node.id === branchTaskId && node.type === 'task') {
-            return {
-                ...node,
-                data: {
-                    ...(node.data as TaskNodeData),
-                    parameters: injectParameterType('BRANCH', {
-                        ...branchData.parameters,
-                        joinTaskId: joinTaskId,
-                    }),
-                },
-            };
-        }
-        if (node.id === joinTaskId && node.type === 'task') {
-            return {
-                ...node,
-                data: {
-                    ...(node.data as TaskNodeData),
-                    parameters: injectParameterType('JOIN', {
-                        ...joinData.parameters,
-                        branchTaskId: branchTaskId,
-                    }),
-                },
-            };
-        }
-        return node;
-    });
-}

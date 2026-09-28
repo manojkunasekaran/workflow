@@ -1,6 +1,7 @@
 package com.app.common.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
@@ -23,6 +24,8 @@ import java.util.Map;
 @Slf4j
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class DataTransformUtils {
+
+    private static final ObjectMapper MUTABLE_COPY_MAPPER = new ObjectMapper();
 
     /**
      * Extracts a value from a JSON structure using a JSONPath expression.
@@ -300,6 +303,80 @@ public final class DataTransformUtils {
      * @throws RuntimeException         if the requested hash algorithm is
      *                                  unavailable.
      */
+    /**
+     * Removes values at the given JsonPath expressions from a parsed JSON structure.
+     * Missing paths are ignored.
+     */
+    public static Object stripJsonPaths(Object rawInput, List<String> paths) {
+        if (rawInput == null || paths == null || paths.isEmpty()) {
+            return rawInput;
+        }
+        try {
+            // JsonPath deletes mutate in place; copy first so immutable inputs (e.g. Map.of) work.
+            Object mutable = deepCopyToMutableStructure(rawInput);
+            DocumentContext context = JsonPath.parse(mutable);
+            for (String path : paths) {
+                if (path == null || path.isBlank()) {
+                    continue;
+                }
+                try {
+                    context.delete(path);
+                } catch (com.jayway.jsonpath.PathNotFoundException ignored) {
+                    // path absent — nothing to strip
+                }
+            }
+            return context.json();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to strip JsonPath fields: " + e.getMessage(), e);
+        }
+    }
+
+    private static Object deepCopyToMutableStructure(Object rawInput) {
+        try {
+            byte[] json = MUTABLE_COPY_MAPPER.writeValueAsBytes(rawInput);
+            return MUTABLE_COPY_MAPPER.readValue(json, Object.class);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to copy JSON for path stripping: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Serializes an object to canonical JSON (sorted map keys) for stable hashing.
+     */
+    public static String canonicalJson(Object rawInput, ObjectMapper objectMapper) {
+        if (rawInput == null) {
+            return "";
+        }
+        try {
+            ObjectMapper sorted = objectMapper.copy()
+                    .configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true);
+            return sorted.writeValueAsString(rawInput);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to serialize canonical JSON: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Computes a SHA-256 hex digest of the given string.
+     */
+    public static String sha256Hex(String content) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hashBytes = digest.digest(content.getBytes(StandardCharsets.UTF_8));
+            StringBuilder hexString = new StringBuilder(2 * hashBytes.length);
+            for (byte b : hashBytes) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) {
+                    hexString.append('0');
+                }
+                hexString.append(hex);
+            }
+            return hexString.toString();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to compute SHA-256 hash: " + e.getMessage(), e);
+        }
+    }
+
     public static Object calculateStringHash(Object rawInput, String expression) {
         if (!(rawInput instanceof String)) {
             throw new IllegalArgumentException("Input data for CALCULATE_HASH must be a String.");

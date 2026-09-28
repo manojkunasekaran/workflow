@@ -1,0 +1,296 @@
+{
+  "connectorId": "airtable",
+  "triggers": [
+    {
+      "triggerId": "new_records",
+      "displayName": "New records",
+      "description": "Triggers when new records are added to a table.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "baseId",
+          "label": "Base ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "tableIdOrName",
+          "label": "Table ID or Name",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://api.airtable.com/v0/{baseId}/{tableIdOrName}?maxRecords=100"
+          },
+          "detection": {
+            "itemsPath": "$.records",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "updated_records",
+      "displayName": "Updated records",
+      "description": "Triggers when records are updated in a table.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "baseId",
+          "label": "Base ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "tableIdOrName",
+          "label": "Table ID or Name",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "UPDATED",
+          "http": {
+            "method": "GET",
+            "url": "https://api.airtable.com/v0/{baseId}/{tableIdOrName}?maxRecords=100"
+          },
+          "detection": {
+            "itemsPath": "$.records",
+            "keyPaths": [
+              "id"
+            ],
+            "updateKeyPath": "createdTime"
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_comments",
+      "displayName": "New comments",
+      "description": "Triggers when new comments are added to records.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "baseId",
+          "label": "Base ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "tableIdOrName",
+          "label": "Table ID or Name",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "recordId",
+          "label": "Record ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://api.airtable.com/v0/{baseId}/{tableIdOrName}/{recordId}/comments"
+          },
+          "detection": {
+            "itemsPath": "$.comments",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "record_created",
+      "displayName": "Record created",
+      "description": "Triggers when a record is created in a table.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "baseId",
+          "label": "Base ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "tableId",
+          "label": "Table ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.airtable.com/v0/bases/{baseId}/webhooks",
+            "body": "{\"notificationUrl\":\"{{callbackUrl}}\",\"specification\":{\"options\":{\"filters\":{\"dataTypes\":[\"tableData\"],\"recordChangeScope\":\"{tableId}\"}}}}"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://api.airtable.com/v0/bases/{baseId}/webhooks/{{subscriptionId}}"
+          },
+          "subscriptionIdPath": "$.id",
+          "inbound": {
+            "verificationMode": "HMAC_SHA256",
+            "headerName": "X-Airtable-Content-MAC",
+            "eventIdPath": "$.base.transactionNumber",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "record_updated",
+      "displayName": "Record updated",
+      "description": "Triggers when a record is updated in a table.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "baseId",
+          "label": "Base ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "tableId",
+          "label": "Table ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.airtable.com/v0/bases/{baseId}/webhooks",
+            "body": "{\"notificationUrl\":\"{{callbackUrl}}\",\"specification\":{\"options\":{\"filters\":{\"dataTypes\":[\"tableData\"],\"recordChangeScope\":\"{tableId}\",\"changeTypes\":[\"update\"]}}}}"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://api.airtable.com/v0/bases/{baseId}/webhooks/{{subscriptionId}}"
+          },
+          "subscriptionIdPath": "$.id",
+          "inbound": {
+            "verificationMode": "HMAC_SHA256",
+            "headerName": "X-Airtable-Content-MAC",
+            "eventIdPath": "$.base.transactionNumber",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "record_deleted",
+      "displayName": "Record deleted",
+      "description": "Triggers when a record is deleted from a table.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "baseId",
+          "label": "Base ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "tableId",
+          "label": "Table ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.airtable.com/v0/bases/{baseId}/webhooks",
+            "body": "{\"notificationUrl\":\"{{callbackUrl}}\",\"specification\":{\"options\":{\"filters\":{\"dataTypes\":[\"tableData\"],\"recordChangeScope\":\"{tableId}\",\"changeTypes\":[\"delete\"]}}}}"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://api.airtable.com/v0/bases/{baseId}/webhooks/{{subscriptionId}}"
+          },
+          "subscriptionIdPath": "$.id",
+          "inbound": {
+            "verificationMode": "HMAC_SHA256",
+            "headerName": "X-Airtable-Content-MAC",
+            "eventIdPath": "$.base.transactionNumber",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "comment_created",
+      "displayName": "Comment created",
+      "description": "Triggers when a comment is added to a record.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "baseId",
+          "label": "Base ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "tableId",
+          "label": "Table ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.airtable.com/v0/bases/{baseId}/webhooks",
+            "body": "{\"notificationUrl\":\"{{callbackUrl}}\",\"specification\":{\"options\":{\"filters\":{\"dataTypes\":[\"tableData\",\"comment\"],\"recordChangeScope\":\"{tableId}\"}}}}"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://api.airtable.com/v0/bases/{baseId}/webhooks/{{subscriptionId}}"
+          },
+          "subscriptionIdPath": "$.id",
+          "inbound": {
+            "verificationMode": "HMAC_SHA256",
+            "headerName": "X-Airtable-Content-MAC",
+            "eventIdPath": "$.base.transactionNumber",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    }
+  ]
+}

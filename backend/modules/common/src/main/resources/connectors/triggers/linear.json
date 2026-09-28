@@ -1,0 +1,383 @@
+{
+  "connectorId": "linear",
+  "triggers": [
+    {
+      "triggerId": "new_issues",
+      "displayName": "New issues",
+      "description": "Triggers when new issues are created in a team.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "teamId",
+          "label": "Team ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "POST",
+            "url": "https://api.linear.app/graphql",
+            "body": "{\"query\":\"query { issues(filter: { team: { id: { eq: \\\"{teamId}\\\" } } }, first: 50, orderBy: updatedAt) { nodes { id updatedAt } } }\"}"
+          },
+          "detection": {
+            "itemsPath": "$.data.issues.nodes",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "updated_issues",
+      "displayName": "Updated issues",
+      "description": "Triggers when issues are updated in a team.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "teamId",
+          "label": "Team ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "UPDATED",
+          "http": {
+            "method": "POST",
+            "url": "https://api.linear.app/graphql",
+            "body": "{\"query\":\"query { issues(filter: { team: { id: { eq: \\\"{teamId}\\\" } } }, first: 50, orderBy: updatedAt) { nodes { id updatedAt } } }\"}"
+          },
+          "detection": {
+            "itemsPath": "$.data.issues.nodes",
+            "keyPaths": [
+              "id"
+            ],
+            "updateKeyPath": "updatedAt"
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_projects",
+      "displayName": "New projects",
+      "description": "Triggers when new projects are created.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "teamId",
+          "label": "Team ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "POST",
+            "url": "https://api.linear.app/graphql",
+            "body": "{\"query\":\"query { team(id: \\\"{teamId}\\\") { projects { nodes { id updatedAt } } } }\"}"
+          },
+          "detection": {
+            "itemsPath": "$.data.team.projects.nodes",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_comments",
+      "displayName": "New comments",
+      "description": "Triggers when new comments are added to issues.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "issueId",
+          "label": "Issue ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "POST",
+            "url": "https://api.linear.app/graphql",
+            "body": "{\"query\":\"query { issue(id: \\\"{issueId}\\\") { comments { nodes { id createdAt } } } }\"}"
+          },
+          "detection": {
+            "itemsPath": "$.data.issue.comments.nodes",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_cycles",
+      "displayName": "New cycles",
+      "description": "Triggers when new cycles are created in a team.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "teamId",
+          "label": "Team ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "POST",
+            "url": "https://api.linear.app/graphql",
+            "body": "{\"query\":\"query { team(id: \\\"{teamId}\\\") { cycles { nodes { id number } } } }\"}"
+          },
+          "detection": {
+            "itemsPath": "$.data.team.cycles.nodes",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "issue_created",
+      "displayName": "Issue created",
+      "description": "Triggers when a new issue is created.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "teamId",
+          "label": "Team ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.linear.app/graphql",
+            "body": "{\"query\":\"mutation { webhookCreate(input: { url: \\\"{{callbackUrl}}\\\", resourceTypes: [\\\"Issue\\\"], teamId: \\\"{teamId}\\\", label: \\\"workflow-trigger\\\" }) { webhook { id } success } }\"}"
+          },
+          "unsubscribeHttp": {
+            "method": "POST",
+            "url": "https://api.linear.app/graphql",
+            "body": "{\"query\":\"mutation { webhookDelete(id: \\\"{{subscriptionId}}\\\") { success } }\"}"
+          },
+          "subscriptionIdPath": "$.data.webhookCreate.webhook.id",
+          "inbound": {
+            "verificationMode": "HMAC_SHA256",
+            "headerName": "Linear-Signature",
+            "eventIdPath": "$.data.id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "issue_updated",
+      "displayName": "Issue updated",
+      "description": "Triggers when an issue is updated.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "teamId",
+          "label": "Team ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.linear.app/graphql",
+            "body": "{\"query\":\"mutation { webhookCreate(input: { url: \\\"{{callbackUrl}}\\\", resourceTypes: [\\\"Issue\\\"], teamId: \\\"{teamId}\\\", label: \\\"workflow-issue-updated\\\" }) { webhook { id } success } }\"}"
+          },
+          "unsubscribeHttp": {
+            "method": "POST",
+            "url": "https://api.linear.app/graphql",
+            "body": "{\"query\":\"mutation { webhookDelete(id: \\\"{{subscriptionId}}\\\") { success } }\"}"
+          },
+          "subscriptionIdPath": "$.data.webhookCreate.webhook.id",
+          "inbound": {
+            "verificationMode": "HMAC_SHA256",
+            "headerName": "Linear-Signature",
+            "eventIdPath": "$.data.id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "comment_created",
+      "displayName": "Comment created",
+      "description": "Triggers when a comment is added to an issue.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "teamId",
+          "label": "Team ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.linear.app/graphql",
+            "body": "{\"query\":\"mutation { webhookCreate(input: { url: \\\"{{callbackUrl}}\\\", resourceTypes: [\\\"Comment\\\"], teamId: \\\"{teamId}\\\", label: \\\"workflow-comment\\\" }) { webhook { id } success } }\"}"
+          },
+          "unsubscribeHttp": {
+            "method": "POST",
+            "url": "https://api.linear.app/graphql",
+            "body": "{\"query\":\"mutation { webhookDelete(id: \\\"{{subscriptionId}}\\\") { success } }\"}"
+          },
+          "subscriptionIdPath": "$.data.webhookCreate.webhook.id",
+          "inbound": {
+            "verificationMode": "HMAC_SHA256",
+            "headerName": "Linear-Signature",
+            "eventIdPath": "$.data.id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "project_created",
+      "displayName": "Project created",
+      "description": "Triggers when a new project is created.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "teamId",
+          "label": "Team ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.linear.app/graphql",
+            "body": "{\"query\":\"mutation { webhookCreate(input: { url: \\\"{{callbackUrl}}\\\", resourceTypes: [\\\"Project\\\"], teamId: \\\"{teamId}\\\", label: \\\"workflow-project\\\" }) { webhook { id } success } }\"}"
+          },
+          "unsubscribeHttp": {
+            "method": "POST",
+            "url": "https://api.linear.app/graphql",
+            "body": "{\"query\":\"mutation { webhookDelete(id: \\\"{{subscriptionId}}\\\") { success } }\"}"
+          },
+          "subscriptionIdPath": "$.data.webhookCreate.webhook.id",
+          "inbound": {
+            "verificationMode": "HMAC_SHA256",
+            "headerName": "Linear-Signature",
+            "eventIdPath": "$.data.id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "cycle_created",
+      "displayName": "Cycle created",
+      "description": "Triggers when a new cycle is created.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "teamId",
+          "label": "Team ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.linear.app/graphql",
+            "body": "{\"query\":\"mutation { webhookCreate(input: { url: \\\"{{callbackUrl}}\\\", resourceTypes: [\\\"Cycle\\\"], teamId: \\\"{teamId}\\\", label: \\\"workflow-cycle\\\" }) { webhook { id } success } }\"}"
+          },
+          "unsubscribeHttp": {
+            "method": "POST",
+            "url": "https://api.linear.app/graphql",
+            "body": "{\"query\":\"mutation { webhookDelete(id: \\\"{{subscriptionId}}\\\") { success } }\"}"
+          },
+          "subscriptionIdPath": "$.data.webhookCreate.webhook.id",
+          "inbound": {
+            "verificationMode": "HMAC_SHA256",
+            "headerName": "Linear-Signature",
+            "eventIdPath": "$.data.id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "reaction_created",
+      "displayName": "Reaction created",
+      "description": "Triggers when a reaction is added.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "teamId",
+          "label": "Team ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.linear.app/graphql",
+            "body": "{\"query\":\"mutation { webhookCreate(input: { url: \\\"{{callbackUrl}}\\\", resourceTypes: [\\\"Reaction\\\"], teamId: \\\"{teamId}\\\", label: \\\"workflow-reaction\\\" }) { webhook { id } success } }\"}"
+          },
+          "unsubscribeHttp": {
+            "method": "POST",
+            "url": "https://api.linear.app/graphql",
+            "body": "{\"query\":\"mutation { webhookDelete(id: \\\"{{subscriptionId}}\\\") { success } }\"}"
+          },
+          "subscriptionIdPath": "$.data.webhookCreate.webhook.id",
+          "inbound": {
+            "verificationMode": "HMAC_SHA256",
+            "headerName": "Linear-Signature",
+            "eventIdPath": "$.data.id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    }
+  ]
+}

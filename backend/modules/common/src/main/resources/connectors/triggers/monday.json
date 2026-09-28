@@ -1,0 +1,457 @@
+{
+  "connectorId": "monday",
+  "triggers": [
+    {
+      "triggerId": "new_items",
+      "displayName": "New items",
+      "description": "Triggers when new items are created on a board.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "boardId",
+          "label": "Board ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "POST",
+            "url": "https://api.monday.com/v2",
+            "body": "{\"query\":\"query { boards(ids: [{boardId}]) { items_page(limit: 50) { items { id updated_at } } } }\"}"
+          },
+          "detection": {
+            "itemsPath": "$.data.boards[0].items_page.items",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "updated_items",
+      "displayName": "Updated items",
+      "description": "Triggers when items are updated on a board.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "boardId",
+          "label": "Board ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "UPDATED",
+          "http": {
+            "method": "POST",
+            "url": "https://api.monday.com/v2",
+            "body": "{\"query\":\"query { boards(ids: [{boardId}]) { items_page(limit: 50) { items { id updated_at } } } }\"}"
+          },
+          "detection": {
+            "itemsPath": "$.data.boards[0].items_page.items",
+            "keyPaths": [
+              "id"
+            ],
+            "updateKeyPath": "updated_at"
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_updates",
+      "displayName": "New updates",
+      "description": "Triggers when new updates (comments) are posted on an item.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "itemId",
+          "label": "Item ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "POST",
+            "url": "https://api.monday.com/v2",
+            "body": "{\"query\":\"query { items(ids: [{itemId}]) { updates { id created_at } } }\"}"
+          },
+          "detection": {
+            "itemsPath": "$.data.items[0].updates",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_subitems",
+      "displayName": "New subitems",
+      "description": "Triggers when new subitems are created.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "itemId",
+          "label": "Parent Item ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "POST",
+            "url": "https://api.monday.com/v2",
+            "body": "{\"query\":\"query { items(ids: [{itemId}]) { subitems { id updated_at } } }\"}"
+          },
+          "detection": {
+            "itemsPath": "$.data.items[0].subitems",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_boards",
+      "displayName": "New boards",
+      "description": "Triggers when new boards are created in a workspace.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "workspaceId",
+          "label": "Workspace ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "POST",
+            "url": "https://api.monday.com/v2",
+            "body": "{\"query\":\"query { boards(workspace_ids: [{workspaceId}], limit: 50) { id updated_at } }\"}"
+          },
+          "detection": {
+            "itemsPath": "$.data.boards",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "item_created",
+      "displayName": "Item created",
+      "description": "Triggers when a new item is created on a board.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "boardId",
+          "label": "Board ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.monday.com/v2",
+            "body": "{\"query\":\"mutation { create_webhook(board_id: {boardId}, url: \\\"{{callbackUrl}}\\\", event: create_item) { id } }\"}"
+          },
+          "unsubscribeHttp": {
+            "method": "POST",
+            "url": "https://api.monday.com/v2",
+            "body": "{\"query\":\"mutation { delete_webhook(id: {{subscriptionId}}) { id } }\"}"
+          },
+          "subscriptionIdPath": "$.data.create_webhook.id",
+          "inbound": {
+            "verificationMode": "HEADER_SECRET",
+            "headerName": "Authorization",
+            "eventIdPath": "$.event.triggerUuid",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "column_value_changed",
+      "displayName": "Column value changed",
+      "description": "Triggers when a column value changes on an item.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "boardId",
+          "label": "Board ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.monday.com/v2",
+            "body": "{\"query\":\"mutation { create_webhook(board_id: {boardId}, url: \\\"{{callbackUrl}}\\\", event: change_column_value) { id } }\"}"
+          },
+          "unsubscribeHttp": {
+            "method": "POST",
+            "url": "https://api.monday.com/v2",
+            "body": "{\"query\":\"mutation { delete_webhook(id: {{subscriptionId}}) { id } }\"}"
+          },
+          "subscriptionIdPath": "$.data.create_webhook.id",
+          "inbound": {
+            "verificationMode": "HEADER_SECRET",
+            "headerName": "Authorization",
+            "eventIdPath": "$.event.triggerUuid",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "item_name_changed",
+      "displayName": "Item name changed",
+      "description": "Triggers when an item name is changed.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "boardId",
+          "label": "Board ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.monday.com/v2",
+            "body": "{\"query\":\"mutation { create_webhook(board_id: {boardId}, url: \\\"{{callbackUrl}}\\\", event: change_name) { id } }\"}"
+          },
+          "unsubscribeHttp": {
+            "method": "POST",
+            "url": "https://api.monday.com/v2",
+            "body": "{\"query\":\"mutation { delete_webhook(id: {{subscriptionId}}) { id } }\"}"
+          },
+          "subscriptionIdPath": "$.data.create_webhook.id",
+          "inbound": {
+            "verificationMode": "HEADER_SECRET",
+            "headerName": "Authorization",
+            "eventIdPath": "$.event.triggerUuid",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "item_deleted",
+      "displayName": "Item deleted",
+      "description": "Triggers when an item is deleted from a board.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "boardId",
+          "label": "Board ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.monday.com/v2",
+            "body": "{\"query\":\"mutation { create_webhook(board_id: {boardId}, url: \\\"{{callbackUrl}}\\\", event: item_deleted) { id } }\"}"
+          },
+          "unsubscribeHttp": {
+            "method": "POST",
+            "url": "https://api.monday.com/v2",
+            "body": "{\"query\":\"mutation { delete_webhook(id: {{subscriptionId}}) { id } }\"}"
+          },
+          "subscriptionIdPath": "$.data.create_webhook.id",
+          "inbound": {
+            "verificationMode": "HEADER_SECRET",
+            "headerName": "Authorization",
+            "eventIdPath": "$.event.triggerUuid",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "update_created",
+      "displayName": "Update created",
+      "description": "Triggers when an update (comment) is posted on an item.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "boardId",
+          "label": "Board ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.monday.com/v2",
+            "body": "{\"query\":\"mutation { create_webhook(board_id: {boardId}, url: \\\"{{callbackUrl}}\\\", event: create_update) { id } }\"}"
+          },
+          "unsubscribeHttp": {
+            "method": "POST",
+            "url": "https://api.monday.com/v2",
+            "body": "{\"query\":\"mutation { delete_webhook(id: {{subscriptionId}}) { id } }\"}"
+          },
+          "subscriptionIdPath": "$.data.create_webhook.id",
+          "inbound": {
+            "verificationMode": "HEADER_SECRET",
+            "headerName": "Authorization",
+            "eventIdPath": "$.event.triggerUuid",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "subitem_created",
+      "displayName": "Subitem created",
+      "description": "Triggers when a subitem is created.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "boardId",
+          "label": "Board ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.monday.com/v2",
+            "body": "{\"query\":\"mutation { create_webhook(board_id: {boardId}, url: \\\"{{callbackUrl}}\\\", event: create_subitem) { id } }\"}"
+          },
+          "unsubscribeHttp": {
+            "method": "POST",
+            "url": "https://api.monday.com/v2",
+            "body": "{\"query\":\"mutation { delete_webhook(id: {{subscriptionId}}) { id } }\"}"
+          },
+          "subscriptionIdPath": "$.data.create_webhook.id",
+          "inbound": {
+            "verificationMode": "HEADER_SECRET",
+            "headerName": "Authorization",
+            "eventIdPath": "$.event.triggerUuid",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "item_archived",
+      "displayName": "Item archived",
+      "description": "Triggers when an item is archived.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "boardId",
+          "label": "Board ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.monday.com/v2",
+            "body": "{\"query\":\"mutation { create_webhook(board_id: {boardId}, url: \\\"{{callbackUrl}}\\\", event: item_archived) { id } }\"}"
+          },
+          "unsubscribeHttp": {
+            "method": "POST",
+            "url": "https://api.monday.com/v2",
+            "body": "{\"query\":\"mutation { delete_webhook(id: {{subscriptionId}}) { id } }\"}"
+          },
+          "subscriptionIdPath": "$.data.create_webhook.id",
+          "inbound": {
+            "verificationMode": "HEADER_SECRET",
+            "headerName": "Authorization",
+            "eventIdPath": "$.event.triggerUuid",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "item_moved",
+      "displayName": "Item moved to group",
+      "description": "Triggers when an item is moved to a different group.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "boardId",
+          "label": "Board ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.monday.com/v2",
+            "body": "{\"query\":\"mutation { create_webhook(board_id: {boardId}, url: \\\"{{callbackUrl}}\\\", event: move_item) { id } }\"}"
+          },
+          "unsubscribeHttp": {
+            "method": "POST",
+            "url": "https://api.monday.com/v2",
+            "body": "{\"query\":\"mutation { delete_webhook(id: {{subscriptionId}}) { id } }\"}"
+          },
+          "subscriptionIdPath": "$.data.create_webhook.id",
+          "inbound": {
+            "verificationMode": "HEADER_SECRET",
+            "headerName": "Authorization",
+            "eventIdPath": "$.event.triggerUuid",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    }
+  ]
+}

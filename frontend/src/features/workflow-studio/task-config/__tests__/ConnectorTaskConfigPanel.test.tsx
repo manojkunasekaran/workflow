@@ -17,6 +17,7 @@ describe('ConnectorTaskConfigPanel', () => {
             connectorId: 'slack',
             displayName: 'Slack',
             icon: 'slack.png',
+            taskType: 'CONNECTOR_TASK',
             authType: 'BEARER_TOKEN',
             actions: [
                 {
@@ -39,15 +40,15 @@ describe('ConnectorTaskConfigPanel', () => {
     it('renders loading state initially then populates integrations', async () => {
         render(<ConnectorTaskConfigPanel parameters={{}} onChange={vi.fn()} errors={{}} />);
         
-        expect(screen.getByText(/loading integrations/i)).toBeInTheDocument();
+        expect(screen.getByText(/loading apps/i)).toBeInTheDocument();
         
         await waitFor(() => {
-            expect(screen.queryByText(/loading integrations/i)).not.toBeInTheDocument();
+            expect(screen.queryByText(/loading apps/i)).not.toBeInTheDocument();
         });
         
         // Since no connectorId is passed, it should show the select dropdown
         expect(screen.getByRole('combobox')).toBeInTheDocument();
-        expect(screen.getByText(/Select an integration/i)).toBeInTheDocument();
+        expect(screen.getByText(/select an app/i)).toBeInTheDocument();
     });
 
     it('renders dynamic fields based on selected action schema', async () => {

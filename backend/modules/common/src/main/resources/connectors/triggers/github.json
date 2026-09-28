@@ -1,0 +1,731 @@
+{
+  "connectorId": "github",
+  "triggers": [
+    {
+      "triggerId": "new_issues",
+      "displayName": "New issues",
+      "description": "Triggers when new open issues appear in a repository.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "owner",
+          "label": "Owner",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "repo",
+          "label": "Repository",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://api.github.com/repos/{owner}/{repo}/issues?state=open&per_page=100"
+          },
+          "detection": {
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_pull_requests",
+      "displayName": "New pull requests",
+      "description": "Triggers when new open pull requests appear in a repository.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "owner",
+          "label": "Owner",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "repo",
+          "label": "Repository",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://api.github.com/repos/{owner}/{repo}/pulls?state=open&per_page=100"
+          },
+          "detection": {
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_commits",
+      "displayName": "New commits",
+      "description": "Triggers when new commits are pushed to a branch.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "owner",
+          "label": "Owner",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "repo",
+          "label": "Repository",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "sha",
+          "label": "Branch or SHA",
+          "type": "STRING",
+          "required": false,
+          "defaultValue": "main",
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://api.github.com/repos/{owner}/{repo}/commits?sha={sha}&per_page=100"
+          },
+          "detection": {
+            "keyPaths": [
+              "sha"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_releases",
+      "displayName": "New releases",
+      "description": "Triggers when new releases are published.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "owner",
+          "label": "Owner",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "repo",
+          "label": "Repository",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://api.github.com/repos/{owner}/{repo}/releases?per_page=100"
+          },
+          "detection": {
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_stargazers",
+      "displayName": "New stargazers",
+      "description": "Triggers when new users star a repository.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "owner",
+          "label": "Owner",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "repo",
+          "label": "Repository",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://api.github.com/repos/{owner}/{repo}/stargazers?per_page=100"
+          },
+          "detection": {
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_forks",
+      "displayName": "New forks",
+      "description": "Triggers when the repository is forked.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "owner",
+          "label": "Owner",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "repo",
+          "label": "Repository",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://api.github.com/repos/{owner}/{repo}/forks?per_page=100"
+          },
+          "detection": {
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_discussions",
+      "displayName": "New discussions",
+      "description": "Triggers when new discussions are created.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "owner",
+          "label": "Owner",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "repo",
+          "label": "Repository",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://api.github.com/repos/{owner}/{repo}/discussions?per_page=100"
+          },
+          "detection": {
+            "keyPaths": [
+              "number"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_tags",
+      "displayName": "New tags",
+      "description": "Triggers when new git tags are created.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "owner",
+          "label": "Owner",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "repo",
+          "label": "Repository",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://api.github.com/repos/{owner}/{repo}/tags?per_page=100"
+          },
+          "detection": {
+            "keyPaths": [
+              "name"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "issue_opened",
+      "displayName": "Issue opened",
+      "description": "Triggers when an issue is opened in a repository.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "owner",
+          "label": "Owner",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "repo",
+          "label": "Repository",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.github.com/repos/{owner}/{repo}/hooks",
+            "body": "{\"name\":\"web\",\"active\":true,\"events\":[\"issues\"],\"config\":{\"url\":\"{{callbackUrl}}\",\"content_type\":\"json\",\"secret\":\"{{secret}}\"}}"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://api.github.com/repos/{owner}/{repo}/hooks/{{subscriptionId}}"
+          },
+          "subscriptionIdPath": "$.id",
+          "inbound": {
+            "verificationMode": "HMAC_SHA256",
+            "headerName": "X-Hub-Signature-256",
+            "eventIdPath": "$.id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "pull_request_opened",
+      "displayName": "Pull request opened",
+      "description": "Triggers when a pull request is opened, closed, or synchronized.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "owner",
+          "label": "Owner",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "repo",
+          "label": "Repository",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.github.com/repos/{owner}/{repo}/hooks",
+            "body": "{\"name\":\"web\",\"active\":true,\"events\":[\"pull_request\"],\"config\":{\"url\":\"{{callbackUrl}}\",\"content_type\":\"json\",\"secret\":\"{{secret}}\"}}"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://api.github.com/repos/{owner}/{repo}/hooks/{{subscriptionId}}"
+          },
+          "subscriptionIdPath": "$.id",
+          "inbound": {
+            "verificationMode": "HMAC_SHA256",
+            "headerName": "X-Hub-Signature-256",
+            "eventIdPath": "$.pull_request.id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "push",
+      "displayName": "Push",
+      "description": "Triggers when commits are pushed to a repository.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "owner",
+          "label": "Owner",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "repo",
+          "label": "Repository",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.github.com/repos/{owner}/{repo}/hooks",
+            "body": "{\"name\":\"web\",\"active\":true,\"events\":[\"push\"],\"config\":{\"url\":\"{{callbackUrl}}\",\"content_type\":\"json\",\"secret\":\"{{secret}}\"}}"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://api.github.com/repos/{owner}/{repo}/hooks/{{subscriptionId}}"
+          },
+          "subscriptionIdPath": "$.id",
+          "inbound": {
+            "verificationMode": "HMAC_SHA256",
+            "headerName": "X-Hub-Signature-256",
+            "eventIdPath": "$.head_commit.id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "release_published",
+      "displayName": "Release published",
+      "description": "Triggers when a release is published.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "owner",
+          "label": "Owner",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "repo",
+          "label": "Repository",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.github.com/repos/{owner}/{repo}/hooks",
+            "body": "{\"name\":\"web\",\"active\":true,\"events\":[\"release\"],\"config\":{\"url\":\"{{callbackUrl}}\",\"content_type\":\"json\",\"secret\":\"{{secret}}\"}}"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://api.github.com/repos/{owner}/{repo}/hooks/{{subscriptionId}}"
+          },
+          "subscriptionIdPath": "$.id",
+          "inbound": {
+            "verificationMode": "HMAC_SHA256",
+            "headerName": "X-Hub-Signature-256",
+            "eventIdPath": "$.release.id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "issue_commented",
+      "displayName": "Issue commented",
+      "description": "Triggers when a comment is added to an issue.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "owner",
+          "label": "Owner",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "repo",
+          "label": "Repository",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.github.com/repos/{owner}/{repo}/hooks",
+            "body": "{\"name\":\"web\",\"active\":true,\"events\":[\"issue_comment\"],\"config\":{\"url\":\"{{callbackUrl}}\",\"content_type\":\"json\",\"secret\":\"{{secret}}\"}}"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://api.github.com/repos/{owner}/{repo}/hooks/{{subscriptionId}}"
+          },
+          "subscriptionIdPath": "$.id",
+          "inbound": {
+            "verificationMode": "HMAC_SHA256",
+            "headerName": "X-Hub-Signature-256",
+            "eventIdPath": "$.comment.id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "pull_request_review_submitted",
+      "displayName": "Pull request review submitted",
+      "description": "Triggers when a pull request review is submitted.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "owner",
+          "label": "Owner",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "repo",
+          "label": "Repository",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.github.com/repos/{owner}/{repo}/hooks",
+            "body": "{\"name\":\"web\",\"active\":true,\"events\":[\"pull_request_review\"],\"config\":{\"url\":\"{{callbackUrl}}\",\"content_type\":\"json\",\"secret\":\"{{secret}}\"}}"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://api.github.com/repos/{owner}/{repo}/hooks/{{subscriptionId}}"
+          },
+          "subscriptionIdPath": "$.id",
+          "inbound": {
+            "verificationMode": "HMAC_SHA256",
+            "headerName": "X-Hub-Signature-256",
+            "eventIdPath": "$.review.id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "star_created",
+      "displayName": "Star created",
+      "description": "Triggers when someone stars the repository.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "owner",
+          "label": "Owner",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "repo",
+          "label": "Repository",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.github.com/repos/{owner}/{repo}/hooks",
+            "body": "{\"name\":\"web\",\"active\":true,\"events\":[\"star\"],\"config\":{\"url\":\"{{callbackUrl}}\",\"content_type\":\"json\",\"secret\":\"{{secret}}\"}}"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://api.github.com/repos/{owner}/{repo}/hooks/{{subscriptionId}}"
+          },
+          "subscriptionIdPath": "$.id",
+          "inbound": {
+            "verificationMode": "HMAC_SHA256",
+            "headerName": "X-Hub-Signature-256",
+            "eventIdPath": "$.starred_at",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "workflow_run_completed",
+      "displayName": "Workflow run completed",
+      "description": "Triggers when a GitHub Actions workflow run completes.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "owner",
+          "label": "Owner",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "repo",
+          "label": "Repository",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.github.com/repos/{owner}/{repo}/hooks",
+            "body": "{\"name\":\"web\",\"active\":true,\"events\":[\"workflow_run\"],\"config\":{\"url\":\"{{callbackUrl}}\",\"content_type\":\"json\",\"secret\":\"{{secret}}\"}}"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://api.github.com/repos/{owner}/{repo}/hooks/{{subscriptionId}}"
+          },
+          "subscriptionIdPath": "$.id",
+          "inbound": {
+            "verificationMode": "HMAC_SHA256",
+            "headerName": "X-Hub-Signature-256",
+            "eventIdPath": "$.workflow_run.id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "deployment_created",
+      "displayName": "Deployment created",
+      "description": "Triggers when a deployment is created.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "owner",
+          "label": "Owner",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "repo",
+          "label": "Repository",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.github.com/repos/{owner}/{repo}/hooks",
+            "body": "{\"name\":\"web\",\"active\":true,\"events\":[\"deployment\"],\"config\":{\"url\":\"{{callbackUrl}}\",\"content_type\":\"json\",\"secret\":\"{{secret}}\"}}"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://api.github.com/repos/{owner}/{repo}/hooks/{{subscriptionId}}"
+          },
+          "subscriptionIdPath": "$.id",
+          "inbound": {
+            "verificationMode": "HMAC_SHA256",
+            "headerName": "X-Hub-Signature-256",
+            "eventIdPath": "$.deployment.id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "discussion_created",
+      "displayName": "Discussion created",
+      "description": "Triggers when a discussion is created.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "owner",
+          "label": "Owner",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "repo",
+          "label": "Repository",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.github.com/repos/{owner}/{repo}/hooks",
+            "body": "{\"name\":\"web\",\"active\":true,\"events\":[\"discussion\"],\"config\":{\"url\":\"{{callbackUrl}}\",\"content_type\":\"json\",\"secret\":\"{{secret}}\"}}"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://api.github.com/repos/{owner}/{repo}/hooks/{{subscriptionId}}"
+          },
+          "subscriptionIdPath": "$.id",
+          "inbound": {
+            "verificationMode": "HMAC_SHA256",
+            "headerName": "X-Hub-Signature-256",
+            "eventIdPath": "$.discussion.id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    }
+  ]
+}

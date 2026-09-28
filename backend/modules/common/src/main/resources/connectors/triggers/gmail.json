@@ -1,0 +1,232 @@
+{
+  "connectorId": "gmail",
+  "triggers": [
+    {
+      "triggerId": "new_messages",
+      "displayName": "New messages",
+      "description": "Triggers when new messages match a search query.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "query",
+          "label": "Search Query",
+          "type": "STRING",
+          "required": false,
+          "defaultValue": "is:unread",
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=50&q={query}"
+          },
+          "detection": {
+            "itemsPath": "$.messages",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_inbox_messages",
+      "displayName": "New inbox messages",
+      "description": "Triggers when new messages arrive in the inbox.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=50&labelIds=INBOX"
+          },
+          "detection": {
+            "itemsPath": "$.messages",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_starred_messages",
+      "displayName": "New starred messages",
+      "description": "Triggers when messages are starred.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=50&labelIds=STARRED"
+          },
+          "detection": {
+            "itemsPath": "$.messages",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_threads",
+      "displayName": "New threads",
+      "description": "Triggers when new email threads match a search query.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "query",
+          "label": "Search Query",
+          "type": "STRING",
+          "required": false,
+          "defaultValue": "is:unread",
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://gmail.googleapis.com/gmail/v1/users/me/threads?maxResults=50&q={query}"
+          },
+          "detection": {
+            "itemsPath": "$.threads",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_email_received",
+      "displayName": "New email received",
+      "description": "Triggers when a new email is received via Gmail push notifications.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "topicName",
+          "label": "Pub/Sub Topic Name",
+          "type": "STRING",
+          "required": true,
+          "description": "Google Cloud Pub/Sub topic (projects/PROJECT/topics/TOPIC)",
+          "supportsExpression": false
+        },
+        {
+          "key": "labelIds",
+          "label": "Label IDs",
+          "type": "STRING",
+          "required": false,
+          "defaultValue": "INBOX",
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://gmail.googleapis.com/gmail/v1/users/me/watch",
+            "body": "{\"topicName\":\"{topicName}\",\"labelIds\":[\"{labelIds}\"],\"labelFilterBehavior\":\"include\"}"
+          },
+          "unsubscribeHttp": {
+            "method": "POST",
+            "url": "https://gmail.googleapis.com/gmail/v1/users/me/stop"
+          },
+          "subscriptionIdPath": "$.historyId",
+          "inbound": {
+            "verificationMode": "NONE",
+            "eventIdPath": "$.historyId",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "email_sent",
+      "displayName": "Email sent",
+      "description": "Triggers when an email is sent (SENT label).",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "topicName",
+          "label": "Pub/Sub Topic Name",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://gmail.googleapis.com/gmail/v1/users/me/watch",
+            "body": "{\"topicName\":\"{topicName}\",\"labelIds\":[\"SENT\"],\"labelFilterBehavior\":\"include\"}"
+          },
+          "unsubscribeHttp": {
+            "method": "POST",
+            "url": "https://gmail.googleapis.com/gmail/v1/users/me/stop"
+          },
+          "subscriptionIdPath": "$.historyId",
+          "inbound": {
+            "verificationMode": "NONE",
+            "eventIdPath": "$.historyId",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "email_labeled",
+      "displayName": "Email labeled",
+      "description": "Triggers when emails matching a label change.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "topicName",
+          "label": "Pub/Sub Topic Name",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "labelIds",
+          "label": "Label IDs",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://gmail.googleapis.com/gmail/v1/users/me/watch",
+            "body": "{\"topicName\":\"{topicName}\",\"labelIds\":[\"{labelIds}\"],\"labelFilterBehavior\":\"include\"}"
+          },
+          "unsubscribeHttp": {
+            "method": "POST",
+            "url": "https://gmail.googleapis.com/gmail/v1/users/me/stop"
+          },
+          "subscriptionIdPath": "$.historyId",
+          "inbound": {
+            "verificationMode": "NONE",
+            "eventIdPath": "$.historyId",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    }
+  ]
+}

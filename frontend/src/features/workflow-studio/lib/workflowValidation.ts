@@ -6,6 +6,14 @@ import { collectBranchChainTaskIds } from '@/features/workflow-studio/lib/joinWi
 import { isBranchChainEdgeId } from '@/features/workflow-studio/lib/graphHandles';
 import type { TaskNodeData } from '@/features/workflow-studio/nodes/TaskNode';
 import { injectParameterType } from '@/features/workflow-studio/task-type-schema/utils';
+import {
+    buildWorkflowGraphFromCanvas,
+    isLeafInbound,
+    isValidBranchForkTarget,
+    resolveJoinInbounds,
+} from '@/features/workflow-studio/lib/workflowTopology';
+import { resolveMainSpineTaskIds } from '@/features/workflow-studio/lib/joinWiring';
+import type { ParallelBranchRow } from '@/features/workflow-studio/task-type-schema/types';
 
 /** Sync route edge targets back into task parameters before export. */
 export function syncRouteParamsFromEdges(nodes: StudioCanvasNode[], edges: Edge[]): StudioCanvasNode[] {
@@ -94,6 +102,100 @@ export function validateWorkflowGraph(nodes: StudioCanvasNode[], edges: Edge[]):
         if (node.data.type === 'HUMAN_TASK' && branchChainIds.has(node.data.taskId)) {
             const label = node.data.displayName || node.data.taskId;
             return `${label}: Human approval tasks cannot run inside parallel branches`;
+        }
+    }
+
+    const forkError = validateBranchForkTargets(nodes, edges);
+    if (forkError) return forkError;
+
+    const topologyError = validateBranchJoinTopology(nodes, edges);
+    if (topologyError) return topologyError;
+
+    return null;
+}
+
+function validateBranchForkTargets(nodes: StudioCanvasNode[], edges: Edge[]): string | null {
+    const graph = buildWorkflowGraphFromCanvas(nodes, edges);
+    const spineIds = resolveMainSpineTaskIds(nodes, edges);
+
+    for (const node of getTaskNodes(nodes)) {
+        const data = node.data as TaskNodeData;
+        if (data.type !== 'BRANCH') continue;
+
+        const rows = Array.isArray(data.parameters.branches) ? data.parameters.branches : [];
+        for (let index = 0; index < rows.length; index += 1) {
+            const row = rows[index] as ParallelBranchRow;
+            const startTaskId = String(row?.startTaskId ?? '').trim();
+            if (!startTaskId) continue;
+            if (!isValidBranchForkTarget(data.taskId, startTaskId, graph, spineIds)) {
+                const branchLabel = String(row.branchName ?? `Branch ${index + 1}`).trim();
+                return `${data.displayName || data.taskId}: "${branchLabel}" cannot fork to ${startTaskId}`;
+            }
+        }
+    }
+
+    return null;
+}
+
+/** BRANCH/JOIN topology rules aligned with backend WorkflowDefinitionValidator. */
+export function validateBranchJoinTopology(nodes: StudioCanvasNode[], edges: Edge[]): string | null {
+    const graph = buildWorkflowGraphFromCanvas(nodes, edges);
+    const inboundOwner = new Map<string, string>();
+
+    for (const edge of edges) {
+        if (!isBranchChainEdgeId(edge.id)) continue;
+        const targetNode = getTaskNodes(nodes).find((node) => node.id === edge.target);
+        if (targetNode?.data.type === 'JOIN') {
+            const label = targetNode.data.displayName || targetNode.data.taskId;
+            return `${label}: branch-chain edges cannot target JOIN directly`;
+        }
+    }
+
+    for (const node of getTaskNodes(nodes)) {
+        const data = node.data as TaskNodeData;
+        if (data.type !== 'JOIN') continue;
+
+        const joinId = data.taskId;
+        const inboundTaskIds = resolveJoinInbounds(joinId, graph);
+
+        if (inboundTaskIds.length === 0) {
+            return `${data.displayName || joinId}: at least one inbound task is required`;
+        }
+
+        const seen = new Set<string>();
+        for (const inboundId of inboundTaskIds) {
+            if (!seen.add(inboundId)) {
+                return `${data.displayName || joinId}: duplicate inbound task ${inboundId}`;
+            }
+            if (inboundId === joinId) {
+                return `${data.displayName || joinId}: cannot reference itself as inbound`;
+            }
+            if (!graph.tasks.has(inboundId)) {
+                return `${data.displayName || joinId}: unknown inbound task ${inboundId}`;
+            }
+            if (!isLeafInbound(inboundId, joinId, graph)) {
+                return `${data.displayName || joinId}: inbound ${inboundId} must be a leaf task`;
+            }
+            const previousOwner = inboundOwner.get(inboundId);
+            if (previousOwner) {
+                return `Task ${inboundId} is wired to multiple JOIN nodes`;
+            }
+            inboundOwner.set(inboundId, joinId);
+        }
+    }
+
+    for (const node of getTaskNodes(nodes)) {
+        const data = node.data as TaskNodeData;
+        if (data.type !== 'BRANCH') continue;
+        if ('joinTaskId' in data.parameters && data.parameters.joinTaskId) {
+            return `${data.displayName || data.taskId}: joinTaskId is no longer supported`;
+        }
+        const rows = Array.isArray(data.parameters.branches) ? data.parameters.branches : [];
+        for (let i = 0; i < rows.length; i += 1) {
+            const row = rows[i] as Record<string, unknown>;
+            if (row?.endTaskId) {
+                return `${data.displayName || data.taskId}: branches[${i}].endTaskId is no longer supported`;
+            }
         }
     }
 
