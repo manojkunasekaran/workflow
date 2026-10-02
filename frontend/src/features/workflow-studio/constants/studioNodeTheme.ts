@@ -20,6 +20,7 @@ export const TASK_ACCENT_COLORS: Record<StudioTaskType, string> = {
     MONGO_TASK: '#16a34a',
     REDIS_TASK: '#dc2626',
     NEO4J_TASK: '#2563eb',
+    MCP_TOOL: '#0d9488',
 };
 
 export const TRIGGER_ACCENT_COLOR = '#0d9488';

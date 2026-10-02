@@ -129,14 +129,19 @@ Tradeoff:
 
 Goal: allow workflows and agents to use external tools through a standard protocol.
 
-- Add an MCP server registry.
-- Add MCP connection configuration per workspace.
-- Add MCP tool discovery in the workflow studio.
-- Add permission scopes for each MCP server and tool.
-- Add test execution for MCP tools.
-- Add audit logs for MCP tool calls.
-- Add allowlists, deny-lists, and environment isolation for sensitive tools.
-- Allow Agents nodes to call approved MCP tools.
+**Done (Phases 1–3)**
+- Outbound MCP client: `IntegrationCredential` (`MCP_SERVER`), SDK transports (HTTP, SSE, STDIO gated).
+- Agents task MCP tools + `MCP_TOOL` task type.
+- Inbound REST server: `MCP` trigger, exposure modes, bearer auth, audit logs — see [MCP_SERVER_AUTH.md](./MCP_SERVER_AUTH.md).
+- Settings UI: server config, token regenerate, audit viewer, STDIO toggle.
+
+**Backlog**
+- Native MCP protocol server (Streamable HTTP JSON-RPC) — current inbound API is REST shim only.
+- SSRF protection for outbound MCP URLs.
+- Outbound MCP call audit (Agents + MCP_TOOL).
+- Permission scopes / deny-lists per server and tool.
+- MCP resources and prompts support.
+- Rate limiting on inbound MCP endpoints.
 
 Positive impact:
 - The platform can integrate with a broad and growing tool ecosystem.

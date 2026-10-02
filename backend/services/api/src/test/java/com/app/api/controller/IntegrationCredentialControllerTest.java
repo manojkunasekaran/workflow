@@ -101,6 +101,27 @@ public class IntegrationCredentialControllerTest {
         when(service.getCredentialById("cred-123")).thenReturn(Optional.of(new IntegrationCredential()));mockMvc.perform(delete("/credentials/cred-123"))
                 .andExpect(status().isOk());
     }
+
+    @Test
+    void verifyMcp_shouldReturnCredential() throws Exception {
+        IntegrationCredential cred = new IntegrationCredential();
+        cred.setId("cred-123");
+        cred.setType("MCP_SERVER");
+        when(service.verifyMcpConnection("cred-123")).thenReturn(cred);
+
+        mockMvc.perform(post("/credentials/cred-123/mcp/verify"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value("cred-123"));
+    }
+
+    @Test
+    void listMcpTools_shouldReturnTools() throws Exception {
+        when(service.listMcpTools("cred-123")).thenReturn(List.of());
+
+        mockMvc.perform(get("/credentials/cred-123/mcp/tools"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray());
+    }
 }
 
 

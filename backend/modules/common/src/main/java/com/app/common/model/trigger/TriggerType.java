@@ -11,5 +11,7 @@ public enum TriggerType {
     /** Platform auto-triggers on a cron schedule. */
     SCHEDULE,
     /** Platform polls an HTTP endpoint on a schedule and triggers on data changes. */
-    POLL
+    POLL,
+    /** External MCP clients invoke a registered tool to start this workflow. */
+    MCP
 }

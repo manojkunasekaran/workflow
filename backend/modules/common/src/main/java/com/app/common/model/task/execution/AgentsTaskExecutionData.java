@@ -20,6 +20,8 @@ public class AgentsTaskExecutionData implements TaskExecutionData {
     private Integer totalTokens;
     private Object responseBody;
     private String generatedText;
+    private boolean loopExhausted;
+    private String warning;
 
     @Override
     public String getTaskType() {
@@ -35,6 +37,8 @@ public class AgentsTaskExecutionData implements TaskExecutionData {
         output.put("completionTokens", completionTokens);
         output.put("totalTokens", totalTokens);
         output.put("rawResponse", responseBody);
+        output.put("loopExhausted", loopExhausted);
+        output.put("warning", warning);
         return output;
     }
 }

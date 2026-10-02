@@ -5,8 +5,10 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { connectorApi, type ConnectorManifest, type ConnectionSetupField } from '@/api/connectorApi';
-import type { IntegrationCredential } from '@/types/api';
-import { ShieldCheck, ExternalLink, Loader2, Search, ArrowLeft, Blocks, KeyRound, UserRound, Mail } from 'lucide-react';
+import { credentialApi } from '@/api/credentialApi';
+import { mcpSettingsApi } from '@/api/mcpSettingsApi';
+import type { IntegrationCredential, McpTransport } from '@/types/api';
+import { ShieldCheck, ExternalLink, Loader2, Search, ArrowLeft, Blocks, KeyRound, UserRound, Mail, Plug } from 'lucide-react';
 
 interface ConnectorConnectionPanelProps {
     open: boolean;
@@ -20,19 +22,32 @@ const CUSTOM_AUTH_OPTIONS = [
     { id: 'BEARER_TOKEN', name: 'Bearer Token', description: 'Raw API Key or Bearer Token', icon: KeyRound },
     { id: 'BASIC_AUTH', name: 'Basic Auth', description: 'Username and password pair', icon: UserRound },
     { id: 'SMTP', name: 'SMTP Server', description: 'Email server credentials', icon: Mail },
+    { id: 'MCP_SERVER', name: 'MCP Server', description: 'Connect to a remote MCP server', icon: Plug },
 ];
+
+type GenericAuthType = 'SMTP' | 'BEARER_TOKEN' | 'BASIC_AUTH' | 'MCP_SERVER';
+type McpAuthType = 'NONE' | 'BEARER' | 'BASIC' | 'CUSTOM_HEADER';
 
 export function ConnectorConnectionPanel({ open, onOpenChange, credential, onSave, preselectedConnectorId }: ConnectorConnectionPanelProps) {
     const [connectors, setConnectors] = useState<ConnectorManifest[]>([]);
     
     // Auth selection state
     const [selectedConnectorId, setSelectedConnectorId] = useState<string>('');
-    const [selectedGenericAuth, setSelectedGenericAuth] = useState<'SMTP' | 'BEARER_TOKEN' | 'BASIC_AUTH' | null>(null);
+    const [selectedGenericAuth, setSelectedGenericAuth] = useState<GenericAuthType | null>(null);
     
     // Form state
     const [name, setName] = useState('');
     const [fields, setFields] = useState<Record<string, string>>({});
+    const [mcpServerUrl, setMcpServerUrl] = useState('');
+    const [mcpEndpointPath, setMcpEndpointPath] = useState('/mcp');
+    const [mcpTransport, setMcpTransport] = useState<McpTransport>('STREAMABLE_HTTP');
+    const [mcpStdioCommand, setMcpStdioCommand] = useState('');
+    const [mcpStdioArgs, setMcpStdioArgs] = useState('');
+    const [allowStdioTransport, setAllowStdioTransport] = useState(false);
+    const [mcpAuthType, setMcpAuthType] = useState<McpAuthType>('NONE');
     const [isSaving, setIsSaving] = useState(false);
+    const [isVerifying, setIsVerifying] = useState(false);
+    const [verifyMessage, setVerifyMessage] = useState<string | null>(null);
     const [credentialScope, setCredentialScope] = useState<'PERSONAL' | 'ORG_SHARED'>('PERSONAL');
 
     // App Directory state
@@ -57,12 +72,32 @@ export function ConnectorConnectionPanel({ open, onOpenChange, credential, onSav
                     setSelectedConnectorId(credential.connectorId);
                     setSelectedGenericAuth(null);
                 } else {
-                    setSelectedGenericAuth(credential.type as any);
+                    setSelectedGenericAuth(credential.type as GenericAuthType);
                     setSelectedConnectorId('');
                 }
                 setName(credential.name);
                 setCredentialScope((credential.credentialScope as any) || 'PERSONAL');
-                setFields({}); // we don't load secrets back for editing securely
+                setFields({});
+                setMcpServerUrl(credential.mcpServerUrl || '');
+                setMcpEndpointPath(credential.mcpEndpointPath || '/mcp');
+                setMcpTransport(credential.mcpTransport || 'STREAMABLE_HTTP');
+                setMcpStdioCommand(credential.mcpStdioCommand || '');
+                setMcpStdioArgs(credential.mcpStdioArgs || '');
+                if (credential.type === 'MCP_SERVER') {
+                    const credKeys = Object.keys(credential.credentials || {});
+                    if (credKeys.includes('token')) {
+                        setMcpAuthType('BEARER');
+                    } else if (credKeys.includes('username') && credKeys.includes('password')) {
+                        setMcpAuthType('BASIC');
+                    } else if (credKeys.includes('headerName') && credKeys.includes('headerValue')) {
+                        setMcpAuthType('CUSTOM_HEADER');
+                    } else {
+                        setMcpAuthType('NONE');
+                    }
+                } else {
+                    setMcpAuthType('NONE');
+                }
+                setVerifyMessage(null);
                 setOauthMode('MANAGED');
                 setCustomClientId('');
                 setCustomClientSecret('');
@@ -73,6 +108,13 @@ export function ConnectorConnectionPanel({ open, onOpenChange, credential, onSav
                 setSelectedGenericAuth(null);
                 setName('');
                 setFields({});
+                setMcpServerUrl('');
+                setMcpEndpointPath('/mcp');
+                setMcpTransport('STREAMABLE_HTTP');
+                setMcpStdioCommand('');
+                setMcpStdioArgs('');
+                setMcpAuthType('NONE');
+                setVerifyMessage(null);
                 setCredentialScope('PERSONAL');
             }
         }
@@ -95,12 +137,40 @@ export function ConnectorConnectionPanel({ open, onOpenChange, credential, onSav
         }
     }, [selectedConnectorId, connectors]);
 
+    useEffect(() => {
+        if (!open) return;
+        mcpSettingsApi
+            .get()
+            .then((settings) => setAllowStdioTransport(settings.allowStdioTransport ?? false))
+            .catch(() => setAllowStdioTransport(false));
+    }, [open]);
+
     const genericAuthOption = CUSTOM_AUTH_OPTIONS.find(o => o.id === selectedGenericAuth);
     
     const isSelectorMode = !selectedConnectorId && !selectedGenericAuth && !credential && !preselectedConnectorId;
 
     const filteredConnectors = connectors.filter(c => c.displayName.toLowerCase().includes(searchQuery.toLowerCase()));
     const filteredCustom = CUSTOM_AUTH_OPTIONS.filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()));
+
+    const buildMcpCredentials = (): Record<string, string> => {
+        const existing = credential?.credentials || {};
+        switch (mcpAuthType) {
+            case 'BEARER':
+                return { token: fields.token || (existing.token ? '********' : '') };
+            case 'BASIC':
+                return {
+                    username: fields.username || (existing.username ? '********' : ''),
+                    password: fields.password || (existing.password ? '********' : ''),
+                };
+            case 'CUSTOM_HEADER':
+                return {
+                    headerName: fields.headerName || (existing.headerName ? '********' : ''),
+                    headerValue: fields.headerValue || (existing.headerValue ? '********' : ''),
+                };
+            default:
+                return {};
+        }
+    };
 
     const handleSave = async () => {
         setIsSaving(true);
@@ -113,6 +183,20 @@ export function ConnectorConnectionPanel({ open, onOpenChange, credential, onSav
                     connectorId: selectedConnector.connectorId,
                     credentialScope: credentialScope,
                     credentials: fields,
+                });
+            } else if (selectedGenericAuth === 'MCP_SERVER') {
+                await onSave({
+                    id: credential?.id,
+                    name: name || 'MCP Server Credential',
+                    type: 'MCP_SERVER',
+                    connectorId: '',
+                    credentialScope: credentialScope,
+                    credentials: mcpTransport === 'STDIO' ? {} : buildMcpCredentials(),
+                    mcpServerUrl: mcpTransport === 'STDIO' ? undefined : mcpServerUrl,
+                    mcpEndpointPath: mcpTransport === 'STDIO' ? undefined : (mcpEndpointPath || '/mcp'),
+                    mcpTransport,
+                    mcpStdioCommand: mcpTransport === 'STDIO' ? mcpStdioCommand : undefined,
+                    mcpStdioArgs: mcpTransport === 'STDIO' ? mcpStdioArgs : undefined,
                 });
             } else if (selectedGenericAuth) {
                 const genericName = genericAuthOption?.name || 'Custom';
@@ -128,6 +212,25 @@ export function ConnectorConnectionPanel({ open, onOpenChange, credential, onSav
             onOpenChange(false);
         } finally {
             setIsSaving(false);
+        }
+    };
+
+    const handleVerifyMcp = async () => {
+        if (!credential?.id) return;
+        setIsVerifying(true);
+        setVerifyMessage(null);
+        try {
+            const result = await credentialApi.verifyMcp(credential.id);
+            if (result.connectionStatus === 'ACTIVE') {
+                setVerifyMessage(result.connectedAs || 'Connection verified');
+            } else {
+                setVerifyMessage('Verification failed. Check server URL, transport, and auth settings.');
+            }
+        } catch (error) {
+            console.error('Failed to verify MCP connection', error);
+            setVerifyMessage('Verification failed. Check server URL, transport, and auth settings.');
+        } finally {
+            setIsVerifying(false);
         }
     };
 
@@ -427,6 +530,125 @@ export function ConnectorConnectionPanel({ open, onOpenChange, credential, onSav
                                                 <Input type="password" value={fields.password || ''} onChange={(e) => setFields({ ...fields, password: e.target.value })} placeholder="********" />
                                             </div>
                                         </div>
+                                    </div>
+                                )}
+
+                                {selectedGenericAuth === 'MCP_SERVER' && (
+                                    <div className="space-y-4 pt-4 border-t">
+                                        <div className="space-y-1.5">
+                                            <Label>Transport</Label>
+                                            <Select
+                                                value={mcpTransport}
+                                                onValueChange={(val: McpTransport) => setMcpTransport(val)}
+                                            >
+                                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="STREAMABLE_HTTP">Streamable HTTP</SelectItem>
+                                                    <SelectItem value="SSE">SSE (legacy)</SelectItem>
+                                                    {allowStdioTransport && (
+                                                        <SelectItem value="STDIO">STDIO (local process)</SelectItem>
+                                                    )}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        {mcpTransport === 'STDIO' ? (
+                                            <>
+                                                <div className="space-y-1.5">
+                                                    <Label>Command</Label>
+                                                    <Input
+                                                        value={mcpStdioCommand}
+                                                        onChange={(e) => setMcpStdioCommand(e.target.value)}
+                                                        placeholder="npx"
+                                                    />
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <Label>Args</Label>
+                                                    <Input
+                                                        value={mcpStdioArgs}
+                                                        onChange={(e) => setMcpStdioArgs(e.target.value)}
+                                                        placeholder="-y, @modelcontextprotocol/server-filesystem, /data"
+                                                    />
+                                                    <p className="text-xs text-muted-foreground">Comma-separated arguments.</p>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <div className="space-y-1.5">
+                                                    <Label>Server URL</Label>
+                                                    <Input
+                                                        value={mcpServerUrl}
+                                                        onChange={(e) => setMcpServerUrl(e.target.value)}
+                                                        placeholder="https://mcp.example.com"
+                                                    />
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <Label>Endpoint Path</Label>
+                                                    <Input
+                                                        value={mcpEndpointPath}
+                                                        onChange={(e) => setMcpEndpointPath(e.target.value)}
+                                                        placeholder="/mcp"
+                                                    />
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <Label>Auth Type</Label>
+                                                    <Select value={mcpAuthType} onValueChange={(val: McpAuthType) => {
+                                                        setMcpAuthType(val);
+                                                        setFields({});
+                                                    }}>
+                                                        <SelectTrigger><SelectValue /></SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="NONE">None</SelectItem>
+                                                            <SelectItem value="BEARER">Bearer Token</SelectItem>
+                                                            <SelectItem value="BASIC">Basic Auth</SelectItem>
+                                                            <SelectItem value="CUSTOM_HEADER">Custom Header</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                                {mcpAuthType === 'BEARER' && (
+                                                    <div className="space-y-1.5">
+                                                        <Label>Token</Label>
+                                                        <Input type="password" value={fields.token || ''} onChange={(e) => setFields({ ...fields, token: e.target.value })} placeholder="********" />
+                                                    </div>
+                                                )}
+                                                {mcpAuthType === 'BASIC' && (
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <div className="space-y-1.5">
+                                                            <Label>Username</Label>
+                                                            <Input value={fields.username || ''} onChange={(e) => setFields({ ...fields, username: e.target.value })} placeholder="api_user" />
+                                                        </div>
+                                                        <div className="space-y-1.5">
+                                                            <Label>Password</Label>
+                                                            <Input type="password" value={fields.password || ''} onChange={(e) => setFields({ ...fields, password: e.target.value })} placeholder="********" />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {mcpAuthType === 'CUSTOM_HEADER' && (
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <div className="space-y-1.5">
+                                                            <Label>Header Name</Label>
+                                                            <Input value={fields.headerName || ''} onChange={(e) => setFields({ ...fields, headerName: e.target.value })} placeholder="X-API-Key" />
+                                                        </div>
+                                                        <div className="space-y-1.5">
+                                                            <Label>Header Value</Label>
+                                                            <Input type="password" value={fields.headerValue || ''} onChange={(e) => setFields({ ...fields, headerValue: e.target.value })} placeholder="********" />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {credential?.id && (
+                                                    <div className="space-y-2 pt-2">
+                                                        <Button type="button" variant="secondary" onClick={handleVerifyMcp} disabled={isVerifying}>
+                                                            {isVerifying ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Verifying...</> : 'Verify Connection'}
+                                                        </Button>
+                                                        {verifyMessage && (
+                                                            <p className={`text-xs ${verifyMessage.includes('failed') ? 'text-red-600' : 'text-emerald-600'}`}>
+                                                                {verifyMessage}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </>
+                                        )}
                                     </div>
                                 )}
                             </>

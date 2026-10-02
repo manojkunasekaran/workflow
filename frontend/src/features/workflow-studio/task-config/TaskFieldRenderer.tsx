@@ -5,6 +5,9 @@ import { ConditionalBranchListField } from '@/features/workflow-studio/task-conf
 import { HumanActionListField } from '@/features/workflow-studio/task-config/HumanActionListField';
 import { WaitDurationField } from '@/features/workflow-studio/task-config/WaitDurationField';
 import { ToolsListField } from '@/features/workflow-studio/task-config/ToolsListField';
+import { McpToolsPickerField } from '@/features/workflow-studio/task-config/McpToolsPickerField';
+import { McpRemoteToolNameField } from '@/features/workflow-studio/task-config/McpRemoteToolNameField';
+import { isMcpTool, isTaskTool, parseAgentTools } from '@/features/workflow-studio/task-config/agentToolUtils';
 import { TaskRefField } from '@/features/workflow-studio/task-config/TaskRefField';
 import { ConnectionSelectField } from '@/features/workflow-studio/task-config/ConnectionSelectField';
 import { VariableInput } from '@/features/workflow-studio/task-config/VariableInput';
@@ -245,14 +248,46 @@ export function TaskFieldRenderer({
     }
 
     if (field.type === 'toolsList') {
+        const allTools = parseAgentTools(parameters.tools);
+        const taskTools = allTools.filter(isTaskTool);
+        const mcpTools = allTools.filter(isMcpTool);
         return (
             <ToolsListField
                 fieldKey={field.key}
                 label={field.label}
                 description={field.description}
-                value={value}
-                onChange={(tools) => update(tools)}
+                value={taskTools}
+                onChange={(updated) => {
+                    const updatedTaskTools = parseAgentTools(updated).filter(isTaskTool);
+                    onChange(writeFieldValue(parameters, 'tools', [...updatedTaskTools, ...mcpTools]));
+                }}
                 errors={fieldErrors}
+            />
+        );
+    }
+
+    if (field.type === 'mcpToolsPicker') {
+        return (
+            <McpToolsPickerField
+                label={field.label}
+                description={field.description}
+                value={parameters.tools}
+                onChange={(tools) => onChange(writeFieldValue(parameters, 'tools', tools))}
+                errors={fieldErrors}
+            />
+        );
+    }
+
+    if (field.type === 'mcpRemoteToolName') {
+        return (
+            <McpRemoteToolNameField
+                id={field.key}
+                label={label}
+                credentialId={String(parameters.credentialId ?? '').trim() || undefined}
+                value={String(value ?? '')}
+                onChange={(next) => update(next)}
+                error={error}
+                description={field.description}
             />
         );
     }
