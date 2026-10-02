@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { IntegrationCredential } from '@/types/api';
+import type { IntegrationCredential, McpToolDescriptor } from '@/types/api';
 import { API_BASE_URL } from '@/api/config';
 
 export const credentialApi = {
@@ -30,5 +30,20 @@ export const credentialApi = {
 
     delete: async (id: string): Promise<void> => {
         await axios.delete(`${API_BASE_URL}/credentials/${id}`);
+    },
+
+    verify: async (id: string): Promise<IntegrationCredential> => {
+        const response = await axios.post<IntegrationCredential>(`${API_BASE_URL}/credentials/${id}/verify`);
+        return response.data;
+    },
+
+    verifyMcp: async (id: string): Promise<IntegrationCredential> => {
+        const response = await axios.post<IntegrationCredential>(`${API_BASE_URL}/credentials/${id}/mcp/verify`);
+        return response.data;
+    },
+
+    listMcpTools: async (id: string): Promise<McpToolDescriptor[]> => {
+        const response = await axios.get<McpToolDescriptor[]>(`${API_BASE_URL}/credentials/${id}/mcp/tools`);
+        return response.data ?? [];
     },
 };

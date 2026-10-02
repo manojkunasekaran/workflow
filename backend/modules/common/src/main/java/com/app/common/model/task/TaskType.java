@@ -16,5 +16,6 @@ public enum TaskType {
     DB_TASK,
     MONGO_TASK,
     REDIS_TASK,
-    NEO4J_TASK;
+    NEO4J_TASK,
+    MCP_TOOL;
 }

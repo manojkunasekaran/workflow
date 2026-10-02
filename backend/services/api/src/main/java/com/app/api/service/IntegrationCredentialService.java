@@ -3,8 +3,13 @@ package com.app.api.service;
 import com.app.common.connector.ConnectorManifest;
 import com.app.common.connector.VerifyAction;
 import com.app.common.connector.ConnectorAuthType;
+import com.app.common.constant.IntegrationCredentialTypes;
 import com.app.common.entity.IntegrationCredential;
+import com.app.common.entity.McpTransport;
+import com.app.common.model.mcp.McpToolDescriptor;
+import com.app.api.service.mcp.McpSettingsService;
 import com.app.crypto.util.EncryptionService;
+import com.app.capability.mcp.api.McpToolDiscoveryService;
 import com.app.persistence.connector.ConnectorRegistry;
 import com.app.persistence.repository.IntegrationCredentialRepository;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
+import java.net.URI;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
@@ -35,6 +41,8 @@ public class IntegrationCredentialService {
     private final EncryptionService encryptionService;
     private final ConnectorRegistry connectorRegistry;
     private final RestTemplate restTemplate;
+    private final McpToolDiscoveryService mcpToolDiscoveryService;
+    private final McpSettingsService mcpSettingsService;
     
     // In a multi-tenant app, this would come from the security context
     private static final String DEFAULT_ORG_ID = "default-org";
@@ -51,6 +59,9 @@ public class IntegrationCredentialService {
             credential.setOrganizationId(DEFAULT_ORG_ID); // In real app, from Context
             // credential.setUserId(DEFAULT_USER_ID);
         }
+
+        validateMcpFields(credential);
+        applyMcpDefaults(credential);
         
         // Encrypt the credentials map before saving
         if (credential.getCredentials() != null) {
@@ -77,6 +88,16 @@ public class IntegrationCredentialService {
         IntegrationCredential existing = findAndVerifyAccess(id);
                 
         existing.setName(updateRequest.getName());
+
+        if (IntegrationCredentialTypes.MCP_SERVER.equals(existing.getType())) {
+            existing.setMcpServerUrl(updateRequest.getMcpServerUrl());
+            existing.setMcpEndpointPath(updateRequest.getMcpEndpointPath());
+            existing.setMcpTransport(updateRequest.getMcpTransport());
+            existing.setMcpStdioCommand(updateRequest.getMcpStdioCommand());
+            existing.setMcpStdioArgs(updateRequest.getMcpStdioArgs());
+            validateMcpFields(existing);
+            applyMcpDefaults(existing);
+        }
         
         // If the update request provides new credentials, we must encrypt them.
         // The frontend will send actual values if updated, or an empty map if unchanged,
@@ -84,16 +105,23 @@ public class IntegrationCredentialService {
         if (updateRequest.getCredentials() != null) {
             Map<String, String> currentEncrypted = existing.getCredentials();
             Map<String, String> newRaw = updateRequest.getCredentials();
-            
+
             Map<String, String> updatedEncrypted = new HashMap<>(currentEncrypted != null ? currentEncrypted : new HashMap<>());
-            
+
+            if (IntegrationCredentialTypes.MCP_SERVER.equals(existing.getType())) {
+                updatedEncrypted.keySet().removeAll(java.util.Set.of(
+                        "token", "username", "password", "headerName", "headerValue"));
+            }
+
             for (Map.Entry<String, String> entry : newRaw.entrySet()) {
                 String key = entry.getKey();
                 String val = entry.getValue();
-                
-                // If the frontend sends back the mask, it means the user didn't change it.
+
                 if (val != null && !val.equals("********") && !val.isBlank()) {
                     updatedEncrypted.put(key, encryptionService.encrypt(val));
+                } else if (val != null && val.equals("********")
+                        && currentEncrypted != null && currentEncrypted.containsKey(key)) {
+                    updatedEncrypted.put(key, currentEncrypted.get(key));
                 }
             }
             existing.setCredentials(updatedEncrypted);
@@ -136,6 +164,10 @@ public class IntegrationCredentialService {
      */
     public IntegrationCredential verifyConnection(@NonNull String id) {
         IntegrationCredential credential = findAndVerifyAccess(id);
+
+        if (IntegrationCredentialTypes.MCP_SERVER.equals(credential.getType())) {
+            throw new IllegalArgumentException("Use /credentials/{id}/mcp/verify for MCP server credentials");
+        }
         
         Optional<ConnectorManifest> manifestOpt = connectorRegistry.findById(credential.getConnectorId());
         if (manifestOpt.isEmpty()) {
@@ -190,6 +222,90 @@ public class IntegrationCredentialService {
         }
         
         return maskCredentials(repository.save(credential));
+    }
+
+    public IntegrationCredential verifyMcpConnection(@NonNull String id) {
+        IntegrationCredential credential = findAndVerifyAccess(id);
+        requireMcpServerCredential(credential);
+
+        try {
+            Map<String, String> plainCreds = encryptionService.decryptMap(credential.getCredentials());
+            List<McpToolDescriptor> tools = mcpToolDiscoveryService.listTools(credential, plainCreds);
+            credential.setConnectionStatus(com.app.common.entity.ConnectionStatus.ACTIVE);
+            credential.setConnectedAs(tools.size() + " tools available");
+        } catch (Exception e) {
+            log.error("Failed to verify MCP connection {}", credential.getId(), e);
+            credential.setConnectionStatus(com.app.common.entity.ConnectionStatus.ERROR);
+            credential.setConnectedAs(null);
+        }
+
+        return maskCredentials(repository.save(credential));
+    }
+
+    public List<McpToolDescriptor> listMcpTools(@NonNull String id) {
+        IntegrationCredential credential = findAndVerifyAccess(id);
+        requireMcpServerCredential(credential);
+        Map<String, String> plainCreds = encryptionService.decryptMap(credential.getCredentials());
+        return mcpToolDiscoveryService.listTools(credential, plainCreds);
+    }
+
+    void validateMcpFields(@NonNull IntegrationCredential credential) {
+        if (!IntegrationCredentialTypes.MCP_SERVER.equals(credential.getType())) {
+            return;
+        }
+
+        McpTransport transport = credential.getMcpTransport() != null
+                ? credential.getMcpTransport()
+                : McpTransport.STREAMABLE_HTTP;
+
+        if (transport == McpTransport.STDIO) {
+            if (!mcpSettingsService.isStdioTransportAllowed()) {
+                throw new IllegalArgumentException("STDIO transport is disabled in MCP settings");
+            }
+            if (credential.getMcpStdioCommand() == null || credential.getMcpStdioCommand().isBlank()) {
+                throw new IllegalArgumentException("MCP stdio command is required");
+            }
+            return;
+        }
+
+        String serverUrl = credential.getMcpServerUrl();
+        if (serverUrl == null || serverUrl.isBlank()) {
+            throw new IllegalArgumentException("MCP server URL is required");
+        }
+
+        URI uri;
+        try {
+            uri = URI.create(serverUrl.trim());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("MCP server URL is not a valid URI");
+        }
+
+        String scheme = uri.getScheme();
+        if (scheme == null || (!scheme.equalsIgnoreCase("http") && !scheme.equalsIgnoreCase("https"))) {
+            throw new IllegalArgumentException("MCP server URL must use http or https");
+        }
+
+        if (uri.getHost() == null || uri.getHost().isBlank()) {
+            throw new IllegalArgumentException("MCP server URL must include a valid host");
+        }
+    }
+
+    private void applyMcpDefaults(@NonNull IntegrationCredential credential) {
+        if (!IntegrationCredentialTypes.MCP_SERVER.equals(credential.getType())) {
+            return;
+        }
+        if (credential.getMcpEndpointPath() == null || credential.getMcpEndpointPath().isBlank()) {
+            credential.setMcpEndpointPath("/mcp");
+        }
+        if (credential.getMcpTransport() == null) {
+            credential.setMcpTransport(McpTransport.STREAMABLE_HTTP);
+        }
+    }
+
+    private void requireMcpServerCredential(@NonNull IntegrationCredential credential) {
+        if (!IntegrationCredentialTypes.MCP_SERVER.equals(credential.getType())) {
+            throw new IllegalArgumentException("Credential is not an MCP server connection");
+        }
     }
     
     private void applyAuth(ConnectorManifest manifest, Map<String, String> creds, HttpHeaders headers) {
@@ -248,6 +364,11 @@ public class IntegrationCredentialService {
         masked.setUserId(original.getUserId());
         masked.setLastUsedAt(original.getLastUsedAt());
         masked.setCredentialScope(original.getCredentialScope());
+        masked.setMcpServerUrl(original.getMcpServerUrl());
+        masked.setMcpEndpointPath(original.getMcpEndpointPath());
+        masked.setMcpTransport(original.getMcpTransport());
+        masked.setMcpStdioCommand(original.getMcpStdioCommand());
+        masked.setMcpStdioArgs(original.getMcpStdioArgs());
         
         if (original.getCredentials() != null) {
             Map<String, String> maskedMap = new HashMap<>();

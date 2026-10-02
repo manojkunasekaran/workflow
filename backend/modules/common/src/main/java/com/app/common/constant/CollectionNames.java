@@ -12,6 +12,7 @@ public class CollectionNames {
     public static final String TRIGGER_POLL_LOGS = "TriggerPollLogs";
     public static final String TRIGGER_WEBHOOK_LOGS = "TriggerWebhookLogs";
     public static final String TRIGGER_WEBHOOK_EVENT_DEDUPE = "TriggerWebhookEventDedupe";
+    public static final String TRIGGER_MCP_LOGS = "TriggerMcpLogs";
 
     private CollectionNames() {
     }

@@ -25,6 +25,7 @@ import {
     isJoinMergeInput,
     JOIN_MERGE_IN,
 } from '@/features/workflow-studio/lib/graphHandles';
+import { isTaskTool } from '@/features/workflow-studio/task-config/agentToolUtils';
 import {
     ADD_TASK_NODE_ID,
     WORKFLOW_START_ID,
@@ -233,7 +234,10 @@ export function clearTaskWireReferences(
         const wiring = getWiring(node.data.type);
         if (wiring.toolInput) {
             const currentTools = listRows(node.data.parameters, 'tools');
-            const nextTools = currentTools.filter((t) => String(t.targetTaskId) !== removedTaskId);
+            const nextTools = currentTools.filter((t) => {
+                if (!isTaskTool(t)) return true;
+                return String(t.targetTaskId) !== removedTaskId;
+            });
             if (nextTools.length !== currentTools.length) {
                 const nextParams = injectParameterType(node.data.type, {
                     ...node.data.parameters,
@@ -512,7 +516,7 @@ export function buildRouteEdgesFromNodes(nodes: StudioCanvasNode[]): Edge[] {
         }
 
         if (wiring.toolInput) {
-            const rows = listRows(parameters, 'tools');
+            const rows = listRows(parameters, 'tools').filter(isTaskTool);
             rows.forEach((row) => {
                 const target = String(row.targetTaskId ?? '').trim();
                 if (!target) return;
@@ -703,12 +707,13 @@ export function applyGraphConnection(
 
     if (wiring.toolInput && sourceHandle === 'tools' && targetHandle === MAIN_IN) {
         const currentTools = listRows(sourceData.parameters, 'tools');
-        if (currentTools.some((t) => String(t.targetTaskId) === target)) return null;
+        if (currentTools.some((t) => isTaskTool(t) && String(t.targetTaskId) === target)) return null;
 
         const targetName = targetData.displayName ?? targetData.type.toLowerCase();
         const toolName = targetName.replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 64);
         
         const newTool = {
+            sourceType: 'TASK',
             name: toolName,
             description: '',
             targetTaskId: target,
@@ -802,7 +807,10 @@ export function applyRouteEdgeRemoval(
 
     if (wiring.toolInput && sourceHandle === 'tools' && target) {
         const currentTools = listRows(sourceData.parameters, 'tools');
-        const nextTools = currentTools.filter((t) => String(t.targetTaskId) !== target);
+        const nextTools = currentTools.filter((t) => {
+            if (!isTaskTool(t)) return true;
+            return String(t.targetTaskId) !== target;
+        });
         if (nextTools.length === currentTools.length) return null;
         
         const nextParams = injectParameterType(sourceData.type, {

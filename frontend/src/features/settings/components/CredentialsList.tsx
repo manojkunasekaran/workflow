@@ -86,6 +86,8 @@ export const CredentialsList = forwardRef<CredentialsListHandle>(function Creden
                 return <Server className="h-4 w-4 text-blue-500" />;
             case 'BEARER_TOKEN':
                 return <KeyRound className="h-4 w-4 text-amber-500" />;
+            case 'MCP_SERVER':
+                return <Plug className="h-4 w-4 text-violet-500" />;
             default:
                 return <ShieldCheck className="h-4 w-4 text-slate-500" />;
         }

@@ -1,6 +1,7 @@
 package com.app.api.config;
 
 import com.app.api.dto.ApiErrorResponse;
+import com.app.api.exception.McpInboundException;
 import com.app.api.exception.WebhookInboundException;
 import com.app.common.constant.ResponseStatus;
 import com.app.common.exception.ResourceNotFoundException;
@@ -51,6 +52,18 @@ public class GlobalExceptionHandler {
                 .message("Not Found")
                 .build();
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+    }
+
+    @ExceptionHandler(McpInboundException.class)
+    public ResponseEntity<ApiErrorResponse> handleMcpInbound(McpInboundException ex) {
+        log.warn("MCP inbound rejected: {}", ex.getMessage());
+        ApiErrorResponse response = ApiErrorResponse.builder()
+                .status(ResponseStatus.FAILURE)
+                .errorCode("MCP_INBOUND_REJECTED")
+                .error(ex.getStatus().getReasonPhrase())
+                .message(ex.getMessage())
+                .build();
+        return ResponseEntity.status(ex.getStatus()).body(response);
     }
 
     @ExceptionHandler(WebhookInboundException.class)

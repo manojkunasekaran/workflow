@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2, Moon, Sun, Monitor, ShieldCheck, Server } from 'lucide-react';
 import { useTheme } from '@/components/theme-provider';
+import { McpServerSettingsSection } from '@/features/settings/components/McpServerSettingsSection';
 
 export default function SettingsPage() {
     const [health, setHealth] = useState<HealthResponse | null>(null);
@@ -102,6 +103,15 @@ export default function SettingsPage() {
                                 </div>
                             </div>
                         </div>
+                    </section>
+
+                    {/* MCP Server */}
+                    <section className="space-y-4">
+                        <div>
+                            <h2 data-testid="mcp-server-settings-section" className="text-lg font-medium tracking-tight">MCP Server</h2>
+                            <p className="text-sm text-muted-foreground">Configure inbound MCP tool exposure for external clients.</p>
+                        </div>
+                        <McpServerSettingsSection />
                     </section>
 
                     {/* System Health (Simplified) */}

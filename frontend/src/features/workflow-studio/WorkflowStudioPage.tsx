@@ -1002,6 +1002,7 @@ export default function WorkflowStudioPage() {
                 open={triggerDialogOpen}
                 onOpenChange={setTriggerDialogOpen}
                 workflowId={workflowId || 'NEW_WORKFLOW'}
+                tasks={savedDefinition?.tasks ?? []}
                 config={savedDefinition?.trigger}
                 onSave={(config) => {
                     const nextDef = { ...savedDefinition, name: workflowName, trigger: config } as WorkflowDefinition;

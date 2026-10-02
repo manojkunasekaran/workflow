@@ -24,6 +24,7 @@ export const STUDIO_TASK_TYPES = [
     'REDIS_TASK',
     'NEO4J_TASK',
     'DB_TASK',
+    'MCP_TOOL',
 ] as const;
 
 export type StudioTaskType = (typeof STUDIO_TASK_TYPES)[number];

@@ -8,6 +8,7 @@ import com.app.common.constant.CollectionNames;
 import com.app.common.model.base.BaseModel;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 
 @Data
@@ -59,4 +60,31 @@ public class IntegrationCredential extends BaseModel {
      * The scope of this credential: PERSONAL, ORG_SHARED, or PLATFORM.
      */
     private CredentialScope credentialScope = CredentialScope.PERSONAL;
+
+    /**
+     * MCP server base URL — only when {@code type = MCP_SERVER}.
+     * Example: {@code https://mcp.example.com}
+     */
+    private String mcpServerUrl;
+
+    /**
+     * MCP HTTP endpoint path — only when {@code type = MCP_SERVER}.
+     * Defaults to {@code /mcp} for Streamable HTTP.
+     */
+    private String mcpEndpointPath = "/mcp";
+
+    /**
+     * MCP HTTP transport — only when {@code type = MCP_SERVER}.
+     */
+    private McpTransport mcpTransport = McpTransport.STREAMABLE_HTTP;
+
+    /**
+     * MCP stdio command — only when {@code type = MCP_SERVER} and transport is STDIO.
+     */
+    private String mcpStdioCommand;
+
+    /**
+     * MCP stdio command arguments — only when transport is STDIO.
+     */
+    private List<String> mcpStdioArgs;
 }

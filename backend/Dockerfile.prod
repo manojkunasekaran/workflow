@@ -13,6 +13,7 @@ WORKDIR /app
 # separately from source changes.
 COPY pom.xml ./
 COPY modules/pom.xml modules/pom.xml
+COPY services/pom.xml services/pom.xml
 COPY services/core/pom.xml services/core/pom.xml
 COPY services/api/pom.xml services/api/pom.xml
 
@@ -26,7 +27,7 @@ COPY services services
 # Install shared modules into local repo, then package only the target service.
 ARG APP_MODULE=core
 RUN mvn -f modules/pom.xml install -DskipTests \
-    && mvn -pl services/${APP_MODULE} -am package -DskipTests
+    && mvn -f services/pom.xml -pl ${APP_MODULE} -am package -DskipTests
 
 # Find the built jar and copy it to a known fixed name for stage 2.
 RUN cp services/${APP_MODULE}/target/*.jar /app/app.jar

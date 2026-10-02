@@ -19,6 +19,8 @@ export type TaskFieldType =
     | 'humanActionList'
     | 'iteratorActionList'
     | 'toolsList'
+    | 'mcpToolsPicker'
+    | 'mcpRemoteToolName'
     | 'wiredRef'
     | 'inboundList'
     | 'waitDuration'

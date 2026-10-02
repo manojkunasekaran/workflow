@@ -15,4 +15,6 @@ public interface TriggerRegistrationRepository extends MongoRepository<TriggerRe
     Optional<TriggerRegistration> findByWorkflowDefinitionId(String workflowDefinitionId);
 
     List<TriggerRegistration> findByTriggerTypeAndStatus(TriggerType triggerType, TriggerRegistrationStatus status);
+
+    Optional<TriggerRegistration> findByMcpToolNameAndStatus(String mcpToolName, TriggerRegistrationStatus status);
 }

@@ -15,6 +15,7 @@ export const TaskType = {
     REDIS_TASK: 'REDIS_TASK',
     NEO4J_TASK: 'NEO4J_TASK',
     DB_TASK: 'DB_TASK',
+    MCP_TOOL: 'MCP_TOOL',
 } as const;
 
 export type TaskType = typeof TaskType[keyof typeof TaskType];
@@ -49,7 +50,20 @@ export interface VariableValue {
     value?: any;
 }
 
-export type TriggerType = 'MANUAL' | 'WEBHOOK' | 'SCHEDULE' | 'POLL';
+export type TriggerType = 'MANUAL' | 'WEBHOOK' | 'SCHEDULE' | 'POLL' | 'MCP';
+
+export type McpResponseMode = 'TASK_OUTPUT' | 'EXECUTION_ID';
+
+export type McpExposureMode = 'GLOBAL' | 'PER_WORKFLOW' | 'BOTH';
+
+export interface McpTriggerConfig {
+    toolName?: string;
+    description?: string;
+    responseMode?: McpResponseMode;
+    responseTaskId?: string;
+    waitTimeoutSeconds?: number;
+    active?: boolean;
+}
 
 export type WebhookDeliveryMode = 'PASSIVE' | 'SUBSCRIBE';
 
@@ -146,6 +160,7 @@ export interface TriggerConfig {
     webhook?: WebhookConfig;
     schedule?: ScheduleConfig;
     poll?: PollConfig;
+    mcp?: McpTriggerConfig;
 }
 
 export interface WorkflowDefinition {
@@ -178,7 +193,9 @@ export interface NodePosition {
     studioChainOut?: string;
 }
 
-export type ConnectionStatus = 'ACTIVE' | 'EXPIRED' | 'REVOKED' | 'UNKNOWN';
+export type ConnectionStatus = 'ACTIVE' | 'EXPIRED' | 'REVOKED' | 'UNKNOWN' | 'ERROR';
+
+export type McpTransport = 'STREAMABLE_HTTP' | 'SSE' | 'STDIO';
 
 export interface IntegrationCredential {
     id?: string;
@@ -194,4 +211,27 @@ export interface IntegrationCredential {
     connectedAs?: string;
     lastUsedAt?: string;
     credentialScope?: 'PERSONAL' | 'ORG_SHARED' | 'PLATFORM';
+    mcpServerUrl?: string;
+    mcpEndpointPath?: string;
+    mcpTransport?: McpTransport;
+    mcpStdioCommand?: string;
+    mcpStdioArgs?: string;
+}
+
+export interface McpToolDescriptor {
+    name: string;
+    description?: string;
+    inputSchema?: Record<string, unknown>;
+}
+
+export type AgentToolSource = 'TASK' | 'MCP';
+
+export interface AgentTool {
+    name: string;
+    description?: string;
+    targetTaskId?: string;
+    inputSchema?: Record<string, unknown>;
+    sourceType?: AgentToolSource;
+    credentialId?: string;
+    remoteToolName?: string;
 }

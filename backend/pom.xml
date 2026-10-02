@@ -18,12 +18,14 @@
     <modules>
         <module>modules</module>
         <module>services</module>
+        <module>tests</module>
     </modules>
 
     <properties>
         <java.version>21</java.version>
         <spring-cloud.version>2023.0.3</spring-cloud.version>
         <shedlock.version>5.13.0</shedlock.version>
+        <mcp.sdk.version>2.0.1</mcp.sdk.version>
     </properties>
 
     <dependencyManagement>
@@ -81,6 +83,11 @@
             </dependency>
             <dependency>
                 <groupId>com.app</groupId>
+                <artifactId>mcp</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.app</groupId>
                 <artifactId>core</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -111,6 +118,14 @@
                 <groupId>net.javacrumbs.shedlock</groupId>
                 <artifactId>shedlock-provider-redis-spring</artifactId>
                 <version>${shedlock.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.modelcontextprotocol.sdk</groupId>
+                <artifactId>mcp-bom</artifactId>
+                <version>${mcp.sdk.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>

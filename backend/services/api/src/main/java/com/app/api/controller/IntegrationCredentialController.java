@@ -2,6 +2,7 @@ package com.app.api.controller;
 
 import com.app.common.entity.IntegrationCredential;
 import com.app.common.exception.ResourceNotFoundException;
+import com.app.common.model.mcp.McpToolDescriptor;
 import com.app.api.service.IntegrationCredentialService;
 
 import lombok.RequiredArgsConstructor;
@@ -50,5 +51,15 @@ public class IntegrationCredentialController {
     @PostMapping("/{id}/verify")
     public IntegrationCredential verify(@NonNull @PathVariable String id) {
         return service.verifyConnection(id);
+    }
+
+    @PostMapping("/{id}/mcp/verify")
+    public IntegrationCredential verifyMcp(@NonNull @PathVariable String id) {
+        return service.verifyMcpConnection(id);
+    }
+
+    @GetMapping("/{id}/mcp/tools")
+    public List<McpToolDescriptor> listMcpTools(@NonNull @PathVariable String id) {
+        return service.listMcpTools(id);
     }
 }

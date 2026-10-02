@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Play, Webhook, Clock, RefreshCw, X } from 'lucide-react';
+import { Play, Webhook, Clock, RefreshCw, Plug, X } from 'lucide-react';
 import {
     Dialog,
     DialogContent,
@@ -26,18 +26,25 @@ import {
     createDefaultWebhookConfig,
     ReceiveWebhookTab,
 } from '@/features/workflow-studio/task-config/ReceiveWebhookTab';
+import {
+    createDefaultMcpConfig,
+    McpTriggerTab,
+} from '@/features/workflow-studio/task-config/McpTriggerTab';
 import { TRIGGER_TYPE_LABELS } from '@/features/workflow-studio/constants/triggerCopy';
 import type {
+    McpTriggerConfig,
     PollConfig,
     TriggerConfig,
     TriggerType,
     WebhookConfig,
+    WorkflowTask,
 } from '@/types/api';
 
 interface TriggerConfigDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     workflowId?: string;
+    tasks?: WorkflowTask[];
     config?: TriggerConfig;
     onSave: (config: TriggerConfig) => void;
     onForceSave?: () => Promise<void> | void;
@@ -50,6 +57,7 @@ function buildTriggerConfig(state: {
     cronExpression: string;
     timezone: string;
     poll: PollConfig;
+    mcp: McpTriggerConfig;
 }): TriggerConfig {
     return {
         type: state.type,
@@ -59,6 +67,7 @@ function buildTriggerConfig(state: {
                 ? { active: state.scheduleActive, cronExpression: state.cronExpression, timezone: state.timezone }
                 : undefined,
         poll: state.type === 'POLL' ? state.poll : undefined,
+        mcp: state.type === 'MCP' ? state.mcp : undefined,
     };
 }
 
@@ -67,12 +76,14 @@ const TRIGGER_TABS: Array<{ type: TriggerType; icon: typeof Play }> = [
     { type: 'WEBHOOK', icon: Webhook },
     { type: 'SCHEDULE', icon: Clock },
     { type: 'POLL', icon: RefreshCw },
+    { type: 'MCP', icon: Plug },
 ];
 
 export function TriggerConfigDialog({
     open,
     onOpenChange,
     workflowId = 'NEW_WORKFLOW',
+    tasks = [],
     config,
     onSave,
     onForceSave,
@@ -87,6 +98,7 @@ export function TriggerConfigDialog({
     );
 
     const [poll, setPoll] = useState<PollConfig>(config?.poll ?? createDefaultPollConfig());
+    const [mcp, setMcp] = useState<McpTriggerConfig>(config?.mcp ?? createDefaultMcpConfig());
 
     useEffect(() => {
         if (open) {
@@ -96,6 +108,7 @@ export function TriggerConfigDialog({
             setCronExpression(config?.schedule?.cronExpression || '');
             setTimezone(config?.schedule?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone);
             setPoll(config?.poll ?? createDefaultPollConfig());
+            setMcp(config?.mcp ?? createDefaultMcpConfig());
         }
     }, [open]);
 
@@ -106,6 +119,7 @@ export function TriggerConfigDialog({
         cronExpression: string;
         timezone: string;
         poll: PollConfig;
+        mcp: McpTriggerConfig;
     }>) => {
         const nextState = {
             type,
@@ -114,6 +128,7 @@ export function TriggerConfigDialog({
             cronExpression,
             timezone,
             poll,
+            mcp,
             ...updates,
         };
 
@@ -123,6 +138,7 @@ export function TriggerConfigDialog({
         if ('cronExpression' in updates) setCronExpression(nextState.cronExpression);
         if ('timezone' in updates) setTimezone(nextState.timezone);
         if ('poll' in updates) setPoll(nextState.poll);
+        if ('mcp' in updates) setMcp(nextState.mcp);
 
         onSave(buildTriggerConfig(nextState));
     };
@@ -295,6 +311,15 @@ export function TriggerConfigDialog({
                             workflowId={workflowId}
                             poll={poll}
                             onChange={(nextPoll) => emitSave({ poll: nextPoll })}
+                        />
+                    )}
+
+                    {type === 'MCP' && (
+                        <McpTriggerTab
+                            workflowId={workflowId}
+                            mcp={mcp}
+                            tasks={tasks}
+                            onChange={(nextMcp) => emitSave({ mcp: nextMcp })}
                         />
                     )}
                 </div>
