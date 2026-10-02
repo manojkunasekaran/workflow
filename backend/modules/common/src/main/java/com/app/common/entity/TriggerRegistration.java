@@ -58,4 +58,7 @@ public class TriggerRegistration extends Auditable {
     private Instant lastSubscribeAt;
     private Instant lastUnsubscribeAt;
     private Instant lastInboundAt;
+
+    /** Registered MCP tool name (MCP triggers only). */
+    private String mcpToolName;
 }

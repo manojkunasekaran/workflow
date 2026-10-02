@@ -2,6 +2,7 @@ package com.app.core.executors;
 
 import com.app.common.entity.IntegrationCredential;
 import com.app.common.entity.WorkflowExecution;
+import com.app.common.model.mcp.McpToolDescriptor;
 import com.app.common.model.task.TaskType;
 import com.app.common.model.task.WorkflowTask;
 import com.app.common.model.task.execution.AgentsTaskExecutionData;
@@ -13,6 +14,8 @@ import com.app.core.service.TaskExecutor;
 import com.app.core.service.VariableResolver;
 import com.app.execution.events.ExecutionEvent;
 import com.app.execution.events.ExecutionEventPublisher;
+import com.app.capability.mcp.api.McpToolDiscoveryService;
+import com.app.capability.mcp.api.McpToolInvoker;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -21,7 +24,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -51,6 +53,8 @@ public class AgentsTaskExecutor implements TaskExecutor {
     private final ObjectMapper objectMapper;
     private final ExecutionEventPublisher eventPublisher;
     private final List<LlmProviderAdapter> adapters;
+    private final McpToolDiscoveryService mcpToolDiscoveryService;
+    private final McpToolInvoker mcpToolInvoker;
     
     @org.springframework.beans.factory.annotation.Autowired
     @Lazy
@@ -141,12 +145,39 @@ public class AgentsTaskExecutor implements TaskExecutor {
             messages.add(createMessage("user", userPrompt));
         }
         
+        McpPrefetchedContext mcpContext = prefetchMcpTools(params, context);
         List<ObjectNode> shapedTools = new ArrayList<>();
         if (params.getTools() != null && !params.getTools().isEmpty()) {
             for (AgentsTaskParameters.AgentTool toolDef : params.getTools()) {
                 ObjectNode toolNode = objectMapper.createObjectNode();
                 toolNode.put("type", "function");
                 ObjectNode functionNode = toolNode.putObject("function");
+
+                if (AgentsTaskParameters.isMcpTool(toolDef)) {
+                    String credentialName = mcpContext.credentialName(toolDef.getCredentialId());
+                    functionNode.put("name", AgentsTaskParameters.resolveLlmToolName(toolDef, credentialName));
+                    Optional<McpToolDescriptor> remoteTool = mcpContext.findRemoteTool(
+                            toolDef.getCredentialId(), toolDef.getRemoteToolName());
+                    if (remoteTool.isPresent()) {
+                        McpToolDescriptor descriptor = remoteTool.get();
+                        String description = toolDef.getDescription() != null && !toolDef.getDescription().isBlank()
+                                ? toolDef.getDescription()
+                                : (descriptor.getDescription() != null ? descriptor.getDescription() : "");
+                        functionNode.put("description", description);
+                        if (descriptor.getInputSchema() != null && !descriptor.getInputSchema().isEmpty()) {
+                            functionNode.set("parameters", objectMapper.valueToTree(descriptor.getInputSchema()));
+                        } else {
+                            functionNode.set("parameters", objectMapper.createObjectNode().put("type", "object"));
+                        }
+                    } else {
+                        log.warn("MCP tool {} not found for credential {}", toolDef.getRemoteToolName(), toolDef.getCredentialId());
+                        functionNode.put("description", toolDef.getDescription() != null ? toolDef.getDescription() : "");
+                        functionNode.set("parameters", objectMapper.createObjectNode().put("type", "object"));
+                    }
+                    shapedTools.add(toolNode);
+                    continue;
+                }
+
                 functionNode.put("name", toolDef.getName());
                 functionNode.put("description", toolDef.getDescription() != null ? toolDef.getDescription() : "");
                 boolean hasSchema = toolDef.getInputSchema() != null && !toolDef.getInputSchema().isEmpty();
@@ -193,7 +224,9 @@ public class AgentsTaskExecutor implements TaskExecutor {
             maxLoops = 1;
         }
         int loopCount = 0;
-        
+        int[] mcpCallCount = new int[]{0};
+        boolean pendingToolContinuation = false;
+
         Integer promptTokens = 0;
         Integer completionTokens = 0;
         String finalGeneratedText = "";
@@ -267,9 +300,14 @@ public class AgentsTaskExecutor implements TaskExecutor {
                         toolCalls.forEach(tca::add);
                         messages.add(assistantMsg);
                         
-                        boolean executedAny = executeTools(toolCalls, params.getTools(), execution, context, messages);
-                        if (!executedAny) break;
+                        boolean executedAny = executeTools(toolCalls, params.getTools(), execution, context, messages, mcpContext, mcpCallCount);
+                        if (!executedAny) {
+                            pendingToolContinuation = false;
+                            break;
+                        }
+                        pendingToolContinuation = true;
                     } else {
+                        pendingToolContinuation = false;
                         finalGeneratedText = accumulatedText.toString();
                         break;
                     }
@@ -291,9 +329,14 @@ public class AgentsTaskExecutor implements TaskExecutor {
                         llmResponse.getToolCalls().forEach(tca::add);
                         messages.add(assistantMsg);
 
-                        boolean executedAny = executeTools(llmResponse.getToolCalls(), params.getTools(), execution, context, messages);
-                        if (!executedAny) break;
+                        boolean executedAny = executeTools(llmResponse.getToolCalls(), params.getTools(), execution, context, messages, mcpContext, mcpCallCount);
+                        if (!executedAny) {
+                            pendingToolContinuation = false;
+                            break;
+                        }
+                        pendingToolContinuation = true;
                     } else {
+                        pendingToolContinuation = false;
                         finalGeneratedText = llmResponse.getGeneratedText();
                         break;
                     }
@@ -307,6 +350,11 @@ public class AgentsTaskExecutor implements TaskExecutor {
             }
         }
 
+        boolean loopExhausted = pendingToolContinuation && loopCount >= maxLoops;
+        String warning = loopExhausted
+                ? "Agent loop limit (" + maxLoops + ") reached while the model requested additional tool calls"
+                : null;
+
         AgentsTaskExecutionData executionData = AgentsTaskExecutionData.builder()
                 .modelUsed(model)
                 .promptTokens(promptTokens)
@@ -314,6 +362,8 @@ public class AgentsTaskExecutor implements TaskExecutor {
                 .totalTokens(promptTokens + completionTokens)
                 .responseBody(lastResponseBody)
                 .generatedText(finalGeneratedText)
+                .loopExhausted(loopExhausted)
+                .warning(warning)
                 .build();
 
         return TaskExecutionResult.builder()
@@ -323,8 +373,9 @@ public class AgentsTaskExecutor implements TaskExecutor {
                 .build();
     }
 
-    private boolean executeTools(List<ObjectNode> toolCalls, List<AgentsTaskParameters.AgentTool> toolsDef, 
-                               WorkflowExecution execution, ExecutionContext context, List<ObjectNode> messages) {
+    private boolean executeTools(List<ObjectNode> toolCalls, List<AgentsTaskParameters.AgentTool> toolsDef,
+                               WorkflowExecution execution, ExecutionContext context, List<ObjectNode> messages,
+                               McpPrefetchedContext mcpContext, int[] mcpCallCount) {
         if (toolsDef == null || toolsDef.isEmpty()) return false;
         
         boolean executedAny = false;
@@ -334,10 +385,36 @@ public class AgentsTaskExecutor implements TaskExecutor {
             String name = func.get("name").asText();
             String arguments = func.has("arguments") ? func.get("arguments").asText() : "{}";
             
-            AgentsTaskParameters.AgentTool tool = toolsDef.stream().filter(t -> t.getName().equals(name)).findFirst().orElse(null);
+            AgentsTaskParameters.AgentTool tool = findToolByLlmName(toolsDef, name, mcpContext);
             
             String toolOutput = "";
-            if (tool != null && tool.getTargetTaskId() != null) {
+            if (tool != null && AgentsTaskParameters.isMcpTool(tool)) {
+                if (mcpCallCount[0] >= mcpContext.maxToolCallsPerRun()) {
+                    toolOutput = "Error: Maximum MCP tool calls per run exceeded.";
+                } else {
+                    mcpCallCount[0]++;
+                    try {
+                        IntegrationCredential mcpCredential = mcpContext.credential(tool.getCredentialId());
+                        if (mcpCredential == null) {
+                            toolOutput = "Error: MCP credential " + tool.getCredentialId() + " not found.";
+                        } else if (tool.getRemoteToolName() == null || tool.getRemoteToolName().isBlank()) {
+                            toolOutput = "Error: MCP tool remoteToolName is required.";
+                        } else {
+                            Map<String, Object> parsedArgs = objectMapper.readValue(arguments, Map.class);
+                            var result = mcpToolInvoker.callTool(
+                                    mcpCredential,
+                                    mcpCredential.getCredentials(),
+                                    tool.getRemoteToolName(),
+                                    parsedArgs,
+                                    mcpContext.toolCallTimeoutSeconds());
+                            toolOutput = objectMapper.writeValueAsString(result);
+                        }
+                    } catch (Exception e) {
+                        log.error("Failed to execute MCP tool {}: {}", name, e.getMessage());
+                        toolOutput = "Error: " + e.getMessage();
+                    }
+                }
+            } else if (tool != null && tool.getTargetTaskId() != null) {
                 try {
                     WorkflowTask targetTask = context.getWorkflowDefinition().getTasks().stream()
                             .filter(t -> t.getTaskId().equals(tool.getTargetTaskId()))
@@ -396,5 +473,84 @@ public class AgentsTaskExecutor implements TaskExecutor {
             return credentialOpt.orElse(null);
         }
         return null;
+    }
+
+    private McpPrefetchedContext prefetchMcpTools(AgentsTaskParameters params, ExecutionContext context) {
+        Map<String, IntegrationCredential> credentialsById = new HashMap<>();
+        Map<String, List<McpToolDescriptor>> toolsByCredentialId = new HashMap<>();
+
+        if (params.getTools() != null) {
+            for (AgentsTaskParameters.AgentTool tool : params.getTools()) {
+                if (!AgentsTaskParameters.isMcpTool(tool)) {
+                    continue;
+                }
+                String credentialId = tool.getCredentialId();
+                if (credentialId == null || credentialId.isBlank() || credentialsById.containsKey(credentialId)) {
+                    continue;
+                }
+                String resolvedCredentialId = variableResolver.resolveString(credentialId, context);
+                Optional<IntegrationCredential> credentialOpt = credentialProvider.resolveCredential(resolvedCredentialId, null, context);
+                if (credentialOpt.isEmpty()) {
+                    log.warn("MCP credential {} could not be resolved for prefetch", credentialId);
+                    continue;
+                }
+                IntegrationCredential credential = credentialOpt.get();
+                credentialsById.put(credentialId, credential);
+                try {
+                    toolsByCredentialId.put(
+                            credentialId,
+                            mcpToolDiscoveryService.listTools(credential, credential.getCredentials()));
+                } catch (Exception e) {
+                    log.warn("Failed to prefetch MCP tools for credential {}", credentialId, e);
+                    toolsByCredentialId.put(credentialId, List.of());
+                }
+            }
+        }
+
+        return new McpPrefetchedContext(
+                credentialsById,
+                toolsByCredentialId,
+                params.mcpToolCallTimeoutSecondsOrDefault(),
+                params.maxMcpToolCallsPerRunOrDefault());
+    }
+
+    private AgentsTaskParameters.AgentTool findToolByLlmName(
+            List<AgentsTaskParameters.AgentTool> toolsDef,
+            String llmName,
+            McpPrefetchedContext mcpContext) {
+        return toolsDef.stream()
+                .filter(tool -> {
+                    String credentialName = AgentsTaskParameters.isMcpTool(tool)
+                            ? mcpContext.credentialName(tool.getCredentialId())
+                            : null;
+                    return AgentsTaskParameters.resolveLlmToolName(tool, credentialName).equals(llmName);
+                })
+                .findFirst()
+                .orElse(null);
+    }
+
+    private record McpPrefetchedContext(
+            Map<String, IntegrationCredential> credentialsById,
+            Map<String, List<McpToolDescriptor>> toolsByCredentialId,
+            int toolCallTimeoutSeconds,
+            int maxToolCallsPerRun) {
+
+        String credentialName(String credentialId) {
+            IntegrationCredential credential = credentialsById.get(credentialId);
+            return credential != null ? credential.getName() : "mcp";
+        }
+
+        IntegrationCredential credential(String credentialId) {
+            return credentialsById.get(credentialId);
+        }
+
+        Optional<McpToolDescriptor> findRemoteTool(String credentialId, String remoteToolName) {
+            if (remoteToolName == null || remoteToolName.isBlank()) {
+                return Optional.empty();
+            }
+            return toolsByCredentialId.getOrDefault(credentialId, List.of()).stream()
+                    .filter(tool -> remoteToolName.equals(tool.getName()))
+                    .findFirst();
+        }
     }
 }

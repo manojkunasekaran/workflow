@@ -7,12 +7,17 @@ import com.app.common.graph.WorkflowGraph;
 import com.app.common.graph.WorkflowTopologyResolver;
 import com.app.common.model.task.TaskType;
 import com.app.common.model.task.WorkflowTask;
+import com.app.common.entity.IntegrationCredential;
+import com.app.common.model.task.parameters.AgentsTaskParameters;
 import com.app.common.model.task.parameters.BranchTaskParameters;
 import com.app.common.model.task.parameters.ConnectorTaskParameters;
 import com.app.common.model.task.parameters.HumanTaskParameters;
 import com.app.common.model.task.parameters.JoinTaskParameters;
 import com.app.common.model.task.parameters.JoinWaitPolicy;
+import com.app.common.model.task.parameters.McpToolTaskParameters;
 import com.app.common.model.task.parameters.WaitTaskParameters;
+import com.app.common.constant.IntegrationCredentialTypes;
+import com.app.persistence.repository.IntegrationCredentialRepository;
 import com.app.common.model.trigger.ChangeDetectionConfig;
 import com.app.common.model.trigger.PollConfig;
 import com.app.common.model.trigger.PollHttpConfig;
@@ -24,7 +29,10 @@ import com.app.common.model.trigger.TriggerType;
 import com.app.common.model.trigger.WebhookConfig;
 import com.app.common.model.trigger.WebhookInboundConfig;
 import com.app.common.model.trigger.WebhookVerificationMode;
+import com.app.common.model.trigger.McpResponseMode;
+import com.app.common.model.trigger.McpTriggerConfig;
 import com.app.persistence.connector.ConnectorRegistry;
+import com.app.persistence.repository.WorkflowDefinitionRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.support.CronExpression;
 import org.springframework.stereotype.Component;
@@ -37,13 +45,18 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 @Component
 @RequiredArgsConstructor
 public class WorkflowDefinitionValidator {
 
+    private static final Pattern MCP_TOOL_NAME_PATTERN = Pattern.compile("^[a-zA-Z][a-zA-Z0-9_-]{0,63}$");
+
     private final ConnectorRegistry connectorRegistry;
     private final WorkflowApiProperties apiProperties;
+    private final IntegrationCredentialRepository integrationCredentialRepository;
+    private final WorkflowDefinitionRepository definitionRepository;
 
     @Value("${spring.profiles.active:}")
     private String activeProfiles;
@@ -78,6 +91,12 @@ public class WorkflowDefinitionValidator {
             } else if (task.getType() == TaskType.WAIT
                     && task.getParameters() instanceof WaitTaskParameters params) {
                 validateWaitTask(task.getTaskId(), params);
+            } else if (task.getType() == TaskType.AGENTS_TASK
+                    && task.getParameters() instanceof AgentsTaskParameters params) {
+                validateAgentsTask(task.getTaskId(), params);
+            } else if (task.getType() == TaskType.MCP_TOOL
+                    && task.getParameters() instanceof McpToolTaskParameters params) {
+                validateMcpToolTask(task.getTaskId(), params);
             }
         }
 
@@ -93,6 +112,57 @@ public class WorkflowDefinitionValidator {
             validateWebhookInbound(webhook);
             if (webhook.isSubscribeMode()) {
                 validateWebhookSubscribe(webhook);
+            }
+        }
+        if (trigger != null && trigger.getType() == TriggerType.MCP && trigger.getMcp() != null) {
+            validateMcpTrigger(definition, trigger.getMcp());
+        }
+    }
+
+    void validateMcpTrigger(WorkflowDefinition definition, McpTriggerConfig mcp) {
+        if (!mcp.isActive()) {
+            return;
+        }
+
+        String toolName = mcp.getToolName();
+        if (toolName == null || toolName.isBlank()) {
+            throw new ValidationException("MCP trigger requires toolName when active");
+        }
+        if (!MCP_TOOL_NAME_PATTERN.matcher(toolName).matches()) {
+            throw new ValidationException(
+                    "MCP toolName must start with a letter and contain only letters, numbers, underscores, or hyphens");
+        }
+
+        if (mcp.getResponseMode() == McpResponseMode.TASK_OUTPUT) {
+            if (mcp.getResponseTaskId() == null || mcp.getResponseTaskId().isBlank()) {
+                throw new ValidationException("MCP trigger TASK_OUTPUT mode requires responseTaskId");
+            }
+            boolean taskExists = definition.getTasks() != null
+                    && definition.getTasks().stream()
+                            .anyMatch(task -> mcp.getResponseTaskId().equals(task.getTaskId()));
+            if (!taskExists) {
+                throw new ValidationException(
+                        "MCP trigger responseTaskId references unknown task: " + mcp.getResponseTaskId());
+            }
+        }
+
+        if (mcp.getWaitTimeoutSeconds() != null && mcp.getWaitTimeoutSeconds() <= 0) {
+            throw new ValidationException("MCP waitTimeoutSeconds must be positive");
+        }
+
+        String definitionId = definition.getId();
+        for (WorkflowDefinition other : definitionRepository.findAll()) {
+            if (definitionId != null && definitionId.equals(other.getId())) {
+                continue;
+            }
+            if (other.getTrigger() == null
+                    || other.getTrigger().getType() != TriggerType.MCP
+                    || other.getTrigger().getMcp() == null
+                    || !other.getTrigger().getMcp().isActive()) {
+                continue;
+            }
+            if (toolName.equals(other.getTrigger().getMcp().getToolName())) {
+                throw new ValidationException("MCP toolName must be unique within the organization: " + toolName);
             }
         }
     }
@@ -303,6 +373,75 @@ public class WorkflowDefinitionValidator {
             throw new ValidationException(
                     "Wait task " + taskId + " duration must be at least 1 second (1000 ms)");
         }
+    }
+
+    private void validateMcpToolTask(String taskId, McpToolTaskParameters params) {
+        if (params.getCredentialId() == null || params.getCredentialId().isBlank()) {
+            throw new ValidationException("MCP_TOOL task " + taskId + " requires credentialId");
+        }
+        if (params.getRemoteToolName() == null || params.getRemoteToolName().isBlank()) {
+            throw new ValidationException("MCP_TOOL task " + taskId + " requires remoteToolName");
+        }
+        if (params.getTimeoutSeconds() != null && params.getTimeoutSeconds() <= 0) {
+            throw new ValidationException("MCP_TOOL task " + taskId + " timeoutSeconds must be positive");
+        }
+
+        IntegrationCredential credential = integrationCredentialRepository.findById(params.getCredentialId())
+                .orElseThrow(() -> new ValidationException(
+                        "MCP_TOOL task " + taskId + " references unknown credential: " + params.getCredentialId()));
+        if (!IntegrationCredentialTypes.MCP_SERVER.equals(credential.getType())) {
+            throw new ValidationException(
+                    "MCP_TOOL task " + taskId + " credential must be type MCP_SERVER");
+        }
+    }
+
+    private void validateAgentsTask(String taskId, AgentsTaskParameters params) {
+        if (params.getTools() == null || params.getTools().isEmpty()) {
+            return;
+        }
+
+        Set<String> llmToolNames = new HashSet<>();
+        for (AgentsTaskParameters.AgentTool tool : params.getTools()) {
+            if (AgentsTaskParameters.isMcpTool(tool)) {
+                if (tool.getCredentialId() == null || tool.getCredentialId().isBlank()) {
+                    throw new ValidationException(
+                            "Agents task " + taskId + " MCP tool requires credentialId");
+                }
+                if (tool.getRemoteToolName() == null || tool.getRemoteToolName().isBlank()) {
+                    throw new ValidationException(
+                            "Agents task " + taskId + " MCP tool requires remoteToolName");
+                }
+                if (tool.getTargetTaskId() != null && !tool.getTargetTaskId().isBlank()) {
+                    throw new ValidationException(
+                            "Agents task " + taskId + " MCP tool must not set targetTaskId");
+                }
+            } else {
+                if (tool.getTargetTaskId() == null || tool.getTargetTaskId().isBlank()) {
+                    throw new ValidationException(
+                            "Agents task " + taskId + " task tool requires targetTaskId");
+                }
+                if (tool.getName() == null || tool.getName().isBlank()) {
+                    throw new ValidationException(
+                            "Agents task " + taskId + " task tool requires name");
+                }
+            }
+
+            String llmName = resolveAgentsLlmToolName(tool);
+            if (!llmToolNames.add(llmName)) {
+                throw new ValidationException(
+                        "Agents task " + taskId + " has duplicate LLM tool name: " + llmName);
+            }
+        }
+    }
+
+    private String resolveAgentsLlmToolName(AgentsTaskParameters.AgentTool tool) {
+        if (AgentsTaskParameters.isMcpTool(tool)) {
+            String credentialName = integrationCredentialRepository.findById(tool.getCredentialId())
+                    .map(IntegrationCredential::getName)
+                    .orElse("mcp");
+            return AgentsTaskParameters.resolveLlmToolName(tool, credentialName);
+        }
+        return tool.getName();
     }
 
     private void validateGraph(List<WorkflowTask> tasks, Set<String> taskIds) {

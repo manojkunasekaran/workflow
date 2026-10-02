@@ -1,7 +1,12 @@
 package com.app.api.service;
 
+import com.app.common.constant.IntegrationCredentialTypes;
 import com.app.common.entity.IntegrationCredential;
+import com.app.common.entity.McpTransport;
 import com.app.crypto.util.EncryptionService;
+import com.app.api.service.mcp.McpSettingsService;
+import com.app.capability.mcp.api.McpToolDiscoveryService;
+import com.app.persistence.connector.ConnectorRegistry;
 import com.app.persistence.repository.IntegrationCredentialRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -9,6 +14,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.HashMap;
 import java.util.List;
@@ -28,6 +34,18 @@ public class IntegrationCredentialServiceTest {
 
     @Mock
     private EncryptionService encryptionService;
+
+    @Mock
+    private ConnectorRegistry connectorRegistry;
+
+    @Mock
+    private RestTemplate restTemplate;
+
+    @Mock
+    private McpToolDiscoveryService mcpToolDiscoveryService;
+
+    @Mock
+    private McpSettingsService mcpSettingsService;
 
     @InjectMocks
     private IntegrationCredentialService service;
@@ -125,6 +143,80 @@ public class IntegrationCredentialServiceTest {
         service.deleteCredential("cred-123");
         
         verify(repository).delete(credential);
+    }
+
+    @Test
+    void createCredential_shouldRejectMcpServerWithoutUrl() {
+        IntegrationCredential mcpCredential = new IntegrationCredential();
+        mcpCredential.setName("MCP");
+        mcpCredential.setType(IntegrationCredentialTypes.MCP_SERVER);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.createCredential(mcpCredential));
+
+        assertEquals("MCP server URL is required", ex.getMessage());
+    }
+
+    @Test
+    void createCredential_shouldRejectInvalidMcpServerUrl() {
+        IntegrationCredential mcpCredential = new IntegrationCredential();
+        mcpCredential.setName("MCP");
+        mcpCredential.setType(IntegrationCredentialTypes.MCP_SERVER);
+        mcpCredential.setMcpServerUrl("ftp://bad.example.com");
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.createCredential(mcpCredential));
+
+        assertEquals("MCP server URL must use http or https", ex.getMessage());
+    }
+
+    @Test
+    void createCredential_shouldApplyMcpDefaults() {
+        IntegrationCredential mcpCredential = new IntegrationCredential();
+        mcpCredential.setName("MCP");
+        mcpCredential.setType(IntegrationCredentialTypes.MCP_SERVER);
+        mcpCredential.setMcpServerUrl("https://mcp.example.com");
+
+        when(repository.save(any(IntegrationCredential.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        IntegrationCredential result = service.createCredential(mcpCredential);
+
+        assertEquals("/mcp", result.getMcpEndpointPath());
+        assertEquals(McpTransport.STREAMABLE_HTTP, result.getMcpTransport());
+    }
+
+    @Test
+    void createCredential_shouldRejectStdioWhenDisabledInSettings() {
+        IntegrationCredential mcpCredential = new IntegrationCredential();
+        mcpCredential.setName("MCP Stdio");
+        mcpCredential.setType(IntegrationCredentialTypes.MCP_SERVER);
+        mcpCredential.setMcpTransport(McpTransport.STDIO);
+        mcpCredential.setMcpStdioCommand("npx");
+
+        when(mcpSettingsService.isStdioTransportAllowed()).thenReturn(false);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.createCredential(mcpCredential));
+
+        assertEquals("STDIO transport is disabled in MCP settings", ex.getMessage());
+    }
+
+    @Test
+    void createCredential_shouldAcceptStdioWhenEnabledInSettings() {
+        IntegrationCredential mcpCredential = new IntegrationCredential();
+        mcpCredential.setName("MCP Stdio");
+        mcpCredential.setType(IntegrationCredentialTypes.MCP_SERVER);
+        mcpCredential.setMcpTransport(McpTransport.STDIO);
+        mcpCredential.setMcpStdioCommand("npx");
+        mcpCredential.setMcpStdioArgs(List.of("-y", "@modelcontextprotocol/server-everything"));
+
+        when(mcpSettingsService.isStdioTransportAllowed()).thenReturn(true);
+        when(repository.save(any(IntegrationCredential.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        IntegrationCredential result = service.createCredential(mcpCredential);
+
+        assertEquals("npx", result.getMcpStdioCommand());
+        assertEquals(List.of("-y", "@modelcontextprotocol/server-everything"), result.getMcpStdioArgs());
     }
 }
 

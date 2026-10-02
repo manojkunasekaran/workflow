@@ -35,6 +35,10 @@
             <artifactId>execution-events</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.app</groupId>
+            <artifactId>mcp</artifactId>
+        </dependency>
+        <dependency>
             <groupId>net.devh</groupId>
             <artifactId>grpc-server-spring-boot-starter</artifactId>
         </dependency>

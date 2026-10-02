@@ -95,6 +95,18 @@ export const agentsTaskPlugin = defineTaskPlugin({
             defaultValue: 'false',
             description: 'Stream tokens in real-time to the UI.',
         },
+        {
+            key: 'tools',
+            label: 'Canvas Tools',
+            type: 'toolsList',
+            description: 'Workflow tasks connected as tools via the canvas tool handle.',
+        },
+        {
+            key: 'mcpTools',
+            label: 'MCP Tools',
+            type: 'mcpToolsPicker',
+            description: 'Select remote tools from an MCP server connection.',
+        },
     ],
     validate: (parameters, _, errors) => {
         if (!parameters.model) {
@@ -102,6 +114,22 @@ export const agentsTaskPlugin = defineTaskPlugin({
         }
         if (!parameters.userPrompt) {
             errors.userPrompt = 'User Prompt is required';
+        }
+
+        if (Array.isArray(parameters.tools)) {
+            parameters.tools.forEach((row: Record<string, unknown>, index: number) => {
+                const isMcp =
+                    row.sourceType === 'MCP' ||
+                    (typeof row.credentialId === 'string' && row.credentialId.trim().length > 0);
+                if (!isMcp) return;
+
+                if (!String(row.credentialId ?? '').trim()) {
+                    errors[`tools.${index}.credentialId`] = 'MCP tool requires a connection';
+                }
+                if (!String(row.remoteToolName ?? '').trim()) {
+                    errors[`tools.${index}.remoteToolName`] = 'MCP tool requires a remote tool name';
+                }
+            });
         }
     },
     normalize: (parameters) => {
@@ -116,15 +144,34 @@ export const agentsTaskPlugin = defineTaskPlugin({
 
         // Normalize tools list
         if (Array.isArray(next.tools)) {
-            next.tools = next.tools.map((row: any) => ({
-                name: String(row.name ?? '').trim(),
-                description: String(row.description ?? '').trim(),
-                targetTaskId: normalizeOptionalTaskRef(row.targetTaskId),
-                // if they didn't provide schema, default it to empty object so it's a valid JSON schema
-                inputSchema: row.inputSchema && Object.keys(row.inputSchema).length > 0 
-                    ? row.inputSchema 
-                    : { type: "object", properties: {} },
-            }));
+            next.tools = next.tools.map((row: Record<string, unknown>) => {
+                const isMcp =
+                    row.sourceType === 'MCP' ||
+                    (typeof row.credentialId === 'string' && row.credentialId.trim().length > 0);
+                const inputSchema =
+                    row.inputSchema && Object.keys(row.inputSchema as object).length > 0
+                        ? row.inputSchema
+                        : { type: 'object', properties: {} };
+
+                if (isMcp) {
+                    return {
+                        sourceType: 'MCP',
+                        credentialId: String(row.credentialId ?? '').trim(),
+                        remoteToolName: String(row.remoteToolName ?? '').trim(),
+                        name: String(row.name ?? '').trim(),
+                        description: String(row.description ?? '').trim(),
+                        inputSchema,
+                    };
+                }
+
+                return {
+                    sourceType: 'TASK',
+                    name: String(row.name ?? '').trim(),
+                    description: String(row.description ?? '').trim(),
+                    targetTaskId: normalizeOptionalTaskRef(row.targetTaskId as string | null | undefined),
+                    inputSchema,
+                };
+            });
         }
 
         return next;
@@ -134,13 +181,30 @@ export const agentsTaskPlugin = defineTaskPlugin({
         secondary: typeof parameters.userPrompt === 'string' ? parameters.userPrompt.slice(0, 50) : '',
     }),
     executionSummary: ({ executionData }) => {
-        const data = executionData as any;
+        const data = executionData as Record<string, unknown> | null | undefined;
+        const lines: import('@/features/executions/lib/executionSummaryUtils').ExecutionSummaryLine[] = [
+            { label: 'Model', value: (data?.modelUsed as string) ?? '—' },
+            {
+                label: 'Total Tokens',
+                value: data?.totalTokens != null ? String(data.totalTokens) : '—',
+            },
+        ];
+        if (data?.loopExhausted === true) {
+            lines.push({
+                label: 'Warning',
+                value: 'Agent reached max loops before completing',
+                tone: 'warning',
+            });
+        } else if (typeof data?.warning === 'string' && data.warning.trim()) {
+            lines.push({
+                label: 'Warning',
+                value: data.warning,
+                tone: 'warning',
+            });
+        }
         return {
-            lines: [
-                { label: 'Model', value: data?.modelUsed ?? '—' },
-                { label: 'Total Tokens', value: data?.totalTokens != null ? String(data.totalTokens) : '—' },
-            ],
-            mainOutput: data?.generatedText,
+            lines,
+            mainOutput: data?.generatedText as string | undefined,
         };
     },
 });

@@ -32,5 +32,8 @@ public class TriggerConfig {
 
     /** Poll-specific config. Only relevant when type = POLL. */
     private PollConfig poll;
+
+    /** MCP server trigger config. Only relevant when type = MCP. */
+    private McpTriggerConfig mcp;
 }
 

@@ -83,13 +83,30 @@ public class WorkflowExecutionService {
         String executionId = execution.getId();
 
         if (executionType == ExecutionType.SYNC) {
-            ExecutionSyncWaiter.WaitSession waitSession = syncWaiter.beginWait(executionId);
-            messageDispatcherRegistry.dispatch(executionType, executionId);
-            return syncWaiter.await(waitSession, properties.getExecution().getSyncTimeoutSeconds(), TimeUnit.SECONDS);
+            return awaitSyncExecution(executionId, properties.getExecution().getSyncTimeoutSeconds());
         }
 
         messageDispatcherRegistry.dispatch(executionType, executionId);
         return execution;
+    }
+
+    public WorkflowExecution triggerSyncExecutionWithTimeout(
+            String definitionId,
+            Map<String, VariableValue> inputs,
+            TriggerType triggeredBy,
+            long timeoutSeconds) {
+        var definition = definitionRepository.findById(definitionId)
+                .orElseThrow(() -> new ResourceNotFoundException("WorkflowDefinition", definitionId));
+
+        WorkflowExecution execution = createQueuedExecution(
+                definition, ExecutionType.SYNC, inputs, triggeredBy);
+        return awaitSyncExecution(execution.getId(), timeoutSeconds);
+    }
+
+    private WorkflowExecution awaitSyncExecution(String executionId, long timeoutSeconds) {
+        ExecutionSyncWaiter.WaitSession waitSession = syncWaiter.beginWait(executionId);
+        messageDispatcherRegistry.dispatch(ExecutionType.SYNC, executionId);
+        return syncWaiter.await(waitSession, timeoutSeconds, TimeUnit.SECONDS);
     }
 
     public WorkflowExecution triggerTestExecution(String definitionId, String targetTaskId, Map<String, Object> cachedSampleData) {
