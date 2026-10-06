@@ -8,12 +8,22 @@ import { Button } from '@/components/ui/button';
 import { ErrorBanner } from '@/components/ui/error-banner';
 import { Hint } from '@/components/ui/hint';
 import { ArrowRight, Loader2, Plus, RefreshCw, Workflow } from 'lucide-react';
+import { SearchInput } from '@/components/ui/search-input';
+import { ViewToggle } from '@/components/ui/view-toggle';
+import { WorkflowCard } from './components/WorkflowCard';
 
 export default function WorkflowListPage() {
     const [workflows, setWorkflows] = useState<WorkflowDefinition[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
     const navigate = useNavigate();
+
+    const filteredWorkflows = workflows.filter(w => 
+        !searchQuery || 
+        w.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
     const loadWorkflows = async () => {
         try {
@@ -75,6 +85,18 @@ export default function WorkflowListPage() {
                     <ErrorBanner data-testid="workflow-list-error" message={error} />
                 ) : null}
 
+                {workflows.length > 0 && !error && (
+                    <div className="mb-4 flex items-center justify-between">
+                        <SearchInput 
+                            className="w-72" 
+                            placeholder="Search workflows..." 
+                            value={searchQuery} 
+                            onChange={(e) => setSearchQuery(e.target.value)} 
+                        />
+                        <ViewToggle value={viewMode} onChange={setViewMode} />
+                    </div>
+                )}
+
                 {workflows.length === 0 && !error ? (
                     <div data-testid="empty-state-container" className="flex flex-col items-center justify-center py-16 text-center">
                         <Workflow className="mb-4 h-12 w-12 text-muted-foreground/40" />
@@ -88,6 +110,17 @@ export default function WorkflowListPage() {
                         </Button>
                     </div>
                 ) : workflows.length > 0 ? (
+                    viewMode === 'grid' ? (
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                            {filteredWorkflows.map(workflow => (
+                                <WorkflowCard 
+                                    key={workflow.id} 
+                                    workflow={workflow} 
+                                    onClick={() => navigate(`/workflows/${workflow.id}`)} 
+                                />
+                            ))}
+                        </div>
+                    ) : (
                     <div data-testid="workflow-table-container" className="overflow-hidden rounded-lg border border-border bg-card">
                         <table className="w-full">
                             <thead className="border-b border-border bg-muted/50">
@@ -108,7 +141,7 @@ export default function WorkflowListPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-border">
-                                {workflows.map((workflow) => (
+                                {filteredWorkflows.map((workflow) => (
                                     <tr
                                         key={workflow.id}
                                         data-testid={`workflow-row-${workflow.id}`}
@@ -156,6 +189,7 @@ export default function WorkflowListPage() {
                             </tbody>
                         </table>
                     </div>
+                    )
                 ) : null}
             </div>
 

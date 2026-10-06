@@ -6,7 +6,7 @@ import { PageHeader } from '@/layouts/PageHeader';
 import { Button } from '@/components/ui/button';
 
 interface ConnectorsPageProps {
-    scope: 'SYSTEM' | 'TENANT';
+    scope?: 'SYSTEM' | 'TENANT';
 }
 
 export default function ConnectorsPage({ scope }: ConnectorsPageProps) {
@@ -38,13 +38,13 @@ export default function ConnectorsPage({ scope }: ConnectorsPageProps) {
                             onClick={() => navigate('/apps/new')}
                         >
                             <Plus className="h-4 w-4" />
-                            New Connector
+                            New App
                         </Button>
                     </>
                 }
             />
 
-            <div className="flex-1 overflow-auto p-6">
+            <div className="flex-1 overflow-auto p-6 flex flex-col gap-4">
                 <ConnectorList ref={listRef} scope={scope} />
             </div>
         </div>

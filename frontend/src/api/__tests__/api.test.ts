@@ -232,7 +232,7 @@ describe('API Client Layer', () => {
       mockedAxios.get.mockResolvedValueOnce({ data: { status: 'UP' } });
       const res = await healthApi.getApiHealth();
       expect(res.status).toBe('UP');
-      expect(mockedAxios.get).toHaveBeenCalledWith(expect.stringContaining('/actuator/health'));
+      expect(mockedAxios.get).toHaveBeenCalledWith(expect.stringContaining('/system/stats'));
     });
   });
 

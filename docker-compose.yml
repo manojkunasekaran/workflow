@@ -41,6 +41,8 @@ services:
       dockerfile: Dockerfile.dev
     ports:
       - "5173:5173"
+    environment:
+      - VITE_API_TARGET=http://api:8080
     volumes:
       - ./frontend:/app
       - /app/node_modules

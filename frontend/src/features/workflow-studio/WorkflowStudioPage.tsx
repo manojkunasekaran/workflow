@@ -58,6 +58,7 @@ import {
     insertTaskOnStudioEdge,
 } from '@/features/workflow-studio/lib/studioEdgeActions';
 import { TriggerConfigDialog } from '@/features/workflow-studio/task-config/TriggerConfigDialog';
+import { AssignIntegrationDialog } from '@/features/workflow-studio/AssignIntegrationDialog';
 
 export type StudioMode = 'design' | 'inspect';
 
@@ -81,6 +82,7 @@ export default function WorkflowStudioPage() {
     const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
     const [configOpen, setConfigOpen] = useState(false);
     const [triggerDialogOpen, setTriggerDialogOpen] = useState(false);
+    const [assignIntegrationOpen, setAssignIntegrationOpen] = useState(false);
     const [configDraft, setConfigDraft] = useState<TaskNodeData | null>(null);
     const [pendingBranchWire, setPendingBranchWire] = useState<{
         sourceTaskId: string;
@@ -816,6 +818,19 @@ export default function WorkflowStudioPage() {
         [blocker],
     );
 
+    const handleIntegrationAssigned = useCallback((integrationId: string, useCaseTitle: string, useCaseDescription?: string) => {
+        setSavedDefinition(prev => {
+            if (!prev) return prev;
+            return {
+                ...prev,
+                integrationId: integrationId || undefined,
+                useCaseTitle: useCaseTitle || undefined,
+                useCaseDescription: useCaseDescription || undefined,
+            };
+        });
+        markDirty();
+    }, [markDirty]);
+
     const handleSave = async () => {
         const validationError = findFirstTaskValidationError(nodes, edges);
         if (validationError) {
@@ -913,6 +928,8 @@ export default function WorkflowStudioPage() {
                 onSave={handleSave}
                 onRun={handleRun}
                 onBack={handleBack}
+                onAssignIntegration={() => setAssignIntegrationOpen(true)}
+                hasIntegration={!!savedDefinition?.integrationId}
             />
 
             {message && (
@@ -1010,6 +1027,16 @@ export default function WorkflowStudioPage() {
                     markDirty();
                 }}
                 onForceSave={handleSave}
+            />
+
+            <AssignIntegrationDialog
+                open={assignIntegrationOpen}
+                onClose={() => setAssignIntegrationOpen(false)}
+                workflowId={workflowId ?? ''}
+                currentIntegrationId={savedDefinition?.integrationId}
+                currentUseCaseTitle={savedDefinition?.useCaseTitle}
+                currentUseCaseDescription={savedDefinition?.useCaseDescription}
+                onAssigned={handleIntegrationAssigned}
             />
 
             <ConfirmDialog

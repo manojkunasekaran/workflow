@@ -8,7 +8,7 @@ export interface HealthResponse {
 
 export const healthApi = {
     getApiHealth: async (): Promise<HealthResponse> => {
-        const response = await axios.get<HealthResponse>(`${API_BASE_URL}/actuator/health`);
+        const response = await axios.get<HealthResponse>(`${API_BASE_URL}/system/stats`);
         return response.data;
     },
 };
