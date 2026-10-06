@@ -25,7 +25,7 @@ const HEALTH_DOWN = {
 test.describe('Settings Page', () => {
   test.describe('Happy Path — Page Load', () => {
     test('[Happy] should display the Settings page heading', async ({ page }) => {
-      await page.route('**/actuator/health', (route) =>
+      await page.route('**/system/stats', (route) =>
         route.fulfill({ json: HEALTH_UP }),
       );
       await page.goto('/settings');
@@ -33,7 +33,7 @@ test.describe('Settings Page', () => {
     });
 
     test('[Happy] should show the Profile Settings section', async ({ page }) => {
-      await page.route('**/actuator/health', (route) =>
+      await page.route('**/system/stats', (route) =>
         route.fulfill({ json: HEALTH_UP }),
       );
       await page.goto('/settings');
@@ -41,7 +41,7 @@ test.describe('Settings Page', () => {
     });
 
     test('[Happy] should show the User Preferences section', async ({ page }) => {
-      await page.route('**/actuator/health', (route) =>
+      await page.route('**/system/stats', (route) =>
         route.fulfill({ json: HEALTH_UP }),
       );
       await page.goto('/settings');
@@ -49,7 +49,7 @@ test.describe('Settings Page', () => {
     });
 
     test('[Happy] should show the System Status section', async ({ page }) => {
-      await page.route('**/actuator/health', (route) =>
+      await page.route('**/system/stats', (route) =>
         route.fulfill({ json: HEALTH_UP }),
       );
       await page.goto('/settings');
@@ -59,7 +59,7 @@ test.describe('Settings Page', () => {
 
   test.describe('Happy Path — Theme Switcher', () => {
     test('[Happy] should show Light, Dark, and System theme buttons', async ({ page }) => {
-      await page.route('**/actuator/health', (route) =>
+      await page.route('**/system/stats', (route) =>
         route.fulfill({ json: HEALTH_UP }),
       );
       await page.goto('/settings');
@@ -69,7 +69,7 @@ test.describe('Settings Page', () => {
     });
 
     test('[Happy] clicking the Dark button should apply dark class to html', async ({ page }) => {
-      await page.route('**/actuator/health', (route) =>
+      await page.route('**/system/stats', (route) =>
         route.fulfill({ json: HEALTH_UP }),
       );
       await page.goto('/settings');
@@ -78,7 +78,7 @@ test.describe('Settings Page', () => {
     });
 
     test('[Happy] clicking the Light button should remove dark class from html', async ({ page }) => {
-      await page.route('**/actuator/health', (route) =>
+      await page.route('**/system/stats', (route) =>
         route.fulfill({ json: HEALTH_UP }),
       );
       await page.goto('/settings');
@@ -90,7 +90,7 @@ test.describe('Settings Page', () => {
     });
 
     test('[Happy] theme preference should persist across page navigations', async ({ page }) => {
-      await page.route('**/actuator/health', (route) =>
+      await page.route('**/system/stats', (route) =>
         route.fulfill({ json: HEALTH_UP }),
       );
       await page.goto('/settings');
@@ -105,7 +105,7 @@ test.describe('Settings Page', () => {
 
   test.describe('Happy Path — System Status', () => {
     test('[Happy] should show "All Systems Operational" when API health is UP', async ({ page }) => {
-      await page.route('**/actuator/health', (route) =>
+      await page.route('**/system/stats', (route) =>
         route.fulfill({ json: HEALTH_UP }),
       );
       await page.goto('/settings');
@@ -115,7 +115,7 @@ test.describe('Settings Page', () => {
 
   test.describe('Negative Path — System Status', () => {
     test('[Negative] should show degraded status when API health returns DOWN', async ({ page }) => {
-      await page.route('**/actuator/health', (route) =>
+      await page.route('**/system/stats', (route) =>
         route.fulfill({ json: HEALTH_DOWN }),
       );
       await page.goto('/settings');
@@ -123,7 +123,7 @@ test.describe('Settings Page', () => {
     });
 
     test('[Negative] should show degraded status when health API is unreachable (network error)', async ({ page }) => {
-      await page.route('**/actuator/health', (route) => route.abort());
+      await page.route('**/system/stats', (route) => route.abort());
       await page.goto('/settings');
       // Should show degraded/offline, not crash
       await expect(page.getByTestId('system-status-badge')).toHaveText(/offline|degraded/i);
@@ -132,7 +132,7 @@ test.describe('Settings Page', () => {
 
   test.describe('Edge Cases — Profile Form', () => {
     test('[Edge] Full Name input should be editable', async ({ page }) => {
-      await page.route('**/actuator/health', (route) =>
+      await page.route('**/system/stats', (route) =>
         route.fulfill({ json: HEALTH_UP }),
       );
       await page.goto('/settings');
@@ -143,7 +143,7 @@ test.describe('Settings Page', () => {
     });
 
     test('[Edge] Email input should be editable', async ({ page }) => {
-      await page.route('**/actuator/health', (route) =>
+      await page.route('**/system/stats', (route) =>
         route.fulfill({ json: HEALTH_UP }),
       );
       await page.goto('/settings');
@@ -154,7 +154,7 @@ test.describe('Settings Page', () => {
     });
 
     test('[Edge] "Update Profile" button should be present', async ({ page }) => {
-      await page.route('**/actuator/health', (route) =>
+      await page.route('**/system/stats', (route) =>
         route.fulfill({ json: HEALTH_UP }),
       );
       await page.goto('/settings');

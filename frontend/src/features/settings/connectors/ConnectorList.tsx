@@ -6,11 +6,19 @@ import {
     MoreVertical,
     ArrowRight,
     Blocks,
+    KeyRound,
+    Puzzle,
 } from 'lucide-react';
 import { connectorApi, type ConnectorManifest, type ConnectorAuthType } from '@/api/connectorApi';
 import { Button } from '@/components/ui/button';
 import { ErrorBanner } from '@/components/ui/error-banner';
 import { Hint } from '@/components/ui/hint';
+import { cn } from '@/lib/utils';
+import { EmptyState } from '@/components/ui/empty-state';
+import { LoaderState } from '@/components/ui/loader-state';
+import { SearchInput } from '@/components/ui/search-input';
+import { ViewToggle } from '@/components/ui/view-toggle';
+import { ConnectorCard } from './ConnectorCard';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -18,7 +26,6 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { cn } from '@/lib/utils';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -98,7 +105,7 @@ export interface ConnectorListHandle {
 }
 
 interface ConnectorListProps {
-    scope: 'SYSTEM' | 'TENANT';
+    scope?: 'SYSTEM' | 'TENANT';
 }
 
 const ConnectorList = forwardRef<ConnectorListHandle, ConnectorListProps>(function ConnectorList(
@@ -106,7 +113,10 @@ const ConnectorList = forwardRef<ConnectorListHandle, ConnectorListProps>(functi
     ref,
 ) {
     const navigate = useNavigate();
-    const [connectors, setConnectors] = useState<ConnectorManifest[]>([]);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [activeTab, setActiveTab] = useState<'all' | 'system' | 'tenant'>('all');
+    const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+    const [allConnectors, setAllConnectors] = useState<ConnectorManifest[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -114,24 +124,37 @@ const ConnectorList = forwardRef<ConnectorListHandle, ConnectorListProps>(functi
         setIsLoading(true);
         setError(null);
         try {
-            const data = scope === 'SYSTEM'
-                ? await connectorApi.adminList()
-                : await connectorApi.list();
-            setConnectors(data.filter(c => c.taskType === 'CONNECTOR_TASK'));
+            const data = await connectorApi.list();
+            setAllConnectors(data.filter(c => c.taskType === 'CONNECTOR_TASK'));
         } catch (err) {
             console.error('Failed to load connectors', err);
-            setConnectors([]);
+            setAllConnectors([]);
             setError("We couldn't load apps right now.");
         } finally {
             setIsLoading(false);
         }
-    }, [scope]);
+    }, []);
 
     useEffect(() => {
         loadConnectors();
     }, [loadConnectors]);
 
     useImperativeHandle(ref, () => ({ refresh: loadConnectors }), [loadConnectors]);
+
+    const connectors = allConnectors.filter((connector) => {
+        // Tab filter
+        if (activeTab === 'system' && connector.scope !== 'SYSTEM') return false;
+        if (activeTab === 'tenant' && connector.scope !== 'TENANT') return false;
+
+        // Search filter
+        if (searchQuery) {
+            const lowerQuery = searchQuery.toLowerCase();
+            const matchesName = connector.displayName?.toLowerCase().includes(lowerQuery);
+            if (!matchesName) return false;
+        }
+
+        return true;
+    });
 
     const handleDelete = async (connectorId: string, displayName: string, e: React.MouseEvent) => {
         e.stopPropagation();
@@ -149,32 +172,72 @@ const ConnectorList = forwardRef<ConnectorListHandle, ConnectorListProps>(functi
     };
 
     if (isLoading) {
-        return (
-            <div className="overflow-hidden rounded-lg border border-border bg-card shadow-sm animate-pulse">
-                <div className="h-10 bg-muted/50 border-b border-border"></div>
-                {Array.from({ length: 4 }).map((_, i) => (
-                    <div key={i} className="h-14 border-b border-border/50"></div>
-                ))}
-            </div>
-        );
+        return <LoaderState />;
     }
 
     return (
         <div className="space-y-4">
             {error ? (
                 <ErrorBanner data-testid="connector-list-error" message={error} />
-            ) : null}
+            ) : (
+                <>
+                    <div className="mb-6 flex w-full items-center justify-between">
+                        <SearchInput
+                            placeholder="Search apps..."
+                            className="w-72"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                        <div className="flex items-center gap-3">
+                            <div className="inline-flex items-center rounded-lg bg-muted p-1">
+                                <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className={cn("h-8", activeTab === 'all' && "bg-background shadow-sm")} 
+                                    onClick={() => setActiveTab('all')}
+                                >
+                                    All
+                                </Button>
+                                <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className={cn("h-8", activeTab === 'system' && "bg-background shadow-sm")} 
+                                    onClick={() => setActiveTab('system')}
+                                >
+                                    System Apps
+                                </Button>
+                                <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className={cn("h-8", activeTab === 'tenant' && "bg-background shadow-sm")} 
+                                    onClick={() => setActiveTab('tenant')}
+                                >
+                                    My Apps
+                                </Button>
+                            </div>
+                            <ViewToggle value={viewMode} onChange={setViewMode} />
+                        </div>
+                    </div>
 
-            {!error && connectors.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 text-center">
-                    <Blocks className="mb-4 h-12 w-12 text-muted-foreground/40" />
-                    <p className="mb-1 font-medium text-foreground">No apps yet</p>
-                    <p className="text-sm text-muted-foreground">
-                        Create your first connector to get started.
-                    </p>
-                </div>
-            ) : !error ? (
-                <div className="overflow-hidden rounded-lg border border-border bg-card">
+                    {connectors.length === 0 ? (
+                        <EmptyState 
+                            icon={Blocks} 
+                            title="No apps yet" 
+                            description="Create your first connector to get started." 
+                        />
+                    ) : viewMode === 'grid' ? (
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                            {connectors.map((connector) => (
+                                <ConnectorCard
+                                    key={connector.connectorId}
+                                    connector={connector}
+                                    onNavigate={(path) => navigate(path)}
+                                    onDelete={(id, name, e) => handleDelete(id, name, e)}
+                                />
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="overflow-hidden rounded-lg border border-border bg-card">
                     <table className="w-full text-left">
                         <thead className="border-b border-border bg-muted/50">
                             <tr>
@@ -238,6 +301,15 @@ const ConnectorList = forwardRef<ConnectorListHandle, ConnectorListProps>(functi
                                                         Configure
                                                     </DropdownMenuItem>
                                                     <DropdownMenuSeparator />
+                                                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate(`/apps/${connector.connectorId}#credentials`); }}>
+                                                        <KeyRound className="h-4 w-4 mr-2" />
+                                                        Credentials
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate(`/apps/${connector.connectorId}#integrations`); }}>
+                                                        <Puzzle className="h-4 w-4 mr-2" />
+                                                        Integrations
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuSeparator />
                                                     <DropdownMenuItem
                                                         className="text-destructive focus:bg-destructive/10 focus:text-destructive"
                                                         onClick={(e) => handleDelete(connector.connectorId, connector.displayName, e)}
@@ -264,7 +336,9 @@ const ConnectorList = forwardRef<ConnectorListHandle, ConnectorListProps>(functi
                         </tbody>
                     </table>
                 </div>
-            ) : null}
+                    )}
+                </>
+            )}
         </div>
     );
 });

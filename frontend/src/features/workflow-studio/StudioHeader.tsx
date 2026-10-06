@@ -1,5 +1,6 @@
-import { ArrowLeft, ExternalLink, History, MoreVertical, Play } from 'lucide-react';
+import { ArrowLeft, ExternalLink, History, MoreVertical, Play, Puzzle } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { PageHeader } from '@/layouts/PageHeader';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -19,6 +20,8 @@ interface StudioHeaderProps {
     onSave: () => void;
     onRun: () => void;
     onBack: () => void;
+    onAssignIntegration: () => void;
+    hasIntegration?: boolean;
 }
 
 export function StudioHeader({
@@ -31,6 +34,8 @@ export function StudioHeader({
     onSave,
     onRun,
     onBack,
+    onAssignIntegration,
+    hasIntegration,
 }: StudioHeaderProps) {
 
     return (
@@ -98,9 +103,19 @@ export function StudioHeader({
                     <Button variant="ghost" size="icon" className={cn('h-8 w-8', STUDIO_GHOST_ICON_BUTTON_CLASS)} disabled>
                         <History className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" className={cn('h-8 w-8', STUDIO_GHOST_ICON_BUTTON_CLASS)} disabled>
-                        <MoreVertical className="h-4 w-4" />
-                    </Button>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className={cn('h-8 w-8', STUDIO_GHOST_ICON_BUTTON_CLASS)}>
+                                <MoreVertical className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={onAssignIntegration}>
+                                <Puzzle className="mr-2 h-4 w-4" />
+                                <span>{hasIntegration ? 'Edit Integration Assignment' : 'Assign to Integration'}</span>
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </>
             }
         />

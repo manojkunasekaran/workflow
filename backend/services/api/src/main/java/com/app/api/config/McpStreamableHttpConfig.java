@@ -22,11 +22,13 @@ public class McpStreamableHttpConfig {
 
     @Bean
     public ServletRegistrationBean<HttpServletStreamableServerTransportProvider> mcpStreamableServlet(
-            HttpServletStreamableServerTransportProvider transportProvider) {
+            HttpServletStreamableServerTransportProvider transportProvider,
+            McpSettingsService mcpSettingsService) {
         ServletRegistrationBean<HttpServletStreamableServerTransportProvider> registration =
                 new ServletRegistrationBean<>(transportProvider);
         registration.setName("mcpStreamableServlet");
         registration.setLoadOnStartup(1);
+        registration.addUrlMappings(resolveEndpointPath(mcpSettingsService) + "/*");
         return registration;
     }
 

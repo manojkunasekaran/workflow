@@ -55,6 +55,10 @@ public class WorkflowDefinition extends Auditable {
      */
     private List<WorkflowInput> inputs;
 
+    private String integrationId;
+    private String useCaseTitle;
+    private String useCaseDescription;
+
     /**
      * Defines an expected input parameter for the workflow.
      */

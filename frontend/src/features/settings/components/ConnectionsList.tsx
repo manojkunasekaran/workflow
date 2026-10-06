@@ -134,7 +134,7 @@ export function ConnectionsList() {
                                         {renderStatusBadge(cred.connectionStatus)}
                                     </TableCell>
                                     <TableCell className="text-muted-foreground">
-                                        {cred.updatedAt ? new Date(cred.updatedAt).toLocaleDateString() : 'N/A'}
+                                        {cred.updatedAt ? new Date(cred.updatedAt).toLocaleString() : 'N/A'}
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <Button variant="ghost" size="icon" onClick={() => openEdit(cred)}>
