@@ -4,9 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Globe, Lock, KeyRound, User, Shield, ImageIcon, Upload } from 'lucide-react';
 import ActionBuilder from './ActionBuilder';
 import TriggerBuilder from './TriggerBuilder';
+import { CredentialsList } from '@/features/settings/components/CredentialsList';
+import { IntegrationList } from '@/features/integrations/components/IntegrationList';
 
 // --- Constants ---------------------------------------------------------------
 
@@ -95,7 +98,26 @@ const ConnectorBuilder = forwardRef<ConnectorBuilderHandle, ConnectorBuilderProp
     };
 
     const isEditing = !!initialData;
-    const pageTitle = manifest.displayName.trim() || (isEditing ? manifest.displayName : 'New Connector');
+    const pageTitle = manifest.displayName.trim() || (isEditing ? manifest.displayName : 'New App');
+
+    const defaultTab = window.location.hash.replace('#', '') || 'triggers';
+    const [activeTab, setActiveTab] = useState(defaultTab);
+
+    useEffect(() => {
+        const handleHashChange = () => {
+            const newHash = window.location.hash.replace('#', '');
+            if (['triggers', 'actions', 'credentials', 'integrations'].includes(newHash)) {
+                setActiveTab(newHash);
+            }
+        };
+        window.addEventListener('hashchange', handleHashChange);
+        return () => window.removeEventListener('hashchange', handleHashChange);
+    }, []);
+
+    const handleTabChange = (val: string) => {
+        setActiveTab(val);
+        window.history.replaceState(null, '', `#${val}`);
+    };
 
     useEffect(() => {
         onHeaderStateChange?.({
@@ -204,7 +226,6 @@ const ConnectorBuilder = forwardRef<ConnectorBuilderHandle, ConnectorBuilderProp
 
     useImperativeHandle(ref, () => ({ save: handleSave }), [handleSave]);
 
-    const authInfo = AUTH_TYPE_INFO[manifest.authType];
 
     return (
         <div className="space-y-8 pb-16">
@@ -344,35 +365,41 @@ const ConnectorBuilder = forwardRef<ConnectorBuilderHandle, ConnectorBuilderProp
                         </div>
                     )}
 
-                    {/* Auth type contextual hint */}
-                    <div className={`flex items-start gap-3 p-3 rounded-lg bg-muted/40 border text-sm ${manifest.authType === 'API_KEY' ? '' : 'md:col-span-2'}`}>
-                        <span className="shrink-0 text-muted-foreground mt-0.5">{authInfo.icon}</span>
-                        <p className="text-muted-foreground text-xs leading-relaxed">{authInfo.hint}</p>
-                    </div>
+
                 </div>
             </section>
 
-            {/* Section 3: Triggers */}
-            <section className="space-y-5">
-                <div className="border-b pb-2">
-                    <h3 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">Triggers</h3>
-                </div>
-                <TriggerBuilder
-                    triggers={manifest.triggers ?? []}
-                    onChange={triggers => handleChange('triggers', triggers)}
-                />
-            </section>
+            {/* Section 3 & 4: Triggers and Actions */}
+            <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full mt-6">
+                <TabsList className="mb-4">
+                    <TabsTrigger value="triggers">Triggers ({manifest.triggers?.length || 0})</TabsTrigger>
+                    <TabsTrigger value="actions">Actions ({manifest.actions?.length || 0})</TabsTrigger>
+                    <TabsTrigger value="credentials">Credentials</TabsTrigger>
+                    <TabsTrigger value="integrations">Integrations</TabsTrigger>
+                </TabsList>
 
-            {/* Section 4: Actions */}
-            <section className="space-y-5">
-                <div className="border-b pb-2">
-                    <h3 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">Actions</h3>
-                </div>
-                <ActionBuilder
-                    actions={manifest.actions}
-                    onChange={actions => handleChange('actions', actions)}
-                />
-            </section>
+                <TabsContent value="triggers">
+                    <TriggerBuilder
+                        triggers={manifest.triggers ?? []}
+                        onChange={triggers => handleChange('triggers', triggers)}
+                    />
+                </TabsContent>
+
+                <TabsContent value="actions">
+                    <ActionBuilder
+                        actions={manifest.actions}
+                        onChange={actions => handleChange('actions', actions)}
+                    />
+                </TabsContent>
+
+                <TabsContent value="credentials">
+                    <CredentialsList connectorId={manifest.connectorId || (manifest as any).id} hideFilters={true} />
+                </TabsContent>
+
+                <TabsContent value="integrations">
+                    <IntegrationList connectorId={manifest.connectorId || (manifest as any).id} hideFilters={true} />
+                </TabsContent>
+            </Tabs>
         </div>
     );
 });

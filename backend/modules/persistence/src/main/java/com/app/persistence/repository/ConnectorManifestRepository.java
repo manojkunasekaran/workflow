@@ -16,4 +16,6 @@ public interface ConnectorManifestRepository extends MongoRepository<ConnectorMa
     List<ConnectorManifestEntity> findByOrganizationId(String organizationId);
     
     Optional<ConnectorManifestEntity> findByConnectorIdAndScopeAndOrganizationId(String connectorId, ConnectorScope scope, String organizationId);
+    
+    Optional<ConnectorManifestEntity> findFirstByConnectorId(String connectorId);
 }

@@ -21,7 +21,7 @@ export const TaskType = {
 export type TaskType = typeof TaskType[keyof typeof TaskType];
 
 export interface TaskParameters {
-    [key: string]: any;
+    [key: string]: unknown;
 }
 
 export interface WorkflowTask {
@@ -41,13 +41,13 @@ export interface WorkflowInput {
     type: VariableType;
     description?: string;
     required?: boolean;
-    defaultValue?: any;
+    defaultValue?: unknown;
 }
 
 export interface VariableValue {
     name: string;
     type: VariableType;
-    value?: any;
+    value?: unknown;
 }
 
 export type TriggerType = 'MANUAL' | 'WEBHOOK' | 'SCHEDULE' | 'POLL' | 'MCP';
@@ -174,6 +174,9 @@ export interface WorkflowDefinition {
     layout?: Record<string, NodePosition>;
     createdAt?: string;
     updatedAt?: string;
+    integrationId?: string;
+    useCaseTitle?: string;
+    useCaseDescription?: string;
 }
 
 export interface NodePosition {
@@ -234,4 +237,57 @@ export interface AgentTool {
     sourceType?: AgentToolSource;
     credentialId?: string;
     remoteToolName?: string;
+}
+
+// Integration types
+export type IntegrationScope = 'SYSTEM' | 'USER';
+export type IntegrationStatus = 'DRAFT' | 'PUBLISHED' | 'DEPRECATED';
+
+export interface Integration {
+  id: string;
+  name: string;
+  description?: string;
+  sourceConnectorId: string;
+  destinationConnectorId: string;
+  sourceConnectorName?: string;
+  sourceConnectorIcon?: string;
+  destinationConnectorName?: string;
+  destinationConnectorIcon?: string;
+  scope: IntegrationScope;
+  status: IntegrationStatus;
+  organizationId: string;
+  ownerId?: string;
+  tags: string[];
+  useCaseCount: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface UseCase {
+  id: string;
+  name: string;
+  useCaseTitle?: string;
+  useCaseDescription?: string;
+  integrationId?: string;
+}
+
+export interface CreateIntegrationRequest {
+  name: string;
+  sourceConnectorId: string;
+  destinationConnectorId: string;
+  description?: string;
+  tags?: string[];
+  scope?: IntegrationScope;
+}
+
+export interface UpdateIntegrationRequest {
+  name?: string;
+  description?: string;
+  tags?: string[];
+}
+
+export interface AssignUseCaseRequest {
+  workflowId: string;
+  useCaseTitle: string;
+  useCaseDescription?: string;
 }
