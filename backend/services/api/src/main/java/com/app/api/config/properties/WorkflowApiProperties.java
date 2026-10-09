@@ -56,6 +56,19 @@ public class WorkflowApiProperties {
      */
     private final Webhook webhook = new Webhook();
 
+    /**
+     * Integration insights operations (export, retry failed runs).
+     */
+    private final Insights insights = new Insights();
+
+    @Data
+    public static class Insights {
+        /**
+         * Maximum failed executions to re-queue in a single retry request (most recent first).
+         */
+        private int maxRetryBatchSize = 50;
+    }
+
     @Data
     public static class Poll {
         /** Minimum allowed poll interval in seconds. */

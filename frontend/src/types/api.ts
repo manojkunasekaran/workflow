@@ -271,6 +271,68 @@ export interface UseCase {
   integrationId?: string;
 }
 
+export interface UseCaseInsights {
+  workflowDefinitionId: string;
+  workflowName?: string;
+  useCaseTitle?: string;
+  totalRuns: number;
+  completedRuns: number;
+  failedRuns: number;
+  inProgressRuns: number;
+  lastRunAt?: string;
+}
+
+export interface RecentExecutionInsight {
+  executionId: string;
+  status: string;
+  startTime?: string;
+  endTime?: string;
+}
+
+export interface UseCaseInsightsDetail {
+  integrationId: string;
+  workflowDefinitionId: string;
+  workflowName?: string;
+  useCaseTitle?: string;
+  useCaseDescription?: string;
+  totalRuns: number;
+  completedRuns: number;
+  failedRuns: number;
+  inProgressRuns: number;
+  lastRunAt?: string;
+  recentExecutions: RecentExecutionInsight[];
+}
+
+export interface IntegrationInsights {
+  integrationId: string;
+  useCaseCount: number;
+  totalRuns: number;
+  completedRuns: number;
+  failedRuns: number;
+  inProgressRuns: number;
+  lastRunAt?: string;
+  useCases: UseCaseInsights[];
+}
+
+export interface IntegrationInsightsRetryItemResult {
+  sourceExecutionId: string;
+  workflowDefinitionId: string;
+  newExecutionId?: string;
+  queued: boolean;
+  errorMessage?: string;
+}
+
+export interface IntegrationInsightsRetryResponse {
+  integrationId: string;
+  eligibleFailedExecutions: number;
+  batchLimit: number;
+  selectedForRetry: number;
+  queuedCount: number;
+  triggerFailureCount: number;
+  batchLimitApplied: boolean;
+  results: IntegrationInsightsRetryItemResult[];
+}
+
 export interface CreateIntegrationRequest {
   name: string;
   sourceConnectorId: string;

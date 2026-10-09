@@ -1,4 +1,4 @@
-import { ArrowLeft, ExternalLink, History, MoreVertical, Play, Puzzle } from 'lucide-react';
+import { ArrowLeft, BarChart3, ExternalLink, History, MoreVertical, Play, Puzzle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { PageHeader } from '@/layouts/PageHeader';
@@ -21,6 +21,7 @@ interface StudioHeaderProps {
     onRun: () => void;
     onBack: () => void;
     onAssignIntegration: () => void;
+    onViewUseCaseInsights?: () => void;
     hasIntegration?: boolean;
 }
 
@@ -35,6 +36,7 @@ export function StudioHeader({
     onRun,
     onBack,
     onAssignIntegration,
+    onViewUseCaseInsights,
     hasIntegration,
 }: StudioHeaderProps) {
 
@@ -110,6 +112,15 @@ export function StudioHeader({
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                            {hasIntegration && onViewUseCaseInsights ? (
+                                <DropdownMenuItem
+                                    data-testid="view-use-case-insights-menu-item"
+                                    onClick={onViewUseCaseInsights}
+                                >
+                                    <BarChart3 className="mr-2 h-4 w-4" />
+                                    <span>View use case insights</span>
+                                </DropdownMenuItem>
+                            ) : null}
                             <DropdownMenuItem onClick={onAssignIntegration}>
                                 <Puzzle className="mr-2 h-4 w-4" />
                                 <span>{hasIntegration ? 'Edit Integration Assignment' : 'Assign to Integration'}</span>

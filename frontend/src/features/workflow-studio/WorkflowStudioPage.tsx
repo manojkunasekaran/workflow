@@ -59,6 +59,7 @@ import {
 } from '@/features/workflow-studio/lib/studioEdgeActions';
 import { TriggerConfigDialog } from '@/features/workflow-studio/task-config/TriggerConfigDialog';
 import { AssignIntegrationDialog } from '@/features/workflow-studio/AssignIntegrationDialog';
+import { UseCaseInsightsSheet } from '@/features/integrations/components/UseCaseInsightsSheet';
 
 export type StudioMode = 'design' | 'inspect';
 
@@ -83,6 +84,7 @@ export default function WorkflowStudioPage() {
     const [configOpen, setConfigOpen] = useState(false);
     const [triggerDialogOpen, setTriggerDialogOpen] = useState(false);
     const [assignIntegrationOpen, setAssignIntegrationOpen] = useState(false);
+    const [useCaseInsightsOpen, setUseCaseInsightsOpen] = useState(false);
     const [configDraft, setConfigDraft] = useState<TaskNodeData | null>(null);
     const [pendingBranchWire, setPendingBranchWire] = useState<{
         sourceTaskId: string;
@@ -929,6 +931,11 @@ export default function WorkflowStudioPage() {
                 onRun={handleRun}
                 onBack={handleBack}
                 onAssignIntegration={() => setAssignIntegrationOpen(true)}
+                onViewUseCaseInsights={
+                    savedDefinition?.integrationId && workflowId
+                        ? () => setUseCaseInsightsOpen(true)
+                        : undefined
+                }
                 hasIntegration={!!savedDefinition?.integrationId}
             />
 
@@ -1038,6 +1045,15 @@ export default function WorkflowStudioPage() {
                 currentUseCaseDescription={savedDefinition?.useCaseDescription}
                 onAssigned={handleIntegrationAssigned}
             />
+
+            {savedDefinition?.integrationId && workflowId ? (
+                <UseCaseInsightsSheet
+                    integrationId={savedDefinition.integrationId}
+                    workflowDefinitionId={workflowId}
+                    open={useCaseInsightsOpen}
+                    onOpenChange={setUseCaseInsightsOpen}
+                />
+            ) : null}
 
             <ConfirmDialog
                 open={leaveConfirmOpen}

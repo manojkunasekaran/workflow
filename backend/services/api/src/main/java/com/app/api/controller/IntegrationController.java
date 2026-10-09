@@ -2,12 +2,19 @@ package com.app.api.controller;
 
 import com.app.api.dto.AssignUseCaseRequest;
 import com.app.api.dto.CreateIntegrationRequest;
+import com.app.api.dto.IntegrationInsightsResponse;
+import com.app.api.dto.IntegrationInsightsRetryResponse;
 import com.app.api.dto.IntegrationResponse;
+import com.app.api.dto.UseCaseInsightsResponse;
 import com.app.api.dto.UpdateIntegrationRequest;
+import com.app.api.service.IntegrationInsightsOperationsService;
+import com.app.api.service.IntegrationInsightsService;
 import com.app.api.service.IntegrationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,9 +23,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * REST controller for managing Integrations.
@@ -29,6 +38,8 @@ import java.util.List;
 public class IntegrationController {
 
     private final IntegrationService integrationService;
+    private final IntegrationInsightsService integrationInsightsService;
+    private final IntegrationInsightsOperationsService integrationInsightsOperationsService;
 
     /**
      * Create a new integration.
@@ -57,6 +68,67 @@ public class IntegrationController {
     @GetMapping("/{id}")
     public ResponseEntity<IntegrationResponse> getIntegration(@PathVariable String id) {
         return ResponseEntity.ok(integrationService.getIntegration(id));
+    }
+
+    /**
+     * Run volume and reliability metrics for an integration and its use cases.
+     * Studio test runs (targetTaskId set) are excluded.
+     */
+    @GetMapping("/{id}/insights")
+    public ResponseEntity<IntegrationInsightsResponse> getIntegrationInsights(@PathVariable String id) {
+        return ResponseEntity.ok(integrationInsightsService.getInsights(id));
+    }
+
+    /**
+     * Run metrics and recent executions for a single use case on an integration.
+     */
+    @GetMapping("/{id}/use-cases/{workflowId}/insights")
+    public ResponseEntity<UseCaseInsightsResponse> getUseCaseInsights(
+            @PathVariable String id,
+            @PathVariable String workflowId) {
+        return ResponseEntity.ok(integrationInsightsService.getUseCaseInsights(id, workflowId));
+    }
+
+    /**
+     * Download metrics and recent runs for a single use case as CSV (studio test runs excluded).
+     */
+    @GetMapping(value = "/{id}/use-cases/{workflowId}/insights/export", produces = "text/csv")
+    public ResponseEntity<byte[]> exportUseCaseInsights(
+            @PathVariable String id,
+            @PathVariable String workflowId) {
+        byte[] body = integrationInsightsOperationsService.exportUseCaseInsightsCsv(id, workflowId);
+        String filename = integrationInsightsOperationsService.exportUseCaseFilename(id, workflowId);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .contentType(new MediaType("text", "csv", java.nio.charset.StandardCharsets.UTF_8))
+                .body(body);
+    }
+
+    /**
+     * Download integration and per–use-case insight metrics as CSV (studio test runs excluded).
+     */
+    @GetMapping(value = "/{id}/insights/export", produces = "text/csv")
+    public ResponseEntity<byte[]> exportIntegrationInsights(@PathVariable String id) {
+        byte[] body = integrationInsightsOperationsService.exportInsightsCsv(id);
+        String filename = integrationInsightsOperationsService.exportFilename(id);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .contentType(new MediaType("text", "csv", java.nio.charset.StandardCharsets.UTF_8))
+                .body(body);
+    }
+
+    /**
+     * Re-queue failed workflow executions for this integration (most recent first, bounded batch).
+     * Each retry creates a new execution with the same trigger inputs as the failed run.
+     */
+    @PostMapping("/{id}/insights/retry-failed")
+    public ResponseEntity<IntegrationInsightsRetryResponse> retryFailedExecutions(
+            @PathVariable String id,
+            @RequestParam(required = false) String workflowDefinitionId) {
+        IntegrationInsightsRetryResponse response = integrationInsightsOperationsService.retryFailedExecutions(
+                id,
+                Optional.ofNullable(workflowDefinitionId));
+        return ResponseEntity.ok(response);
     }
 
     /**

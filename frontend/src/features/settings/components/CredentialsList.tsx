@@ -4,7 +4,7 @@ import { connectorApi, type ConnectorManifest } from '@/api/connectorApi';
 import type { IntegrationCredential } from '@/types/api';
 import { Button } from '@/components/ui/button';
 import { ErrorBanner } from '@/components/ui/error-banner';
-import { KeyRound, Server, ShieldCheck, Trash2, Edit2, Plug } from 'lucide-react';
+import { KeyRound, Plus, Server, ShieldCheck, Trash2, Edit2, Plug } from 'lucide-react';
 import { ConnectorConnectionPanel } from './ConnectorConnectionPanel';
 import { EmptyState } from '@/components/ui/empty-state';
 import { LoaderState } from '@/components/ui/loader-state';
@@ -119,6 +119,7 @@ export const CredentialsList = forwardRef<CredentialsListHandle, CredentialsList
     };
 
     const filteredCredentials = credentials.filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()) || c.type.toLowerCase().includes(searchQuery.toLowerCase()));
+    const isAppScoped = Boolean(props.connectorId);
 
     return (
         <div className="space-y-4">
@@ -128,6 +129,26 @@ export const CredentialsList = forwardRef<CredentialsListHandle, CredentialsList
 
             {!error ? (
             <>
+                {isAppScoped ? (
+                    <div className="flex items-center justify-between gap-3 mb-2">
+                        <div>
+                            <h3 className="text-sm font-medium">Credentials for this app</h3>
+                            <p className="text-xs text-muted-foreground">Add and manage connection secrets used with this app.</p>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                data-testid="add-credential-app-btn"
+                                onClick={openCreate}
+                            >
+                                <Plus className="mr-2 h-4 w-4" />
+                                Add credential
+                            </Button>
+                            <ViewToggle value={viewMode} onChange={setViewMode} />
+                        </div>
+                    </div>
+                ) : null}
                 {!props.hideFilters && (
                     <div className="mb-6 flex w-full items-center justify-between">
                         <SearchInput
@@ -142,7 +163,14 @@ export const CredentialsList = forwardRef<CredentialsListHandle, CredentialsList
                     {isLoading ? (
                         <LoaderState className="py-24" />
                     ) : filteredCredentials.length === 0 ? (
-                        <EmptyState icon={KeyRound} description="No credentials found." />
+                        <EmptyState
+                            icon={KeyRound}
+                            description={
+                                isAppScoped
+                                    ? 'No credentials for this app yet. Use Add credential above.'
+                                    : 'No credentials found.'
+                            }
+                        />
                     ) : viewMode === 'grid' ? (
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                             {filteredCredentials.map((cred) => (
@@ -214,6 +242,7 @@ export const CredentialsList = forwardRef<CredentialsListHandle, CredentialsList
                 onOpenChange={setIsDialogOpen}
                 credential={selectedCred}
                 onSave={handleSave}
+                preselectedConnectorId={props.connectorId}
             />
         </div>
     );

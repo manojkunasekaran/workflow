@@ -2,6 +2,9 @@ import axios from 'axios';
 import { API_BASE_URL } from '@/api/config';
 import type {
     Integration,
+    IntegrationInsights,
+    IntegrationInsightsRetryResponse,
+    UseCaseInsightsDetail,
     CreateIntegrationRequest,
     UpdateIntegrationRequest,
     AssignUseCaseRequest,
@@ -17,6 +20,58 @@ export const integrationApi = {
 
     getIntegration: async (id: string): Promise<Integration> => {
         const response = await axios.get<Integration>(`${API_BASE_URL}/integrations/${id}`);
+        return response.data;
+    },
+
+    getInsights: async (id: string): Promise<IntegrationInsights> => {
+        const response = await axios.get<IntegrationInsights>(`${API_BASE_URL}/integrations/${id}/insights`);
+        return response.data;
+    },
+
+    getUseCaseInsights: async (
+        integrationId: string,
+        workflowDefinitionId: string,
+    ): Promise<UseCaseInsightsDetail> => {
+        const response = await axios.get<UseCaseInsightsDetail>(
+            `${API_BASE_URL}/integrations/${integrationId}/use-cases/${workflowDefinitionId}/insights`,
+        );
+        return response.data;
+    },
+
+    exportInsightsCsv: async (integrationId: string): Promise<{ blob: Blob; filename: string }> => {
+        const response = await axios.get(`${API_BASE_URL}/integrations/${integrationId}/insights/export`, {
+            responseType: 'blob',
+        });
+        const disposition = response.headers['content-disposition'] as string | undefined;
+        const fromHeader = disposition?.match(/filename="([^"]+)"/i)?.[1];
+        const filename = fromHeader ?? `integration-insights-${integrationId}.csv`;
+        return { blob: response.data as Blob, filename };
+    },
+
+    exportUseCaseInsightsCsv: async (
+        integrationId: string,
+        workflowDefinitionId: string,
+    ): Promise<{ blob: Blob; filename: string }> => {
+        const response = await axios.get(
+            `${API_BASE_URL}/integrations/${integrationId}/use-cases/${workflowDefinitionId}/insights/export`,
+            { responseType: 'blob' },
+        );
+        const disposition = response.headers['content-disposition'] as string | undefined;
+        const fromHeader = disposition?.match(/filename="([^"]+)"/i)?.[1];
+        const filename = fromHeader ?? `use-case-insights-${workflowDefinitionId}.csv`;
+        return { blob: response.data as Blob, filename };
+    },
+
+    retryFailedExecutions: async (
+        integrationId: string,
+        workflowDefinitionId?: string,
+    ): Promise<IntegrationInsightsRetryResponse> => {
+        const params = workflowDefinitionId ? { workflowDefinitionId } : undefined;
+        const response = await axios.post<IntegrationInsightsRetryResponse>(
+            `${API_BASE_URL}/integrations/${integrationId}/insights/retry-failed`,
+            null,
+            { params },
+        );
         return response.data;
     },
 
