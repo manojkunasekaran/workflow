@@ -1,14 +1,16 @@
 import type { UseCase } from '@/types/api';
 import { Button } from '@/components/ui/button';
 import { Trash2, Puzzle, Workflow, Eye } from 'lucide-react';
+import { ViewUseCaseInsightsButton } from './ViewUseCaseInsightsButton';
 
 interface UseCaseCardProps {
     useCase: UseCase;
     onView: (useCase: UseCase) => void;
+    onViewInsights?: (useCase: UseCase) => void;
     onRemove?: (useCase: UseCase) => void;
 }
 
-export function UseCaseCard({ useCase, onView, onRemove }: UseCaseCardProps) {
+export function UseCaseCard({ useCase, onView, onViewInsights, onRemove }: UseCaseCardProps) {
     return (
         <div 
             className="flex items-center justify-between p-3 border rounded-lg bg-card hover:border-primary/30 transition-colors group cursor-pointer"
@@ -37,6 +39,15 @@ export function UseCaseCard({ useCase, onView, onRemove }: UseCaseCardProps) {
                     <Eye className="h-3.5 w-3.5 mr-1.5 hidden group-hover/btn:block" />
                     View Workflow
                 </Button>
+                {onViewInsights ? (
+                    <ViewUseCaseInsightsButton
+                        workflowDefinitionId={useCase.id}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onViewInsights(useCase);
+                        }}
+                    />
+                ) : null}
                 {onRemove && (
                     <Button 
                         variant="ghost" 

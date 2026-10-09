@@ -1,104 +1,37 @@
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import { connectorApi, type ConnectorManifest, type ConnectorAuthType } from '@/api/connectorApi';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { ConnectorManifest } from '@/api/connectorApi';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Globe, Lock, KeyRound, User, Shield, ImageIcon, Upload } from 'lucide-react';
 import ActionBuilder from './ActionBuilder';
 import TriggerBuilder from './TriggerBuilder';
 import { CredentialsList } from '@/features/settings/components/CredentialsList';
 import { IntegrationList } from '@/features/integrations/components/IntegrationList';
+import { persistConnectorManifest } from './connectorManifestSave';
 
-// --- Constants ---------------------------------------------------------------
-
-const CATEGORIES = ['Communication', 'Productivity', 'CRM', 'Developer Tools', 'Finance', 'Marketing', 'Analytics', 'Storage', 'Custom'] as const;
-
-
-interface AuthTypeInfo {
-    label: string;
-    icon: React.ReactNode;
-    hint: string;
-}
-
-const AUTH_TYPE_INFO: Record<ConnectorAuthType, AuthTypeInfo> = {
-    NONE:          { label: 'No Authentication', icon: <Globe className="h-4 w-4" />,     hint: 'This API is public and requires no credentials.' },
-    BEARER_TOKEN:  { label: 'API Key / Token',   icon: <KeyRound className="h-4 w-4" />,  hint: 'Authenticates using a token in the Authorization: Bearer header.' },
-    API_KEY:       { label: 'API Key (Custom Header)', icon: <Lock className="h-4 w-4" />, hint: 'Authenticates using a secret key sent in a custom header.' },
-    BASIC_AUTH:    { label: 'Basic Auth', icon: <User className="h-4 w-4" />,    hint: 'Authenticates using standard HTTP Basic Auth (Base64 encoded credentials).' },
-    OAUTH2:        { label: 'OAuth 2.0',           icon: <Shield className="h-4 w-4" />,  hint: 'Authenticates via secure delegated OAuth 2.0 authorization.' },
-    CUSTOM_HEADER: { label: 'Custom Header',       icon: <Lock className="h-4 w-4" />,    hint: 'Authenticates by injecting arbitrary custom headers into each request.' },
-};
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function slugify(str: string): string {
-    return str
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-|-$/g, '');
-}
-
-const EMPTY_MANIFEST: Omit<ConnectorManifest, 'scope'> = {
-    connectorId: '',
-    displayName: '',
-    icon: '',
-    category: 'Custom',
-    baseUrl: '',
-    authType: 'NONE',
-    actions: [],
-    triggers: [],
-    enabled: true,
-};
-
-// ─── Component ───────────────────────────────────────────────────────────────
-
-export interface ConnectorBuilderHeaderState {
+export interface ConnectorAutosaveState {
     isSaving: boolean;
-    isDirty: boolean;
-    saveStatus: 'idle' | 'success' | 'error';
     saveError: string | null;
-    title: string;
-}
-
-export interface ConnectorBuilderHandle {
-    save: () => void;
 }
 
 interface ConnectorBuilderProps {
     scope: 'SYSTEM' | 'TENANT';
-    initialData?: ConnectorManifest | null;
-    onSaved: () => void;
-    onHeaderStateChange?: (state: ConnectorBuilderHeaderState) => void;
+    manifest: ConnectorManifest;
+    onManifestChange: (manifest: ConnectorManifest) => void;
+    onAutosaveStateChange?: (state: ConnectorAutosaveState) => void;
 }
 
-const ConnectorBuilder = forwardRef<ConnectorBuilderHandle, ConnectorBuilderProps>(function ConnectorBuilder(
-    { scope, initialData, onSaved, onHeaderStateChange },
-    ref,
-) {
-    const [manifest, setManifest] = useState<ConnectorManifest>(
-        initialData ?? { ...EMPTY_MANIFEST, scope }
-    );
+const AUTOSAVE_DEBOUNCE_MS = 400;
+
+export default function ConnectorBuilder({
+    scope,
+    manifest,
+    onManifestChange,
+    onAutosaveStateChange,
+}: ConnectorBuilderProps) {
     const [isSaving, setIsSaving] = useState(false);
-    const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
     const [saveError, setSaveError] = useState<string | null>(null);
-    const [errors, setErrors] = useState<Partial<Record<keyof ConnectorManifest, string>>>({});
-    const [isDirty, setIsDirty] = useState(false);
-    const fileInputRef = useRef<HTMLInputElement>(null);
-
-    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            handleChange('icon', reader.result as string);
-        };
-        reader.readAsDataURL(file);
-    };
-
-    const isEditing = !!initialData;
-    const pageTitle = manifest.displayName.trim() || (isEditing ? manifest.displayName : 'New App');
+    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const pendingManifestRef = useRef<ConnectorManifest | null>(null);
+    const saveInFlightRef = useRef(false);
 
     const defaultTab = window.location.hash.replace('#', '') || 'triggers';
     const [activeTab, setActiveTab] = useState(defaultTab);
@@ -114,304 +47,115 @@ const ConnectorBuilder = forwardRef<ConnectorBuilderHandle, ConnectorBuilderProp
         return () => window.removeEventListener('hashchange', handleHashChange);
     }, []);
 
+    useEffect(() => {
+        onAutosaveStateChange?.({ isSaving, saveError });
+    }, [isSaving, saveError, onAutosaveStateChange]);
+
+    useEffect(() => {
+        return () => {
+            if (debounceRef.current) {
+                clearTimeout(debounceRef.current);
+            }
+        };
+    }, []);
+
+    const runPersist = useCallback(
+        async (manifestToSave: ConnectorManifest) => {
+            saveInFlightRef.current = true;
+            setIsSaving(true);
+            setSaveError(null);
+            try {
+                const saved = await persistConnectorManifest(manifestToSave, scope);
+                onManifestChange(saved);
+                pendingManifestRef.current = null;
+            } catch (err: unknown) {
+                const message = err instanceof Error ? err.message : 'Could not save changes. Try again.';
+                setSaveError(message);
+            } finally {
+                saveInFlightRef.current = false;
+                setIsSaving(false);
+
+                const queued = pendingManifestRef.current;
+                if (queued) {
+                    pendingManifestRef.current = null;
+                    void runPersist(queued);
+                }
+            }
+        },
+        [onManifestChange, scope],
+    );
+
+    const scheduleAutosave = useCallback(
+        (nextManifest: ConnectorManifest) => {
+            if (debounceRef.current) {
+                clearTimeout(debounceRef.current);
+            }
+            debounceRef.current = setTimeout(() => {
+                debounceRef.current = null;
+                if (saveInFlightRef.current) {
+                    pendingManifestRef.current = nextManifest;
+                    return;
+                }
+                void runPersist(nextManifest);
+            }, AUTOSAVE_DEBOUNCE_MS);
+        },
+        [runPersist],
+    );
+
     const handleTabChange = (val: string) => {
         setActiveTab(val);
         window.history.replaceState(null, '', `#${val}`);
     };
 
-    useEffect(() => {
-        onHeaderStateChange?.({
-            isSaving,
-            isDirty,
-            saveStatus,
-            saveError,
-            title: pageTitle,
-        });
-    }, [isSaving, isDirty, saveStatus, saveError, pageTitle, onHeaderStateChange]);
-
-    const handleChange = <K extends keyof ConnectorManifest>(field: K, value: ConnectorManifest[K]) => {
-        setManifest(prev => ({ ...prev, [field]: value }));
-        setIsDirty(true);
-        if (errors[field]) setErrors(prev => ({ ...prev, [field]: undefined }));
+    const handleTriggersOrActionsChange = <K extends 'triggers' | 'actions'>(
+        field: K,
+        value: ConnectorManifest[K],
+    ) => {
+        const next = { ...manifest, [field]: value };
+        onManifestChange(next);
+        scheduleAutosave(next);
     };
 
-    const validate = (): boolean => {
-        const newErrors: Partial<Record<keyof ConnectorManifest, string>> = {};
-        if (!manifest.displayName.trim()) newErrors.displayName = 'Name is required.';
-        if (!manifest.baseUrl.trim()) newErrors.baseUrl = 'Base URL is required.';
-        if (!manifest.baseUrl.startsWith('http')) newErrors.baseUrl = 'Must be a valid URL starting with http:// or https://';
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
-    };
-
-    const handleSave = useCallback(async () => {
-        if (!validate()) return;
-        setIsSaving(true);
-        setSaveStatus('idle');
-        setSaveError(null);
-        try {
-            const payload = { ...manifest };
-            if (!isEditing && !payload.connectorId) {
-                payload.connectorId = slugify(payload.displayName);
-            }
-
-            if (payload.actions) {
-                payload.actions = payload.actions.map((a, idx) => {
-                    const actionId = a.actionId || slugify(a.displayName) || `action_${idx + 1}`;
-
-                    const inputSchema = (a.inputSchema || []).map((f, fIdx) => ({
-                        ...f,
-                        key: f.key || slugify(f.label) || `field_${fIdx + 1}`,
-                    }));
-
-                    return {
-                        ...a,
-                        actionId,
-                        inputSchema,
-                    };
-                });
-            }
-
-            if (payload.triggers) {
-                payload.triggers = payload.triggers.map((t, idx) => {
-                    const triggerId = t.triggerId || slugify(t.displayName) || `trigger_${idx + 1}`;
-                    const inputSchema = (t.inputSchema || []).map((f, fIdx) => ({
-                        ...f,
-                        key: f.key || slugify(f.label) || `field_${fIdx + 1}`,
-                    }));
-
-                    const preset = t.preset
-                        ? {
-                            ...t.preset,
-                            webhook: t.preset.webhook
-                                ? { ...t.preset.webhook, deliveryMode: 'SUBSCRIBE' as const }
-                                : undefined,
-                        }
-                        : undefined;
-
-                    return {
-                        ...t,
-                        triggerId,
-                        inputSchema,
-                        preset,
-                    };
-                });
-            }
-
-            const effectiveScope = manifest.scope || scope;
-
-            if (effectiveScope === 'SYSTEM') {
-                if (isEditing) {
-                    await connectorApi.adminUpdate(payload.connectorId, payload);
-                } else {
-                    await connectorApi.adminCreate(payload);
-                }
-            } else if (isEditing) {
-                await connectorApi.update(payload.connectorId, payload);
-            } else {
-                await connectorApi.create(payload);
-            }
-            setManifest(payload);
-            setSaveStatus('success');
-            setIsDirty(false);
-            setTimeout(() => onSaved(), 800);
-        } catch (err: unknown) {
-            const message = err instanceof Error ? err.message : 'An unknown error occurred. Please try again.';
-            setSaveStatus('error');
-            setSaveError(message);
-        } finally {
-            setIsSaving(false);
-        }
-    }, [isEditing, manifest, onSaved, scope]);
-
-    useImperativeHandle(ref, () => ({ save: handleSave }), [handleSave]);
-
+    const connectorId = manifest.connectorId;
 
     return (
-        <div className="space-y-8 pb-16">
-            {/* Section 1: Identity */}
-            <section className="space-y-5">
-                <div className="border-b pb-2">
-                    <h3 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">General Information</h3>
-                </div>
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+            <TabsList className="mb-4">
+                <TabsTrigger value="triggers" data-testid="connector-tab-triggers">
+                    Triggers ({manifest.triggers?.length || 0})
+                </TabsTrigger>
+                <TabsTrigger value="actions" data-testid="connector-tab-actions">
+                    Actions ({manifest.actions?.length || 0})
+                </TabsTrigger>
+                <TabsTrigger value="credentials" data-testid="connector-tab-credentials">
+                    Credentials
+                </TabsTrigger>
+                <TabsTrigger value="integrations" data-testid="connector-tab-integrations">
+                    Integrations
+                </TabsTrigger>
+            </TabsList>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    {/* Display Name → auto-generates connectorId */}
-                    <div className="space-y-1.5">
-                        <Label htmlFor="displayName">Name <span className="text-destructive">*</span></Label>
-                        <Input
-                            id="displayName"
-                            value={manifest.displayName}
-                            onChange={e => handleChange('displayName', e.target.value)}
-                            placeholder="e.g. My Internal CRM"
-                        />
-                        {errors.displayName && (
-                            <p className="text-xs text-destructive">{errors.displayName}</p>
-                        )}
-                    </div>
+            <TabsContent value="triggers">
+                <TriggerBuilder
+                    triggers={manifest.triggers ?? []}
+                    onChange={(triggers) => handleTriggersOrActionsChange('triggers', triggers)}
+                />
+            </TabsContent>
 
-                    {/* Category */}
-                    <div className="space-y-1.5">
-                        <Label htmlFor="category">Category</Label>
-                        <Select
-                            value={manifest.category ?? 'Custom'}
-                            onValueChange={val => handleChange('category', val)}
-                        >
-                            <SelectTrigger id="category">
-                                <SelectValue placeholder="Select category" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {CATEGORIES.map(c => (
-                                    <SelectItem key={c} value={c}>{c}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
+            <TabsContent value="actions">
+                <ActionBuilder
+                    actions={manifest.actions ?? []}
+                    onChange={(actions) => handleTriggersOrActionsChange('actions', actions)}
+                />
+            </TabsContent>
 
-                    {/* Icon URL + live preview */}
-                    <div className="space-y-1.5 md:col-span-2">
-                        <Label htmlFor="icon">Icon URL <span className="text-muted-foreground font-normal">(optional)</span></Label>
-                        <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border bg-muted overflow-hidden">
-                                {(manifest.icon?.startsWith('http') || manifest.icon?.startsWith('data:image/')) ? (
-                                    <img
-                                        src={manifest.icon}
-                                        alt=""
-                                        className="h-6 w-6 object-contain"
-                                        onError={e => (e.currentTarget.style.display = 'none')}
-                                    />
-                                ) : (
-                                    <ImageIcon className="h-4 w-4 text-muted-foreground" />
-                                )}
-                            </div>
-                            <div className="flex w-full gap-2">
-                                <Input
-                                    id="icon"
-                                    value={manifest.icon ?? ''}
-                                    onChange={e => handleChange('icon', e.target.value)}
-                                    placeholder="https://cdn.simpleicons.org/slack/E01E5A"
-                                    className="font-mono text-sm flex-1"
-                                />
-                                <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileUpload} />
-                                <Button variant="outline" type="button" onClick={() => fileInputRef.current?.click()} title="Upload Icon">
-                                    <Upload className="h-4 w-4" />
-                                </Button>
-                            </div>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                            Provide a public URL or upload a custom logo to identify this integration.
-                        </p>
-                    </div>
+            <TabsContent value="credentials">
+                <CredentialsList connectorId={connectorId} hideFilters />
+            </TabsContent>
 
-                </div>
-            </section>
-
-            {/* Section 2: Connection */}
-            <section className="space-y-5">
-                <div className="border-b pb-2">
-                    <h3 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">Base Configuration</h3>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    {/* Base URL */}
-                    <div className="space-y-1.5 md:col-span-2">
-                        <Label htmlFor="baseUrl">Base URL <span className="text-destructive">*</span></Label>
-                        <Input
-                            id="baseUrl"
-                            value={manifest.baseUrl}
-                            onChange={e => handleChange('baseUrl', e.target.value)}
-                            placeholder="https://api.example.com/v1"
-                            className="font-mono"
-                        />
-                        {errors.baseUrl && <p className="text-xs text-destructive">{errors.baseUrl}</p>}
-                        <p className="text-xs text-muted-foreground">
-                            All action paths are relative to this URL. Do not include a trailing slash.
-                        </p>
-                    </div>
-
-                    {/* Auth type */}
-                    <div className="space-y-1.5">
-                        <Label htmlFor="authType">Authentication <span className="text-destructive">*</span></Label>
-                        <Select
-                            value={manifest.authType}
-                            onValueChange={val => handleChange('authType', val as ConnectorAuthType)}
-                        >
-                            <SelectTrigger id="authType">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {(Object.keys(AUTH_TYPE_INFO) as ConnectorAuthType[]).map(type => (
-                                    <SelectItem key={type} value={type}>
-                                        <span className="flex items-center gap-2">
-                                            {AUTH_TYPE_INFO[type].label}
-                                        </span>
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-
-                    {/* Auth type specific field */}
-                    {manifest.authType === 'API_KEY' && (
-                        <div className="space-y-1.5">
-                            <Label htmlFor="authHeaderName">Header Name <span className="text-muted-foreground font-normal">(optional)</span></Label>
-                            <Input
-                                id="authHeaderName"
-                                value={manifest.authHeaderName ?? ''}
-                                onChange={e => handleChange('authHeaderName', e.target.value)}
-                                placeholder="e.g. X-Api-Key"
-                                className="font-mono"
-                            />
-                        </div>
-                    )}
-
-
-                </div>
-            </section>
-
-            {/* Section 3 & 4: Triggers and Actions */}
-            <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full mt-6">
-                <TabsList className="mb-4">
-                    <TabsTrigger value="triggers">Triggers ({manifest.triggers?.length || 0})</TabsTrigger>
-                    <TabsTrigger value="actions">Actions ({manifest.actions?.length || 0})</TabsTrigger>
-                    <TabsTrigger value="credentials">Credentials</TabsTrigger>
-                    <TabsTrigger value="integrations">Integrations</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="triggers">
-                    <TriggerBuilder
-                        triggers={manifest.triggers ?? []}
-                        onChange={triggers => handleChange('triggers', triggers)}
-                    />
-                </TabsContent>
-
-                <TabsContent value="actions">
-                    <ActionBuilder
-                        actions={manifest.actions}
-                        onChange={actions => handleChange('actions', actions)}
-                    />
-                </TabsContent>
-
-                <TabsContent value="credentials">
-                    <CredentialsList connectorId={manifest.connectorId || (manifest as any).id} hideFilters={true} />
-                </TabsContent>
-
-                <TabsContent value="integrations">
-                    <IntegrationList connectorId={manifest.connectorId || (manifest as any).id} hideFilters={true} />
-                </TabsContent>
-            </Tabs>
-        </div>
+            <TabsContent value="integrations">
+                <IntegrationList connectorId={connectorId} hideFilters />
+            </TabsContent>
+        </Tabs>
     );
-});
-
-export default ConnectorBuilder;
-
-
-
-
-
-
-
-
-
-
+}

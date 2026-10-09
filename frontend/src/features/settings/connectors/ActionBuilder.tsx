@@ -7,6 +7,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Plus, Trash2, Settings2, Info } from 'lucide-react';
 import InputSchemaBuilder from './InputSchemaBuilder';
+import {
+    ConnectorPresetListToolbar,
+    connectorPresetListClassName,
+    type ConnectorPresetViewMode,
+} from './ConnectorPresetListToolbar';
+import { cn } from '@/lib/utils';
 
 const METHOD_STYLES: Record<string, string> = {
     GET:    'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20',
@@ -19,12 +25,14 @@ const METHOD_STYLES: Record<string, string> = {
 interface ActionBuilderProps {
     actions: ConnectorAction[];
     onChange: (actions: ConnectorAction[]) => void;
+    readOnly?: boolean;
 }
 
-export default function ActionBuilder({ actions, onChange }: ActionBuilderProps) {
+export default function ActionBuilder({ actions, onChange, readOnly = false }: ActionBuilderProps) {
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
     const [editingAction, setEditingAction] = useState<ConnectorAction | null>(null);
     const [confirmDeleteIndex, setConfirmDeleteIndex] = useState<number | null>(null);
+    const [viewMode, setViewMode] = useState<ConnectorPresetViewMode>('list');
 
     const openCreate = () => {
         setEditingAction({
@@ -75,31 +83,52 @@ export default function ActionBuilder({ actions, onChange }: ActionBuilderProps)
         setEditingAction({ ...editingAction, path, pathParams });
     };
 
+    const actionCount = actions?.length || 0;
+
     return (
         <div className="space-y-4">
-            <div className="flex justify-between items-center">
-                <div>
-                    <h3 className="text-sm font-medium">Actions ({(actions?.length || 0)})</h3>
-                    <p className="text-xs text-muted-foreground">Define the operations this connector can perform.</p>
-                </div>
-                <Button variant="outline" size="sm" onClick={openCreate} className="h-8">
-                    <Plus className="h-3.5 w-3.5 mr-1.5" /> Add Action
-                </Button>
-            </div>
+            <ConnectorPresetListToolbar
+                title="Actions"
+                count={actionCount}
+                description={
+                    readOnly
+                        ? 'Operations this app exposes to workflows.'
+                        : 'Define the operations this connector can perform.'
+                }
+                viewMode={viewMode}
+                onViewModeChange={setViewMode}
+                showViewToggle
+                actions={
+                    !readOnly ? (
+                        <Button variant="outline" size="sm" onClick={openCreate} className="h-8">
+                            <Plus className="h-3.5 w-3.5 mr-1.5" /> Add Action
+                        </Button>
+                    ) : undefined
+                }
+            />
 
-            {(actions?.length || 0) === 0 ? (
+            {actionCount === 0 ? (
                 <div className="p-8 border border-dashed rounded-lg text-center bg-muted/20">
                     <p className="text-sm text-muted-foreground">No actions defined yet.</p>
                 </div>
             ) : (
-                <div className="grid gap-2">
+                <div className={connectorPresetListClassName(viewMode)}>
                     {actions.map((action, index) => (
                         <div
                             key={index}
-                            className="flex items-center justify-between p-3 border rounded-lg bg-card hover:border-primary/30 transition-colors group cursor-pointer"
-                            onClick={() => openEdit(index)}
+                            className={cn(
+                                'border rounded-lg bg-card transition-colors',
+                                viewMode === 'grid' ? 'flex flex-col gap-3 p-4' : 'flex items-center justify-between p-3',
+                                readOnly ? '' : 'hover:border-primary/30 group cursor-pointer',
+                            )}
+                            onClick={readOnly ? undefined : () => openEdit(index)}
                         >
-                            <div className="flex items-center gap-3 overflow-hidden">
+                            <div
+                                className={cn(
+                                    'min-w-0 overflow-hidden',
+                                    viewMode === 'grid' ? 'flex flex-col gap-2' : 'flex items-center gap-3',
+                                )}
+                            >
                                 <span className={`px-2 py-0.5 rounded text-[10px] font-bold tracking-wider ${METHOD_STYLES[action.method] || METHOD_STYLES.GET}`}>
                                     {action.method}
                                 </span>
@@ -109,7 +138,15 @@ export default function ActionBuilder({ actions, onChange }: ActionBuilderProps)
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-4">
+                            {!readOnly ? (
+                            <div
+                                className={cn(
+                                    'flex items-center gap-1 shrink-0 transition-opacity',
+                                    viewMode === 'grid'
+                                        ? 'opacity-100 pt-1 border-t border-border'
+                                        : 'opacity-0 group-hover:opacity-100 ml-4',
+                                )}
+                            >
                                 {confirmDeleteIndex === index ? (
                                     <>
                                         <Button
@@ -150,11 +187,13 @@ export default function ActionBuilder({ actions, onChange }: ActionBuilderProps)
                                     </>
                                 )}
                             </div>
+                            ) : null}
                         </div>
                     ))}
                 </div>
             )}
 
+            {!readOnly ? (
             <Dialog open={editingIndex !== null} onOpenChange={(open) => !open && closeEdit()}>
                 <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col p-0">
                     <DialogHeader className="px-6 py-4 border-b shrink-0">
@@ -252,6 +291,7 @@ export default function ActionBuilder({ actions, onChange }: ActionBuilderProps)
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+            ) : null}
         </div>
     );
 }

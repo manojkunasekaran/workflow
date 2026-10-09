@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,9 +13,19 @@ interface CreateIntegrationDialogProps {
   onClose: () => void;
   onCreated: (integration: Integration) => void;
   connectors: ConnectorManifest[];
+  /** When creating from an app detail page, pre-fill source or destination. */
+  pinnedConnectorId?: string;
+  pinAs?: 'source' | 'destination';
 }
 
-export function CreateIntegrationDialog({ open, onClose, onCreated, connectors }: CreateIntegrationDialogProps) {
+export function CreateIntegrationDialog({
+  open,
+  onClose,
+  onCreated,
+  connectors,
+  pinnedConnectorId,
+  pinAs = 'source',
+}: CreateIntegrationDialogProps) {
     const [name, setName] = useState('');
     const [sourceConnectorId, setSourceConnectorId] = useState('');
     const [destinationConnectorId, setDestinationConnectorId] = useState('');
@@ -25,6 +35,27 @@ export function CreateIntegrationDialog({ open, onClose, onCreated, connectors }
     
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!open) return;
+        setError(null);
+        setName('');
+        setDescription('');
+        setTags('');
+        setScope('USER');
+        if (pinnedConnectorId) {
+            if (pinAs === 'destination') {
+                setSourceConnectorId('');
+                setDestinationConnectorId(pinnedConnectorId);
+            } else {
+                setSourceConnectorId(pinnedConnectorId);
+                setDestinationConnectorId('');
+            }
+        } else {
+            setSourceConnectorId('');
+            setDestinationConnectorId('');
+        }
+    }, [open, pinAs, pinnedConnectorId]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -63,11 +94,12 @@ export function CreateIntegrationDialog({ open, onClose, onCreated, connectors }
 
     return (
         <Dialog open={open} onOpenChange={(val) => !val && onClose()}>
-            <DialogContent className="sm:max-w-[425px] p-6 overflow-y-auto max-h-[90vh]">
-                <DialogHeader>
+            <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-hidden flex flex-col p-0 gap-0">
+                <DialogHeader className="px-6 py-4 border-b shrink-0">
                     <DialogTitle>Create Integration</DialogTitle>
                 </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4 pt-4">
+                <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+                    <div className="px-6 py-4 overflow-y-auto flex-1 min-h-0 space-y-4">
                     <div className="space-y-2">
                         <label className="text-sm font-medium">Name <span className="text-destructive">*</span></label>
                         <Input 
@@ -148,8 +180,9 @@ export function CreateIntegrationDialog({ open, onClose, onCreated, connectors }
                     </div>
 
                     {error && <div className="text-sm text-destructive">{error}</div>}
+                    </div>
 
-                    <DialogFooter className="pt-2">
+                    <DialogFooter className="px-6 py-4 border-t shrink-0">
                         <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
                             Cancel
                         </Button>

@@ -12,7 +12,7 @@ export function ConnectorIconDisplay({ icon, name, size = 'sm', className }: Con
     const [imgError, setImgError] = useState(false);
     const sizeClasses = size === 'sm' ? 'h-6 w-6 text-[10px]' : 'h-10 w-10 text-xs';
     
-    const isUrl = icon?.startsWith('http') || icon?.startsWith('/');
+    const isUrl = icon?.startsWith('http') || icon?.startsWith('/') || icon?.startsWith('data:image/');
     const isLocalFile = icon?.endsWith('.svg') || icon?.endsWith('.png') || icon?.endsWith('.jpg');
     const isSvgInline = icon?.startsWith('<') || icon?.includes('<svg');
     
