@@ -1,0 +1,54 @@
+{
+  "connectorId": "google_chat",
+  "triggers": [
+    {
+      "triggerId": "new_messages",
+      "displayName": "New messages",
+      "description": "Triggers when new messages appear in a Chat space.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "space",
+          "label": "Space Resource Name",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false,
+          "placeholder": "spaces/AAAA1234"
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://chat.googleapis.com/v1/{space}/messages?pageSize=50"
+          },
+          "detection": {
+            "itemsPath": "$.messages",
+            "keyPaths": ["name"]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_spaces",
+      "displayName": "New spaces",
+      "description": "Triggers when new Chat spaces are visible to the account.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://chat.googleapis.com/v1/spaces?pageSize=50"
+          },
+          "detection": {
+            "itemsPath": "$.spaces",
+            "keyPaths": ["name"]
+          }
+        }
+      }
+    }
+  ]
+}

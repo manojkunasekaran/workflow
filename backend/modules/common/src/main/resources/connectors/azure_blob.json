@@ -1,0 +1,313 @@
+{
+    "displayName": "Azure Blob Storage",
+    "icon": "https://api.iconify.design/logos/microsoft-azure.svg",
+    "category": "Storage",
+    "baseUrl": "https://example.blob.core.windows.net",
+    "authType": "CUSTOM_HEADER",
+    "credentialGuide": {
+        "fields": [
+            {
+                "key": "Authorization",
+                "label": "Authorization",
+                "hint": "Shared Key or SAS token in Authorization header"
+            },
+            {
+                "key": "x-ms-date",
+                "label": "x-ms-date"
+            },
+            {
+                "key": "x-ms-version",
+                "label": "x-ms-version",
+                "hint": "e.g. 2020-04-08"
+            }
+        ],
+        "description": "Set baseUrl to https://YOUR_ACCOUNT.blob.core.windows.net"
+    },
+    "connectionSetup": {
+        "fields": [
+            {
+                "label": "Authorization",
+                "key": "Authorization",
+                "sensitive": true
+            }
+        ]
+    },
+    "verifyAction": {
+        "method": "GET",
+        "path": "/?comp=list"
+    },
+    "actions": [
+        {
+            "actionId": "put_blob",
+            "displayName": "Put Blob",
+            "method": "PUT",
+            "path": "/{container}/{blobName}",
+            "pathParams": [
+                "account",
+                "container",
+                "blobName"
+            ],
+            "inputSchema": [
+                {
+                    "key": "account",
+                    "label": "Storage Account",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "container",
+                    "label": "Container",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "blobName",
+                    "label": "Blob Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "content",
+                    "label": "Content",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return $inputs.content;",
+            "outputPaths": []
+        },
+        {
+            "actionId": "get_blob",
+            "displayName": "Get Blob",
+            "method": "GET",
+            "path": "/{container}/{blobName}",
+            "pathParams": [
+                "account",
+                "container",
+                "blobName"
+            ],
+            "inputSchema": [
+                {
+                    "key": "account",
+                    "label": "Storage Account",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "container",
+                    "label": "Container",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "blobName",
+                    "label": "Blob Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "delete_blob",
+            "displayName": "Delete Blob",
+            "method": "DELETE",
+            "path": "/{container}/{blobName}",
+            "pathParams": [
+                "account",
+                "container",
+                "blobName"
+            ],
+            "inputSchema": [
+                {
+                    "key": "account",
+                    "label": "Storage Account",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "container",
+                    "label": "Container",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "blobName",
+                    "label": "Blob Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": []
+        },
+        {
+            "actionId": "list_containers",
+            "displayName": "List Containers",
+            "method": "GET",
+            "path": "/?comp=list",
+            "pathParams": [
+                "account"
+            ],
+            "inputSchema": [
+                {
+                    "key": "account",
+                    "label": "Storage Account",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "EnumerationResults.Containers"
+            ]
+        },
+        {
+            "actionId": "create_container",
+            "displayName": "Create Container",
+            "method": "PUT",
+            "path": "/{container}?restype=container",
+            "pathParams": [
+                "account",
+                "container"
+            ],
+            "inputSchema": [
+                {
+                    "key": "account",
+                    "label": "Storage Account",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "container",
+                    "label": "Container",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": []
+        },
+        {
+            "actionId": "list_blobs",
+            "displayName": "List Blobs",
+            "method": "GET",
+            "path": "/{container}?restype=container&comp=list",
+            "pathParams": [
+                "account",
+                "container"
+            ],
+            "inputSchema": [
+                {
+                    "key": "account",
+                    "label": "Storage Account",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "container",
+                    "label": "Container",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "EnumerationResults.Blobs"
+            ]
+        },
+        {
+            "actionId": "get_blob_properties",
+            "displayName": "Get Blob Properties",
+            "method": "HEAD",
+            "path": "/{container}/{blobName}",
+            "pathParams": [
+                "account",
+                "container",
+                "blobName"
+            ],
+            "inputSchema": [
+                {
+                    "key": "account",
+                    "label": "Storage Account",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "container",
+                    "label": "Container",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "blobName",
+                    "label": "Blob Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": []
+        },
+        {
+            "actionId": "copy_blob",
+            "displayName": "Copy Blob",
+            "method": "PUT",
+            "path": "/{container}/{blobName}",
+            "pathParams": [
+                "account",
+                "container",
+                "blobName"
+            ],
+            "inputSchema": [
+                {
+                    "key": "account",
+                    "label": "Storage Account",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "container",
+                    "label": "Container",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "blobName",
+                    "label": "Blob Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "sourceUrl",
+                    "label": "Source URL",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return null;",
+            "outputPaths": []
+        }
+    ],
+    "connectorId": "azure_blob",
+    "taskType": "CONNECTOR_TASK"
+}

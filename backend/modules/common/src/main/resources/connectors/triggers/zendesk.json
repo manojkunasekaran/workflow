@@ -1,0 +1,72 @@
+{
+  "connectorId": "zendesk",
+  "triggers": [
+    {
+      "triggerId": "new_tickets",
+      "displayName": "New tickets",
+      "description": "Poll tickets.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://example.zendesk.com/api/v2/tickets.json?per_page=100&sort_by=created_at&sort_order=desc"
+          },
+          "detection": {
+            "itemsPath": "$.tickets",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "updated_tickets",
+      "displayName": "Updated tickets",
+      "description": "Poll updated tickets.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "UPDATED",
+          "http": {
+            "method": "GET",
+            "url": "https://example.zendesk.com/api/v2/tickets.json?per_page=100&sort_by=updated_at&sort_order=desc"
+          },
+          "detection": {
+            "itemsPath": "$.tickets",
+            "keyPaths": [
+              "id"
+            ],
+            "updateKeyPath": "updated_at"
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_users",
+      "displayName": "New users",
+      "description": "Poll users.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://example.zendesk.com/api/v2/users.json?per_page=100"
+          },
+          "detection": {
+            "itemsPath": "$.users",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

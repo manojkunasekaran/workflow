@@ -1,0 +1,72 @@
+{
+  "connectorId": "opsgenie",
+  "triggers": [
+    {
+      "triggerId": "new_alerts",
+      "displayName": "New alerts",
+      "description": "Poll alerts.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://api.opsgenie.com/v2/alerts?limit=100&sort=createdAt&order=desc"
+          },
+          "detection": {
+            "itemsPath": "$.data",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_incidents",
+      "displayName": "New incidents",
+      "description": "Poll incidents.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://api.opsgenie.com/v2/incidents"
+          },
+          "detection": {
+            "itemsPath": "$.data",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "updated_alerts",
+      "displayName": "Updated alerts",
+      "description": "Poll updated alerts.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "UPDATED",
+          "http": {
+            "method": "GET",
+            "url": "https://api.opsgenie.com/v2/alerts?limit=100"
+          },
+          "detection": {
+            "itemsPath": "$.data",
+            "keyPaths": [
+              "id"
+            ],
+            "updateKeyPath": "updatedAt"
+          }
+        }
+      }
+    }
+  ]
+}

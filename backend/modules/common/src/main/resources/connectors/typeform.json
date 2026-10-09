@@ -1,0 +1,405 @@
+{
+    "connectorId": "typeform",
+    "displayName": "Typeform",
+    "icon": "https://api.iconify.design/logos/typeform.svg",
+    "category": "Forms",
+    "taskType": "CONNECTOR_TASK",
+    "baseUrl": "https://api.typeform.com",
+    "authType": "BEARER_TOKEN",
+    "actions": [
+        {
+            "actionId": "list_forms",
+            "displayName": "List Forms",
+            "method": "GET",
+            "path": "/forms",
+            "inputSchema": [
+                {
+                    "key": "page_size",
+                    "label": "Page Size",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 10
+                }
+            ],
+            "outputPaths": [
+                "items"
+            ]
+        },
+        {
+            "actionId": "get_form",
+            "displayName": "Get Form",
+            "method": "GET",
+            "path": "/forms/{form_id}",
+            "inputSchema": [
+                {
+                    "key": "form_id",
+                    "label": "Form ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "form_id"
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "create_form",
+            "displayName": "Create Form",
+            "method": "POST",
+            "path": "/forms",
+            "inputSchema": [
+                {
+                    "key": "title",
+                    "label": "Title",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return {title:$inputs.title};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "update_form",
+            "displayName": "Update Form",
+            "method": "PUT",
+            "path": "/forms/{form_id}",
+            "inputSchema": [
+                {
+                    "key": "form_id",
+                    "label": "Form ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "title",
+                    "label": "Title",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "form_id"
+            ],
+            "inputScript": "return $inputs.title?{title:$inputs.title}:{};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "delete_form",
+            "displayName": "Delete Form",
+            "method": "DELETE",
+            "path": "/forms/{form_id}",
+            "inputSchema": [
+                {
+                    "key": "form_id",
+                    "label": "Form ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "form_id"
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "list_responses",
+            "displayName": "List Responses",
+            "method": "GET",
+            "path": "/forms/{form_id}/responses",
+            "inputSchema": [
+                {
+                    "key": "form_id",
+                    "label": "Form ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "page_size",
+                    "label": "Page Size",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 25
+                }
+            ],
+            "pathParams": [
+                "form_id"
+            ],
+            "outputPaths": [
+                "items"
+            ]
+        },
+        {
+            "actionId": "get_response",
+            "displayName": "Get Response",
+            "method": "GET",
+            "path": "/forms/{form_id}/responses/{response_id}",
+            "inputSchema": [
+                {
+                    "key": "form_id",
+                    "label": "Form ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "response_id",
+                    "label": "Response ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "form_id",
+                "response_id"
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "delete_responses",
+            "displayName": "Delete Responses",
+            "method": "DELETE",
+            "path": "/forms/{form_id}/responses",
+            "inputSchema": [
+                {
+                    "key": "form_id",
+                    "label": "Form ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "form_id"
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "list_webhooks",
+            "displayName": "List Webhooks",
+            "method": "GET",
+            "path": "/forms/{form_id}/webhooks",
+            "inputSchema": [
+                {
+                    "key": "form_id",
+                    "label": "Form ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "form_id"
+            ],
+            "outputPaths": [
+                "items"
+            ]
+        },
+        {
+            "actionId": "get_webhook",
+            "displayName": "Get Webhook",
+            "method": "GET",
+            "path": "/forms/{form_id}/webhooks/{tag}",
+            "inputSchema": [
+                {
+                    "key": "form_id",
+                    "label": "Form ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "tag",
+                    "label": "Webhook Tag",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "form_id",
+                "tag"
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "create_webhook",
+            "displayName": "Create Webhook",
+            "method": "PUT",
+            "path": "/forms/{form_id}/webhooks/{tag}",
+            "inputSchema": [
+                {
+                    "key": "form_id",
+                    "label": "Form ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "tag",
+                    "label": "Webhook Tag",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "url",
+                    "label": "URL",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "enabled",
+                    "label": "Enabled",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": "true"
+                }
+            ],
+            "pathParams": [
+                "form_id",
+                "tag"
+            ],
+            "inputScript": "return {url:$inputs.url,enabled:$inputs.enabled!=='false'};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "delete_webhook",
+            "displayName": "Delete Webhook",
+            "method": "DELETE",
+            "path": "/forms/{form_id}/webhooks/{tag}",
+            "inputSchema": [
+                {
+                    "key": "form_id",
+                    "label": "Form ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "tag",
+                    "label": "Webhook Tag",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "form_id",
+                "tag"
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "list_workspaces",
+            "displayName": "List Workspaces",
+            "method": "GET",
+            "path": "/workspaces",
+            "inputSchema": [],
+            "outputPaths": [
+                "items"
+            ]
+        },
+        {
+            "actionId": "get_workspace",
+            "displayName": "Get Workspace",
+            "method": "GET",
+            "path": "/workspaces/{workspace_id}",
+            "inputSchema": [
+                {
+                    "key": "workspace_id",
+                    "label": "Workspace ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "workspace_id"
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "list_images",
+            "displayName": "List Images",
+            "method": "GET",
+            "path": "/images",
+            "inputSchema": [],
+            "outputPaths": [
+                "items"
+            ]
+        },
+        {
+            "actionId": "get_me",
+            "displayName": "Get Current User",
+            "method": "GET",
+            "path": "/me",
+            "inputSchema": [],
+            "outputPaths": [
+                "$"
+            ]
+        }
+    ],
+    "credentialGuide": {
+        "fields": [
+            {
+                "key": "token",
+                "label": "Personal Access Token",
+                "hint": "Typeform account → Personal tokens"
+            }
+        ]
+    },
+    "connectionSetup": {
+        "fields": [
+            {
+                "label": "Access Token",
+                "key": "token",
+                "sensitive": true
+            }
+        ]
+    },
+    "verifyAction": {
+        "method": "GET",
+        "path": "/me"
+    }
+}

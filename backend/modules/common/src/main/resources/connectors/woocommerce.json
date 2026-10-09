@@ -1,0 +1,581 @@
+{
+    "connectorId": "woocommerce",
+    "displayName": "WooCommerce",
+    "icon": "https://api.iconify.design/logos/woocommerce.svg",
+    "category": "E-commerce",
+    "taskType": "CONNECTOR_TASK",
+    "baseUrl": "https://example.com/wp-json/wc/v3",
+    "authType": "BASIC_AUTH",
+    "credentialGuide": {
+        "description": "Duplicate the app and set baseUrl to your store REST URL (https://YOUR_SITE/wp-json/wc/v3). Use Basic Auth with WooCommerce REST API keys, or clone with BEARER_TOKEN for JWT plugins.",
+        "fields": [
+            {
+                "key": "username",
+                "label": "Consumer Key",
+                "hint": "WooCommerce \u2192 Settings \u2192 Advanced \u2192 REST API"
+            },
+            {
+                "key": "password",
+                "label": "Consumer Secret",
+                "hint": "Shown once when the REST key is created"
+            },
+            {
+                "key": "baseUrl",
+                "label": "Store Base URL",
+                "hint": "Set to https://YOUR_SITE/wp-json/wc/v3 when cloning"
+            }
+        ]
+    },
+    "connectionSetup": {
+        "fields": [
+            {
+                "label": "Consumer Key",
+                "key": "username",
+                "sensitive": false
+            },
+            {
+                "label": "Consumer Secret",
+                "key": "password",
+                "sensitive": true
+            }
+        ]
+    },
+    "verifyAction": {
+        "method": "GET",
+        "path": "/system_status"
+    },
+    "actions": [
+        {
+            "actionId": "list_products",
+            "displayName": "List Products",
+            "method": "GET",
+            "path": "/products",
+            "inputSchema": [
+                {
+                    "key": "limit",
+                    "label": "Limit",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 50
+                }
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "get_product",
+            "displayName": "Get Product",
+            "method": "GET",
+            "path": "/products/{productId}",
+            "inputSchema": [
+                {
+                    "key": "productId",
+                    "label": "Product ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "productId"
+            ],
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "create_product",
+            "displayName": "Create Product",
+            "method": "POST",
+            "path": "/products",
+            "inputSchema": [
+                {
+                    "key": "name",
+                    "label": "Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "type",
+                    "label": "Type",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": "simple"
+                },
+                {
+                    "key": "regular_price",
+                    "label": "Regular Price",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "const b={name:$inputs.name,type:$inputs.type||'simple'}; if($inputs.regular_price) b.regular_price=$inputs.regular_price; return b;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "update_product",
+            "displayName": "Update Product",
+            "method": "PUT",
+            "path": "/products/{productId}",
+            "inputSchema": [
+                {
+                    "key": "productId",
+                    "label": "Product ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "name",
+                    "label": "Name",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "regular_price",
+                    "label": "Regular Price",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "status",
+                    "label": "Status",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "productId"
+            ],
+            "inputScript": "const b={}; if($inputs.name) b.name=$inputs.name; if($inputs.regular_price) b.regular_price=$inputs.regular_price; if($inputs.status) b.status=$inputs.status; return b;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "delete_product",
+            "displayName": "Delete Product",
+            "method": "DELETE",
+            "path": "/products/{productId}",
+            "inputSchema": [
+                {
+                    "key": "productId",
+                    "label": "Product ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "productId"
+            ],
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "list_orders",
+            "displayName": "List Orders",
+            "method": "GET",
+            "path": "/orders",
+            "inputSchema": [
+                {
+                    "key": "limit",
+                    "label": "Limit",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 50
+                },
+                {
+                    "key": "status",
+                    "label": "Status",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "get_order",
+            "displayName": "Get Order",
+            "method": "GET",
+            "path": "/orders/{orderId}",
+            "inputSchema": [
+                {
+                    "key": "orderId",
+                    "label": "Order ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "orderId"
+            ],
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "create_order",
+            "displayName": "Create Order",
+            "method": "POST",
+            "path": "/orders",
+            "inputSchema": [
+                {
+                    "key": "order",
+                    "label": "Order JSON",
+                    "type": "JSON",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return typeof $inputs.order==='string'?JSON.parse($inputs.order):$inputs.order;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "update_order",
+            "displayName": "Update Order",
+            "method": "PUT",
+            "path": "/orders/{orderId}",
+            "inputSchema": [
+                {
+                    "key": "orderId",
+                    "label": "Order ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "status",
+                    "label": "Status",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "orderId"
+            ],
+            "inputScript": "const b={}; if($inputs.status) b.status=$inputs.status; return b;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "delete_order",
+            "displayName": "Delete Order",
+            "method": "DELETE",
+            "path": "/orders/{orderId}",
+            "inputSchema": [
+                {
+                    "key": "orderId",
+                    "label": "Order ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "orderId"
+            ],
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "list_customers",
+            "displayName": "List Customers",
+            "method": "GET",
+            "path": "/customers",
+            "inputSchema": [
+                {
+                    "key": "limit",
+                    "label": "Limit",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 50
+                }
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "get_customer",
+            "displayName": "Get Customer",
+            "method": "GET",
+            "path": "/customers/{customerId}",
+            "inputSchema": [
+                {
+                    "key": "customerId",
+                    "label": "Customer ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "customerId"
+            ],
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "create_customer",
+            "displayName": "Create Customer",
+            "method": "POST",
+            "path": "/customers",
+            "inputSchema": [
+                {
+                    "key": "email",
+                    "label": "Email",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "first_name",
+                    "label": "First Name",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "last_name",
+                    "label": "Last Name",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "const b={email:$inputs.email}; if($inputs.first_name) b.first_name=$inputs.first_name; if($inputs.last_name) b.last_name=$inputs.last_name; return b;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "update_customer",
+            "displayName": "Update Customer",
+            "method": "PUT",
+            "path": "/customers/{customerId}",
+            "inputSchema": [
+                {
+                    "key": "customerId",
+                    "label": "Customer ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "email",
+                    "label": "Email",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "first_name",
+                    "label": "First Name",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "customerId"
+            ],
+            "inputScript": "const b={}; if($inputs.email) b.email=$inputs.email; if($inputs.first_name) b.first_name=$inputs.first_name; return b;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "delete_customer",
+            "displayName": "Delete Customer",
+            "method": "DELETE",
+            "path": "/customers/{customerId}",
+            "inputSchema": [
+                {
+                    "key": "customerId",
+                    "label": "Customer ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "customerId"
+            ],
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "list_coupons",
+            "displayName": "List Coupons",
+            "method": "GET",
+            "path": "/coupons",
+            "inputSchema": [
+                {
+                    "key": "limit",
+                    "label": "Limit",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 50
+                }
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "get_coupon",
+            "displayName": "Get Coupon",
+            "method": "GET",
+            "path": "/coupons/{couponId}",
+            "inputSchema": [
+                {
+                    "key": "couponId",
+                    "label": "Coupon ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "couponId"
+            ],
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "create_coupon",
+            "displayName": "Create Coupon",
+            "method": "POST",
+            "path": "/coupons",
+            "inputSchema": [
+                {
+                    "key": "code",
+                    "label": "Coupon Code",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "discount_type",
+                    "label": "Discount Type",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "defaultValue": "percent"
+                },
+                {
+                    "key": "amount",
+                    "label": "Amount",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return {code:$inputs.code,discount_type:$inputs.discount_type,amount:$inputs.amount};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "update_coupon",
+            "displayName": "Update Coupon",
+            "method": "PUT",
+            "path": "/coupons/{couponId}",
+            "inputSchema": [
+                {
+                    "key": "couponId",
+                    "label": "Coupon ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "amount",
+                    "label": "Amount",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "couponId"
+            ],
+            "inputScript": "const b={}; if($inputs.amount) b.amount=$inputs.amount; return b;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "delete_coupon",
+            "displayName": "Delete Coupon",
+            "method": "DELETE",
+            "path": "/coupons/{couponId}",
+            "inputSchema": [
+                {
+                    "key": "couponId",
+                    "label": "Coupon ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "couponId"
+            ],
+            "outputPaths": [
+                "id"
+            ]
+        }
+    ]
+}

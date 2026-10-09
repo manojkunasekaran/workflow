@@ -1,0 +1,486 @@
+{
+    "connectorId": "zendesk",
+    "displayName": "Zendesk",
+    "icon": "https://api.iconify.design/logos/zendesk-icon.svg",
+    "category": "Support",
+    "baseUrl": "https://example.zendesk.com/api/v2",
+    "authType": "BEARER_TOKEN",
+    "credentialGuide": {
+        "fields": [
+            {
+                "key": "token",
+                "label": "API Token",
+                "hint": "Zendesk Admin → Apps and integrations → APIs → Token"
+            },
+            {
+                "key": "baseUrl",
+                "label": "Base URL",
+                "hint": "Clone this connector and set baseUrl to https://YOUR_SUBDOMAIN.zendesk.com/api/v2"
+            }
+        ],
+        "description": "Host subdomains are not templated. Duplicate the app and set baseUrl to your https://SUBDOMAIN.zendesk.com/api/v2."
+    },
+    "connectionSetup": {
+        "fields": [
+            {
+                "label": "API Token",
+                "key": "token",
+                "sensitive": true
+            }
+        ]
+    },
+    "verifyAction": {
+        "method": "GET",
+        "path": "/users/me.json"
+    },
+    "actions": [
+        {
+            "actionId": "list_tickets",
+            "displayName": "List Tickets",
+            "method": "GET",
+            "path": "/tickets.json",
+            "inputSchema": [
+                {
+                    "key": "per_page",
+                    "label": "Per Page",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 25
+                }
+            ],
+            "outputPaths": [
+                "tickets"
+            ]
+        },
+        {
+            "actionId": "get_ticket",
+            "displayName": "Get Ticket",
+            "method": "GET",
+            "path": "/tickets/{ticketId}.json",
+            "pathParams": [
+                "ticketId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "ticketId",
+                    "label": "Ticket ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "ticket"
+            ]
+        },
+        {
+            "actionId": "create_ticket",
+            "displayName": "Create Ticket",
+            "method": "POST",
+            "path": "/tickets.json",
+            "inputSchema": [
+                {
+                    "key": "subject",
+                    "label": "Subject",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "body",
+                    "label": "Description",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "priority",
+                    "label": "Priority",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": "normal"
+                },
+                {
+                    "key": "requesterEmail",
+                    "label": "Requester Email",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "const t={subject:$inputs.subject,comment:{body:$inputs.body}}; if($inputs.priority) t.priority=$inputs.priority; const body={ticket:t}; if($inputs.requesterEmail) body.ticket.requester={email:$inputs.requesterEmail}; return body;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "ticket.id",
+                "ticket.status"
+            ]
+        },
+        {
+            "actionId": "update_ticket",
+            "displayName": "Update Ticket",
+            "method": "PUT",
+            "path": "/tickets/{ticketId}.json",
+            "pathParams": [
+                "ticketId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "ticketId",
+                    "label": "Ticket ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "status",
+                    "label": "Status",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "priority",
+                    "label": "Priority",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "comment",
+                    "label": "Comment",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "const t={}; if($inputs.status) t.status=$inputs.status; if($inputs.priority) t.priority=$inputs.priority; if($inputs.comment) t.comment={body:$inputs.comment}; return {ticket:t};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "ticket.id",
+                "ticket.status"
+            ]
+        },
+        {
+            "actionId": "list_users",
+            "displayName": "List Users",
+            "method": "GET",
+            "path": "/users.json",
+            "inputSchema": [
+                {
+                    "key": "per_page",
+                    "label": "Per Page",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 25
+                }
+            ],
+            "outputPaths": [
+                "users"
+            ]
+        },
+        {
+            "actionId": "get_user",
+            "displayName": "Get User",
+            "method": "GET",
+            "path": "/users/{userId}.json",
+            "pathParams": [
+                "userId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "userId",
+                    "label": "User ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "user"
+            ]
+        },
+        {
+            "actionId": "create_user",
+            "displayName": "Create User",
+            "method": "POST",
+            "path": "/users.json",
+            "inputSchema": [
+                {
+                    "key": "name",
+                    "label": "Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "email",
+                    "label": "Email",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "role",
+                    "label": "Role",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": "end-user"
+                }
+            ],
+            "inputScript": "return {user:{name:$inputs.name,email:$inputs.email,role:$inputs.role||'end-user'}};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "user.id",
+                "user.email"
+            ]
+        },
+        {
+            "actionId": "search_tickets",
+            "displayName": "Search Tickets",
+            "method": "GET",
+            "path": "/search.json",
+            "inputSchema": [
+                {
+                    "key": "query",
+                    "label": "Query",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "placeholder": "type:ticket status:open"
+                }
+            ],
+            "outputPaths": [
+                "results"
+            ]
+        },
+        {
+            "actionId": "list_organizations",
+            "displayName": "List Organizations",
+            "method": "GET",
+            "path": "/organizations.json",
+            "inputSchema": [],
+            "outputPaths": [
+                "organizations"
+            ]
+        },
+        {
+            "actionId": "get_organization",
+            "displayName": "Get Organization",
+            "method": "GET",
+            "path": "/organizations/{organizationId}.json",
+            "inputSchema": [
+                {
+                    "key": "organizationId",
+                    "label": "Organization ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "organizationId"
+            ],
+            "outputPaths": [
+                "organization"
+            ]
+        },
+        {
+            "actionId": "create_organization",
+            "displayName": "Create Organization",
+            "method": "POST",
+            "path": "/organizations.json",
+            "inputSchema": [
+                {
+                    "key": "name",
+                    "label": "Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return {organization:{name:$inputs.name}};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "organization.id"
+            ]
+        },
+        {
+            "actionId": "list_groups",
+            "displayName": "List Groups",
+            "method": "GET",
+            "path": "/groups.json",
+            "inputSchema": [],
+            "outputPaths": [
+                "groups"
+            ]
+        },
+        {
+            "actionId": "list_ticket_comments",
+            "displayName": "List Ticket Comments",
+            "method": "GET",
+            "path": "/tickets/{ticketId}/comments.json",
+            "inputSchema": [
+                {
+                    "key": "ticketId",
+                    "label": "Ticket ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "ticketId"
+            ],
+            "outputPaths": [
+                "comments"
+            ]
+        },
+        {
+            "actionId": "add_ticket_comment",
+            "displayName": "Add Ticket Comment",
+            "method": "PUT",
+            "path": "/tickets/{ticketId}.json",
+            "inputSchema": [
+                {
+                    "key": "ticketId",
+                    "label": "Ticket ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "body",
+                    "label": "Comment",
+                    "type": "TEXTAREA",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "public",
+                    "label": "Public",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": "true"
+                }
+            ],
+            "pathParams": [
+                "ticketId"
+            ],
+            "inputScript": "return {ticket:{comment:{body:$inputs.body,public:$inputs.public!=='false'}}};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "ticket.id"
+            ]
+        },
+        {
+            "actionId": "delete_ticket",
+            "displayName": "Delete Ticket",
+            "method": "DELETE",
+            "path": "/tickets/{ticketId}.json",
+            "inputSchema": [
+                {
+                    "key": "ticketId",
+                    "label": "Ticket ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "ticketId"
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "list_macros",
+            "displayName": "List Macros",
+            "method": "GET",
+            "path": "/macros.json",
+            "inputSchema": [],
+            "outputPaths": [
+                "macros"
+            ]
+        },
+        {
+            "actionId": "list_views",
+            "displayName": "List Views",
+            "method": "GET",
+            "path": "/views.json",
+            "inputSchema": [],
+            "outputPaths": [
+                "views"
+            ]
+        },
+        {
+            "actionId": "get_view_tickets",
+            "displayName": "Get View Tickets",
+            "method": "GET",
+            "path": "/views/{viewId}/tickets.json",
+            "inputSchema": [
+                {
+                    "key": "viewId",
+                    "label": "View ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "viewId"
+            ],
+            "outputPaths": [
+                "tickets"
+            ]
+        },
+        {
+            "actionId": "list_brands",
+            "displayName": "List Brands",
+            "method": "GET",
+            "path": "/brands.json",
+            "inputSchema": [],
+            "outputPaths": [
+                "brands"
+            ]
+        },
+        {
+            "actionId": "upload_attachment",
+            "displayName": "Create Upload (placeholder)",
+            "method": "POST",
+            "path": "/uploads.json",
+            "inputSchema": [
+                {
+                    "key": "filename",
+                    "label": "Filename",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return {filename:$inputs.filename};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "upload.token"
+            ]
+        }
+    ],
+    "taskType": "CONNECTOR_TASK"
+}

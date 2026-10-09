@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { ErrorBanner } from '@/components/ui/error-banner';
 import { Hint } from '@/components/ui/hint';
 import { cn } from '@/lib/utils';
+import { ConnectorIcon } from '@/components/ConnectorIcon';
 import { EmptyState } from '@/components/ui/empty-state';
 import { LoaderState } from '@/components/ui/loader-state';
 import { SearchInput } from '@/components/ui/search-input';
@@ -52,50 +53,6 @@ function getTaskTypeLabel(type?: string): string {
         case 'AGENTS_TASK': return 'AI Agent';
         default: return 'Integration';
     }
-}
-
-function ConnectorIcon({ connector, className }: { connector: ConnectorManifest, className?: string }) {
-    const [imgError, setImgError] = useState(false);
-
-    const isUrl = connector.icon?.startsWith('http');
-    const isLocalFile = connector.icon?.endsWith('.svg') || connector.icon?.endsWith('.png');
-    const isSvgInline = connector.icon?.startsWith('<');
-
-    const initials = connector.displayName
-        .split(' ')
-        .slice(0, 2)
-        .map((w) => w[0])
-        .join('')
-        .toUpperCase();
-
-    if (!imgError && connector.icon && (isUrl || isLocalFile)) {
-        return (
-            <div className={cn("flex shrink-0 items-center justify-center rounded-md border bg-background overflow-hidden", className)}>
-                <img
-                    src={isUrl ? connector.icon : `/connectors/${connector.icon}`}
-                    alt={connector.displayName}
-                    className="h-3/4 w-3/4 object-contain"
-                    onError={() => setImgError(true)}
-                />
-            </div>
-        );
-    }
-
-    if (isSvgInline && connector.icon) {
-        return (
-            <div
-                className={cn("flex shrink-0 items-center justify-center rounded-md border bg-background text-muted-foreground [&>svg]:h-3/4 [&>svg]:w-3/4", className)}
-                dangerouslySetInnerHTML={{ __html: connector.icon }}
-            />
-        );
-    }
-
-    // Fallback: initials avatar
-    return (
-        <div className={cn("flex shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary font-semibold text-xs border border-primary/20", className)}>
-            {initials}
-        </div>
-    );
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -258,7 +215,7 @@ const ConnectorList = forwardRef<ConnectorListHandle, ConnectorListProps>(functi
                                     onClick={() => navigate(`/apps/${connector.connectorId}`)}
                                 >
                                     <td className="px-4 py-3 align-middle">
-                                        <ConnectorIcon connector={connector} className="h-8 w-8" />
+                                        <ConnectorIcon icon={connector.icon} name={connector.displayName} size="sm" className="h-8 w-8" />
                                     </td>
                                     <td className="px-4 py-3 align-middle">
                                         <div className="font-medium text-sm text-foreground flex items-center gap-2">

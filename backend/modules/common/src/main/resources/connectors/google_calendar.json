@@ -1,162 +1,253 @@
 {
-    "connectorId":  "google_calendar",
-    "displayName":  "Google Calendar",
-    "icon":  "https://cdn.simpleicons.org/googlecalendar/4285F4",
-    "category":  "Calendar",
+    "connectorId": "google_calendar",
+    "displayName": "Google Calendar",
+    "icon": "https://api.iconify.design/logos/google-calendar.svg",
+    "category": "Calendar",
     "taskType": "CONNECTOR_TASK",
-    "baseUrl":  "https://www.googleapis.com/calendar/v3",
-    "authType":  "OAUTH2",
-    "oauth2Config":  {
-                         "authorizationUrl":  "https://accounts.google.com/o/oauth2/auth",
-                         "tokenUrl":  "https://oauth2.googleapis.com/token",
-                         "defaultScopes":  [
-                                               "https://www.googleapis.com/auth/calendar.events"
-                                           ]
-                     },
-    "actions":  [
-                    {
-                        "actionId":  "create_event",
-                        "displayName":  "Create Event",
-                        "method":  "POST",
-                        "path":  "/calendars/{calendarId}/events",
-                        "pathParams":  [
-                                           "calendarId"
-                                       ],
-                        "inputSchema":  [
-                                            {
-                                                "key":  "calendarId",
-                                                "label":  "Calendar ID",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "defaultValue":  "primary",
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "summary",
-                                                "label":  "Event Title",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "startTime",
-                                                "label":  "Start Time (ISO8601)",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "endTime",
-                                                "label":  "End Time (ISO8601)",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            }
-                                        ],
-                        "inputScript":  "return { summary: $inputs.summary, start: { dateTime: $inputs.startTime }, end: { dateTime: $inputs.endTime } };",
-                        "outputPaths":  [
-                                            "id",
-                                            "htmlLink"
-                                        ]
-                    },
-                    {
-                        "actionId":  "get_event",
-                        "displayName":  "Get Event",
-                        "method":  "GET",
-                        "path":  "/calendars/{calendarId}/events/{eventId}",
-                        "pathParams":  [
-                                           "calendarId",
-                                           "eventId"
-                                       ],
-                        "inputSchema":  [
-                                            {
-                                                "key":  "calendarId",
-                                                "label":  "Calendar ID",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "defaultValue":  "primary",
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "eventId",
-                                                "label":  "Event ID",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            }
-                                        ],
-                        "outputPaths":  [
-                                            "id",
-                                            "summary",
-                                            "htmlLink"
-                                        ]
-                    },
-                    {
-                        "actionId":  "list_events",
-                        "displayName":  "List Events",
-                        "method":  "GET",
-                        "path":  "/calendars/{calendarId}/events",
-                        "pathParams":  [
-                                           "calendarId"
-                                       ],
-                        "inputSchema":  [
-                                            {
-                                                "key":  "calendarId",
-                                                "label":  "Calendar ID",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "defaultValue":  "primary",
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "maxResults",
-                                                "label":  "Max Results",
-                                                "type":  "NUMBER",
-                                                "required":  false,
-                                                "defaultValue":  10,
-                                                "supportsExpression":  true
-                                            }
-                                        ],
-                        "outputPaths":  [
-                                            "items"
-                                        ]
-                    },
-                    {
-                        "actionId":  "delete_event",
-                        "displayName":  "Delete Event",
-                        "method":  "DELETE",
-                        "path":  "/calendars/{calendarId}/events/{eventId}",
-                        "pathParams":  [
-                                           "calendarId",
-                                           "eventId"
-                                       ],
-                        "inputSchema":  [
-                                            {
-                                                "key":  "calendarId",
-                                                "label":  "Calendar ID",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "defaultValue":  "primary",
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "eventId",
-                                                "label":  "Event ID",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            }
-                                        ],
-                        "outputPaths":  []
-                    }
-                ],
-    "connectionSetup":  {
-                            "description":  "Connect your Google Calendar account to allow workflows to access it securely.",
-                            "buttonLabel":  "Sign in with Google Calendar"
-                        },
-    "verifyAction":  {
-                         "method":  "GET",
-                         "path":  "/"
-                     }
+    "baseUrl": "https://www.googleapis.com/calendar/v3",
+    "authType": "OAUTH2",
+    "oauth2Config": {
+        "authorizationUrl": "https://accounts.google.com/o/oauth2/auth",
+        "tokenUrl": "https://oauth2.googleapis.com/token",
+        "defaultScopes": [
+            "https://www.googleapis.com/auth/calendar.events",
+            "https://www.googleapis.com/auth/calendar.readonly"
+        ]
+    },
+    "actions": [
+        {
+            "actionId": "create_event",
+            "displayName": "Create Event",
+            "method": "POST",
+            "path": "/calendars/{calendarId}/events",
+            "pathParams": [
+                "calendarId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "calendarId",
+                    "label": "Calendar ID",
+                    "type": "STRING",
+                    "required": true,
+                    "defaultValue": "primary",
+                    "supportsExpression": true
+                },
+                {
+                    "key": "summary",
+                    "label": "Event Title",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "startTime",
+                    "label": "Start Time (ISO8601)",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "endTime",
+                    "label": "End Time (ISO8601)",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return { summary: $inputs.summary, start: { dateTime: $inputs.startTime }, end: { dateTime: $inputs.endTime } };",
+            "outputPaths": [
+                "id",
+                "htmlLink"
+            ]
+        },
+        {
+            "actionId": "get_event",
+            "displayName": "Get Event",
+            "method": "GET",
+            "path": "/calendars/{calendarId}/events/{eventId}",
+            "pathParams": [
+                "calendarId",
+                "eventId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "calendarId",
+                    "label": "Calendar ID",
+                    "type": "STRING",
+                    "required": true,
+                    "defaultValue": "primary",
+                    "supportsExpression": true
+                },
+                {
+                    "key": "eventId",
+                    "label": "Event ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "id",
+                "summary",
+                "htmlLink"
+            ]
+        },
+        {
+            "actionId": "list_events",
+            "displayName": "List Events",
+            "method": "GET",
+            "path": "/calendars/{calendarId}/events",
+            "pathParams": [
+                "calendarId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "calendarId",
+                    "label": "Calendar ID",
+                    "type": "STRING",
+                    "required": true,
+                    "defaultValue": "primary",
+                    "supportsExpression": true
+                },
+                {
+                    "key": "maxResults",
+                    "label": "Max Results",
+                    "type": "NUMBER",
+                    "required": false,
+                    "defaultValue": 10,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "items"
+            ]
+        },
+        {
+            "actionId": "list_calendars",
+            "displayName": "List Calendars",
+            "method": "GET",
+            "path": "/users/me/calendarList",
+            "inputSchema": [
+                {
+                    "key": "maxResults",
+                    "label": "Max Results",
+                    "type": "NUMBER",
+                    "required": false,
+                    "defaultValue": 50,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "items"
+            ]
+        },
+        {
+            "actionId": "update_event",
+            "displayName": "Update Event",
+            "method": "PATCH",
+            "path": "/calendars/{calendarId}/events/{eventId}",
+            "pathParams": [
+                "calendarId",
+                "eventId"
+            ],
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "inputSchema": [
+                {
+                    "key": "calendarId",
+                    "label": "Calendar ID",
+                    "type": "STRING",
+                    "required": true,
+                    "defaultValue": "primary",
+                    "supportsExpression": true
+                },
+                {
+                    "key": "eventId",
+                    "label": "Event ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "summary",
+                    "label": "Event Title",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "startTime",
+                    "label": "Start Time (ISO8601)",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "endTime",
+                    "label": "End Time (ISO8601)",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "description",
+                    "label": "Description",
+                    "type": "TEXTAREA",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "location",
+                    "label": "Location",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "const body = {}; if ($inputs.summary) body.summary = $inputs.summary; if ($inputs.description) body.description = $inputs.description; if ($inputs.location) body.location = $inputs.location; if ($inputs.startTime) body.start = { dateTime: $inputs.startTime }; if ($inputs.endTime) body.end = { dateTime: $inputs.endTime }; return body;",
+            "outputPaths": [
+                "id",
+                "summary",
+                "htmlLink",
+                "updated"
+            ]
+        },
+        {
+            "actionId": "delete_event",
+            "displayName": "Delete Event",
+            "method": "DELETE",
+            "path": "/calendars/{calendarId}/events/{eventId}",
+            "pathParams": [
+                "calendarId",
+                "eventId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "calendarId",
+                    "label": "Calendar ID",
+                    "type": "STRING",
+                    "required": true,
+                    "defaultValue": "primary",
+                    "supportsExpression": true
+                },
+                {
+                    "key": "eventId",
+                    "label": "Event ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": []
+        }
+    ],
+    "connectionSetup": {
+        "description": "Connect your Google Calendar account to allow workflows to access it securely.",
+        "buttonLabel": "Sign in with Google Calendar"
+    },
+    "verifyAction": {
+        "method": "GET",
+        "path": "/"
+    }
 }
-

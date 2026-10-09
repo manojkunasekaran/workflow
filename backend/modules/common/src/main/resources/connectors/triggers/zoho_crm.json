@@ -1,0 +1,49 @@
+{
+  "connectorId": "zoho_crm",
+  "triggers": [
+    {
+      "triggerId": "new_deals",
+      "displayName": "New deals",
+      "description": "Poll Zoho deals.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://www.zohoapis.com/crm/v3/Deals?per_page=100"
+          },
+          "detection": {
+            "itemsPath": "$.data",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_contacts",
+      "displayName": "New contacts",
+      "description": "Poll Zoho contacts.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://www.zohoapis.com/crm/v3/Contacts?per_page=100"
+          },
+          "detection": {
+            "itemsPath": "$.data",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,93 @@
+{
+  "connectorId": "onebill",
+  "triggers": [
+    {
+      "triggerId": "new_subscribers",
+      "displayName": "New subscribers",
+      "description": "Poll for new subscribers.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://app.onebillsoftware.com/rest/SubscriberService/v1/subscribers?resultCount=100"
+          },
+          "detection": {
+            "itemsPath": "$.subscribers",
+            "keyPaths": [
+              "accountNumber"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_invoices",
+      "displayName": "New invoices",
+      "description": "Poll for new invoices.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://app.onebillsoftware.com/rest/InvoiceService/v1/invoices?resultCount=100"
+          },
+          "detection": {
+            "itemsPath": "$.invoices",
+            "keyPaths": [
+              "invoiceNumber"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_orders",
+      "displayName": "New orders",
+      "description": "Poll for new orders.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://app.onebillsoftware.com/rest/OrderService/v1/orders?resultCount=100"
+          },
+          "detection": {
+            "itemsPath": "$.orders",
+            "keyPaths": [
+              "orderId"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_payments",
+      "displayName": "New payments",
+      "description": "Poll for new payments.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://app.onebillsoftware.com/rest/PaymentService/v1/payments?resultCount=100"
+          },
+          "detection": {
+            "itemsPath": "$.payments",
+            "keyPaths": [
+              "paymentId"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,241 @@
+{
+    "connectorId": "google_contacts",
+    "displayName": "Google Contacts",
+    "icon": "https://api.iconify.design/logos/google-icon.svg",
+    "category": "Productivity",
+    "taskType": "CONNECTOR_TASK",
+    "baseUrl": "https://people.googleapis.com/v1",
+    "authType": "OAUTH2",
+    "oauth2Config": {
+        "authorizationUrl": "https://accounts.google.com/o/oauth2/v2/auth",
+        "tokenUrl": "https://oauth2.googleapis.com/token",
+        "defaultScopes": [
+            "https://www.googleapis.com/auth/contacts"
+        ]
+    },
+    "actions": [
+        {
+            "actionId": "list_connections",
+            "displayName": "List Contacts",
+            "method": "GET",
+            "path": "/people/me/connections",
+            "inputSchema": [
+                {
+                    "key": "pageSize",
+                    "label": "Page Size",
+                    "type": "NUMBER",
+                    "required": false,
+                    "defaultValue": 100,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "personFields",
+                    "label": "Person Fields",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": false,
+                    "defaultValue": "names,emailAddresses,phoneNumbers,organizations"
+                }
+            ],
+            "outputPaths": [
+                "connections",
+                "nextPageToken",
+                "totalPeople"
+            ]
+        },
+        {
+            "actionId": "get_contact",
+            "displayName": "Get Contact",
+            "method": "GET",
+            "path": "/people/{personId}",
+            "pathParams": [
+                "personId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "personId",
+                    "label": "Person ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "placeholder": "e.g. c1234567890 (without people/ prefix)"
+                },
+                {
+                    "key": "personFields",
+                    "label": "Person Fields",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": false,
+                    "defaultValue": "names,emailAddresses,phoneNumbers,organizations,biographies"
+                }
+            ],
+            "outputPaths": [
+                "resourceName",
+                "names",
+                "emailAddresses",
+                "phoneNumbers"
+            ]
+        },
+        {
+            "actionId": "search_contacts",
+            "displayName": "Search Contacts",
+            "method": "GET",
+            "path": "/people:searchContacts",
+            "inputSchema": [
+                {
+                    "key": "query",
+                    "label": "Search Query",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "pageSize",
+                    "label": "Page Size",
+                    "type": "NUMBER",
+                    "required": false,
+                    "defaultValue": 25,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "readMask",
+                    "label": "Read Mask",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": false,
+                    "defaultValue": "names,emailAddresses,phoneNumbers"
+                }
+            ],
+            "outputPaths": [
+                "results"
+            ]
+        },
+        {
+            "actionId": "create_contact",
+            "displayName": "Create Contact",
+            "method": "POST",
+            "path": "/people:createContact",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "inputSchema": [
+                {
+                    "key": "givenName",
+                    "label": "First Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "familyName",
+                    "label": "Last Name",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "email",
+                    "label": "Email",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "phone",
+                    "label": "Phone",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "company",
+                    "label": "Company",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "const person = { names: [{ givenName: $inputs.givenName, familyName: $inputs.familyName || undefined }] }; if ($inputs.email) person.emailAddresses = [{ value: $inputs.email }]; if ($inputs.phone) person.phoneNumbers = [{ value: $inputs.phone }]; if ($inputs.company) person.organizations = [{ name: $inputs.company }]; return person;",
+            "outputPaths": [
+                "resourceName",
+                "names",
+                "emailAddresses"
+            ]
+        },
+        {
+            "actionId": "update_contact",
+            "displayName": "Update Contact",
+            "method": "PATCH",
+            "path": "/people/{personId}:updateContact",
+            "pathParams": [
+                "personId"
+            ],
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "inputSchema": [
+                {
+                    "key": "personId",
+                    "label": "Person ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "givenName",
+                    "label": "First Name",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "familyName",
+                    "label": "Last Name",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "email",
+                    "label": "Email",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "const person = { resourceName: 'people/' + $inputs.personId }; if ($inputs.givenName || $inputs.familyName) person.names = [{ givenName: $inputs.givenName, familyName: $inputs.familyName }]; if ($inputs.email) person.emailAddresses = [{ value: $inputs.email }]; return person;",
+            "outputPaths": [
+                "resourceName",
+                "names",
+                "emailAddresses"
+            ]
+        },
+        {
+            "actionId": "delete_contact",
+            "displayName": "Delete Contact",
+            "method": "DELETE",
+            "path": "/people/{personId}:deleteContact",
+            "pathParams": [
+                "personId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "personId",
+                    "label": "Person ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": []
+        }
+    ],
+    "connectionSetup": {
+        "description": "Connect Google Contacts to read and manage people from workflows.",
+        "buttonLabel": "Sign in with Google Contacts"
+    },
+    "verifyAction": {
+        "method": "GET",
+        "path": "/people/me?personFields=names"
+    }
+}

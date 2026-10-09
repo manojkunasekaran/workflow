@@ -1,0 +1,36 @@
+{
+  "connectorId": "amazon_sqs",
+  "triggers": [
+    {
+      "triggerId": "new_messages",
+      "displayName": "New messages",
+      "description": "Poll SQS receive.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "queueUrl",
+          "label": "Queue URL",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "POST",
+            "url": "https://sqs.us-east-1.amazonaws.com/",
+            "body": "{\"Action\":\"ReceiveMessage\",\"Version\":\"2012-11-05\",\"QueueUrl\":\"{queueUrl}\",\"MaxNumberOfMessages\":\"10\"}"
+          },
+          "detection": {
+            "itemsPath": "$.ReceiveMessageResponse.ReceiveMessageResult.messages",
+            "keyPaths": [
+              "MessageId"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

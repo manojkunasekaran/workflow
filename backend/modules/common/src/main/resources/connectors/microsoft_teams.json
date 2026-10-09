@@ -1,0 +1,278 @@
+{
+    "displayName": "Microsoft Teams",
+    "icon": "https://api.iconify.design/logos/microsoft-teams.svg",
+    "category": "Communication",
+    "baseUrl": "https://graph.microsoft.com/v1.0",
+    "authType": "OAUTH2",
+    "oauth2Config": {
+        "authorizationUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+        "tokenUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+        "defaultScopes": [
+            "Team.ReadBasic.All",
+            "Channel.ReadBasic.All",
+            "ChannelMessage.Read.All",
+            "ChannelMessage.Send",
+            "Team.Create"
+        ]
+    },
+    "credentialGuide": {
+        "fields": [
+            {
+                "key": "client_id",
+                "label": "Client ID"
+            },
+            {
+                "key": "client_secret",
+                "label": "Client Secret"
+            }
+        ]
+    },
+    "connectionSetup": {
+        "description": "Connect Microsoft Teams via Microsoft Graph.",
+        "buttonLabel": "Sign in with Microsoft"
+    },
+    "verifyAction": {
+        "method": "GET",
+        "path": "/me"
+    },
+    "actions": [
+        {
+            "actionId": "list_teams",
+            "displayName": "List Teams",
+            "method": "GET",
+            "path": "/teams",
+            "inputSchema": [
+                {
+                    "key": "top",
+                    "label": "Top",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 50
+                }
+            ],
+            "outputPaths": [
+                "value"
+            ]
+        },
+        {
+            "actionId": "list_channels",
+            "displayName": "List Channels",
+            "method": "GET",
+            "path": "/teams/{teamId}/channels",
+            "pathParams": [
+                "teamId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "teamId",
+                    "label": "Team ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "value"
+            ]
+        },
+        {
+            "actionId": "get_channel",
+            "displayName": "Get Channel",
+            "method": "GET",
+            "path": "/teams/{teamId}/channels/{channelId}",
+            "pathParams": [
+                "teamId",
+                "channelId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "teamId",
+                    "label": "Team ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "channelId",
+                    "label": "Channel ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "id",
+                "displayName"
+            ]
+        },
+        {
+            "actionId": "post_channel_message",
+            "displayName": "Post Channel Message",
+            "method": "POST",
+            "path": "/teams/{teamId}/channels/{channelId}/messages",
+            "pathParams": [
+                "teamId",
+                "channelId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "teamId",
+                    "label": "Team ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "channelId",
+                    "label": "Channel ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "content",
+                    "label": "Message Content",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "contentType",
+                    "label": "Content Type",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": "text"
+                }
+            ],
+            "inputScript": "return { body: { content: $inputs.content, contentType: $inputs.contentType || 'text' } };",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id",
+                "createdDateTime"
+            ]
+        },
+        {
+            "actionId": "list_channel_messages",
+            "displayName": "List Channel Messages",
+            "method": "GET",
+            "path": "/teams/{teamId}/channels/{channelId}/messages",
+            "pathParams": [
+                "teamId",
+                "channelId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "teamId",
+                    "label": "Team ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "channelId",
+                    "label": "Channel ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "top",
+                    "label": "Top",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 50
+                }
+            ],
+            "outputPaths": [
+                "value"
+            ]
+        },
+        {
+            "actionId": "get_team",
+            "displayName": "Get Team",
+            "method": "GET",
+            "path": "/teams/{teamId}",
+            "pathParams": [
+                "teamId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "teamId",
+                    "label": "Team ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "id",
+                "displayName"
+            ]
+        },
+        {
+            "actionId": "list_team_members",
+            "displayName": "List Team Members",
+            "method": "GET",
+            "path": "/teams/{teamId}/members",
+            "pathParams": [
+                "teamId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "teamId",
+                    "label": "Team ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "value"
+            ]
+        },
+        {
+            "actionId": "create_team",
+            "displayName": "Create Team",
+            "method": "POST",
+            "path": "/teams",
+            "inputSchema": [
+                {
+                    "key": "displayName",
+                    "label": "Team Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "description",
+                    "label": "Description",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "mailNickname",
+                    "label": "Mail Nickname",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return { 'memberSettings': { 'allowCreatePrivateChannels': true }, 'messagingSettings': { 'allowUserEditMessages': true, 'allowUserDeleteMessages': true }, 'funSettings': { 'allowGiphy': true, 'giphyContentRating': 'strict' }, 'displayName': $inputs.displayName, 'description': $inputs.description || '', 'mailNickname': $inputs.mailNickname };",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id",
+                "displayName"
+            ]
+        }
+    ],
+    "connectorId": "microsoft_teams",
+    "taskType": "CONNECTOR_TASK"
+}

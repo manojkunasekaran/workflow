@@ -1,0 +1,369 @@
+{
+    "connectorId": "kafka",
+    "displayName": "Kafka (REST Proxy)",
+    "icon": "https://www.google.com/s2/favicons?domain=apache.org&sz=128",
+    "category": "Messaging",
+    "taskType": "CONNECTOR_TASK",
+    "baseUrl": "https://YOUR_KAFKA_REST_PROXY.example.com",
+    "authType": "BEARER_TOKEN",
+    "actions": [
+        {
+            "actionId": "list_topics",
+            "displayName": "List Topics",
+            "method": "GET",
+            "path": "/topics",
+            "inputSchema": [],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "get_topic",
+            "displayName": "Get Topic",
+            "method": "GET",
+            "path": "/topics/{topic}",
+            "inputSchema": [
+                {
+                    "key": "topic",
+                    "label": "Topic Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "topic"
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "create_topic",
+            "displayName": "Create Topic",
+            "method": "POST",
+            "path": "/topics/{topic}",
+            "inputSchema": [
+                {
+                    "key": "topic",
+                    "label": "Topic Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "topic"
+            ],
+            "inputScript": "return {};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "delete_topic",
+            "displayName": "Delete Topic",
+            "method": "DELETE",
+            "path": "/topics/{topic}",
+            "inputSchema": [
+                {
+                    "key": "topic",
+                    "label": "Topic Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "topic"
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "produce_record",
+            "displayName": "Produce Record",
+            "method": "POST",
+            "path": "/topics/{topic}",
+            "inputSchema": [
+                {
+                    "key": "topic",
+                    "label": "Topic Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "key",
+                    "label": "Key",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "value",
+                    "label": "Value",
+                    "type": "TEXTAREA",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "topic"
+            ],
+            "inputScript": "return {records:[{key:$inputs.key||null,value:$inputs.value}]};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "offsets"
+            ]
+        },
+        {
+            "actionId": "produce_record_v2",
+            "displayName": "Produce Record (Confluent v2)",
+            "method": "POST",
+            "path": "/topics/{topic}/records",
+            "inputSchema": [
+                {
+                    "key": "topic",
+                    "label": "Topic Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "value",
+                    "label": "Value",
+                    "type": "TEXTAREA",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "topic"
+            ],
+            "inputScript": "return {value:{type:'JSON',data:$inputs.value}};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "get_partitions",
+            "displayName": "Get Topic Partitions",
+            "method": "GET",
+            "path": "/topics/{topic}/partitions",
+            "inputSchema": [
+                {
+                    "key": "topic",
+                    "label": "Topic Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "topic"
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "get_partition",
+            "displayName": "Get Partition",
+            "method": "GET",
+            "path": "/topics/{topic}/partitions/{partition}",
+            "inputSchema": [
+                {
+                    "key": "topic",
+                    "label": "Topic Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "partition",
+                    "label": "Partition",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "topic",
+                "partition"
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "list_consumer_groups",
+            "displayName": "List Consumer Groups",
+            "method": "GET",
+            "path": "/consumers",
+            "inputSchema": [],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "get_consumer_group",
+            "displayName": "Get Consumer Group",
+            "method": "GET",
+            "path": "/consumers/{group}",
+            "inputSchema": [
+                {
+                    "key": "group",
+                    "label": "Group ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "group"
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "get_brokers",
+            "displayName": "Get Cluster Metadata",
+            "method": "GET",
+            "path": "/brokers",
+            "inputSchema": [],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "fetch_topic_config",
+            "displayName": "Get Topic Config",
+            "method": "GET",
+            "path": "/topics/{topic}/configs",
+            "inputSchema": [
+                {
+                    "key": "topic",
+                    "label": "Topic Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "topic"
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "list_schemas",
+            "displayName": "List Schemas",
+            "method": "GET",
+            "path": "/schemas",
+            "inputSchema": [],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "get_schema",
+            "displayName": "Get Schema",
+            "method": "GET",
+            "path": "/schemas/ids/{schemaId}",
+            "inputSchema": [
+                {
+                    "key": "schemaId",
+                    "label": "Schema ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "schemaId"
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "produce_with_headers",
+            "displayName": "Produce With Headers",
+            "method": "POST",
+            "path": "/topics/{topic}",
+            "inputSchema": [
+                {
+                    "key": "topic",
+                    "label": "Topic Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "value",
+                    "label": "Value",
+                    "type": "TEXTAREA",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "header_key",
+                    "label": "Header Key",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "topic"
+            ],
+            "inputScript": "const r={value:$inputs.value}; if($inputs.header_key) r.headers=[{key:$inputs.header_key,value:'1'}]; return {records:[r]};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "offsets"
+            ]
+        }
+    ],
+    "credentialGuide": {
+        "description": "HTTP proxy to Kafka (Confluent REST Proxy, Redpanda PandaProxy, etc.). Set baseUrl to your REST gateway root.",
+        "fields": [
+            {
+                "key": "token",
+                "label": "Bearer Token",
+                "hint": "Optional API key for REST proxy"
+            },
+            {
+                "key": "baseUrl",
+                "label": "REST Proxy URL",
+                "hint": "https://kafka-rest.example.com or Redpanda /v1/kafka"
+            }
+        ]
+    },
+    "connectionSetup": {
+        "fields": [
+            {
+                "label": "Bearer Token",
+                "key": "token",
+                "sensitive": true
+            }
+        ]
+    },
+    "verifyAction": {
+        "method": "GET",
+        "path": "/topics"
+    }
+}

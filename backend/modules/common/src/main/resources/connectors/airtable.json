@@ -1,257 +1,257 @@
 {
-    "connectorId":  "airtable",
-    "displayName":  "Airtable",
-    "icon":  "https://cdn.simpleicons.org/airtable/18BFFF",
-    "category":  "Productivity",
+    "connectorId": "airtable",
+    "displayName": "Airtable",
+    "icon": "https://api.iconify.design/logos/airtable.svg",
+    "category": "Productivity",
     "taskType": "CONNECTOR_TASK",
-    "baseUrl":  "https://api.airtable.com/v0",
-    "authType":  "BEARER_TOKEN",
-    "credentialGuide":  {
-                            "fields":  [
-                                           {
-                                               "key":  "token",
-                                               "label":  "Personal Access Token",
-                                               "hint":  "Airtable Account → Developer Hub → Personal access tokens",
-                                               "docUrl":  "https://airtable.com/create/tokens"
-                                           }
-                                       ]
-                        },
-    "actions":  [
-                    {
-                        "actionId":  "list_records",
-                        "displayName":  "List Records",
-                        "method":  "GET",
-                        "path":  "/{baseId}/{tableIdOrName}",
-                        "pathParams":  [
-                                           "baseId",
-                                           "tableIdOrName"
-                                       ],
-                        "inputSchema":  [
-                                            {
-                                                "key":  "baseId",
-                                                "label":  "Base ID",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true,
-                                                "placeholder":  "e.g. appXXXXXXXX"
-                                            },
-                                            {
-                                                "key":  "tableIdOrName",
-                                                "label":  "Table Name or ID",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "maxRecords",
-                                                "label":  "Max Records",
-                                                "type":  "NUMBER",
-                                                "required":  false,
-                                                "supportsExpression":  true,
-                                                "defaultValue":  100
-                                            },
-                                            {
-                                                "key":  "filterByFormula",
-                                                "label":  "Filter Formula",
-                                                "type":  "STRING",
-                                                "required":  false,
-                                                "supportsExpression":  true,
-                                                "placeholder":  "e.g. {Status}=\u0027Active\u0027"
-                                            },
-                                            {
-                                                "key":  "view",
-                                                "label":  "View Name",
-                                                "type":  "STRING",
-                                                "required":  false,
-                                                "supportsExpression":  true
-                                            }
-                                        ],
-                        "outputPaths":  [
-                                            "records",
-                                            "offset"
-                                        ]
-                    },
-                    {
-                        "actionId":  "get_record",
-                        "displayName":  "Get Record",
-                        "method":  "GET",
-                        "path":  "/{baseId}/{tableIdOrName}/{recordId}",
-                        "pathParams":  [
-                                           "baseId",
-                                           "tableIdOrName",
-                                           "recordId"
-                                       ],
-                        "inputSchema":  [
-                                            {
-                                                "key":  "baseId",
-                                                "label":  "Base ID",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "tableIdOrName",
-                                                "label":  "Table Name or ID",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "recordId",
-                                                "label":  "Record ID",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            }
-                                        ],
-                        "outputPaths":  [
-                                            "id",
-                                            "fields",
-                                            "createdTime"
-                                        ]
-                    },
-                    {
-                        "actionId":  "create_record",
-                        "displayName":  "Create Record",
-                        "method":  "POST",
-                        "path":  "/{baseId}/{tableIdOrName}",
-                        "pathParams":  [
-                                           "baseId",
-                                           "tableIdOrName"
-                                       ],
-                        "fixedHeaders":  {
-                                             "Content-Type":  "application/json"
-                                         },
-                        "inputSchema":  [
-                                            {
-                                                "key":  "baseId",
-                                                "label":  "Base ID",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "tableIdOrName",
-                                                "label":  "Table Name or ID",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "fields",
-                                                "label":  "Fields (JSON Object)",
-                                                "type":  "JSON",
-                                                "required":  true,
-                                                "supportsExpression":  true,
-                                                "description":  "Key-value pairs matching your table field names"
-                                            }
-                                        ],
-                        "outputPaths":  [
-                                            "id",
-                                            "fields",
-                                            "createdTime"
-                                        ]
-                    },
-                    {
-                        "actionId":  "update_record",
-                        "displayName":  "Update Record",
-                        "method":  "PATCH",
-                        "path":  "/{baseId}/{tableIdOrName}/{recordId}",
-                        "pathParams":  [
-                                           "baseId",
-                                           "tableIdOrName",
-                                           "recordId"
-                                       ],
-                        "fixedHeaders":  {
-                                             "Content-Type":  "application/json"
-                                         },
-                        "inputSchema":  [
-                                            {
-                                                "key":  "baseId",
-                                                "label":  "Base ID",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "tableIdOrName",
-                                                "label":  "Table Name or ID",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "recordId",
-                                                "label":  "Record ID",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "fields",
-                                                "label":  "Fields to Update (JSON Object)",
-                                                "type":  "JSON",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            }
-                                        ],
-                        "outputPaths":  [
-                                            "id",
-                                            "fields",
-                                            "createdTime"
-                                        ]
-                    },
-                    {
-                        "actionId":  "delete_record",
-                        "displayName":  "Delete Record",
-                        "method":  "DELETE",
-                        "path":  "/{baseId}/{tableIdOrName}/{recordId}",
-                        "pathParams":  [
-                                           "baseId",
-                                           "tableIdOrName",
-                                           "recordId"
-                                       ],
-                        "inputSchema":  [
-                                            {
-                                                "key":  "baseId",
-                                                "label":  "Base ID",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "tableIdOrName",
-                                                "label":  "Table Name or ID",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "recordId",
-                                                "label":  "Record ID",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            }
-                                        ],
-                        "outputPaths":  [
-                                            "deleted",
-                                            "id"
-                                        ]
-                    }
-                ],
-    "connectionSetup":  {
-                            "fields":  [
-                                           {
-                                               "label":  "Personal Access Token",
-                                               "key":  "token",
-                                               "sensitive":  true,
-                                               "hint":  "Airtable Account → Developer Hub → Personal access tokens"
-                                           }
-                                       ]
-                        },
-    "verifyAction":  {
-                         "method":  "GET",
-                         "path":  "/{baseId}/{tableIdOrName}"
-                     }
+    "baseUrl": "https://api.airtable.com/v0",
+    "authType": "BEARER_TOKEN",
+    "credentialGuide": {
+        "fields": [
+            {
+                "key": "token",
+                "label": "Personal Access Token",
+                "hint": "Airtable Account \u2192 Developer Hub \u2192 Personal access tokens",
+                "docUrl": "https://airtable.com/create/tokens"
+            }
+        ]
+    },
+    "actions": [
+        {
+            "actionId": "list_records",
+            "displayName": "List Records",
+            "method": "GET",
+            "path": "/{baseId}/{tableIdOrName}",
+            "pathParams": [
+                "baseId",
+                "tableIdOrName"
+            ],
+            "inputSchema": [
+                {
+                    "key": "baseId",
+                    "label": "Base ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "placeholder": "e.g. appXXXXXXXX"
+                },
+                {
+                    "key": "tableIdOrName",
+                    "label": "Table Name or ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "maxRecords",
+                    "label": "Max Records",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 100
+                },
+                {
+                    "key": "filterByFormula",
+                    "label": "Filter Formula",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true,
+                    "placeholder": "e.g. {Status}='Active'"
+                },
+                {
+                    "key": "view",
+                    "label": "View Name",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "records",
+                "offset"
+            ]
+        },
+        {
+            "actionId": "get_record",
+            "displayName": "Get Record",
+            "method": "GET",
+            "path": "/{baseId}/{tableIdOrName}/{recordId}",
+            "pathParams": [
+                "baseId",
+                "tableIdOrName",
+                "recordId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "baseId",
+                    "label": "Base ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "tableIdOrName",
+                    "label": "Table Name or ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "recordId",
+                    "label": "Record ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "id",
+                "fields",
+                "createdTime"
+            ]
+        },
+        {
+            "actionId": "create_record",
+            "displayName": "Create Record",
+            "method": "POST",
+            "path": "/{baseId}/{tableIdOrName}",
+            "pathParams": [
+                "baseId",
+                "tableIdOrName"
+            ],
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "inputSchema": [
+                {
+                    "key": "baseId",
+                    "label": "Base ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "tableIdOrName",
+                    "label": "Table Name or ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "fields",
+                    "label": "Fields (JSON Object)",
+                    "type": "JSON",
+                    "required": true,
+                    "supportsExpression": true,
+                    "description": "Key-value pairs matching your table field names"
+                }
+            ],
+            "outputPaths": [
+                "id",
+                "fields",
+                "createdTime"
+            ]
+        },
+        {
+            "actionId": "update_record",
+            "displayName": "Update Record",
+            "method": "PATCH",
+            "path": "/{baseId}/{tableIdOrName}/{recordId}",
+            "pathParams": [
+                "baseId",
+                "tableIdOrName",
+                "recordId"
+            ],
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "inputSchema": [
+                {
+                    "key": "baseId",
+                    "label": "Base ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "tableIdOrName",
+                    "label": "Table Name or ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "recordId",
+                    "label": "Record ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "fields",
+                    "label": "Fields to Update (JSON Object)",
+                    "type": "JSON",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "id",
+                "fields",
+                "createdTime"
+            ]
+        },
+        {
+            "actionId": "delete_record",
+            "displayName": "Delete Record",
+            "method": "DELETE",
+            "path": "/{baseId}/{tableIdOrName}/{recordId}",
+            "pathParams": [
+                "baseId",
+                "tableIdOrName",
+                "recordId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "baseId",
+                    "label": "Base ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "tableIdOrName",
+                    "label": "Table Name or ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "recordId",
+                    "label": "Record ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "deleted",
+                "id"
+            ]
+        }
+    ],
+    "connectionSetup": {
+        "fields": [
+            {
+                "label": "Personal Access Token",
+                "key": "token",
+                "sensitive": true,
+                "hint": "Airtable Account \u2192 Developer Hub \u2192 Personal access tokens"
+            }
+        ]
+    },
+    "verifyAction": {
+        "method": "GET",
+        "path": "/{baseId}/{tableIdOrName}"
+    }
 }

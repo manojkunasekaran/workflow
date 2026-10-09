@@ -1,0 +1,347 @@
+{
+    "displayName": "Pipedrive",
+    "icon": "https://www.google.com/s2/favicons?domain=pipedrive.com&sz=128",
+    "category": "CRM",
+    "baseUrl": "https://api.pipedrive.com/v1",
+    "authType": "BEARER_TOKEN",
+    "credentialGuide": {
+        "fields": [
+            {
+                "key": "token",
+                "label": "API Token",
+                "hint": "Pipedrive Settings \u2192 Personal preferences \u2192 API"
+            }
+        ]
+    },
+    "connectionSetup": {
+        "fields": [
+            {
+                "label": "API Token",
+                "key": "token",
+                "sensitive": true
+            }
+        ]
+    },
+    "verifyAction": {
+        "method": "GET",
+        "path": "/users/me"
+    },
+    "actions": [
+        {
+            "actionId": "list_persons",
+            "displayName": "List Persons",
+            "method": "GET",
+            "path": "/persons",
+            "inputSchema": [
+                {
+                    "key": "limit",
+                    "label": "Limit",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 50
+                }
+            ],
+            "outputPaths": [
+                "data"
+            ]
+        },
+        {
+            "actionId": "get_person",
+            "displayName": "Get Person",
+            "method": "GET",
+            "path": "/persons/{personId}",
+            "pathParams": [
+                "personId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "personId",
+                    "label": "Person ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "data"
+            ]
+        },
+        {
+            "actionId": "create_person",
+            "displayName": "Create Person",
+            "method": "POST",
+            "path": "/persons",
+            "inputSchema": [
+                {
+                    "key": "name",
+                    "label": "Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "email",
+                    "label": "Email",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "phone",
+                    "label": "Phone",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "const b={name:$inputs.name}; if($inputs.email) b.email=[{value:$inputs.email,primary:true}]; if($inputs.phone) b.phone=[{value:$inputs.phone,primary:true}]; return b;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "data.id"
+            ]
+        },
+        {
+            "actionId": "update_person",
+            "displayName": "Update Person",
+            "method": "PUT",
+            "path": "/persons/{personId}",
+            "pathParams": [
+                "personId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "personId",
+                    "label": "Person ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "name",
+                    "label": "Name",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "email",
+                    "label": "Email",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "const b={}; if($inputs.name) b.name=$inputs.name; if($inputs.email) b.email=[{value:$inputs.email,primary:true}]; return b;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "data.id"
+            ]
+        },
+        {
+            "actionId": "delete_person",
+            "displayName": "Delete Person",
+            "method": "DELETE",
+            "path": "/persons/{personId}",
+            "pathParams": [
+                "personId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "personId",
+                    "label": "Person ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "success"
+            ]
+        },
+        {
+            "actionId": "list_deals",
+            "displayName": "List Deals",
+            "method": "GET",
+            "path": "/deals",
+            "inputSchema": [
+                {
+                    "key": "limit",
+                    "label": "Limit",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 50
+                }
+            ],
+            "outputPaths": [
+                "data"
+            ]
+        },
+        {
+            "actionId": "get_deal",
+            "displayName": "Get Deal",
+            "method": "GET",
+            "path": "/deals/{dealId}",
+            "pathParams": [
+                "dealId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "dealId",
+                    "label": "Deal ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "data"
+            ]
+        },
+        {
+            "actionId": "create_deal",
+            "displayName": "Create Deal",
+            "method": "POST",
+            "path": "/deals",
+            "inputSchema": [
+                {
+                    "key": "title",
+                    "label": "Title",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "value",
+                    "label": "Value",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "currency",
+                    "label": "Currency",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": "USD"
+                }
+            ],
+            "inputScript": "const b={title:$inputs.title}; if($inputs.value!=null) b.value=$inputs.value; if($inputs.currency) b.currency=$inputs.currency; return b;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "data.id"
+            ]
+        },
+        {
+            "actionId": "update_deal",
+            "displayName": "Update Deal",
+            "method": "PUT",
+            "path": "/deals/{dealId}",
+            "pathParams": [
+                "dealId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "dealId",
+                    "label": "Deal ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "title",
+                    "label": "Title",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "status",
+                    "label": "Status",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "const b={}; if($inputs.title) b.title=$inputs.title; if($inputs.status) b.status=$inputs.status; return b;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "data.id"
+            ]
+        },
+        {
+            "actionId": "delete_deal",
+            "displayName": "Delete Deal",
+            "method": "DELETE",
+            "path": "/deals/{dealId}",
+            "pathParams": [
+                "dealId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "dealId",
+                    "label": "Deal ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "success"
+            ]
+        },
+        {
+            "actionId": "list_organizations",
+            "displayName": "List Organizations",
+            "method": "GET",
+            "path": "/organizations",
+            "inputSchema": [
+                {
+                    "key": "limit",
+                    "label": "Limit",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 50
+                }
+            ],
+            "outputPaths": [
+                "data"
+            ]
+        },
+        {
+            "actionId": "create_organization",
+            "displayName": "Create Organization",
+            "method": "POST",
+            "path": "/organizations",
+            "inputSchema": [
+                {
+                    "key": "name",
+                    "label": "Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return {name:$inputs.name};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "data.id"
+            ]
+        }
+    ],
+    "connectorId": "pipedrive",
+    "taskType": "CONNECTOR_TASK"
+}

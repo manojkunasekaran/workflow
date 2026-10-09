@@ -1,0 +1,80 @@
+{
+  "connectorId": "kafka",
+  "triggers": [
+    {
+      "triggerId": "new_topics",
+      "displayName": "New topics",
+      "description": "Poll topic list.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://YOUR_KAFKA_REST_PROXY.example.com/topics"
+          },
+          "detection": {
+            "itemsPath": "$",
+            "keyPaths": [
+              "name"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "partition_lag",
+      "displayName": "Partition updates",
+      "description": "Poll partition metadata.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "topic",
+          "label": "Topic",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "UPDATED",
+          "http": {
+            "method": "GET",
+            "url": "https://YOUR_KAFKA_REST_PROXY.example.com/topics/{topic}/partitions"
+          },
+          "detection": {
+            "itemsPath": "$",
+            "keyPaths": [
+              "id"
+            ],
+            "updateKeyPath": "leader"
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "consumer_group_changes",
+      "displayName": "Consumer group changes",
+      "description": "Poll consumer groups.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://YOUR_KAFKA_REST_PROXY.example.com/consumers"
+          },
+          "detection": {
+            "itemsPath": "$",
+            "keyPaths": [
+              "group"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

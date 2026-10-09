@@ -1,0 +1,49 @@
+{
+  "connectorId": "pipedrive",
+  "triggers": [
+    {
+      "triggerId": "new_deals",
+      "displayName": "New deals",
+      "description": "Poll new deals.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://api.pipedrive.com/v1/deals?limit=100&sort=add_time DESC"
+          },
+          "detection": {
+            "itemsPath": "$.data",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_persons",
+      "displayName": "New persons",
+      "description": "Poll new persons.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://api.pipedrive.com/v1/persons?limit=100&sort=add_time DESC"
+          },
+          "detection": {
+            "itemsPath": "$.data",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,265 @@
+{
+    "connectorId": "paypal",
+    "displayName": "PayPal",
+    "icon": "https://api.iconify.design/logos/paypal.svg",
+    "category": "Payments",
+    "taskType": "CONNECTOR_TASK",
+    "baseUrl": "https://api-m.paypal.com",
+    "authType": "OAUTH2",
+    "oauth2Config": {
+        "authorizationUrl": "https://www.paypal.com/signin/authorize",
+        "tokenUrl": "https://api-m.paypal.com/v1/oauth2/token",
+        "defaultScopes": [
+            "openid",
+            "https://uri.paypal.com/services/invoicing",
+            "https://uri.paypal.com/services/payments/realtimepayment"
+        ]
+    },
+    "credentialGuide": {
+        "fields": [
+            {"key": "client_id", "label": "Client ID", "hint": "PayPal Developer Dashboard \u2192 Apps & Credentials"},
+            {"key": "client_secret", "label": "Client Secret", "hint": "Use sandbox credentials for testing (api-m.sandbox.paypal.com)"}
+        ]
+    },
+    "actions": [
+        {
+            "actionId": "create_order",
+            "displayName": "Create Order",
+            "method": "POST",
+            "path": "/v2/checkout/orders",
+            "fixedHeaders": {"Content-Type": "application/json"},
+            "inputSchema": [
+                {"key": "intent", "label": "Intent", "type": "SELECT", "required": true, "supportsExpression": false, "defaultValue": "CAPTURE", "options": [{"label": "Capture", "value": "CAPTURE"}, {"label": "Authorize", "value": "AUTHORIZE"}]},
+                {"key": "purchase_units", "label": "Purchase Units (JSON array)", "type": "JSON", "required": true, "supportsExpression": true},
+                {"key": "application_context", "label": "Application Context (JSON)", "type": "JSON", "required": false, "supportsExpression": true}
+            ],
+            "inputScript": "const o={intent:$inputs.intent||'CAPTURE',purchase_units:typeof $inputs.purchase_units==='string'?JSON.parse($inputs.purchase_units):$inputs.purchase_units}; if($inputs.application_context) o.application_context=typeof $inputs.application_context==='string'?JSON.parse($inputs.application_context):$inputs.application_context; return o;",
+            "outputPaths": ["id", "status", "links"]
+        },
+        {
+            "actionId": "get_order",
+            "displayName": "Get Order",
+            "method": "GET",
+            "path": "/v2/checkout/orders/{orderId}",
+            "pathParams": ["orderId"],
+            "inputSchema": [
+                {"key": "orderId", "label": "Order ID", "type": "STRING", "required": true, "supportsExpression": true}
+            ],
+            "outputPaths": ["id", "status", "purchase_units", "payer"]
+        },
+        {
+            "actionId": "capture_order",
+            "displayName": "Capture Order",
+            "method": "POST",
+            "path": "/v2/checkout/orders/{orderId}/capture",
+            "pathParams": ["orderId"],
+            "fixedHeaders": {"Content-Type": "application/json"},
+            "inputSchema": [
+                {"key": "orderId", "label": "Order ID", "type": "STRING", "required": true, "supportsExpression": true}
+            ],
+            "inputScript": "return {};",
+            "outputPaths": ["id", "status", "purchase_units"]
+        },
+        {
+            "actionId": "authorize_order",
+            "displayName": "Authorize Order",
+            "method": "POST",
+            "path": "/v2/checkout/orders/{orderId}/authorize",
+            "pathParams": ["orderId"],
+            "fixedHeaders": {"Content-Type": "application/json"},
+            "inputSchema": [
+                {"key": "orderId", "label": "Order ID", "type": "STRING", "required": true, "supportsExpression": true}
+            ],
+            "inputScript": "return {};",
+            "outputPaths": ["id", "status", "purchase_units"]
+        },
+        {
+            "actionId": "patch_order",
+            "displayName": "Update Order",
+            "method": "PATCH",
+            "path": "/v2/checkout/orders/{orderId}",
+            "pathParams": ["orderId"],
+            "fixedHeaders": {"Content-Type": "application/json"},
+            "inputSchema": [
+                {"key": "orderId", "label": "Order ID", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "patch_operations", "label": "JSON Patch Operations", "type": "JSON", "required": true, "supportsExpression": true}
+            ],
+            "inputScript": "return typeof $inputs.patch_operations==='string'?JSON.parse($inputs.patch_operations):$inputs.patch_operations;",
+            "outputPaths": []
+        },
+        {
+            "actionId": "create_refund",
+            "displayName": "Refund Capture",
+            "method": "POST",
+            "path": "/v2/payments/captures/{captureId}/refund",
+            "pathParams": ["captureId"],
+            "fixedHeaders": {"Content-Type": "application/json"},
+            "inputSchema": [
+                {"key": "captureId", "label": "Capture ID", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "amount", "label": "Amount (JSON)", "type": "JSON", "required": false, "supportsExpression": true, "description": "Partial refund: {\"currency_code\":\"USD\",\"value\":\"10.00\"}"},
+                {"key": "note_to_payer", "label": "Note to Payer", "type": "STRING", "required": false, "supportsExpression": true}
+            ],
+            "inputScript": "const b={}; if($inputs.amount) b.amount=typeof $inputs.amount==='string'?JSON.parse($inputs.amount):$inputs.amount; if($inputs.note_to_payer) b.note_to_payer=$inputs.note_to_payer; return b;",
+            "outputPaths": ["id", "status", "amount"]
+        },
+        {
+            "actionId": "get_refund",
+            "displayName": "Get Refund",
+            "method": "GET",
+            "path": "/v2/payments/refunds/{refundId}",
+            "pathParams": ["refundId"],
+            "inputSchema": [
+                {"key": "refundId", "label": "Refund ID", "type": "STRING", "required": true, "supportsExpression": true}
+            ],
+            "outputPaths": ["id", "status", "amount"]
+        },
+        {
+            "actionId": "get_capture",
+            "displayName": "Get Capture",
+            "method": "GET",
+            "path": "/v2/payments/captures/{captureId}",
+            "pathParams": ["captureId"],
+            "inputSchema": [
+                {"key": "captureId", "label": "Capture ID", "type": "STRING", "required": true, "supportsExpression": true}
+            ],
+            "outputPaths": ["id", "status", "amount", "final_capture"]
+        },
+        {
+            "actionId": "void_authorization",
+            "displayName": "Void Authorization",
+            "method": "POST",
+            "path": "/v2/payments/authorizations/{authorizationId}/void",
+            "pathParams": ["authorizationId"],
+            "fixedHeaders": {"Content-Type": "application/json"},
+            "inputSchema": [
+                {"key": "authorizationId", "label": "Authorization ID", "type": "STRING", "required": true, "supportsExpression": true}
+            ],
+            "inputScript": "return {};",
+            "outputPaths": ["id", "status"]
+        },
+        {
+            "actionId": "capture_authorization",
+            "displayName": "Capture Authorization",
+            "method": "POST",
+            "path": "/v2/payments/authorizations/{authorizationId}/capture",
+            "pathParams": ["authorizationId"],
+            "fixedHeaders": {"Content-Type": "application/json"},
+            "inputSchema": [
+                {"key": "authorizationId", "label": "Authorization ID", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "amount", "label": "Amount (JSON)", "type": "JSON", "required": false, "supportsExpression": true},
+                {"key": "final_capture", "label": "Final Capture", "type": "BOOLEAN", "required": false, "supportsExpression": false}
+            ],
+            "inputScript": "const b={}; if($inputs.amount) b.amount=typeof $inputs.amount==='string'?JSON.parse($inputs.amount):$inputs.amount; if($inputs.final_capture!=null) b.final_capture=$inputs.final_capture; return b;",
+            "outputPaths": ["id", "status", "amount"]
+        },
+        {
+            "actionId": "create_invoice",
+            "displayName": "Create Invoice",
+            "method": "POST",
+            "path": "/v2/invoicing/invoices",
+            "fixedHeaders": {"Content-Type": "application/json"},
+            "inputSchema": [
+                {"key": "detail", "label": "Invoice Detail (JSON)", "type": "JSON", "required": true, "supportsExpression": true},
+                {"key": "primary_recipients", "label": "Primary Recipients (JSON array)", "type": "JSON", "required": true, "supportsExpression": true},
+                {"key": "items", "label": "Line Items (JSON array)", "type": "JSON", "required": true, "supportsExpression": true}
+            ],
+            "inputScript": "return {detail:typeof $inputs.detail==='string'?JSON.parse($inputs.detail):$inputs.detail,primary_recipients:typeof $inputs.primary_recipients==='string'?JSON.parse($inputs.primary_recipients):$inputs.primary_recipients,items:typeof $inputs.items==='string'?JSON.parse($inputs.items):$inputs.items};",
+            "outputPaths": ["href", "id", "status"]
+        },
+        {
+            "actionId": "get_invoice",
+            "displayName": "Get Invoice",
+            "method": "GET",
+            "path": "/v2/invoicing/invoices/{invoiceId}",
+            "pathParams": ["invoiceId"],
+            "inputSchema": [
+                {"key": "invoiceId", "label": "Invoice ID", "type": "STRING", "required": true, "supportsExpression": true}
+            ],
+            "outputPaths": ["id", "status", "detail", "amount"]
+        },
+        {
+            "actionId": "send_invoice",
+            "displayName": "Send Invoice",
+            "method": "POST",
+            "path": "/v2/invoicing/invoices/{invoiceId}/send",
+            "pathParams": ["invoiceId"],
+            "fixedHeaders": {"Content-Type": "application/json"},
+            "inputSchema": [
+                {"key": "invoiceId", "label": "Invoice ID", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "send_to_invoicer", "label": "Send Copy to Invoicer", "type": "BOOLEAN", "required": false, "supportsExpression": false}
+            ],
+            "inputScript": "return $inputs.send_to_invoicer!=null?{send_to_invoicer:$inputs.send_to_invoicer}:{};",
+            "outputPaths": ["href"]
+        },
+        {
+            "actionId": "list_invoices",
+            "displayName": "List Invoices",
+            "method": "GET",
+            "path": "/v2/invoicing/invoices",
+            "inputSchema": [
+                {"key": "page", "label": "Page", "type": "NUMBER", "required": false, "defaultValue": 1, "supportsExpression": true},
+                {"key": "page_size", "label": "Page Size", "type": "NUMBER", "required": false, "defaultValue": 20, "supportsExpression": true},
+                {"key": "total_required", "label": "Include Total Count", "type": "BOOLEAN", "required": false, "supportsExpression": false}
+            ],
+            "outputPaths": ["items", "total_pages", "total_items"]
+        },
+        {
+            "actionId": "list_webhooks",
+            "displayName": "List Webhooks",
+            "method": "GET",
+            "path": "/v1/notifications/webhooks",
+            "inputSchema": [],
+            "outputPaths": ["webhooks"]
+        },
+        {
+            "actionId": "create_webhook",
+            "displayName": "Create Webhook",
+            "method": "POST",
+            "path": "/v1/notifications/webhooks",
+            "fixedHeaders": {"Content-Type": "application/json"},
+            "inputSchema": [
+                {"key": "url", "label": "Webhook URL", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "event_types", "label": "Event Types (JSON array)", "type": "JSON", "required": true, "supportsExpression": true, "description": "[{\"name\":\"CHECKOUT.ORDER.APPROVED\"}]"}
+            ],
+            "inputScript": "return {url:$inputs.url,event_types:typeof $inputs.event_types==='string'?JSON.parse($inputs.event_types):$inputs.event_types};",
+            "outputPaths": ["id", "url"]
+        },
+        {
+            "actionId": "delete_webhook",
+            "displayName": "Delete Webhook",
+            "method": "DELETE",
+            "path": "/v1/notifications/webhooks/{webhookId}",
+            "pathParams": ["webhookId"],
+            "inputSchema": [
+                {"key": "webhookId", "label": "Webhook ID", "type": "STRING", "required": true, "supportsExpression": true}
+            ],
+            "outputPaths": []
+        },
+        {
+            "actionId": "verify_webhook_signature",
+            "displayName": "Verify Webhook Signature",
+            "method": "POST",
+            "path": "/v1/notifications/verify-webhook-signature",
+            "fixedHeaders": {"Content-Type": "application/json"},
+            "inputSchema": [
+                {"key": "auth_algo", "label": "Auth Algorithm", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "cert_url", "label": "Cert URL", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "transmission_id", "label": "Transmission ID", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "transmission_sig", "label": "Transmission Signature", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "transmission_time", "label": "Transmission Time", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "webhook_id", "label": "Webhook ID", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "webhook_event", "label": "Webhook Event (JSON)", "type": "JSON", "required": true, "supportsExpression": true}
+            ],
+            "inputScript": "return {auth_algo:$inputs.auth_algo,cert_url:$inputs.cert_url,transmission_id:$inputs.transmission_id,transmission_sig:$inputs.transmission_sig,transmission_time:$inputs.transmission_time,webhook_id:$inputs.webhook_id,webhook_event:typeof $inputs.webhook_event==='string'?JSON.parse($inputs.webhook_event):$inputs.webhook_event};",
+            "outputPaths": ["verification_status"]
+        }
+    ],
+    "connectionSetup": {
+        "description": "Connect PayPal with OAuth2.",
+        "buttonLabel": "Sign in with PayPal"
+    },
+    "verifyAction": {
+        "method": "GET",
+        "path": "/v1/identity/oauth2/userinfo?schema=paypalv1.1"
+    }
+}

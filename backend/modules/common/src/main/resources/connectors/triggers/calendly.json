@@ -1,0 +1,110 @@
+{
+  "connectorId": "calendly",
+  "triggers": [
+    {
+      "triggerId": "new_scheduled_events",
+      "displayName": "New scheduled events",
+      "description": "Polls for newly created active scheduled events.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {"key": "user", "label": "User URI", "type": "STRING", "required": true, "supportsExpression": false, "description": "From GET /users/me resource.uri"}
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://api.calendly.com/scheduled_events?user={user}&status=active&count=100"
+          },
+          "detection": {
+            "itemsPath": "$.collection",
+            "keyPaths": ["uri"]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_canceled_events",
+      "displayName": "New canceled events",
+      "description": "Polls for newly canceled scheduled events.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {"key": "user", "label": "User URI", "type": "STRING", "required": true, "supportsExpression": false}
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://api.calendly.com/scheduled_events?user={user}&status=canceled&count=100"
+          },
+          "detection": {
+            "itemsPath": "$.collection",
+            "keyPaths": ["uri"]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "invitee_created",
+      "displayName": "Invitee created",
+      "description": "Webhook when an invitee books an event.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {"key": "organization", "label": "Organization URI", "type": "STRING", "required": true, "supportsExpression": false},
+        {"key": "signing_key", "label": "Signing Key", "type": "STRING", "required": false, "supportsExpression": false}
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.calendly.com/webhook_subscriptions",
+            "body": "{\"url\":\"{{callbackUrl}}\",\"events\":[\"invitee.created\"],\"organization\":\"{organization}\",\"scope\":\"organization\"}"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://api.calendly.com/webhook_subscriptions/{{subscriptionId}}"
+          },
+          "subscriptionIdPath": "$.resource.uri",
+          "inbound": {
+            "verificationMode": "HMAC_SHA256",
+            "headerName": "Calendly-Webhook-Signature",
+            "eventIdPath": "$.event",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "invitee_canceled",
+      "displayName": "Invitee canceled",
+      "description": "Webhook when an invitee cancels a booking.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {"key": "organization", "label": "Organization URI", "type": "STRING", "required": true, "supportsExpression": false}
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.calendly.com/webhook_subscriptions",
+            "body": "{\"url\":\"{{callbackUrl}}\",\"events\":[\"invitee.canceled\"],\"organization\":\"{organization}\",\"scope\":\"organization\"}"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://api.calendly.com/webhook_subscriptions/{{subscriptionId}}"
+          },
+          "subscriptionIdPath": "$.resource.uri",
+          "inbound": {
+            "verificationMode": "HMAC_SHA256",
+            "headerName": "Calendly-Webhook-Signature",
+            "eventIdPath": "$.event",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    }
+  ]
+}

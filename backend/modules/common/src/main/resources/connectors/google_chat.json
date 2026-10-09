@@ -1,0 +1,229 @@
+{
+    "connectorId": "google_chat",
+    "displayName": "Google Chat",
+    "icon": "https://api.iconify.design/simple-icons/googlechat.svg?color=%2300ac47",
+    "category": "Communication",
+    "taskType": "CONNECTOR_TASK",
+    "baseUrl": "https://chat.googleapis.com/v1",
+    "authType": "OAUTH2",
+    "oauth2Config": {
+        "authorizationUrl": "https://accounts.google.com/o/oauth2/v2/auth",
+        "tokenUrl": "https://oauth2.googleapis.com/token",
+        "defaultScopes": [
+            "https://www.googleapis.com/auth/chat.messages",
+            "https://www.googleapis.com/auth/chat.spaces.readonly"
+        ]
+    },
+    "actions": [
+        {
+            "actionId": "list_spaces",
+            "displayName": "List Spaces",
+            "method": "GET",
+            "path": "/spaces",
+            "inputSchema": [
+                {
+                    "key": "pageSize",
+                    "label": "Page Size",
+                    "type": "NUMBER",
+                    "required": false,
+                    "defaultValue": 50,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "spaces",
+                "nextPageToken"
+            ]
+        },
+        {
+            "actionId": "get_space",
+            "displayName": "Get Space",
+            "method": "GET",
+            "path": "/{space}",
+            "pathParams": [
+                "space"
+            ],
+            "inputSchema": [
+                {
+                    "key": "space",
+                    "label": "Space Resource Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "placeholder": "e.g. spaces/AAAA1234"
+                }
+            ],
+            "outputPaths": [
+                "name",
+                "displayName",
+                "type"
+            ]
+        },
+        {
+            "actionId": "list_messages",
+            "displayName": "List Messages",
+            "method": "GET",
+            "path": "/{space}/messages",
+            "pathParams": [
+                "space"
+            ],
+            "inputSchema": [
+                {
+                    "key": "space",
+                    "label": "Space Resource Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "pageSize",
+                    "label": "Page Size",
+                    "type": "NUMBER",
+                    "required": false,
+                    "defaultValue": 50,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "messages",
+                "nextPageToken"
+            ]
+        },
+        {
+            "actionId": "get_message",
+            "displayName": "Get Message",
+            "method": "GET",
+            "path": "/{name}",
+            "pathParams": [
+                "name"
+            ],
+            "inputSchema": [
+                {
+                    "key": "name",
+                    "label": "Message Resource Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "placeholder": "e.g. spaces/AAA/messages/BBB"
+                }
+            ],
+            "outputPaths": [
+                "name",
+                "text",
+                "createTime",
+                "sender"
+            ]
+        },
+        {
+            "actionId": "send_message",
+            "displayName": "Send Message",
+            "method": "POST",
+            "path": "/{space}/messages",
+            "pathParams": [
+                "space"
+            ],
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "inputSchema": [
+                {
+                    "key": "space",
+                    "label": "Space Resource Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "text",
+                    "label": "Message Text",
+                    "type": "TEXTAREA",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "threadKey",
+                    "label": "Thread Key",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true,
+                    "description": "Optional thread key to reply in a thread."
+                }
+            ],
+            "inputScript": "const body = { text: $inputs.text }; if ($inputs.threadKey) body.thread = { threadKey: $inputs.threadKey }; return body;",
+            "outputPaths": [
+                "name",
+                "text",
+                "createTime"
+            ]
+        },
+        {
+            "actionId": "update_message",
+            "displayName": "Update Message",
+            "method": "PATCH",
+            "path": "/{name}",
+            "pathParams": [
+                "name"
+            ],
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "inputSchema": [
+                {
+                    "key": "name",
+                    "label": "Message Resource Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "text",
+                    "label": "Message Text",
+                    "type": "TEXTAREA",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "updateMask",
+                    "label": "Update Mask",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": false,
+                    "defaultValue": "text"
+                }
+            ],
+            "inputScript": "return { text: $inputs.text };",
+            "outputPaths": [
+                "name",
+                "text",
+                "updateTime"
+            ]
+        },
+        {
+            "actionId": "delete_message",
+            "displayName": "Delete Message",
+            "method": "DELETE",
+            "path": "/{name}",
+            "pathParams": [
+                "name"
+            ],
+            "inputSchema": [
+                {
+                    "key": "name",
+                    "label": "Message Resource Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": []
+        }
+    ],
+    "connectionSetup": {
+        "description": "Connect Google Chat to read and post messages in spaces from workflows.",
+        "buttonLabel": "Sign in with Google Chat"
+    },
+    "verifyAction": {
+        "method": "GET",
+        "path": "/spaces?pageSize=1"
+    }
+}

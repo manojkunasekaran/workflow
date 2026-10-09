@@ -1,350 +1,350 @@
 {
-    "connectorId":  "hubspot",
-    "displayName":  "HubSpot",
-    "icon":  "https://cdn.simpleicons.org/hubspot/FF7A59",
-    "category":  "CRM",
+    "connectorId": "hubspot",
+    "displayName": "HubSpot",
+    "icon": "https://api.iconify.design/logos/hubspot.svg",
+    "category": "CRM",
     "taskType": "CONNECTOR_TASK",
-    "baseUrl":  "https://api.hubapi.com",
-    "authType":  "BEARER_TOKEN",
-    "credentialGuide":  {
-                            "fields":  [
-                                           {
-                                               "key":  "token",
-                                               "label":  "Private App Token",
-                                               "hint":  "HubSpot Settings → Integrations → Private Apps → Create/View Token",
-                                               "docUrl":  "https://developers.hubspot.com/docs/api/private-apps"
-                                           }
-                                       ]
-                        },
-    "actions":  [
-                    {
-                        "actionId":  "get_contact",
-                        "displayName":  "Get Contact",
-                        "method":  "GET",
-                        "path":  "/crm/v3/objects/contacts/{contactId}",
-                        "pathParams":  [
-                                           "contactId"
-                                       ],
-                        "inputSchema":  [
-                                            {
-                                                "key":  "contactId",
-                                                "label":  "Contact ID",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "properties",
-                                                "label":  "Properties to Fetch (comma-separated)",
-                                                "type":  "STRING",
-                                                "required":  false,
-                                                "supportsExpression":  false,
-                                                "placeholder":  "e.g. email,firstname,lastname,phone"
-                                            }
-                                        ],
-                        "outputPaths":  [
-                                            "id",
-                                            "properties.email",
-                                            "properties.firstname",
-                                            "properties.lastname"
-                                        ]
-                    },
-                    {
-                        "actionId":  "create_contact",
-                        "displayName":  "Create Contact",
-                        "method":  "POST",
-                        "path":  "/crm/v3/objects/contacts",
-                        "fixedHeaders":  {
-                                             "Content-Type":  "application/json"
-                                         },
-                        "inputSchema":  [
-                                            {
-                                                "key":  "email",
-                                                "label":  "Email",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "firstname",
-                                                "label":  "First Name",
-                                                "type":  "STRING",
-                                                "required":  false,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "lastname",
-                                                "label":  "Last Name",
-                                                "type":  "STRING",
-                                                "required":  false,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "phone",
-                                                "label":  "Phone",
-                                                "type":  "STRING",
-                                                "required":  false,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "company",
-                                                "label":  "Company Name",
-                                                "type":  "STRING",
-                                                "required":  false,
-                                                "supportsExpression":  true
-                                            }
-                                        ],
-                        "outputPaths":  [
-                                            "id",
-                                            "properties.email",
-                                            "properties.firstname",
-                                            "properties.hs_object_id"
-                                        ]
-                    },
-                    {
-                        "actionId":  "update_contact",
-                        "displayName":  "Update Contact",
-                        "method":  "PATCH",
-                        "path":  "/crm/v3/objects/contacts/{contactId}",
-                        "pathParams":  [
-                                           "contactId"
-                                       ],
-                        "fixedHeaders":  {
-                                             "Content-Type":  "application/json"
-                                         },
-                        "inputSchema":  [
-                                            {
-                                                "key":  "contactId",
-                                                "label":  "Contact ID",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "properties",
-                                                "label":  "Properties to Update (JSON Object)",
-                                                "type":  "JSON",
-                                                "required":  true,
-                                                "supportsExpression":  true,
-                                                "description":  "e.g. {\"phone\": \"123-456\", \"lifecyclestage\": \"customer\"}"
-                                            }
-                                        ],
-                        "outputPaths":  [
-                                            "id",
-                                            "properties"
-                                        ]
-                    },
-                    {
-                        "actionId":  "search_contacts",
-                        "displayName":  "Search Contacts",
-                        "method":  "POST",
-                        "path":  "/crm/v3/objects/contacts/search",
-                        "fixedHeaders":  {
-                                             "Content-Type":  "application/json"
-                                         },
-                        "inputSchema":  [
-                                            {
-                                                "key":  "filterGroups",
-                                                "label":  "Filter Groups (JSON Array)",
-                                                "type":  "JSON",
-                                                "required":  true,
-                                                "supportsExpression":  true,
-                                                "description":  "HubSpot filter groups to find matching contacts"
-                                            },
-                                            {
-                                                "key":  "limit",
-                                                "label":  "Limit",
-                                                "type":  "NUMBER",
-                                                "required":  false,
-                                                "supportsExpression":  true,
-                                                "defaultValue":  10
-                                            }
-                                        ],
-                        "outputPaths":  [
-                                            "total",
-                                            "results"
-                                        ]
-                    },
-                    {
-                        "actionId":  "create_deal",
-                        "displayName":  "Create Deal",
-                        "method":  "POST",
-                        "path":  "/crm/v3/objects/deals",
-                        "fixedHeaders":  {
-                                             "Content-Type":  "application/json"
-                                         },
-                        "inputSchema":  [
-                                            {
-                                                "key":  "dealname",
-                                                "label":  "Deal Name",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "amount",
-                                                "label":  "Deal Amount",
-                                                "type":  "NUMBER",
-                                                "required":  false,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "dealstage",
-                                                "label":  "Deal Stage",
-                                                "type":  "STRING",
-                                                "required":  false,
-                                                "supportsExpression":  true,
-                                                "placeholder":  "e.g. appointmentscheduled"
-                                            },
-                                            {
-                                                "key":  "closedate",
-                                                "label":  "Close Date (YYYY-MM-DD)",
-                                                "type":  "STRING",
-                                                "required":  false,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "pipeline",
-                                                "label":  "Pipeline",
-                                                "type":  "STRING",
-                                                "required":  false,
-                                                "supportsExpression":  true,
-                                                "defaultValue":  "default"
-                                            }
-                                        ],
-                        "outputPaths":  [
-                                            "id",
-                                            "properties.dealname",
-                                            "properties.dealstage",
-                                            "properties.amount"
-                                        ]
-                    },
-                    {
-                        "actionId":  "get_deal",
-                        "displayName":  "Get Deal",
-                        "method":  "GET",
-                        "path":  "/crm/v3/objects/deals/{dealId}",
-                        "pathParams":  [
-                                           "dealId"
-                                       ],
-                        "inputSchema":  [
-                                            {
-                                                "key":  "dealId",
-                                                "label":  "Deal ID",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "properties",
-                                                "label":  "Properties to Fetch (comma-separated)",
-                                                "type":  "STRING",
-                                                "required":  false,
-                                                "supportsExpression":  false
-                                            }
-                                        ],
-                        "outputPaths":  [
-                                            "id",
-                                            "properties.dealname",
-                                            "properties.dealstage",
-                                            "properties.amount",
-                                            "properties.closedate"
-                                        ]
-                    },
-                    {
-                        "actionId":  "create_company",
-                        "displayName":  "Create Company",
-                        "method":  "POST",
-                        "path":  "/crm/v3/objects/companies",
-                        "fixedHeaders":  {
-                                             "Content-Type":  "application/json"
-                                         },
-                        "inputSchema":  [
-                                            {
-                                                "key":  "name",
-                                                "label":  "Company Name",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "domain",
-                                                "label":  "Website Domain",
-                                                "type":  "STRING",
-                                                "required":  false,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "industry",
-                                                "label":  "Industry",
-                                                "type":  "STRING",
-                                                "required":  false,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "phone",
-                                                "label":  "Phone",
-                                                "type":  "STRING",
-                                                "required":  false,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "city",
-                                                "label":  "City",
-                                                "type":  "STRING",
-                                                "required":  false,
-                                                "supportsExpression":  true
-                                            }
-                                        ],
-                        "outputPaths":  [
-                                            "id",
-                                            "properties.name",
-                                            "properties.domain"
-                                        ]
-                    },
-                    {
-                        "actionId":  "create_note",
-                        "displayName":  "Create Note",
-                        "method":  "POST",
-                        "path":  "/crm/v3/objects/notes",
-                        "fixedHeaders":  {
-                                             "Content-Type":  "application/json"
-                                         },
-                        "inputSchema":  [
-                                            {
-                                                "key":  "hs_note_body",
-                                                "label":  "Note Body",
-                                                "type":  "TEXTAREA",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "hs_timestamp",
-                                                "label":  "Timestamp (epoch ms)",
-                                                "type":  "STRING",
-                                                "required":  false,
-                                                "supportsExpression":  true
-                                            }
-                                        ],
-                        "outputPaths":  [
-                                            "id",
-                                            "properties.hs_note_body",
-                                            "properties.hs_createdate"
-                                        ]
-                    }
-                ],
-    "connectionSetup":  {
-                            "fields":  [
-                                           {
-                                               "label":  "API Key",
-                                               "key":  "token",
-                                               "sensitive":  true,
-                                               "hint":  "HubSpot Settings → Integrations → Private Apps → Create/View Token"
-                                           }
-                                       ]
-                        },
-    "verifyAction":  {
-                         "method":  "GET",
-                         "path":  "/crm/v3/objects/contacts/{contactId}"
-                     }
+    "baseUrl": "https://api.hubapi.com",
+    "authType": "BEARER_TOKEN",
+    "credentialGuide": {
+        "fields": [
+            {
+                "key": "token",
+                "label": "Private App Token",
+                "hint": "HubSpot Settings \u2192 Integrations \u2192 Private Apps \u2192 Create/View Token",
+                "docUrl": "https://developers.hubspot.com/docs/api/private-apps"
+            }
+        ]
+    },
+    "actions": [
+        {
+            "actionId": "get_contact",
+            "displayName": "Get Contact",
+            "method": "GET",
+            "path": "/crm/v3/objects/contacts/{contactId}",
+            "pathParams": [
+                "contactId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "contactId",
+                    "label": "Contact ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "properties",
+                    "label": "Properties to Fetch (comma-separated)",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": false,
+                    "placeholder": "e.g. email,firstname,lastname,phone"
+                }
+            ],
+            "outputPaths": [
+                "id",
+                "properties.email",
+                "properties.firstname",
+                "properties.lastname"
+            ]
+        },
+        {
+            "actionId": "create_contact",
+            "displayName": "Create Contact",
+            "method": "POST",
+            "path": "/crm/v3/objects/contacts",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "inputSchema": [
+                {
+                    "key": "email",
+                    "label": "Email",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "firstname",
+                    "label": "First Name",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "lastname",
+                    "label": "Last Name",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "phone",
+                    "label": "Phone",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "company",
+                    "label": "Company Name",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "id",
+                "properties.email",
+                "properties.firstname",
+                "properties.hs_object_id"
+            ]
+        },
+        {
+            "actionId": "update_contact",
+            "displayName": "Update Contact",
+            "method": "PATCH",
+            "path": "/crm/v3/objects/contacts/{contactId}",
+            "pathParams": [
+                "contactId"
+            ],
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "inputSchema": [
+                {
+                    "key": "contactId",
+                    "label": "Contact ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "properties",
+                    "label": "Properties to Update (JSON Object)",
+                    "type": "JSON",
+                    "required": true,
+                    "supportsExpression": true,
+                    "description": "e.g. {\"phone\": \"123-456\", \"lifecyclestage\": \"customer\"}"
+                }
+            ],
+            "outputPaths": [
+                "id",
+                "properties"
+            ]
+        },
+        {
+            "actionId": "search_contacts",
+            "displayName": "Search Contacts",
+            "method": "POST",
+            "path": "/crm/v3/objects/contacts/search",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "inputSchema": [
+                {
+                    "key": "filterGroups",
+                    "label": "Filter Groups (JSON Array)",
+                    "type": "JSON",
+                    "required": true,
+                    "supportsExpression": true,
+                    "description": "HubSpot filter groups to find matching contacts"
+                },
+                {
+                    "key": "limit",
+                    "label": "Limit",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 10
+                }
+            ],
+            "outputPaths": [
+                "total",
+                "results"
+            ]
+        },
+        {
+            "actionId": "create_deal",
+            "displayName": "Create Deal",
+            "method": "POST",
+            "path": "/crm/v3/objects/deals",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "inputSchema": [
+                {
+                    "key": "dealname",
+                    "label": "Deal Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "amount",
+                    "label": "Deal Amount",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "dealstage",
+                    "label": "Deal Stage",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true,
+                    "placeholder": "e.g. appointmentscheduled"
+                },
+                {
+                    "key": "closedate",
+                    "label": "Close Date (YYYY-MM-DD)",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "pipeline",
+                    "label": "Pipeline",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": "default"
+                }
+            ],
+            "outputPaths": [
+                "id",
+                "properties.dealname",
+                "properties.dealstage",
+                "properties.amount"
+            ]
+        },
+        {
+            "actionId": "get_deal",
+            "displayName": "Get Deal",
+            "method": "GET",
+            "path": "/crm/v3/objects/deals/{dealId}",
+            "pathParams": [
+                "dealId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "dealId",
+                    "label": "Deal ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "properties",
+                    "label": "Properties to Fetch (comma-separated)",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": false
+                }
+            ],
+            "outputPaths": [
+                "id",
+                "properties.dealname",
+                "properties.dealstage",
+                "properties.amount",
+                "properties.closedate"
+            ]
+        },
+        {
+            "actionId": "create_company",
+            "displayName": "Create Company",
+            "method": "POST",
+            "path": "/crm/v3/objects/companies",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "inputSchema": [
+                {
+                    "key": "name",
+                    "label": "Company Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "domain",
+                    "label": "Website Domain",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "industry",
+                    "label": "Industry",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "phone",
+                    "label": "Phone",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "city",
+                    "label": "City",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "id",
+                "properties.name",
+                "properties.domain"
+            ]
+        },
+        {
+            "actionId": "create_note",
+            "displayName": "Create Note",
+            "method": "POST",
+            "path": "/crm/v3/objects/notes",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "inputSchema": [
+                {
+                    "key": "hs_note_body",
+                    "label": "Note Body",
+                    "type": "TEXTAREA",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "hs_timestamp",
+                    "label": "Timestamp (epoch ms)",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "id",
+                "properties.hs_note_body",
+                "properties.hs_createdate"
+            ]
+        }
+    ],
+    "connectionSetup": {
+        "fields": [
+            {
+                "label": "API Key",
+                "key": "token",
+                "sensitive": true,
+                "hint": "HubSpot Settings \u2192 Integrations \u2192 Private Apps \u2192 Create/View Token"
+            }
+        ]
+    },
+    "verifyAction": {
+        "method": "GET",
+        "path": "/crm/v3/objects/contacts/{contactId}"
+    }
 }

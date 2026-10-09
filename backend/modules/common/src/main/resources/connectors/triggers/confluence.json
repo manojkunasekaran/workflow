@@ -1,0 +1,35 @@
+{
+  "connectorId": "confluence",
+  "triggers": [
+    {
+      "triggerId": "new_pages",
+      "displayName": "New pages",
+      "description": "Poll Confluence pages.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "cloudId",
+          "label": "Cloud ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://api.atlassian.com/ex/confluence/{cloudId}/wiki/api/v2/pages?limit=50"
+          },
+          "detection": {
+            "itemsPath": "$.results",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}
