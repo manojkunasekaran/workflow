@@ -27,7 +27,10 @@ This allows the platform to present pre-built integrations similarly to platform
 
 ### 2. Integration Detail Page (`/integrations/:id`)
 * **Header**: Displays integration metadata and lifecycle action buttons (`Publish`, `Deprecate`) based on the current status.
+* **Tabs**: **Use Cases** and **Insights**.
 * **Use Cases Grid**: Lists all workflows assigned to this integration. Each use case card features a "Use this" CTA.
+* **Insights**: Summary KPIs (total runs, success rate, failed runs, use case count) and a per–use-case breakdown table. **View insights** opens a side panel with use-case metrics and the 10 most recent runs (links to execution detail). Counts are derived from `WorkflowExecution` records for assigned workflows; studio test runs (`targetTaskId` set) are excluded.
+* **Workflow Studio**: When a workflow is assigned to an integration, **View use case insights** is available from the header menu (⋮).
 
 ### 3. Workflow Studio Extension
 * **Assign to Integration**: A new action (Puzzle icon) in the Studio Header.
@@ -46,6 +49,18 @@ This allows the platform to present pre-built integrations similarly to platform
   * `POST /integrations/{id}/deprecate` - Deprecate an integration.
   * `POST /integrations/{id}/use-cases` - Assign a workflow to an integration.
   * `DELETE /integrations/{id}/use-cases/{workflowId}` - Remove a workflow from an integration.
+  * `GET /integrations/{id}/insights` - Run volume and reliability metrics for the integration and each use case.
+  * `GET /integrations/{id}/use-cases/{workflowId}/insights` - Metrics and recent runs for a single use case (side panel in UI).
+  * `GET /integrations/{id}/insights/export` - CSV export of integration summary and per–use-case metrics (UTF-8 with BOM).
+  * `GET /integrations/{id}/use-cases/{workflowId}/insights/export` - CSV for one use case (summary row + up to 10 recent runs).
+  * `POST /integrations/{id}/insights/retry-failed` - Re-queue failed executions (optional `workflowDefinitionId` to scope to one use case; bounded batch, most recent first; same trigger inputs as each failed run).
+* **Insights UI**: Integration tab actions apply to the whole integration; the use-case insights side panel has **Export** and **Retry failed** scoped to that workflow.
+
+## Insights — future (not implemented)
+* Event stream and dedicated analytics store for trends and date-range reporting.
+* Pre-aggregated counters or scheduled rollups at high volume.
+* Scheduled **Reports** (export/PDF) and embedded observability dashboards.
+* Denormalized `integrationId` on executions for cross-cutting queries without joining definitions.
 
 ## Out of Scope (Phase 2 & Beyond)
 * **Embedded Configuration Portal**: End-user (customer) facing install portal.

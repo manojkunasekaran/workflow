@@ -1,18 +1,25 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { integrationApi } from '@/api/integrationApi';
-import type { Integration, UseCase } from '@/types/api';
+import type { Integration, IntegrationInsights, UseCase } from '@/types/api';
 import { Button } from '@/components/ui/button';
 import { ErrorBanner } from '@/components/ui/error-banner';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { PageHeader } from '@/layouts/PageHeader';
 import { PageBreadcrumb } from '@/layouts/PageBreadcrumb';
-import { ArrowRight, Puzzle, Loader2, Plus, Pencil } from 'lucide-react';
+import { ArrowRight, Puzzle, Loader2, Plus, Pencil, RefreshCw, Download, RotateCcw } from 'lucide-react';
+import { downloadBlob } from '@/features/integrations/lib/downloadBlob';
 import { ConnectorIconDisplay } from './components/ConnectorIconDisplay';
 import { UseCaseCard } from './components/UseCaseCard';
 import { AddUseCaseDialog } from './components/AddUseCaseDialog';
 import { EditIntegrationDialog } from './components/EditIntegrationDialog';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+    IntegrationInsightsTab,
+    type IntegrationInsightsTabHandle,
+} from './components/IntegrationInsightsTab';
+import { UseCaseInsightsSheet } from './components/UseCaseInsightsSheet';
 import { cn } from '@/lib/utils';
 
 export default function IntegrationDetailPage() {
@@ -27,6 +34,22 @@ export default function IntegrationDetailPage() {
     const [editIntegrationOpen, setEditIntegrationOpen] = useState(false);
     const [useCaseToRemove, setUseCaseToRemove] = useState<UseCase | null>(null);
     const [isRemoving, setIsRemoving] = useState(false);
+    const [activeTab, setActiveTab] = useState('use-cases');
+    const [insightsLoading, setInsightsLoading] = useState(false);
+    const insightsTabRef = useRef<IntegrationInsightsTabHandle>(null);
+    const [useCaseInsightsOpen, setUseCaseInsightsOpen] = useState(false);
+    const [useCaseInsightsWorkflowId, setUseCaseInsightsWorkflowId] = useState<string | null>(null);
+    const [insightsSnapshot, setInsightsSnapshot] = useState<IntegrationInsights | null>(null);
+    const [isExportingInsights, setIsExportingInsights] = useState(false);
+    const [retryFailedOpen, setRetryFailedOpen] = useState(false);
+    const [isRetryingFailed, setIsRetryingFailed] = useState(false);
+    const [insightsActionMessage, setInsightsActionMessage] = useState<string | null>(null);
+    const [insightsActionError, setInsightsActionError] = useState<string | null>(null);
+
+    const openUseCaseInsights = (workflowDefinitionId: string) => {
+        setUseCaseInsightsWorkflowId(workflowDefinitionId);
+        setUseCaseInsightsOpen(true);
+    };
 
     const loadData = async () => {
         if (!id) return;
@@ -97,6 +120,53 @@ export default function IntegrationDetailPage() {
         e?.preventDefault();
         navigate('/integrations');
     };
+
+    const handleExportInsights = async () => {
+        if (!id) return;
+        setIsExportingInsights(true);
+        setInsightsActionError(null);
+        try {
+            const { blob, filename } = await integrationApi.exportInsightsCsv(id);
+            downloadBlob(blob, filename);
+            setInsightsActionMessage('Insights exported as CSV.');
+        } catch {
+            setInsightsActionError("We couldn't export insights right now.");
+        } finally {
+            setIsExportingInsights(false);
+        }
+    };
+
+    const confirmRetryFailedExecutions = async () => {
+        if (!id) return;
+        setIsRetryingFailed(true);
+        setInsightsActionError(null);
+        try {
+            const result = await integrationApi.retryFailedExecutions(id);
+            if (result.queuedCount === 0 && result.eligibleFailedExecutions === 0) {
+                setInsightsActionMessage('No failed runs to retry.');
+            } else if (result.queuedCount === 0) {
+                setInsightsActionError('Failed runs could not be re-queued. Check server logs for details.');
+            } else {
+                const capNote = result.batchLimitApplied
+                    ? ` (batch limit ${result.batchLimit}; refresh metrics to see updates)`
+                    : '';
+                setInsightsActionMessage(
+                    `Re-queued ${result.queuedCount} failed run${result.queuedCount === 1 ? '' : 's'}${capNote}.`,
+                );
+            }
+            insightsTabRef.current?.refresh();
+        } catch {
+            setInsightsActionError("We couldn't retry failed runs right now.");
+        } finally {
+            setIsRetryingFailed(false);
+            setRetryFailedOpen(false);
+        }
+    };
+
+    const handleInsightsLoaded = useCallback((data: IntegrationInsights) => {
+        setInsightsSnapshot(data);
+        setInsightsActionMessage(null);
+    }, []);
 
     if (isLoading) {
         return (
@@ -210,31 +280,165 @@ export default function IntegrationDetailPage() {
                     </div>
                 </div>
                 
-                <div>
-                    <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-lg font-semibold">Use Cases ({useCases.length})</h2>
-                        <Button size="sm" variant="outline" onClick={() => setAddUseCaseOpen(true)}>
-                            <Plus className="mr-2 h-4 w-4" />
-                            Add Use Case
-                        </Button>
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                    <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                        <TabsList>
+                            <TabsTrigger value="use-cases" data-testid="integration-tab-use-cases">
+                                Use Cases ({useCases.length})
+                            </TabsTrigger>
+                            <TabsTrigger value="insights" data-testid="integration-tab-insights">
+                                Insights
+                            </TabsTrigger>
+                        </TabsList>
+                        {activeTab === 'use-cases' ? (
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                data-testid="integration-add-use-case-btn"
+                                onClick={() => setAddUseCaseOpen(true)}
+                            >
+                                <Plus className="mr-2 h-4 w-4" />
+                                Add Use Case
+                            </Button>
+                        ) : (
+                            <div className="flex flex-wrap items-center gap-2">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    data-testid="integration-insights-export"
+                                    onClick={() => void handleExportInsights()}
+                                    disabled={isExportingInsights || insightsLoading}
+                                >
+                                    {isExportingInsights ? (
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <Download className="mr-2 h-4 w-4" />
+                                    )}
+                                    Export
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    data-testid="integration-insights-retry-failed"
+                                    onClick={() => setRetryFailedOpen(true)}
+                                    disabled={
+                                        insightsLoading
+                                        || isRetryingFailed
+                                        || insightsSnapshot == null
+                                        || insightsSnapshot.failedRuns === 0
+                                    }
+                                >
+                                    <RotateCcw className="mr-2 h-4 w-4" />
+                                    Retry failed
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    data-testid="integration-insights-refresh"
+                                    onClick={() => insightsTabRef.current?.refresh()}
+                                    disabled={insightsLoading}
+                                >
+                                    {insightsLoading ? (
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <RefreshCw className="mr-2 h-4 w-4" />
+                                    )}
+                                    Refresh
+                                </Button>
+                            </div>
+                        )}
                     </div>
-                    <div className="grid gap-2">
-                        {useCases.map(uc => <UseCaseCard key={uc.id} useCase={uc} onView={handleViewUseCase} onRemove={handleRemoveUseCase} />)}
-                    </div>
-                    {useCases.length === 0 && !isLoading && (
-                        <div className="flex flex-col items-center justify-center py-12 px-4 border border-dashed rounded-lg text-center bg-muted/20 text-muted-foreground">
-                            <Puzzle className="h-10 w-10 opacity-20 mb-3" />
-                            <p className="text-sm">No use cases yet. Assign a workflow from the Workflow Studio.</p>
+
+                    <TabsContent value="use-cases">
+                        <div>
+                            <div className="grid gap-2">
+                                {useCases.map(uc => (
+                                    <UseCaseCard
+                                        key={uc.id}
+                                        useCase={uc}
+                                        onView={handleViewUseCase}
+                                        onViewInsights={() => openUseCaseInsights(uc.id)}
+                                        onRemove={handleRemoveUseCase}
+                                    />
+                                ))}
+                            </div>
+                            {useCases.length === 0 && !isLoading && (
+                                <div className="flex flex-col items-center justify-center py-12 px-4 border border-dashed rounded-lg text-center bg-muted/20 text-muted-foreground">
+                                    <Puzzle className="h-10 w-10 opacity-20 mb-3" />
+                                    <p className="text-sm">No use cases yet. Assign a workflow from the Workflow Studio.</p>
+                                </div>
+                            )}
                         </div>
-                    )}
-                </div>
+                    </TabsContent>
+
+                    <TabsContent value="insights">
+                        {insightsActionError ? (
+                            <div className="mb-4">
+                                <ErrorBanner message={insightsActionError} />
+                            </div>
+                        ) : null}
+                        {insightsActionMessage ? (
+                            <p
+                                className="mb-4 text-sm text-muted-foreground"
+                                data-testid="integration-insights-action-message"
+                            >
+                                {insightsActionMessage}
+                            </p>
+                        ) : null}
+                        {id ? (
+                            <IntegrationInsightsTab
+                                ref={insightsTabRef}
+                                integrationId={id}
+                                onLoadingChange={setInsightsLoading}
+                                onInsightsLoaded={handleInsightsLoaded}
+                                onViewUseCaseInsights={openUseCaseInsights}
+                            />
+                        ) : null}
+                    </TabsContent>
+                </Tabs>
             </div>
+
+            {id && useCaseInsightsWorkflowId ? (
+                <UseCaseInsightsSheet
+                    integrationId={id}
+                    workflowDefinitionId={useCaseInsightsWorkflowId}
+                    open={useCaseInsightsOpen}
+                    onOpenChange={setUseCaseInsightsOpen}
+                    onIntegrationInsightsRefresh={() => insightsTabRef.current?.refresh()}
+                />
+            ) : null}
 
             <AddUseCaseDialog
                 open={addUseCaseOpen}
                 onClose={() => setAddUseCaseOpen(false)}
                 integrationId={id ?? ''}
                 onAdded={() => { void loadData(); }}
+            />
+
+            <ConfirmDialog
+                open={retryFailedOpen}
+                onOpenChange={(open) => !open && !isRetryingFailed && setRetryFailedOpen(open)}
+                title="Retry failed runs"
+                description={
+                    <>
+                        Re-queue failed workflow executions for this integration using the same trigger inputs as each
+                        failed run. Studio test runs are excluded. The server processes the most recent failures first,
+                        up to its configured batch limit per request.
+                        {insightsSnapshot && insightsSnapshot.failedRuns > 0 ? (
+                            <>
+                                {' '}
+                                Current failed run count:{' '}
+                                <strong>{insightsSnapshot.failedRuns}</strong>.
+                            </>
+                        ) : null}
+                    </>
+                }
+                confirmLabel="Retry failed"
+                isConfirming={isRetryingFailed}
+                onConfirm={confirmRetryFailedExecutions}
             />
 
             <ConfirmDialog

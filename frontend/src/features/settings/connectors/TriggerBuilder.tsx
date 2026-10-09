@@ -22,6 +22,12 @@ import {
 } from '@/components/ui/dialog';
 import { Plus, Trash2, Settings2 } from 'lucide-react';
 import InputSchemaBuilder from './InputSchemaBuilder';
+import {
+    ConnectorPresetListToolbar,
+    connectorPresetListClassName,
+    type ConnectorPresetViewMode,
+} from './ConnectorPresetListToolbar';
+import { cn } from '@/lib/utils';
 
 const TRIGGER_TYPE_STYLES: Record<string, string> = {
     POLL: 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20',
@@ -74,12 +80,14 @@ function emptyTrigger(triggerType: 'POLL' | 'WEBHOOK'): ConnectorTrigger {
 interface TriggerBuilderProps {
     triggers: ConnectorTrigger[];
     onChange: (triggers: ConnectorTrigger[]) => void;
+    readOnly?: boolean;
 }
 
-export default function TriggerBuilder({ triggers, onChange }: TriggerBuilderProps) {
+export default function TriggerBuilder({ triggers, onChange, readOnly = false }: TriggerBuilderProps) {
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
     const [editingTrigger, setEditingTrigger] = useState<ConnectorTrigger | null>(null);
     const [confirmDeleteIndex, setConfirmDeleteIndex] = useState<number | null>(null);
+    const [viewMode, setViewMode] = useState<ConnectorPresetViewMode>('list');
 
     const openCreate = () => {
         setEditingTrigger(emptyTrigger('POLL'));
@@ -155,33 +163,52 @@ export default function TriggerBuilder({ triggers, onChange }: TriggerBuilderPro
     const pollDetection = editingTrigger?.preset?.poll?.detection;
     const webhookPreset = editingTrigger?.preset?.webhook;
 
+    const triggerCount = triggers?.length || 0;
+
     return (
         <div className="space-y-4">
-            <div className="flex flex-wrap justify-between items-center gap-3">
-                <div>
-                    <h3 className="text-sm font-medium">Triggers ({(triggers?.length || 0)})</h3>
-                    <p className="text-xs text-muted-foreground">
-                        Presets shown in Studio when users configure poll or app-register triggers.
-                    </p>
-                </div>
-                <Button variant="outline" size="sm" onClick={openCreate} className="h-8 shrink-0">
-                    <Plus className="h-3.5 w-3.5 mr-1.5" /> Add trigger
-                </Button>
-            </div>
+            <ConnectorPresetListToolbar
+                title="Triggers"
+                count={triggerCount}
+                description={
+                    readOnly
+                        ? 'Trigger presets available in Workflow Studio.'
+                        : 'Presets shown in Studio when users configure poll or app-register triggers.'
+                }
+                viewMode={viewMode}
+                onViewModeChange={setViewMode}
+                showViewToggle
+                actions={
+                    !readOnly ? (
+                        <Button variant="outline" size="sm" onClick={openCreate} className="h-8 shrink-0">
+                            <Plus className="h-3.5 w-3.5 mr-1.5" /> Add trigger
+                        </Button>
+                    ) : undefined
+                }
+            />
 
-            {(triggers?.length || 0) === 0 ? (
+            {triggerCount === 0 ? (
                 <div className="p-8 border border-dashed rounded-lg text-center bg-muted/20">
                     <p className="text-sm text-muted-foreground">No trigger presets yet.</p>
                 </div>
             ) : (
-                <div className="grid gap-2">
+                <div className={connectorPresetListClassName(viewMode)}>
                     {triggers.map((trigger, index) => (
                         <div
                             key={index}
-                            className="flex items-center justify-between p-3 border rounded-lg bg-card hover:border-primary/30 transition-colors group cursor-pointer min-w-0"
-                            onClick={() => openEdit(index)}
+                            className={cn(
+                                'border rounded-lg bg-card transition-colors min-w-0',
+                                viewMode === 'grid' ? 'flex flex-col gap-3 p-4' : 'flex items-center justify-between p-3',
+                                readOnly ? '' : 'hover:border-primary/30 group cursor-pointer',
+                            )}
+                            onClick={readOnly ? undefined : () => openEdit(index)}
                         >
-                            <div className="flex items-center gap-3 min-w-0 overflow-hidden">
+                            <div
+                                className={cn(
+                                    'min-w-0 overflow-hidden',
+                                    viewMode === 'grid' ? 'flex flex-col gap-2' : 'flex items-center gap-3',
+                                )}
+                            >
                                 <span
                                     className={`px-2 py-0.5 rounded text-[10px] font-bold tracking-wider shrink-0 ${
                                         TRIGGER_TYPE_STYLES[trigger.triggerType] || TRIGGER_TYPE_STYLES.POLL
@@ -201,7 +228,15 @@ export default function TriggerBuilder({ triggers, onChange }: TriggerBuilderPro
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-4">
+                            {!readOnly ? (
+                            <div
+                                className={cn(
+                                    'flex items-center gap-1 shrink-0 transition-opacity',
+                                    viewMode === 'grid'
+                                        ? 'opacity-100 pt-1 border-t border-border'
+                                        : 'opacity-0 group-hover:opacity-100 ml-4',
+                                )}
+                            >
                                 {confirmDeleteIndex === index ? (
                                     <>
                                         <Button
@@ -242,11 +277,13 @@ export default function TriggerBuilder({ triggers, onChange }: TriggerBuilderPro
                                     </>
                                 )}
                             </div>
+                            ) : null}
                         </div>
                     ))}
                 </div>
             )}
 
+            {!readOnly ? (
             <Dialog open={editingIndex !== null} onOpenChange={(open) => !open && closeEdit()}>
                 <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col p-0">
                     <DialogHeader className="px-6 py-4 border-b shrink-0">
@@ -512,6 +549,7 @@ export default function TriggerBuilder({ triggers, onChange }: TriggerBuilderPro
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+            ) : null}
         </div>
     );
 }
