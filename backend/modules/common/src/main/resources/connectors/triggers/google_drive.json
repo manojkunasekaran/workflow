@@ -1,0 +1,53 @@
+{
+  "connectorId": "google_drive",
+  "triggers": [
+    {
+      "triggerId": "new_files",
+      "displayName": "New files",
+      "description": "Triggers when new files appear in Drive (poll).",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "q",
+          "label": "Search Query",
+          "type": "STRING",
+          "required": false,
+          "supportsExpression": false,
+          "placeholder": "e.g. 'root' in parents and trashed=false"
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://www.googleapis.com/drive/v3/files?pageSize=50&orderBy=createdTime desc"
+          },
+          "detection": {
+            "itemsPath": "$.files",
+            "keyPaths": ["id"]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "file_changed",
+      "displayName": "File metadata changed",
+      "description": "Triggers when the file list response changes.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "RESPONSE_CHANGED",
+          "http": {
+            "method": "GET",
+            "url": "https://www.googleapis.com/drive/v3/files?pageSize=50&orderBy=modifiedTime desc"
+          },
+          "detection": {
+            "hashIgnorePaths": ["$.nextPageToken"]
+          }
+        }
+      }
+    }
+  ]
+}

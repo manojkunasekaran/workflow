@@ -1,0 +1,260 @@
+{
+    "displayName": "Intercom",
+    "icon": "https://api.iconify.design/logos/intercom-icon.svg",
+    "category": "Communication",
+    "baseUrl": "https://api.intercom.io",
+    "authType": "BEARER_TOKEN",
+    "credentialGuide": {
+        "fields": [
+            {
+                "key": "token",
+                "label": "Access Token"
+            }
+        ]
+    },
+    "connectionSetup": {
+        "fields": [
+            {
+                "label": "Access Token",
+                "key": "token",
+                "sensitive": true
+            }
+        ]
+    },
+    "verifyAction": {
+        "method": "GET",
+        "path": "/me"
+    },
+    "actions": [
+        {
+            "actionId": "list_contacts",
+            "displayName": "List Contacts",
+            "method": "GET",
+            "path": "/contacts",
+            "inputSchema": [
+                {
+                    "key": "per_page",
+                    "label": "Per Page",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 50
+                }
+            ],
+            "outputPaths": [
+                "data"
+            ]
+        },
+        {
+            "actionId": "get_contact",
+            "displayName": "Get Contact",
+            "method": "GET",
+            "path": "/contacts/{contactId}",
+            "pathParams": [
+                "contactId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "contactId",
+                    "label": "Contact ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "id",
+                "email",
+                "name"
+            ]
+        },
+        {
+            "actionId": "create_contact",
+            "displayName": "Create Contact",
+            "method": "POST",
+            "path": "/contacts",
+            "inputSchema": [
+                {
+                    "key": "email",
+                    "label": "Email",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "name",
+                    "label": "Name",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "const b={role:'user',email:$inputs.email}; if($inputs.name) b.name=$inputs.name; return b;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "update_contact",
+            "displayName": "Update Contact",
+            "method": "PUT",
+            "path": "/contacts/{contactId}",
+            "pathParams": [
+                "contactId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "contactId",
+                    "label": "Contact ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "name",
+                    "label": "Name",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "email",
+                    "label": "Email",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "const b={}; if($inputs.name) b.name=$inputs.name; if($inputs.email) b.email=$inputs.email; return b;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "list_conversations",
+            "displayName": "List Conversations",
+            "method": "GET",
+            "path": "/conversations",
+            "inputSchema": [
+                {
+                    "key": "per_page",
+                    "label": "Per Page",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 20
+                }
+            ],
+            "outputPaths": [
+                "conversations"
+            ]
+        },
+        {
+            "actionId": "get_conversation",
+            "displayName": "Get Conversation",
+            "method": "GET",
+            "path": "/conversations/{conversationId}",
+            "pathParams": [
+                "conversationId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "conversationId",
+                    "label": "Conversation ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "id",
+                "state"
+            ]
+        },
+        {
+            "actionId": "reply_conversation",
+            "displayName": "Reply to Conversation",
+            "method": "POST",
+            "path": "/conversations/{conversationId}/reply",
+            "pathParams": [
+                "conversationId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "conversationId",
+                    "label": "Conversation ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "message",
+                    "label": "Message",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "messageType",
+                    "label": "Message Type",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": "comment"
+                }
+            ],
+            "inputScript": "return {message_type:$inputs.messageType||'comment',type:'admin',body:$inputs.message};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "conversation_id"
+            ]
+        },
+        {
+            "actionId": "create_message",
+            "displayName": "Create Message",
+            "method": "POST",
+            "path": "/messages",
+            "inputSchema": [
+                {
+                    "key": "fromType",
+                    "label": "From Type",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "defaultValue": "admin"
+                },
+                {
+                    "key": "body",
+                    "label": "Body",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "toContactId",
+                    "label": "To Contact ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return {from:{type:$inputs.fromType||'admin'},body:$inputs.body,to:{type:'contact',id:$inputs.toContactId}};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id"
+            ]
+        }
+    ],
+    "connectorId": "intercom",
+    "taskType": "CONNECTOR_TASK"
+}

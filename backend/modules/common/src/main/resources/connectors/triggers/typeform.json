@@ -1,0 +1,100 @@
+{
+  "connectorId": "typeform",
+  "triggers": [
+    {
+      "triggerId": "new_responses",
+      "displayName": "New responses",
+      "description": "Poll form responses.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "form_id",
+          "label": "Form ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://api.typeform.com/forms/{form_id}/responses?page_size=50"
+          },
+          "detection": {
+            "itemsPath": "$.items",
+            "keyPaths": [
+              "response_id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_forms",
+      "displayName": "New forms",
+      "description": "Poll forms.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://api.typeform.com/forms?page_size=50"
+          },
+          "detection": {
+            "itemsPath": "$.items",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "form_response_webhook",
+      "displayName": "Form response (webhook)",
+      "description": "Register a Typeform webhook for new responses.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {
+          "key": "form_id",
+          "label": "Form ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "tag",
+          "label": "Webhook Tag",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false,
+          "defaultValue": "workflow360"
+        }
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "PUT",
+            "url": "https://api.typeform.com/forms/{form_id}/webhooks/{tag}",
+            "body": "{\"url\":\"{{callbackUrl}}\",\"enabled\":true}"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://api.typeform.com/forms/{form_id}/webhooks/{tag}"
+          },
+          "subscriptionIdPath": "$.tag",
+          "inbound": {
+            "verificationMode": "NONE",
+            "eventIdPath": "$.event_id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,110 @@
+{
+  "connectorId": "microsoft_sharepoint",
+  "triggers": [
+    {
+      "triggerId": "new_list_items",
+      "displayName": "New list items",
+      "description": "Poll SharePoint list for new items.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "siteId",
+          "label": "Site ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "listId",
+          "label": "List ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://graph.microsoft.com/v1.0/sites/{siteId}/lists/{listId}/items?$top=50&$orderby=createdDateTime desc"
+          },
+          "detection": {
+            "itemsPath": "$.value",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "updated_list_items",
+      "displayName": "Updated list items",
+      "description": "Poll list items for updates.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "siteId",
+          "label": "Site ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "listId",
+          "label": "List ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "UPDATED",
+          "http": {
+            "method": "GET",
+            "url": "https://graph.microsoft.com/v1.0/sites/{siteId}/lists/{listId}/items?$top=50&$orderby=lastModifiedDateTime desc"
+          },
+          "detection": {
+            "itemsPath": "$.value",
+            "keyPaths": [
+              "id"
+            ],
+            "updateKeyPath": "lastModifiedDateTime"
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_site_drive_files",
+      "displayName": "New site drive files",
+      "description": "Poll site document library root.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "siteId",
+          "label": "Site ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://graph.microsoft.com/v1.0/sites/{siteId}/drive/root/children?$top=50&$orderby=createdDateTime desc"
+          },
+          "detection": {
+            "itemsPath": "$.value",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

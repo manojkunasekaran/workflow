@@ -1,0 +1,80 @@
+{
+  "connectorId": "rabbitmq",
+  "triggers": [
+    {
+      "triggerId": "queue_depth_changes",
+      "displayName": "Queue depth changes",
+      "description": "Poll queue stats.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "queue_name",
+          "label": "Queue Name",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "UPDATED",
+          "http": {
+            "method": "GET",
+            "url": "https://example.com:15672/api/queues/%2F/{queue_name}"
+          },
+          "detection": {
+            "itemsPath": "$",
+            "keyPaths": [
+              "name"
+            ],
+            "updateKeyPath": "messages"
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_connections",
+      "displayName": "New connections",
+      "description": "Poll connections.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://example.com:15672/api/connections"
+          },
+          "detection": {
+            "itemsPath": "$",
+            "keyPaths": [
+              "name"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_channels",
+      "displayName": "New channels",
+      "description": "Poll channels.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://example.com:15672/api/channels"
+          },
+          "detection": {
+            "itemsPath": "$",
+            "keyPaths": [
+              "name"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,96 @@
+{
+  "connectorId": "clickup",
+  "triggers": [
+    {
+      "triggerId": "new_tasks",
+      "displayName": "New tasks",
+      "description": "Poll tasks in a list.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "list_id",
+          "label": "List ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://api.clickup.com/api/v2/list/{list_id}/task"
+          },
+          "detection": {
+            "itemsPath": "$.tasks",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "updated_tasks",
+      "displayName": "Updated tasks",
+      "description": "Poll updated tasks.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "list_id",
+          "label": "List ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "UPDATED",
+          "http": {
+            "method": "GET",
+            "url": "https://api.clickup.com/api/v2/list/{list_id}/task"
+          },
+          "detection": {
+            "itemsPath": "$.tasks",
+            "keyPaths": [
+              "id"
+            ],
+            "updateKeyPath": "date_updated"
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_comments",
+      "displayName": "New comments",
+      "description": "Poll comments on a task.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "task_id",
+          "label": "Task ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://api.clickup.com/api/v2/task/{task_id}/comment"
+          },
+          "detection": {
+            "itemsPath": "$.comments",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

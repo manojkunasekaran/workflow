@@ -1,0 +1,260 @@
+{
+    "displayName": "ServiceNow",
+    "icon": "https://www.google.com/s2/favicons?domain=servicenow.com&sz=128",
+    "category": "ITSM",
+    "baseUrl": "https://instance.service-now.com/api/now",
+    "authType": "BASIC_AUTH",
+    "credentialGuide": {
+        "fields": [
+            {
+                "key": "username",
+                "label": "Username"
+            },
+            {
+                "key": "password",
+                "label": "Password"
+            },
+            {
+                "key": "baseUrl",
+                "label": "Instance Base URL",
+                "hint": "https://YOUR_INSTANCE.service-now.com/api/now"
+            }
+        ],
+        "description": "Clone and set baseUrl to your instance."
+    },
+    "connectionSetup": {
+        "fields": [
+            {
+                "label": "Username",
+                "key": "username",
+                "sensitive": false
+            },
+            {
+                "label": "Password",
+                "key": "password",
+                "sensitive": true
+            }
+        ]
+    },
+    "verifyAction": {
+        "method": "GET",
+        "path": "/table/sys_user?sysparm_limit=1"
+    },
+    "actions": [
+        {
+            "actionId": "list_incidents",
+            "displayName": "List Incidents",
+            "method": "GET",
+            "path": "/table/incident",
+            "inputSchema": [
+                {
+                    "key": "sysparm_limit",
+                    "label": "Limit",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 50
+                },
+                {
+                    "key": "sysparm_query",
+                    "label": "Encoded Query",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "result"
+            ]
+        },
+        {
+            "actionId": "get_incident",
+            "displayName": "Get Incident",
+            "method": "GET",
+            "path": "/table/incident/{sysId}",
+            "pathParams": [
+                "sysId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "sysId",
+                    "label": "Sys ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "result"
+            ]
+        },
+        {
+            "actionId": "create_incident",
+            "displayName": "Create Incident",
+            "method": "POST",
+            "path": "/table/incident",
+            "inputSchema": [
+                {
+                    "key": "short_description",
+                    "label": "Short Description",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "description",
+                    "label": "Description",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "urgency",
+                    "label": "Urgency",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": "3"
+                },
+                {
+                    "key": "impact",
+                    "label": "Impact",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": "3"
+                }
+            ],
+            "inputScript": "const b={short_description:$inputs.short_description}; if($inputs.description) b.description=$inputs.description; if($inputs.urgency) b.urgency=$inputs.urgency; if($inputs.impact) b.impact=$inputs.impact; return b;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "result.sys_id",
+                "result.number"
+            ]
+        },
+        {
+            "actionId": "update_incident",
+            "displayName": "Update Incident",
+            "method": "PATCH",
+            "path": "/table/incident/{sysId}",
+            "pathParams": [
+                "sysId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "sysId",
+                    "label": "Sys ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "fields",
+                    "label": "Fields JSON",
+                    "type": "JSON",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return typeof $inputs.fields==='string'?JSON.parse($inputs.fields):$inputs.fields;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "result.sys_id"
+            ]
+        },
+        {
+            "actionId": "delete_incident",
+            "displayName": "Delete Incident",
+            "method": "DELETE",
+            "path": "/table/incident/{sysId}",
+            "pathParams": [
+                "sysId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "sysId",
+                    "label": "Sys ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": []
+        },
+        {
+            "actionId": "list_users",
+            "displayName": "List Users",
+            "method": "GET",
+            "path": "/table/sys_user",
+            "inputSchema": [
+                {
+                    "key": "sysparm_limit",
+                    "label": "Limit",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 50
+                }
+            ],
+            "outputPaths": [
+                "result"
+            ]
+        },
+        {
+            "actionId": "create_task",
+            "displayName": "Create Task",
+            "method": "POST",
+            "path": "/table/sc_task",
+            "inputSchema": [
+                {
+                    "key": "short_description",
+                    "label": "Short Description",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "description",
+                    "label": "Description",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return {short_description:$inputs.short_description,description:$inputs.description||''};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "result.sys_id"
+            ]
+        },
+        {
+            "actionId": "get_change_request",
+            "displayName": "Get Change Request",
+            "method": "GET",
+            "path": "/table/change_request/{sysId}",
+            "pathParams": [
+                "sysId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "sysId",
+                    "label": "Sys ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "result"
+            ]
+        }
+    ],
+    "connectorId": "servicenow",
+    "taskType": "CONNECTOR_TASK"
+}

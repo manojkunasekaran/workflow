@@ -1,0 +1,298 @@
+{
+    "displayName": "DocuSign",
+    "icon": "https://api.iconify.design/simple-icons/docusign.svg?color=%23ffcc22",
+    "category": "Productivity",
+    "baseUrl": "https://demo.docusign.net/restapi",
+    "authType": "OAUTH2",
+    "oauth2Config": {
+        "authorizationUrl": "https://account-d.docusign.com/oauth/auth",
+        "tokenUrl": "https://account-d.docusign.com/oauth/token",
+        "defaultScopes": [
+            "signature",
+            "impersonation"
+        ]
+    },
+    "credentialGuide": {
+        "fields": [
+            {
+                "key": "client_id",
+                "label": "Integration Key"
+            },
+            {
+                "key": "client_secret",
+                "label": "Secret Key"
+            }
+        ],
+        "description": "Demo baseUrl; use production REST base when cloning."
+    },
+    "connectionSetup": {
+        "description": "Connect DocuSign eSignature.",
+        "buttonLabel": "Sign in with DocuSign"
+    },
+    "verifyAction": {
+        "method": "GET",
+        "path": "/v2.1/accounts"
+    },
+    "actions": [
+        {
+            "actionId": "create_envelope",
+            "displayName": "Create Envelope",
+            "method": "POST",
+            "path": "/v2.1/accounts/{accountId}/envelopes",
+            "pathParams": [
+                "accountId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "accountId",
+                    "label": "Account ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "envelope",
+                    "label": "Envelope Definition JSON",
+                    "type": "JSON",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return typeof $inputs.envelope==='string'?JSON.parse($inputs.envelope):$inputs.envelope;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "envelopeId",
+                "status"
+            ]
+        },
+        {
+            "actionId": "get_envelope",
+            "displayName": "Get Envelope",
+            "method": "GET",
+            "path": "/v2.1/accounts/{accountId}/envelopes/{envelopeId}",
+            "pathParams": [
+                "accountId",
+                "envelopeId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "accountId",
+                    "label": "Account ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "envelopeId",
+                    "label": "Envelope ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "envelopeId",
+                "status"
+            ]
+        },
+        {
+            "actionId": "list_envelopes",
+            "displayName": "List Envelopes",
+            "method": "GET",
+            "path": "/v2.1/accounts/{accountId}/envelopes",
+            "pathParams": [
+                "accountId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "accountId",
+                    "label": "Account ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "from_date",
+                    "label": "From Date (ISO)",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "envelopes"
+            ]
+        },
+        {
+            "actionId": "get_envelope_documents",
+            "displayName": "Get Envelope Documents",
+            "method": "GET",
+            "path": "/v2.1/accounts/{accountId}/envelopes/{envelopeId}/documents",
+            "pathParams": [
+                "accountId",
+                "envelopeId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "accountId",
+                    "label": "Account ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "envelopeId",
+                    "label": "Envelope ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "envelopeDocuments"
+            ]
+        },
+        {
+            "actionId": "void_envelope",
+            "displayName": "Void Envelope",
+            "method": "PUT",
+            "path": "/v2.1/accounts/{accountId}/envelopes/{envelopeId}",
+            "pathParams": [
+                "accountId",
+                "envelopeId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "accountId",
+                    "label": "Account ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "envelopeId",
+                    "label": "Envelope ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "voidedReason",
+                    "label": "Voided Reason",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return {status:'voided',voidedReason:$inputs.voidedReason};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "envelopeId",
+                "status"
+            ]
+        },
+        {
+            "actionId": "list_templates",
+            "displayName": "List Templates",
+            "method": "GET",
+            "path": "/v2.1/accounts/{accountId}/templates",
+            "pathParams": [
+                "accountId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "accountId",
+                    "label": "Account ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "count",
+                    "label": "Count",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 25
+                }
+            ],
+            "outputPaths": [
+                "envelopeTemplates"
+            ]
+        },
+        {
+            "actionId": "get_user_info",
+            "displayName": "List Users",
+            "method": "GET",
+            "path": "/v2.1/accounts/{accountId}/users",
+            "pathParams": [
+                "accountId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "accountId",
+                    "label": "Account ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "email",
+                    "label": "Email",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "users"
+            ]
+        },
+        {
+            "actionId": "create_recipient_view",
+            "displayName": "Create Recipient View",
+            "method": "POST",
+            "path": "/v2.1/accounts/{accountId}/envelopes/{envelopeId}/views/recipient",
+            "pathParams": [
+                "accountId",
+                "envelopeId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "accountId",
+                    "label": "Account ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "envelopeId",
+                    "label": "Envelope ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "viewRequest",
+                    "label": "Recipient View Request JSON",
+                    "type": "JSON",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return typeof $inputs.viewRequest==='string'?JSON.parse($inputs.viewRequest):$inputs.viewRequest;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "url"
+            ]
+        }
+    ],
+    "connectorId": "docusign",
+    "taskType": "CONNECTOR_TASK"
+}

@@ -1,207 +1,206 @@
 {
-    "connectorId":  "mailchimp",
-    "displayName":  "Mailchimp",
-    "icon":  "https://cdn.simpleicons.org/mailchimp/FFE01B",
-    "category":  "Email Marketing",
+    "connectorId": "mailchimp",
+    "displayName": "Mailchimp",
+    "icon": "https://api.iconify.design/logos/mailchimp.svg",
+    "category": "Email Marketing",
     "taskType": "CONNECTOR_TASK",
-    "baseUrl":  "https://{dc}.api.mailchimp.com/3.0",
-    "authType":  "BASIC_AUTH",
-    "credentialGuide":  {
-                            "fields":  [
-                                           {
-                                               "key":  "username",
-                                               "label":  "Username",
-                                               "hint":  "Any string, often \u0027anystring\u0027"
-                                           },
-                                           {
-                                               "key":  "password",
-                                               "label":  "API Key",
-                                               "hint":  "Your Mailchimp API Key (ends with -dc, e.g. -us6)"
-                                           }
-                                       ]
-                        },
-    "actions":  [
-                    {
-                        "actionId":  "add_subscriber",
-                        "displayName":  "Add Subscriber",
-                        "method":  "POST",
-                        "path":  "/lists/{listId}/members",
-                        "pathParams":  [
-                                           "dc",
-                                           "listId"
-                                       ],
-                        "inputSchema":  [
-                                            {
-                                                "key":  "dc",
-                                                "label":  "Data Center",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "description":  "e.g., us6",
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "listId",
-                                                "label":  "List/Audience ID",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "email",
-                                                "label":  "Email",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "status",
-                                                "label":  "Status",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "defaultValue":  "subscribed",
-                                                "supportsExpression":  true
-                                            }
-                                        ],
-                        "inputScript":  "return { email_address: $inputs.email, status: $inputs.status };",
-                        "outputPaths":  [
-                                            "id",
-                                            "status"
-                                        ]
-                    },
-                    {
-                        "actionId":  "get_subscriber",
-                        "displayName":  "Get Subscriber",
-                        "method":  "GET",
-                        "path":  "/lists/{listId}/members/{subscriberHash}",
-                        "pathParams":  [
-                                           "dc",
-                                           "listId",
-                                           "subscriberHash"
-                                       ],
-                        "inputSchema":  [
-                                            {
-                                                "key":  "dc",
-                                                "label":  "Data Center",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "listId",
-                                                "label":  "List ID",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "subscriberHash",
-                                                "label":  "Subscriber Hash (MD5 of lowercase email)",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            }
-                                        ],
-                        "outputPaths":  [
-                                            "id",
-                                            "email_address",
-                                            "status"
-                                        ]
-                    },
-                    {
-                        "actionId":  "update_subscriber",
-                        "displayName":  "Update Subscriber",
-                        "method":  "PATCH",
-                        "path":  "/lists/{listId}/members/{subscriberHash}",
-                        "pathParams":  [
-                                           "dc",
-                                           "listId",
-                                           "subscriberHash"
-                                       ],
-                        "inputSchema":  [
-                                            {
-                                                "key":  "dc",
-                                                "label":  "Data Center",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "listId",
-                                                "label":  "List ID",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "subscriberHash",
-                                                "label":  "Subscriber Hash (MD5 of lowercase email)",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "status",
-                                                "label":  "Status",
-                                                "type":  "STRING",
-                                                "required":  false,
-                                                "supportsExpression":  true
-                                            }
-                                        ],
-                        "inputScript":  "let body = {}; if ($inputs.status) body.status = $inputs.status; return body;",
-                        "outputPaths":  [
-                                            "id",
-                                            "status"
-                                        ]
-                    },
-                    {
-                        "actionId":  "list_campaigns",
-                        "displayName":  "List Campaigns",
-                        "method":  "GET",
-                        "path":  "/campaigns",
-                        "pathParams":  [
-                                           "dc"
-                                       ],
-                        "inputSchema":  [
-                                            {
-                                                "key":  "dc",
-                                                "label":  "Data Center",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "count",
-                                                "label":  "Count",
-                                                "type":  "NUMBER",
-                                                "required":  false,
-                                                "defaultValue":  10,
-                                                "supportsExpression":  true
-                                            }
-                                        ],
-                        "outputPaths":  [
-                                            "campaigns"
-                                        ]
-                    }
-                ],
-    "connectionSetup":  {
-                            "fields":  [
-                                           {
-                                               "label":  "Username",
-                                               "key":  "username",
-                                               "sensitive":  false,
-                                               "hint":  "Any string, often \u0027anystring\u0027"
-                                           },
-                                           {
-                                               "label":  "API Key",
-                                               "key":  "password",
-                                               "sensitive":  true,
-                                               "hint":  "Your Mailchimp API Key (ends with -dc, e.g. -us6)"
-                                           }
-                                       ]
-                        },
-    "verifyAction":  {
-                         "method":  "GET",
-                         "path":  "/"
-                     }
+    "baseUrl": "https://{dc}.api.mailchimp.com/3.0",
+    "authType": "BASIC_AUTH",
+    "credentialGuide": {
+        "fields": [
+            {
+                "key": "username",
+                "label": "Username",
+                "hint": "Any string, often 'anystring'"
+            },
+            {
+                "key": "password",
+                "label": "API Key",
+                "hint": "Your Mailchimp API Key (ends with -dc, e.g. -us6)"
+            }
+        ]
+    },
+    "actions": [
+        {
+            "actionId": "add_subscriber",
+            "displayName": "Add Subscriber",
+            "method": "POST",
+            "path": "/lists/{listId}/members",
+            "pathParams": [
+                "dc",
+                "listId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "dc",
+                    "label": "Data Center",
+                    "type": "STRING",
+                    "required": true,
+                    "description": "e.g., us6",
+                    "supportsExpression": true
+                },
+                {
+                    "key": "listId",
+                    "label": "List/Audience ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "email",
+                    "label": "Email",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "status",
+                    "label": "Status",
+                    "type": "STRING",
+                    "required": true,
+                    "defaultValue": "subscribed",
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return { email_address: $inputs.email, status: $inputs.status };",
+            "outputPaths": [
+                "id",
+                "status"
+            ]
+        },
+        {
+            "actionId": "get_subscriber",
+            "displayName": "Get Subscriber",
+            "method": "GET",
+            "path": "/lists/{listId}/members/{subscriberHash}",
+            "pathParams": [
+                "dc",
+                "listId",
+                "subscriberHash"
+            ],
+            "inputSchema": [
+                {
+                    "key": "dc",
+                    "label": "Data Center",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "listId",
+                    "label": "List ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "subscriberHash",
+                    "label": "Subscriber Hash (MD5 of lowercase email)",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "id",
+                "email_address",
+                "status"
+            ]
+        },
+        {
+            "actionId": "update_subscriber",
+            "displayName": "Update Subscriber",
+            "method": "PATCH",
+            "path": "/lists/{listId}/members/{subscriberHash}",
+            "pathParams": [
+                "dc",
+                "listId",
+                "subscriberHash"
+            ],
+            "inputSchema": [
+                {
+                    "key": "dc",
+                    "label": "Data Center",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "listId",
+                    "label": "List ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "subscriberHash",
+                    "label": "Subscriber Hash (MD5 of lowercase email)",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "status",
+                    "label": "Status",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "let body = {}; if ($inputs.status) body.status = $inputs.status; return body;",
+            "outputPaths": [
+                "id",
+                "status"
+            ]
+        },
+        {
+            "actionId": "list_campaigns",
+            "displayName": "List Campaigns",
+            "method": "GET",
+            "path": "/campaigns",
+            "pathParams": [
+                "dc"
+            ],
+            "inputSchema": [
+                {
+                    "key": "dc",
+                    "label": "Data Center",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "count",
+                    "label": "Count",
+                    "type": "NUMBER",
+                    "required": false,
+                    "defaultValue": 10,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "campaigns"
+            ]
+        }
+    ],
+    "connectionSetup": {
+        "fields": [
+            {
+                "label": "Username",
+                "key": "username",
+                "sensitive": false,
+                "hint": "Any string, often 'anystring'"
+            },
+            {
+                "label": "API Key",
+                "key": "password",
+                "sensitive": true,
+                "hint": "Your Mailchimp API Key (ends with -dc, e.g. -us6)"
+            }
+        ]
+    },
+    "verifyAction": {
+        "method": "GET",
+        "path": "/"
+    }
 }
-

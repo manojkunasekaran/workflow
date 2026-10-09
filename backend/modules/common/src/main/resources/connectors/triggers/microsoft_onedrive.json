@@ -1,0 +1,70 @@
+{
+  "connectorId": "microsoft_onedrive",
+  "triggers": [
+    {
+      "triggerId": "new_files",
+      "displayName": "New files",
+      "description": "Poll OneDrive root for new items.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://graph.microsoft.com/v1.0/me/drive/root/children?$top=50&$orderby=createdDateTime desc"
+          },
+          "detection": {
+            "itemsPath": "$.value",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "file_changed",
+      "displayName": "File metadata changed",
+      "description": "Poll OneDrive items for metadata changes.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "RESPONSE_CHANGED",
+          "http": {
+            "method": "GET",
+            "url": "https://graph.microsoft.com/v1.0/me/drive/root/children?$top=50&$orderby=lastModifiedDateTime desc"
+          },
+          "detection": {
+            "hashIgnorePaths": [
+              "@odata.nextLink"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_shared_items",
+      "displayName": "New shared items",
+      "description": "Poll items shared with the user.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://graph.microsoft.com/v1.0/me/drive/sharedWithMe"
+          },
+          "detection": {
+            "itemsPath": "$.value",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

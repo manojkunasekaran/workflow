@@ -395,6 +395,9 @@ export function flowToDefinition(
         inputs: existing?.inputs,
         variables: existing?.variables,
         layout: layoutWithChains,
+        integrationId: existing?.integrationId,
+        useCaseTitle: existing?.useCaseTitle,
+        useCaseDescription: existing?.useCaseDescription,
         createdAt: existing?.createdAt,
         updatedAt: existing?.updatedAt,
     };

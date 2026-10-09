@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useBlocker, useLocation, useNavigate, useParams } from 'react-router-dom';
 import type { Connection, Edge, NodeChange } from '@xyflow/react';
+import { getApiErrorMessage } from '@/api/apiErrors';
 import { workflowApi } from '@/api/workflowApi';
 import { executionApi } from '@/api/executionApi';
 import type { WorkflowDefinition } from '@/types/api';
@@ -844,22 +845,23 @@ export default function WorkflowStudioPage() {
             setIsSaving(true);
             setMessage(null);
             const definition = buildDefinition();
-            const saved = workflowId
-                ? await workflowApi.update(workflowId, definition)
+            const persistedId = workflowId ?? (isNew ? null : routeId ?? null);
+            const saved = persistedId
+                ? await workflowApi.update(persistedId, definition)
                 : await workflowApi.create(definition);
-            const savedId = saved.id ?? null;
+            const savedId = saved.id ?? persistedId ?? null;
             setWorkflowId(savedId);
             setSavedDefinition(saved);
             applyDefinition(saved);
             setMessage('Workflow saved');
             setIsDirty(false);
-            if (!workflowId && savedId) {
+            if (isNew && savedId) {
                 skipNextLoadRef.current = true;
                 navigate(`/workflows/${savedId}`, { replace: true });
             }
         } catch (error) {
             console.error('Save failed', error);
-            setMessage('Failed to save workflow');
+            setMessage(getApiErrorMessage(error, 'Failed to save workflow'));
         } finally {
             setIsSaving(false);
         }
@@ -875,13 +877,13 @@ export default function WorkflowStudioPage() {
         try {
             setIsRunning(true);
             setMessage(null);
-            let id = workflowId;
+            let id = workflowId ?? (isNew ? null : routeId ?? null);
             if (!id || isDirty) {
                 const definition = buildDefinition();
                 const saved = id
                     ? await workflowApi.update(id, definition)
                     : await workflowApi.create(definition);
-                id = saved.id ?? null;
+                id = saved.id ?? id ?? null;
                 setWorkflowId(id);
                 setSavedDefinition(saved);
                 setIsDirty(false);
@@ -901,7 +903,7 @@ export default function WorkflowStudioPage() {
             setConfigOpen(false);
         } catch (error) {
             console.error('Run failed', error);
-            setMessage('Failed to run workflow');
+            setMessage(getApiErrorMessage(error, 'Failed to run workflow'));
         } finally {
             setIsRunning(false);
         }

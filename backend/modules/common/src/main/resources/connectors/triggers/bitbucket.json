@@ -1,0 +1,117 @@
+{
+  "connectorId": "bitbucket",
+  "triggers": [
+    {
+      "triggerId": "new_pullrequests",
+      "displayName": "New pull requests",
+      "description": "Poll pull requests.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "workspace",
+          "label": "Workspace",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "repo_slug",
+          "label": "Repo Slug",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://api.bitbucket.org/2.0/repositories/{workspace}/{repo_slug}/pullrequests?pagelen=50"
+          },
+          "detection": {
+            "itemsPath": "$.values",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_commits",
+      "displayName": "New commits",
+      "description": "Poll commits.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "workspace",
+          "label": "Workspace",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "repo_slug",
+          "label": "Repo Slug",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://api.bitbucket.org/2.0/repositories/{workspace}/{repo_slug}/commits?pagelen=50"
+          },
+          "detection": {
+            "itemsPath": "$.values",
+            "keyPaths": [
+              "hash"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "updated_pullrequests",
+      "displayName": "Updated pull requests",
+      "description": "Poll updated PRs.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "workspace",
+          "label": "Workspace",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "repo_slug",
+          "label": "Repo Slug",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "UPDATED",
+          "http": {
+            "method": "GET",
+            "url": "https://api.bitbucket.org/2.0/repositories/{workspace}/{repo_slug}/pullrequests?pagelen=50&state=OPEN"
+          },
+          "detection": {
+            "itemsPath": "$.values",
+            "keyPaths": [
+              "id"
+            ],
+            "updateKeyPath": "updated_on"
+          }
+        }
+      }
+    }
+  ]
+}

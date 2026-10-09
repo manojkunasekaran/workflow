@@ -1,0 +1,227 @@
+{
+    "displayName": "Amazon SES",
+    "icon": "https://api.iconify.design/logos/aws.svg",
+    "category": "Email",
+    "baseUrl": "https://email.us-east-1.amazonaws.com",
+    "authType": "CUSTOM_HEADER",
+    "credentialGuide": {
+        "fields": [
+            {
+                "key": "Authorization",
+                "label": "Authorization",
+                "hint": "AWS SigV4 Authorization header"
+            },
+            {
+                "key": "X-Amz-Date",
+                "label": "X-Amz-Date"
+            },
+            {
+                "key": "X-Amz-Security-Token",
+                "label": "Session Token",
+                "hint": "Optional"
+            }
+        ],
+        "description": "Use AWS SigV4 headers. Change baseUrl for other regions."
+    },
+    "connectionSetup": {
+        "fields": [
+            {
+                "label": "Authorization",
+                "key": "Authorization",
+                "sensitive": true
+            },
+            {
+                "label": "X-Amz-Date",
+                "key": "X-Amz-Date",
+                "sensitive": false
+            }
+        ]
+    },
+    "verifyAction": {
+        "method": "POST",
+        "path": "/"
+    },
+    "actions": [
+        {
+            "actionId": "send_email",
+            "displayName": "Send Email",
+            "method": "POST",
+            "path": "/",
+            "inputSchema": [
+                {
+                    "key": "from",
+                    "label": "From",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "to",
+                    "label": "To",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "subject",
+                    "label": "Subject",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "body",
+                    "label": "Body Text",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return {Action:'SendEmail',Version:'2010-12-01',Source:$inputs.from,Destination:{ToAddresses:[$inputs.to]},Message:{Subject:{Data:$inputs.subject,Charset:'UTF-8'},Body:{Text:{Data:$inputs.body,Charset:'UTF-8'}}}};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "SendEmailResponse"
+            ]
+        },
+        {
+            "actionId": "send_raw_email",
+            "displayName": "Send Raw Email",
+            "method": "POST",
+            "path": "/",
+            "inputSchema": [
+                {
+                    "key": "request",
+                    "label": "SES Request JSON",
+                    "type": "JSON",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "const r=typeof $inputs.request==='string'?JSON.parse($inputs.request):$inputs.request; return Object.assign({Action:'SendRawEmail',Version:'2010-12-01'}, r);",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "SendRawEmailResponse"
+            ]
+        },
+        {
+            "actionId": "get_send_quota",
+            "displayName": "Get Send Quota",
+            "method": "POST",
+            "path": "/",
+            "inputScript": "return {Action:'GetSendQuota',Version:'2010-12-01'};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "GetSendQuotaResponse"
+            ]
+        },
+        {
+            "actionId": "list_identities",
+            "displayName": "List Identities",
+            "method": "POST",
+            "path": "/",
+            "inputScript": "return {Action:'ListIdentities',Version:'2010-12-01'};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "ListIdentitiesResponse"
+            ]
+        },
+        {
+            "actionId": "verify_email_identity",
+            "displayName": "Verify Email Identity",
+            "method": "POST",
+            "path": "/",
+            "inputSchema": [
+                {
+                    "key": "email",
+                    "label": "Email Address",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return {Action:'VerifyEmailIdentity',Version:'2010-12-01',EmailAddress:$inputs.email};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "VerifyEmailIdentityResponse"
+            ]
+        },
+        {
+            "actionId": "get_identity_verification_attributes",
+            "displayName": "Get Identity Verification Attributes",
+            "method": "POST",
+            "path": "/",
+            "inputSchema": [
+                {
+                    "key": "identities",
+                    "label": "Identities (comma-separated)",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return {Action:'GetIdentityVerificationAttributes',Version:'2010-12-01',Identities:($inputs.identities||'').split(',').map(s=>s.trim()).filter(Boolean)};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "GetIdentityVerificationAttributesResponse"
+            ]
+        },
+        {
+            "actionId": "create_configuration_set",
+            "displayName": "Create Configuration Set",
+            "method": "POST",
+            "path": "/",
+            "inputSchema": [
+                {
+                    "key": "name",
+                    "label": "Configuration Set Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return {Action:'CreateConfigurationSet',Version:'2010-12-01',ConfigurationSet:{Name:$inputs.name}};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "CreateConfigurationSetResponse"
+            ]
+        },
+        {
+            "actionId": "delete_identity",
+            "displayName": "Delete Identity",
+            "method": "POST",
+            "path": "/",
+            "inputSchema": [
+                {
+                    "key": "identity",
+                    "label": "Identity",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return {Action:'DeleteIdentity',Version:'2010-12-01',Identity:$inputs.identity};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "DeleteIdentityResponse"
+            ]
+        }
+    ],
+    "connectorId": "amazon_ses",
+    "taskType": "CONNECTOR_TASK"
+}

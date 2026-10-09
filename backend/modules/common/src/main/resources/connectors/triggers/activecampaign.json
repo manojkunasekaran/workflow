@@ -1,0 +1,72 @@
+{
+  "connectorId": "activecampaign",
+  "triggers": [
+    {
+      "triggerId": "new_contacts",
+      "displayName": "New contacts",
+      "description": "Poll contacts.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://example.api-us1.com/api/3/contacts?limit=100&orders[id]=DESC"
+          },
+          "detection": {
+            "itemsPath": "$.contacts",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_deals",
+      "displayName": "New deals",
+      "description": "Poll deals.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://example.api-us1.com/api/3/deals?limit=100"
+          },
+          "detection": {
+            "itemsPath": "$.deals",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "updated_deals",
+      "displayName": "Updated deals",
+      "description": "Poll updated deals.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "UPDATED",
+          "http": {
+            "method": "GET",
+            "url": "https://example.api-us1.com/api/3/deals?limit=100"
+          },
+          "detection": {
+            "itemsPath": "$.deals",
+            "keyPaths": [
+              "id"
+            ],
+            "updateKeyPath": "mdate"
+          }
+        }
+      }
+    }
+  ]
+}

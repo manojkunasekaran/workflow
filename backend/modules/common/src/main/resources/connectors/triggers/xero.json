@@ -1,0 +1,49 @@
+{
+  "connectorId": "xero",
+  "triggers": [
+    {
+      "triggerId": "new_invoices",
+      "displayName": "New invoices",
+      "description": "Poll Xero invoices.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://api.xero.com/api.xro/2.0/Invoices?page=1"
+          },
+          "detection": {
+            "itemsPath": "$.Invoices",
+            "keyPaths": [
+              "InvoiceID"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_contacts",
+      "displayName": "New contacts",
+      "description": "Poll Xero contacts.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://api.xero.com/api.xro/2.0/Contacts?page=1"
+          },
+          "detection": {
+            "itemsPath": "$.Contacts",
+            "keyPaths": [
+              "ContactID"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

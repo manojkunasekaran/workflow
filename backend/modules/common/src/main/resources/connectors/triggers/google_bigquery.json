@@ -1,0 +1,102 @@
+{
+  "connectorId": "google_bigquery",
+  "triggers": [
+    {
+      "triggerId": "new_datasets",
+      "displayName": "New datasets",
+      "description": "Triggers when new BigQuery datasets appear in a project.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "projectId",
+          "label": "GCP Project ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://bigquery.googleapis.com/bigquery/v2/projects/{projectId}/datasets?maxResults=50"
+          },
+          "detection": {
+            "itemsPath": "$.datasets",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_tables",
+      "displayName": "New tables",
+      "description": "Triggers when new tables appear in a dataset.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "projectId",
+          "label": "GCP Project ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "datasetId",
+          "label": "Dataset ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://bigquery.googleapis.com/bigquery/v2/projects/{projectId}/datasets/{datasetId}/tables?maxResults=50"
+          },
+          "detection": {
+            "itemsPath": "$.tables",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "completed_query_jobs",
+      "displayName": "Completed query jobs",
+      "description": "Poll BigQuery jobs for new completions.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "projectId",
+          "label": "Project ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://bigquery.googleapis.com/bigquery/v2/projects/{projectId}/jobs?maxResults=50&allUsers=true"
+          },
+          "detection": {
+            "itemsPath": "$.jobs",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

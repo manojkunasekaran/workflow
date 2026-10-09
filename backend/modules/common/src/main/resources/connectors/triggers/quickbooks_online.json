@@ -1,0 +1,65 @@
+{
+  "connectorId": "quickbooks_online",
+  "triggers": [
+    {
+      "triggerId": "new_customers",
+      "displayName": "New customers",
+      "description": "Poll QuickBooks customers.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "realmId",
+          "label": "Realm ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://quickbooks.api.intuit.com/v3/company/{realmId}/query?query=select%20*%20from%20Customer%20maxresults%2050"
+          },
+          "detection": {
+            "itemsPath": "$.QueryResponse.Customer",
+            "keyPaths": [
+              "Id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_invoices",
+      "displayName": "New invoices",
+      "description": "Poll QuickBooks invoices.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "realmId",
+          "label": "Realm ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://quickbooks.api.intuit.com/v3/company/{realmId}/query?query=select%20*%20from%20Invoice%20maxresults%2050"
+          },
+          "detection": {
+            "itemsPath": "$.QueryResponse.Invoice",
+            "keyPaths": [
+              "Id"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

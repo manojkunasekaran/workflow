@@ -1,0 +1,96 @@
+{
+  "connectorId": "gitlab",
+  "triggers": [
+    {
+      "triggerId": "new_issues",
+      "displayName": "New issues",
+      "description": "Poll project issues.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "project_id",
+          "label": "Project ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://gitlab.com/api/v4/projects/{project_id}/issues?per_page=50&state=opened"
+          },
+          "detection": {
+            "itemsPath": "$",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_merge_requests",
+      "displayName": "New merge requests",
+      "description": "Poll merge requests.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "project_id",
+          "label": "Project ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://gitlab.com/api/v4/projects/{project_id}/merge_requests?per_page=50&state=opened"
+          },
+          "detection": {
+            "itemsPath": "$",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "pipeline_finished",
+      "displayName": "Pipeline updates",
+      "description": "Poll pipelines.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "project_id",
+          "label": "Project ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "UPDATED",
+          "http": {
+            "method": "GET",
+            "url": "https://gitlab.com/api/v4/projects/{project_id}/pipelines?per_page=50"
+          },
+          "detection": {
+            "itemsPath": "$",
+            "keyPaths": [
+              "id"
+            ],
+            "updateKeyPath": "updated_at"
+          }
+        }
+      }
+    }
+  ]
+}

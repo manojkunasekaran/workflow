@@ -1,20 +1,28 @@
 {
     "connectorId": "mistral",
     "displayName": "Mistral AI",
-    "icon": "https://cdn.simpleicons.org/mistral/F75333",
+    "icon": "https://www.google.com/s2/favicons?domain=mistral.ai&sz=128",
     "category": "AI",
     "taskType": "AGENTS_TASK",
     "baseUrl": "https://api.mistral.ai/v1",
     "authType": "BEARER_TOKEN",
     "credentialGuide": {
         "fields": [
-            { "key": "token", "label": "API Key", "hint": "Mistral API Key" }
+            {
+                "key": "token",
+                "label": "API Key",
+                "hint": "Mistral API Key"
+            }
         ]
     },
     "actions": [],
     "connectionSetup": {
         "fields": [
-            { "label": "API Key", "key": "token", "sensitive": true }
+            {
+                "label": "API Key",
+                "key": "token",
+                "sensitive": true
+            }
         ]
     },
     "verifyAction": {

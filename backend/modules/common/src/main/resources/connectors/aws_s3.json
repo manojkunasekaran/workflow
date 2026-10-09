@@ -1,171 +1,168 @@
 {
-    "connectorId":  "aws_s3",
-    "displayName":  "AWS S3",
-    "icon":  "https://cdn.simpleicons.org/amazonaws/232F3E",
-    "category":  "Cloud Storage",
+    "connectorId": "aws_s3",
+    "displayName": "AWS S3",
+    "icon": "https://api.iconify.design/logos/aws.svg",
+    "category": "Cloud Storage",
     "taskType": "CONNECTOR_TASK",
-    "baseUrl":  "https://{bucket}.s3.{region}.amazonaws.com",
-    "authType":  "CUSTOM_HEADER",
-    "credentialGuide":  {
-                            "fields":  [
-                                           {
-                                               "key":  "x-amz-security-token",
-                                               "label":  "Session Token",
-                                               "hint":  "For simplicity in this stub, you can put presigned auth headers here."
-                                           }
-                                       ]
-                        },
-    "actions":  [
-                    {
-                        "actionId":  "put_object",
-                        "displayName":  "Upload File (Stub)",
-                        "method":  "PUT",
-                        "path":  "/{key}",
-                        "pathParams":  [
-                                           "bucket",
-                                           "region",
-                                           "key"
-                                       ],
-                        "inputSchema":  [
-                                            {
-                                                "key":  "bucket",
-                                                "label":  "Bucket Name",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "region",
-                                                "label":  "Region",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "defaultValue":  "us-east-1",
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "key",
-                                                "label":  "File Key",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "body",
-                                                "label":  "File Content",
-                                                "type":  "TEXTAREA",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            }
-                                        ],
-                        "inputScript":  "return $inputs.body;",
-                        "outputPaths":  [
-
-                                        ]
-                    },
-                    {
-                        "actionId":  "get_object",
-                        "displayName":  "Download File",
-                        "method":  "GET",
-                        "path":  "/{key}",
-                        "pathParams":  [
-                                           "bucket",
-                                           "region",
-                                           "key"
-                                       ],
-                        "inputSchema":  [
-                                            {
-                                                "key":  "bucket",
-                                                "label":  "Bucket Name",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "region",
-                                                "label":  "Region",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "defaultValue":  "us-east-1",
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "key",
-                                                "label":  "File Key",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            }
-                                        ],
-                        "outputPaths":  [
-                                            "$"
-                                        ]
-                    },
-                    {
-                        "actionId":  "delete_object",
-                        "displayName":  "Delete File",
-                        "method":  "DELETE",
-                        "path":  "/{key}",
-                        "pathParams":  [
-                                           "bucket",
-                                           "region",
-                                           "key"
-                                       ],
-                        "inputSchema":  [
-                                            {
-                                                "key":  "bucket",
-                                                "label":  "Bucket Name",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "region",
-                                                "label":  "Region",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "defaultValue":  "us-east-1",
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "key",
-                                                "label":  "File Key",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            }
-                                        ],
-                        "outputPaths":  []
-                    },
-                    {
-                        "actionId":  "list_objects",
-                        "displayName":  "List Files",
-                        "method":  "GET",
-                        "path":  "/?list-type=2",
-                        "pathParams":  [
-                                           "bucket",
-                                           "region"
-                                       ],
-                        "inputSchema":  [
-                                            {
-                                                "key":  "bucket",
-                                                "label":  "Bucket Name",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "region",
-                                                "label":  "Region",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "defaultValue":  "us-east-1",
-                                                "supportsExpression":  true
-                                            }
-                                        ],
-                        "outputPaths":  [
-                                            "ListBucketResult.Contents"
-                                        ]
-                    }
-                ]
+    "baseUrl": "https://{bucket}.s3.{region}.amazonaws.com",
+    "authType": "CUSTOM_HEADER",
+    "credentialGuide": {
+        "fields": [
+            {
+                "key": "x-amz-security-token",
+                "label": "Session Token",
+                "hint": "For simplicity in this stub, you can put presigned auth headers here."
+            }
+        ]
+    },
+    "actions": [
+        {
+            "actionId": "put_object",
+            "displayName": "Upload File (Stub)",
+            "method": "PUT",
+            "path": "/{key}",
+            "pathParams": [
+                "bucket",
+                "region",
+                "key"
+            ],
+            "inputSchema": [
+                {
+                    "key": "bucket",
+                    "label": "Bucket Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "region",
+                    "label": "Region",
+                    "type": "STRING",
+                    "required": true,
+                    "defaultValue": "us-east-1",
+                    "supportsExpression": true
+                },
+                {
+                    "key": "key",
+                    "label": "File Key",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "body",
+                    "label": "File Content",
+                    "type": "TEXTAREA",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return $inputs.body;",
+            "outputPaths": []
+        },
+        {
+            "actionId": "get_object",
+            "displayName": "Download File",
+            "method": "GET",
+            "path": "/{key}",
+            "pathParams": [
+                "bucket",
+                "region",
+                "key"
+            ],
+            "inputSchema": [
+                {
+                    "key": "bucket",
+                    "label": "Bucket Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "region",
+                    "label": "Region",
+                    "type": "STRING",
+                    "required": true,
+                    "defaultValue": "us-east-1",
+                    "supportsExpression": true
+                },
+                {
+                    "key": "key",
+                    "label": "File Key",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "delete_object",
+            "displayName": "Delete File",
+            "method": "DELETE",
+            "path": "/{key}",
+            "pathParams": [
+                "bucket",
+                "region",
+                "key"
+            ],
+            "inputSchema": [
+                {
+                    "key": "bucket",
+                    "label": "Bucket Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "region",
+                    "label": "Region",
+                    "type": "STRING",
+                    "required": true,
+                    "defaultValue": "us-east-1",
+                    "supportsExpression": true
+                },
+                {
+                    "key": "key",
+                    "label": "File Key",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": []
+        },
+        {
+            "actionId": "list_objects",
+            "displayName": "List Files",
+            "method": "GET",
+            "path": "/?list-type=2",
+            "pathParams": [
+                "bucket",
+                "region"
+            ],
+            "inputSchema": [
+                {
+                    "key": "bucket",
+                    "label": "Bucket Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "region",
+                    "label": "Region",
+                    "type": "STRING",
+                    "required": true,
+                    "defaultValue": "us-east-1",
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "ListBucketResult.Contents"
+            ]
+        }
+    ]
 }
-

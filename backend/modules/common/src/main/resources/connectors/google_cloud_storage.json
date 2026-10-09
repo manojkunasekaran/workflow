@@ -1,0 +1,278 @@
+{
+    "displayName": "Google Cloud Storage",
+    "icon": "https://api.iconify.design/logos/google-cloud.svg",
+    "category": "Storage",
+    "baseUrl": "https://storage.googleapis.com/storage/v1",
+    "authType": "OAUTH2",
+    "oauth2Config": {
+        "authorizationUrl": "https://accounts.google.com/o/oauth2/v2/auth",
+        "tokenUrl": "https://oauth2.googleapis.com/token",
+        "defaultScopes": [
+            "https://www.googleapis.com/auth/devstorage.read_write"
+        ]
+    },
+    "credentialGuide": {
+        "fields": [
+            {
+                "key": "client_id",
+                "label": "Client ID"
+            },
+            {
+                "key": "client_secret",
+                "label": "Client Secret"
+            }
+        ]
+    },
+    "connectionSetup": {
+        "description": "Connect Google Cloud Storage.",
+        "buttonLabel": "Sign in with Google"
+    },
+    "verifyAction": {
+        "method": "GET",
+        "path": "/b?maxResults=1"
+    },
+    "actions": [
+        {
+            "actionId": "list_buckets",
+            "displayName": "List Buckets",
+            "method": "GET",
+            "path": "/b",
+            "outputPaths": [
+                "items"
+            ]
+        },
+        {
+            "actionId": "list_objects",
+            "displayName": "List Objects",
+            "method": "GET",
+            "path": "/b/{bucket}/o",
+            "pathParams": [
+                "bucket"
+            ],
+            "inputSchema": [
+                {
+                    "key": "bucket",
+                    "label": "Bucket Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "prefix",
+                    "label": "Prefix",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "maxResults",
+                    "label": "Max Results",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 100
+                }
+            ],
+            "outputPaths": [
+                "items"
+            ]
+        },
+        {
+            "actionId": "get_object_metadata",
+            "displayName": "Get Object Metadata",
+            "method": "GET",
+            "path": "/b/{bucket}/o/{object}",
+            "pathParams": [
+                "bucket",
+                "object"
+            ],
+            "inputSchema": [
+                {
+                    "key": "bucket",
+                    "label": "Bucket Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "object",
+                    "label": "Object Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "name",
+                "size",
+                "contentType"
+            ]
+        },
+        {
+            "actionId": "insert_object",
+            "displayName": "Upload Object",
+            "method": "POST",
+            "path": "/b/{bucket}/o",
+            "pathParams": [
+                "bucket"
+            ],
+            "inputSchema": [
+                {
+                    "key": "bucket",
+                    "label": "Bucket Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "name",
+                    "label": "Object Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "content",
+                    "label": "Content (base64 or text)",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return {name:$inputs.name};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "name",
+                "bucket"
+            ]
+        },
+        {
+            "actionId": "delete_object",
+            "displayName": "Delete Object",
+            "method": "DELETE",
+            "path": "/b/{bucket}/o/{object}",
+            "pathParams": [
+                "bucket",
+                "object"
+            ],
+            "inputSchema": [
+                {
+                    "key": "bucket",
+                    "label": "Bucket Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "object",
+                    "label": "Object Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": []
+        },
+        {
+            "actionId": "get_bucket",
+            "displayName": "Get Bucket",
+            "method": "GET",
+            "path": "/b/{bucket}",
+            "pathParams": [
+                "bucket"
+            ],
+            "inputSchema": [
+                {
+                    "key": "bucket",
+                    "label": "Bucket Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "name",
+                "location"
+            ]
+        },
+        {
+            "actionId": "create_bucket",
+            "displayName": "Create Bucket",
+            "method": "POST",
+            "path": "/b",
+            "inputSchema": [
+                {
+                    "key": "name",
+                    "label": "Bucket Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "location",
+                    "label": "Location",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": "US"
+                }
+            ],
+            "inputScript": "return {name:$inputs.name,location:$inputs.location||'US'};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "name"
+            ]
+        },
+        {
+            "actionId": "copy_object",
+            "displayName": "Copy Object",
+            "method": "POST",
+            "path": "/b/{bucket}/o/{object}/copyTo/b/{destBucket}/o/{destObject}",
+            "pathParams": [
+                "bucket",
+                "object",
+                "destBucket",
+                "destObject"
+            ],
+            "inputSchema": [
+                {
+                    "key": "bucket",
+                    "label": "Source Bucket",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "object",
+                    "label": "Source Object",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "destBucket",
+                    "label": "Destination Bucket",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "destObject",
+                    "label": "Destination Object",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "resource"
+            ]
+        }
+    ],
+    "connectorId": "google_cloud_storage",
+    "taskType": "CONNECTOR_TASK"
+}

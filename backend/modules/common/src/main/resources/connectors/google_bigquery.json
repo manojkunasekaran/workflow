@@ -1,0 +1,325 @@
+{
+    "connectorId": "google_bigquery",
+    "displayName": "Google BigQuery",
+    "icon": "https://api.iconify.design/simple-icons/googlebigquery.svg?color=%234285f4",
+    "category": "Analytics",
+    "taskType": "CONNECTOR_TASK",
+    "baseUrl": "https://bigquery.googleapis.com/bigquery/v2",
+    "authType": "OAUTH2",
+    "oauth2Config": {
+        "authorizationUrl": "https://accounts.google.com/o/oauth2/v2/auth",
+        "tokenUrl": "https://oauth2.googleapis.com/token",
+        "defaultScopes": [
+            "https://www.googleapis.com/auth/bigquery"
+        ]
+    },
+    "credentialGuide": {
+        "fields": [
+            {
+                "key": "client_id",
+                "label": "Client ID"
+            },
+            {
+                "key": "client_secret",
+                "label": "Client Secret"
+            }
+        ]
+    },
+    "connectionSetup": {
+        "description": "Connect Google BigQuery.",
+        "buttonLabel": "Sign in with Google"
+    },
+    "actions": [
+        {
+            "actionId": "insert_query_job",
+            "displayName": "Insert Query Job",
+            "method": "POST",
+            "path": "/projects/{projectId}/queries",
+            "pathParams": [
+                "projectId"
+            ],
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "inputSchema": [
+                {
+                    "key": "projectId",
+                    "label": "Project ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "query",
+                    "label": "SQL Query",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "useLegacySql",
+                    "label": "Use Legacy SQL",
+                    "type": "BOOLEAN",
+                    "required": false,
+                    "supportsExpression": false
+                }
+            ],
+            "inputScript": "return {query:$inputs.query,useLegacySql:$inputs.useLegacySql===true};",
+            "outputPaths": [
+                "jobReference.jobId",
+                "status.state"
+            ]
+        },
+        {
+            "actionId": "get_query_results",
+            "displayName": "Get Query Results",
+            "method": "GET",
+            "path": "/projects/{projectId}/queries/{jobId}",
+            "pathParams": [
+                "projectId",
+                "jobId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "projectId",
+                    "label": "Project ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "jobId",
+                    "label": "Job ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "maxResults",
+                    "label": "Max Results",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 100
+                }
+            ],
+            "outputPaths": [
+                "rows",
+                "totalRows",
+                "jobComplete"
+            ]
+        },
+        {
+            "actionId": "list_datasets",
+            "displayName": "List Datasets",
+            "method": "GET",
+            "path": "/projects/{projectId}/datasets",
+            "pathParams": [
+                "projectId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "projectId",
+                    "label": "Project ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "maxResults",
+                    "label": "Max Results",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 50
+                }
+            ],
+            "outputPaths": [
+                "datasets"
+            ]
+        },
+        {
+            "actionId": "get_dataset",
+            "displayName": "Get Dataset",
+            "method": "GET",
+            "path": "/projects/{projectId}/datasets/{datasetId}",
+            "pathParams": [
+                "projectId",
+                "datasetId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "projectId",
+                    "label": "Project ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "datasetId",
+                    "label": "Dataset ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "id",
+                "datasetReference"
+            ]
+        },
+        {
+            "actionId": "list_tables",
+            "displayName": "List Tables",
+            "method": "GET",
+            "path": "/projects/{projectId}/datasets/{datasetId}/tables",
+            "pathParams": [
+                "projectId",
+                "datasetId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "projectId",
+                    "label": "Project ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "datasetId",
+                    "label": "Dataset ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "maxResults",
+                    "label": "Max Results",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 50
+                }
+            ],
+            "outputPaths": [
+                "tables"
+            ]
+        },
+        {
+            "actionId": "get_table",
+            "displayName": "Get Table",
+            "method": "GET",
+            "path": "/projects/{projectId}/datasets/{datasetId}/tables/{tableId}",
+            "pathParams": [
+                "projectId",
+                "datasetId",
+                "tableId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "projectId",
+                    "label": "Project ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "datasetId",
+                    "label": "Dataset ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "tableId",
+                    "label": "Table ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "id",
+                "type"
+            ]
+        },
+        {
+            "actionId": "insert_table_data",
+            "displayName": "Insert Table Data",
+            "method": "POST",
+            "path": "/projects/{projectId}/datasets/{datasetId}/tables/{tableId}/insertAll",
+            "pathParams": [
+                "projectId",
+                "datasetId",
+                "tableId"
+            ],
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "inputSchema": [
+                {
+                    "key": "projectId",
+                    "label": "Project ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "datasetId",
+                    "label": "Dataset ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "tableId",
+                    "label": "Table ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "rows",
+                    "label": "Rows JSON",
+                    "type": "JSON",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return typeof $inputs.rows==='string'?JSON.parse($inputs.rows):$inputs.rows;",
+            "outputPaths": [
+                "insertErrors"
+            ]
+        },
+        {
+            "actionId": "get_job",
+            "displayName": "Get Job",
+            "method": "GET",
+            "path": "/projects/{projectId}/jobs/{jobId}",
+            "pathParams": [
+                "projectId",
+                "jobId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "projectId",
+                    "label": "Project ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "jobId",
+                    "label": "Job ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "status",
+                "configuration"
+            ]
+        }
+    ]
+}

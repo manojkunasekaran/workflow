@@ -1,0 +1,27 @@
+{
+  "connectorId": "intercom",
+  "triggers": [
+    {
+      "triggerId": "new_conversations",
+      "displayName": "New conversations",
+      "description": "Poll Intercom conversations.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://api.intercom.io/conversations?per_page=50"
+          },
+          "detection": {
+            "itemsPath": "$.conversations",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

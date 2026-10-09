@@ -1,0 +1,72 @@
+{
+  "connectorId": "freshdesk",
+  "triggers": [
+    {
+      "triggerId": "new_tickets",
+      "displayName": "New tickets",
+      "description": "Poll Freshdesk tickets.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://example.freshdesk.com/api/v2/tickets?per_page=100&order_by=created_at&order_type=desc"
+          },
+          "detection": {
+            "itemsPath": "$.tickets",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "updated_tickets",
+      "displayName": "Updated tickets",
+      "description": "Poll updated tickets.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "UPDATED",
+          "http": {
+            "method": "GET",
+            "url": "https://example.freshdesk.com/api/v2/tickets?per_page=100&order_by=updated_at&order_type=desc"
+          },
+          "detection": {
+            "itemsPath": "$.tickets",
+            "keyPaths": [
+              "id"
+            ],
+            "updateKeyPath": "updated_at"
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_contacts",
+      "displayName": "New contacts",
+      "description": "Poll contacts.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://example.freshdesk.com/api/v2/contacts?per_page=100"
+          },
+          "detection": {
+            "itemsPath": "$.contacts",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

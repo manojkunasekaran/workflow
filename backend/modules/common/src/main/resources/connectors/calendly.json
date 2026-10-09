@@ -1,0 +1,240 @@
+{
+    "connectorId": "calendly",
+    "displayName": "Calendly",
+    "icon": "https://api.iconify.design/simple-icons/calendly.svg?color=%23006BFF",
+    "category": "Scheduling",
+    "taskType": "CONNECTOR_TASK",
+    "baseUrl": "https://api.calendly.com",
+    "authType": "BEARER_TOKEN",
+    "credentialGuide": {
+        "fields": [
+            {
+                "key": "token",
+                "label": "Personal Access Token",
+                "hint": "Calendly Integrations \u2192 API & Webhooks \u2192 Personal Access Tokens",
+                "docUrl": "https://developer.calendly.com/api-docs"
+            }
+        ]
+    },
+    "actions": [
+        {
+            "actionId": "get_current_user",
+            "displayName": "Get Current User",
+            "method": "GET",
+            "path": "/users/me",
+            "inputSchema": [],
+            "outputPaths": ["resource.uri", "resource.name", "resource.email", "resource.scheduling_url"]
+        },
+        {
+            "actionId": "get_user",
+            "displayName": "Get User",
+            "method": "GET",
+            "path": "/users/{uuid}",
+            "pathParams": ["uuid"],
+            "inputSchema": [
+                {"key": "uuid", "label": "User UUID", "type": "STRING", "required": true, "supportsExpression": true}
+            ],
+            "outputPaths": ["resource.uri", "resource.name", "resource.email"]
+        },
+        {
+            "actionId": "list_event_types",
+            "displayName": "List Event Types",
+            "method": "GET",
+            "path": "/event_types",
+            "inputSchema": [
+                {"key": "user", "label": "User URI", "type": "STRING", "required": false, "supportsExpression": true},
+                {"key": "organization", "label": "Organization URI", "type": "STRING", "required": false, "supportsExpression": true},
+                {"key": "count", "label": "Count", "type": "NUMBER", "required": false, "defaultValue": 20, "supportsExpression": true},
+                {"key": "active", "label": "Active Only", "type": "BOOLEAN", "required": false, "supportsExpression": false}
+            ],
+            "outputPaths": ["collection", "pagination"]
+        },
+        {
+            "actionId": "get_event_type",
+            "displayName": "Get Event Type",
+            "method": "GET",
+            "path": "/event_types/{uuid}",
+            "pathParams": ["uuid"],
+            "inputSchema": [
+                {"key": "uuid", "label": "Event Type UUID", "type": "STRING", "required": true, "supportsExpression": true}
+            ],
+            "outputPaths": ["resource.name", "resource.duration", "resource.scheduling_url"]
+        },
+        {
+            "actionId": "list_scheduled_events",
+            "displayName": "List Scheduled Events",
+            "method": "GET",
+            "path": "/scheduled_events",
+            "inputSchema": [
+                {"key": "user", "label": "User URI", "type": "STRING", "required": false, "supportsExpression": true},
+                {"key": "organization", "label": "Organization URI", "type": "STRING", "required": false, "supportsExpression": true},
+                {"key": "status", "label": "Status", "type": "SELECT", "required": false, "supportsExpression": false, "options": [{"label": "Active", "value": "active"}, {"label": "Canceled", "value": "canceled"}]},
+                {"key": "min_start_time", "label": "Min Start Time (ISO)", "type": "STRING", "required": false, "supportsExpression": true},
+                {"key": "max_start_time", "label": "Max Start Time (ISO)", "type": "STRING", "required": false, "supportsExpression": true},
+                {"key": "count", "label": "Count", "type": "NUMBER", "required": false, "defaultValue": 20, "supportsExpression": true}
+            ],
+            "outputPaths": ["collection", "pagination"]
+        },
+        {
+            "actionId": "get_scheduled_event",
+            "displayName": "Get Scheduled Event",
+            "method": "GET",
+            "path": "/scheduled_events/{uuid}",
+            "pathParams": ["uuid"],
+            "inputSchema": [
+                {"key": "uuid", "label": "Event UUID", "type": "STRING", "required": true, "supportsExpression": true}
+            ],
+            "outputPaths": ["resource.name", "resource.start_time", "resource.end_time", "resource.status"]
+        },
+        {
+            "actionId": "cancel_scheduled_event",
+            "displayName": "Cancel Scheduled Event",
+            "method": "POST",
+            "path": "/scheduled_events/{uuid}/cancellation",
+            "pathParams": ["uuid"],
+            "fixedHeaders": {"Content-Type": "application/json"},
+            "inputSchema": [
+                {"key": "uuid", "label": "Event UUID", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "reason", "label": "Cancellation Reason", "type": "STRING", "required": false, "supportsExpression": true}
+            ],
+            "inputScript": "return $inputs.reason ? {reason:$inputs.reason} : {};",
+            "outputPaths": ["resource.status", "resource.cancellation"]
+        },
+        {
+            "actionId": "list_event_invitees",
+            "displayName": "List Event Invitees",
+            "method": "GET",
+            "path": "/scheduled_events/{uuid}/invitees",
+            "pathParams": ["uuid"],
+            "inputSchema": [
+                {"key": "uuid", "label": "Event UUID", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "status", "label": "Status", "type": "SELECT", "required": false, "supportsExpression": false, "options": [{"label": "Active", "value": "active"}, {"label": "Canceled", "value": "canceled"}]},
+                {"key": "count", "label": "Count", "type": "NUMBER", "required": false, "defaultValue": 20, "supportsExpression": true}
+            ],
+            "outputPaths": ["collection", "pagination"]
+        },
+        {
+            "actionId": "get_invitee",
+            "displayName": "Get Invitee",
+            "method": "GET",
+            "path": "/scheduled_events/{eventUuid}/invitees/{inviteeUuid}",
+            "pathParams": ["eventUuid", "inviteeUuid"],
+            "inputSchema": [
+                {"key": "eventUuid", "label": "Event UUID", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "inviteeUuid", "label": "Invitee UUID", "type": "STRING", "required": true, "supportsExpression": true}
+            ],
+            "outputPaths": ["resource.email", "resource.name", "resource.status", "resource.questions_and_answers"]
+        },
+        {
+            "actionId": "list_organization_memberships",
+            "displayName": "List Organization Memberships",
+            "method": "GET",
+            "path": "/organization_memberships",
+            "inputSchema": [
+                {"key": "organization", "label": "Organization URI", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "count", "label": "Count", "type": "NUMBER", "required": false, "defaultValue": 20, "supportsExpression": true}
+            ],
+            "outputPaths": ["collection", "pagination"]
+        },
+        {
+            "actionId": "create_scheduling_link",
+            "displayName": "Create Single-Use Scheduling Link",
+            "method": "POST",
+            "path": "/scheduling_links",
+            "fixedHeaders": {"Content-Type": "application/json"},
+            "inputSchema": [
+                {"key": "owner", "label": "Owner URI (event type)", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "owner_type", "label": "Owner Type", "type": "STRING", "required": true, "defaultValue": "EventType", "supportsExpression": false},
+                {"key": "max_event_count", "label": "Max Event Count", "type": "NUMBER", "required": false, "defaultValue": 1, "supportsExpression": true}
+            ],
+            "inputScript": "return {max_event_count:$inputs.max_event_count||1,owner:$inputs.owner,owner_type:$inputs.owner_type||'EventType'};",
+            "outputPaths": ["resource.booking_url", "resource.owner", "resource.owner_type"]
+        },
+        {
+            "actionId": "list_webhook_subscriptions",
+            "displayName": "List Webhook Subscriptions",
+            "method": "GET",
+            "path": "/webhook_subscriptions",
+            "inputSchema": [
+                {"key": "organization", "label": "Organization URI", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "scope", "label": "Scope", "type": "SELECT", "required": true, "supportsExpression": false, "options": [{"label": "Organization", "value": "organization"}, {"label": "User", "value": "user"}]},
+                {"key": "count", "label": "Count", "type": "NUMBER", "required": false, "defaultValue": 20, "supportsExpression": true}
+            ],
+            "outputPaths": ["collection", "pagination"]
+        },
+        {
+            "actionId": "create_webhook_subscription",
+            "displayName": "Create Webhook Subscription",
+            "method": "POST",
+            "path": "/webhook_subscriptions",
+            "fixedHeaders": {"Content-Type": "application/json"},
+            "inputSchema": [
+                {"key": "url", "label": "Callback URL", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "events", "label": "Events (JSON array)", "type": "JSON", "required": true, "supportsExpression": true, "description": "e.g. [\"invitee.created\",\"invitee.canceled\"]"},
+                {"key": "organization", "label": "Organization URI", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "scope", "label": "Scope", "type": "STRING", "required": true, "defaultValue": "organization", "supportsExpression": false},
+                {"key": "signing_key", "label": "Signing Key", "type": "STRING", "required": false, "supportsExpression": true}
+            ],
+            "inputScript": "const b={url:$inputs.url,events:typeof $inputs.events==='string'?JSON.parse($inputs.events):$inputs.events,organization:$inputs.organization,scope:$inputs.scope||'organization'}; if($inputs.signing_key) b.signing_key=$inputs.signing_key; return b;",
+            "outputPaths": ["resource.uri", "resource.callback_url", "resource.state"]
+        },
+        {
+            "actionId": "delete_webhook_subscription",
+            "displayName": "Delete Webhook Subscription",
+            "method": "DELETE",
+            "path": "/webhook_subscriptions/{uuid}",
+            "pathParams": ["uuid"],
+            "inputSchema": [
+                {"key": "uuid", "label": "Webhook UUID", "type": "STRING", "required": true, "supportsExpression": true}
+            ],
+            "outputPaths": []
+        },
+        {
+            "actionId": "get_organization",
+            "displayName": "Get Organization",
+            "method": "GET",
+            "path": "/organizations/{uuid}",
+            "pathParams": ["uuid"],
+            "inputSchema": [
+                {"key": "uuid", "label": "Organization UUID", "type": "STRING", "required": true, "supportsExpression": true}
+            ],
+            "outputPaths": ["resource.name", "resource.uri", "resource.plan"]
+        },
+        {
+            "actionId": "list_user_availability_schedules",
+            "displayName": "List User Availability Schedules",
+            "method": "GET",
+            "path": "/user_availability_schedules",
+            "inputSchema": [
+                {"key": "user", "label": "User URI", "type": "STRING", "required": true, "supportsExpression": true}
+            ],
+            "outputPaths": ["collection"]
+        },
+        {
+            "actionId": "get_event_type_available_times",
+            "displayName": "Get Event Type Available Times",
+            "method": "GET",
+            "path": "/event_type_available_times",
+            "inputSchema": [
+                {"key": "event_type", "label": "Event Type URI", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "start_time", "label": "Start Time (ISO)", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "end_time", "label": "End Time (ISO)", "type": "STRING", "required": true, "supportsExpression": true}
+            ],
+            "outputPaths": ["collection"]
+        }
+    ],
+    "connectionSetup": {
+        "fields": [
+            {
+                "label": "Personal Access Token",
+                "key": "token",
+                "sensitive": true,
+                "hint": "Create under Calendly Integrations \u2192 API & Webhooks"
+            }
+        ]
+    },
+    "verifyAction": {
+        "method": "GET",
+        "path": "/users/me"
+    }
+}

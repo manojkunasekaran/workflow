@@ -1,0 +1,447 @@
+{
+    "connectorId": "freshdesk",
+    "displayName": "Freshdesk",
+    "icon": "https://www.google.com/s2/favicons?domain=freshdesk.com&sz=128",
+    "category": "Support",
+    "taskType": "CONNECTOR_TASK",
+    "baseUrl": "https://example.freshdesk.com/api/v2",
+    "authType": "BASIC_AUTH",
+    "actions": [
+        {
+            "actionId": "list_tickets",
+            "displayName": "List Tickets",
+            "method": "GET",
+            "path": "/tickets",
+            "inputSchema": [
+                {
+                    "key": "per_page",
+                    "label": "Per Page",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 30
+                }
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "get_ticket",
+            "displayName": "Get Ticket",
+            "method": "GET",
+            "path": "/tickets/{ticket_id}",
+            "inputSchema": [
+                {
+                    "key": "ticket_id",
+                    "label": "Ticket ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "ticket_id"
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "create_ticket",
+            "displayName": "Create Ticket",
+            "method": "POST",
+            "path": "/tickets",
+            "inputSchema": [
+                {
+                    "key": "subject",
+                    "label": "Subject",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "description",
+                    "label": "Description",
+                    "type": "TEXTAREA",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "email",
+                    "label": "Requester Email",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "priority",
+                    "label": "Priority",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": "1"
+                }
+            ],
+            "inputScript": "return {subject:$inputs.subject,description:$inputs.description,email:$inputs.email,priority:Number($inputs.priority||1)};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "update_ticket",
+            "displayName": "Update Ticket",
+            "method": "PUT",
+            "path": "/tickets/{ticket_id}",
+            "inputSchema": [
+                {
+                    "key": "ticket_id",
+                    "label": "Ticket ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "status",
+                    "label": "Status",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "priority",
+                    "label": "Priority",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "ticket_id"
+            ],
+            "inputScript": "const b={}; if($inputs.status!=null) b.status=Number($inputs.status); if($inputs.priority!=null) b.priority=Number($inputs.priority); return b;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "delete_ticket",
+            "displayName": "Delete Ticket",
+            "method": "DELETE",
+            "path": "/tickets/{ticket_id}",
+            "inputSchema": [
+                {
+                    "key": "ticket_id",
+                    "label": "Ticket ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "ticket_id"
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "list_contacts",
+            "displayName": "List Contacts",
+            "method": "GET",
+            "path": "/contacts",
+            "inputSchema": [
+                {
+                    "key": "per_page",
+                    "label": "Per Page",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 30
+                }
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "get_contact",
+            "displayName": "Get Contact",
+            "method": "GET",
+            "path": "/contacts/{contact_id}",
+            "inputSchema": [
+                {
+                    "key": "contact_id",
+                    "label": "Contact ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "contact_id"
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "create_contact",
+            "displayName": "Create Contact",
+            "method": "POST",
+            "path": "/contacts",
+            "inputSchema": [
+                {
+                    "key": "name",
+                    "label": "Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "email",
+                    "label": "Email",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return {name:$inputs.name,email:$inputs.email};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "update_contact",
+            "displayName": "Update Contact",
+            "method": "PUT",
+            "path": "/contacts/{contact_id}",
+            "inputSchema": [
+                {
+                    "key": "contact_id",
+                    "label": "Contact ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "name",
+                    "label": "Name",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "phone",
+                    "label": "Phone",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "contact_id"
+            ],
+            "inputScript": "const b={}; if($inputs.name) b.name=$inputs.name; if($inputs.phone) b.phone=$inputs.phone; return b;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "list_companies",
+            "displayName": "List Companies",
+            "method": "GET",
+            "path": "/companies",
+            "inputSchema": [
+                {
+                    "key": "per_page",
+                    "label": "Per Page",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 30
+                }
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "get_company",
+            "displayName": "Get Company",
+            "method": "GET",
+            "path": "/companies/{company_id}",
+            "inputSchema": [
+                {
+                    "key": "company_id",
+                    "label": "Company ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "company_id"
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "create_company",
+            "displayName": "Create Company",
+            "method": "POST",
+            "path": "/companies",
+            "inputSchema": [
+                {
+                    "key": "name",
+                    "label": "Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return {name:$inputs.name};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "list_agents",
+            "displayName": "List Agents",
+            "method": "GET",
+            "path": "/agents",
+            "inputSchema": [],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "get_agent",
+            "displayName": "Get Agent",
+            "method": "GET",
+            "path": "/agents/{agent_id}",
+            "inputSchema": [
+                {
+                    "key": "agent_id",
+                    "label": "Agent ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "agent_id"
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "list_ticket_conversations",
+            "displayName": "List Ticket Conversations",
+            "method": "GET",
+            "path": "/tickets/{ticket_id}/conversations",
+            "inputSchema": [
+                {
+                    "key": "ticket_id",
+                    "label": "Ticket ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "ticket_id"
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "reply_ticket",
+            "displayName": "Reply to Ticket",
+            "method": "POST",
+            "path": "/tickets/{ticket_id}/reply",
+            "inputSchema": [
+                {
+                    "key": "ticket_id",
+                    "label": "Ticket ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "body",
+                    "label": "Body",
+                    "type": "TEXTAREA",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "ticket_id"
+            ],
+            "inputScript": "return {body:$inputs.body};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id"
+            ]
+        }
+    ],
+    "credentialGuide": {
+        "description": "Duplicate and set baseUrl to https://YOUR_DOMAIN.freshdesk.com/api/v2",
+        "fields": [
+            {
+                "key": "username",
+                "label": "API Key",
+                "hint": "Use your Freshdesk API key as username"
+            },
+            {
+                "key": "password",
+                "label": "Password",
+                "hint": "Use 'X' or repeat the API key"
+            },
+            {
+                "key": "baseUrl",
+                "label": "Base URL",
+                "hint": "https://YOUR_DOMAIN.freshdesk.com/api/v2"
+            }
+        ]
+    },
+    "connectionSetup": {
+        "fields": [
+            {
+                "label": "API Key (username)",
+                "key": "username",
+                "sensitive": true
+            },
+            {
+                "label": "Password",
+                "key": "password",
+                "sensitive": true
+            }
+        ]
+    },
+    "verifyAction": {
+        "method": "GET",
+        "path": "/agents/me"
+    }
+}

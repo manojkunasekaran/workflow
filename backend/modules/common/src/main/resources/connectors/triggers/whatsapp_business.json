@@ -1,0 +1,120 @@
+{
+  "connectorId": "whatsapp_business",
+  "triggers": [
+    {
+      "triggerId": "new_message_templates",
+      "displayName": "New message templates",
+      "description": "Polls for new or updated WhatsApp message templates on a WABA.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {"key": "wabaId", "label": "WABA ID", "type": "STRING", "required": true, "supportsExpression": false}
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://graph.facebook.com/v21.0/{wabaId}/message_templates?limit=100"
+          },
+          "detection": {
+            "itemsPath": "$.data",
+            "keyPaths": ["id"]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "message_received",
+      "displayName": "Message received",
+      "description": "Webhook when a customer sends a WhatsApp message.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {"key": "appId", "label": "Meta App ID", "type": "STRING", "required": true, "supportsExpression": false},
+        {"key": "verifyToken", "label": "Verify Token", "type": "STRING", "required": true, "supportsExpression": false}
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://graph.facebook.com/v21.0/{appId}/subscriptions",
+            "body": "object=whatsapp_business_account&callback_url={{callbackUrl}}&verify_token={verifyToken}&fields=messages"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://graph.facebook.com/v21.0/{appId}/subscriptions"
+          },
+          "subscriptionIdPath": "$.success",
+          "inbound": {
+            "verificationMode": "HMAC_SHA256",
+            "headerName": "X-Hub-Signature-256",
+            "eventIdPath": "$.entry[0].changes[0].value.messages[0].id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "message_status_updated",
+      "displayName": "Message status updated",
+      "description": "Webhook when outbound message delivery status changes (sent, delivered, read, failed).",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {"key": "appId", "label": "Meta App ID", "type": "STRING", "required": true, "supportsExpression": false},
+        {"key": "verifyToken", "label": "Verify Token", "type": "STRING", "required": true, "supportsExpression": false}
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://graph.facebook.com/v21.0/{appId}/subscriptions",
+            "body": "object=whatsapp_business_account&callback_url={{callbackUrl}}&verify_token={verifyToken}&fields=message_echoes,message_template_status_update"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://graph.facebook.com/v21.0/{appId}/subscriptions"
+          },
+          "subscriptionIdPath": "$.success",
+          "inbound": {
+            "verificationMode": "HMAC_SHA256",
+            "headerName": "X-Hub-Signature-256",
+            "eventIdPath": "$.entry[0].changes[0].value.statuses[0].id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "template_status_updated",
+      "displayName": "Template status updated",
+      "description": "Webhook when a message template is approved or rejected.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {"key": "appId", "label": "Meta App ID", "type": "STRING", "required": true, "supportsExpression": false},
+        {"key": "verifyToken", "label": "Verify Token", "type": "STRING", "required": true, "supportsExpression": false}
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://graph.facebook.com/v21.0/{appId}/subscriptions",
+            "body": "object=whatsapp_business_account&callback_url={{callbackUrl}}&verify_token={verifyToken}&fields=message_template_status_update"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://graph.facebook.com/v21.0/{appId}/subscriptions"
+          },
+          "subscriptionIdPath": "$.success",
+          "inbound": {
+            "verificationMode": "HMAC_SHA256",
+            "headerName": "X-Hub-Signature-256",
+            "eventIdPath": "$.entry[0].changes[0].value.message_template_id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    }
+  ]
+}

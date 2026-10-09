@@ -1,0 +1,247 @@
+{
+    "displayName": "SendGrid",
+    "icon": "https://api.iconify.design/logos/sendgrid-icon.svg",
+    "category": "Email Marketing",
+    "baseUrl": "https://api.sendgrid.com/v3",
+    "authType": "BEARER_TOKEN",
+    "credentialGuide": {
+        "fields": [
+            {
+                "key": "token",
+                "label": "API Key"
+            }
+        ]
+    },
+    "connectionSetup": {
+        "fields": [
+            {
+                "label": "API Key",
+                "key": "token",
+                "sensitive": true
+            }
+        ]
+    },
+    "verifyAction": {
+        "method": "GET",
+        "path": "/scopes"
+    },
+    "actions": [
+        {
+            "actionId": "send_email",
+            "displayName": "Send Email",
+            "method": "POST",
+            "path": "/mail/send",
+            "inputSchema": [
+                {
+                    "key": "to",
+                    "label": "To Email",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "from",
+                    "label": "From Email",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "subject",
+                    "label": "Subject",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "content",
+                    "label": "Plain Text Content",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "htmlContent",
+                    "label": "HTML Content",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "const p={personalizations:[{to:[{email:$inputs.to}]}],from:{email:$inputs.from},subject:$inputs.subject,content:[]}; if($inputs.content) p.content.push({type:'text/plain',value:$inputs.content}); if($inputs.htmlContent) p.content.push({type:'text/html',value:$inputs.htmlContent}); return p;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": []
+        },
+        {
+            "actionId": "list_templates",
+            "displayName": "List Templates",
+            "method": "GET",
+            "path": "/templates",
+            "inputSchema": [
+                {
+                    "key": "generations",
+                    "label": "Generations",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 1
+                }
+            ],
+            "outputPaths": [
+                "templates"
+            ]
+        },
+        {
+            "actionId": "get_template",
+            "displayName": "Get Template",
+            "method": "GET",
+            "path": "/templates/{templateId}",
+            "pathParams": [
+                "templateId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "templateId",
+                    "label": "Template ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "id",
+                "name"
+            ]
+        },
+        {
+            "actionId": "add_contact_to_list",
+            "displayName": "Add Contact to List",
+            "method": "PUT",
+            "path": "/marketing/contacts",
+            "inputSchema": [
+                {
+                    "key": "email",
+                    "label": "Email",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "listIds",
+                    "label": "List IDs (comma-separated)",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return {contacts:[{email:$inputs.email,list_ids:($inputs.listIds||'').split(',').map(s=>s.trim()).filter(Boolean)}]};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "job_id"
+            ]
+        },
+        {
+            "actionId": "list_contacts",
+            "displayName": "List Marketing Contacts",
+            "method": "GET",
+            "path": "/marketing/contacts",
+            "inputSchema": [
+                {
+                    "key": "page_size",
+                    "label": "Page Size",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 50
+                }
+            ],
+            "outputPaths": [
+                "result"
+            ]
+        },
+        {
+            "actionId": "create_list",
+            "displayName": "Create Marketing List",
+            "method": "POST",
+            "path": "/marketing/lists",
+            "inputSchema": [
+                {
+                    "key": "name",
+                    "label": "List Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return {name:$inputs.name};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id",
+                "name"
+            ]
+        },
+        {
+            "actionId": "get_stats",
+            "displayName": "Get Global Email Stats",
+            "method": "GET",
+            "path": "/stats",
+            "inputSchema": [
+                {
+                    "key": "start_date",
+                    "label": "Start Date (YYYY-MM-DD)",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "end_date",
+                    "label": "End Date (YYYY-MM-DD)",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "stats"
+            ]
+        },
+        {
+            "actionId": "validate_email",
+            "displayName": "Validate Email",
+            "method": "POST",
+            "path": "/validations/email",
+            "inputSchema": [
+                {
+                    "key": "email",
+                    "label": "Email",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "source",
+                    "label": "Source",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": "workflow"
+                }
+            ],
+            "inputScript": "return {email:$inputs.email,source:$inputs.source||'workflow'};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "result"
+            ]
+        }
+    ],
+    "connectorId": "sendgrid",
+    "taskType": "CONNECTOR_TASK"
+}

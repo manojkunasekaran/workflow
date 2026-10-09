@@ -1,95 +1,412 @@
 {
-    "connectorId":  "linear",
-    "displayName":  "Linear",
-    "icon":  "https://cdn.simpleicons.org/linear/5E6AD2",
-    "category":  "Project Management",
+    "connectorId": "linear",
+    "displayName": "Linear",
+    "icon": "https://api.iconify.design/logos/linear.svg",
+    "category": "Project Management",
     "taskType": "CONNECTOR_TASK",
-    "baseUrl":  "https://api.linear.app/graphql",
-    "authType":  "BEARER_TOKEN",
-    "authHeaderPrefix":  "Bearer ",
-    "credentialGuide":  {
-                            "fields":  [
-                                           {
-                                               "key":  "token",
-                                               "label":  "Personal API Key",
-                                               "hint":  "Found in Linear settings under API"
-                                           }
-                                       ]
-                        },
-    "actions":  [
-                    {
-                        "actionId":  "create_issue",
-                        "displayName":  "Create Issue",
-                        "method":  "POST",
-                        "path":  "",
-                        "inputSchema":  [
-                                            {
-                                                "key":  "teamId",
-                                                "label":  "Team ID",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "title",
-                                                "label":  "Title",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "description",
-                                                "label":  "Description",
-                                                "type":  "TEXTAREA",
-                                                "required":  false,
-                                                "supportsExpression":  true
-                                            }
-                                        ],
-                        "inputScript":  "return { query: `mutation { issueCreate(input: { title: \"${$inputs.title}\", teamId: \"${$inputs.teamId}\", description: \"${$inputs.description || \u0027\u0027}\" }) { issue { id title } } }` };",
-                        "outputPaths":  [
-                                            "data.issueCreate.issue.id"
-                                        ]
-                    },
-                    {
-                        "actionId":  "update_issue",
-                        "displayName":  "Update Issue",
-                        "method":  "POST",
-                        "path":  "",
-                        "inputSchema":  [
-                                            {
-                                                "key":  "issueId",
-                                                "label":  "Issue ID",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "stateId",
-                                                "label":  "State ID",
-                                                "type":  "STRING",
-                                                "required":  false,
-                                                "supportsExpression":  true
-                                            }
-                                        ],
-                        "inputScript":  "let updates = []; if ($inputs.stateId) updates.push(`stateId: \"${$inputs.stateId}\"`); return { query: `mutation { issueUpdate(id: \"${$inputs.issueId}\", input: { ${updates.join(', ')} }) { issue { id } } }` };",
-                        "outputPaths":  [
-                                            "data.issueUpdate.issue.id"
-                                        ]
-                    }
-                ],
-    "connectionSetup":  {
-                            "fields":  [
-                                           {
-                                               "label":  "API Key",
-                                               "key":  "token",
-                                               "sensitive":  true,
-                                               "hint":  "Found in Linear settings under API"
-                                           }
-                                       ]
-                        },
-    "verifyAction":  {
-                         "method":  "GET",
-                         "path":  "/"
-                     }
+    "baseUrl": "https://api.linear.app/graphql",
+    "authType": "BEARER_TOKEN",
+    "authHeaderPrefix": "Bearer ",
+    "credentialGuide": {
+        "fields": [
+            {
+                "key": "token",
+                "label": "Personal API Key",
+                "hint": "Found in Linear settings under API"
+            }
+        ]
+    },
+    "actions": [
+        {
+            "actionId": "create_issue",
+            "displayName": "Create Issue",
+            "method": "POST",
+            "path": "",
+            "inputSchema": [
+                {
+                    "key": "teamId",
+                    "label": "Team ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "title",
+                    "label": "Title",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "description",
+                    "label": "Description",
+                    "type": "TEXTAREA",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return { query: `mutation { issueCreate(input: { title: \"${$inputs.title}\", teamId: \"${$inputs.teamId}\", description: \"${$inputs.description || ''}\" }) { issue { id title } } }` };",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "data.issueCreate.issue.id"
+            ]
+        },
+        {
+            "actionId": "update_issue",
+            "displayName": "Update Issue",
+            "method": "POST",
+            "path": "",
+            "inputSchema": [
+                {
+                    "key": "issueId",
+                    "label": "Issue ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "stateId",
+                    "label": "State ID",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "title",
+                    "label": "Title",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "let u=[]; if($inputs.stateId) u.push(`stateId: \"${$inputs.stateId}\"`); if($inputs.title) u.push(`title: \"${$inputs.title}\"`); return { query: `mutation { issueUpdate(id: \"${$inputs.issueId}\", input: { ${u.join(\", \")} }) { issue { id } } }` };",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "data.issueUpdate.issue.id"
+            ]
+        },
+        {
+            "actionId": "get_issue",
+            "displayName": "Get Issue",
+            "method": "POST",
+            "path": "",
+            "inputSchema": [
+                {
+                    "key": "issueId",
+                    "label": "Issue ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return { query: `query { issue(id: \"${$inputs.issueId}\") { id title description state { name } assignee { name } } }` };",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "data.issue"
+            ]
+        },
+        {
+            "actionId": "list_team_issues",
+            "displayName": "List Team Issues",
+            "method": "POST",
+            "path": "",
+            "inputSchema": [
+                {
+                    "key": "teamId",
+                    "label": "Team ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return { query: `query { team(id: \"${$inputs.teamId}\") { issues(first: 50) { nodes { id title updatedAt } } } }` };",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "data.team.issues.nodes"
+            ]
+        },
+        {
+            "actionId": "archive_issue",
+            "displayName": "Archive Issue",
+            "method": "POST",
+            "path": "",
+            "inputSchema": [
+                {
+                    "key": "issueId",
+                    "label": "Issue ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return { query: `mutation { issueArchive(id: \"${$inputs.issueId}\") { success } }` };",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "data.issueArchive.success"
+            ]
+        },
+        {
+            "actionId": "create_comment",
+            "displayName": "Create Comment",
+            "method": "POST",
+            "path": "",
+            "inputSchema": [
+                {
+                    "key": "issueId",
+                    "label": "Issue ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "body",
+                    "label": "Body",
+                    "type": "TEXTAREA",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return { query: `mutation { commentCreate(input: { issueId: \"${$inputs.issueId}\", body: \"${$inputs.body}\" }) { comment { id } } }` };",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "data.commentCreate.comment.id"
+            ]
+        },
+        {
+            "actionId": "list_comments",
+            "displayName": "List Comments",
+            "method": "POST",
+            "path": "",
+            "inputSchema": [
+                {
+                    "key": "issueId",
+                    "label": "Issue ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return { query: `query { issue(id: \"${$inputs.issueId}\") { comments { nodes { id body createdAt } } } }` };",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "data.issue.comments.nodes"
+            ]
+        },
+        {
+            "actionId": "list_teams",
+            "displayName": "List Teams",
+            "method": "POST",
+            "path": "",
+            "inputSchema": [],
+            "inputScript": "return { query: `query { teams { nodes { id name } } }` };",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "data.teams.nodes"
+            ]
+        },
+        {
+            "actionId": "list_projects",
+            "displayName": "List Projects",
+            "method": "POST",
+            "path": "",
+            "inputSchema": [
+                {
+                    "key": "teamId",
+                    "label": "Team ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return { query: `query { team(id: \"${$inputs.teamId}\") { projects { nodes { id name } } } }` };",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "data.team.projects.nodes"
+            ]
+        },
+        {
+            "actionId": "create_project",
+            "displayName": "Create Project",
+            "method": "POST",
+            "path": "",
+            "inputSchema": [
+                {
+                    "key": "teamId",
+                    "label": "Team ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "name",
+                    "label": "Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return { query: `mutation { projectCreate(input: { name: \"${$inputs.name}\", teamIds: [\"${$inputs.teamId}\"] }) { project { id name } } }` };",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "data.projectCreate.project.id"
+            ]
+        },
+        {
+            "actionId": "list_users",
+            "displayName": "List Users",
+            "method": "POST",
+            "path": "",
+            "inputSchema": [],
+            "inputScript": "return { query: `query { users { nodes { id name email } } }` };",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "data.users.nodes"
+            ]
+        },
+        {
+            "actionId": "list_workflow_states",
+            "displayName": "List Workflow States",
+            "method": "POST",
+            "path": "",
+            "inputSchema": [
+                {
+                    "key": "teamId",
+                    "label": "Team ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return { query: `query { team(id: \"${$inputs.teamId}\") { states { nodes { id name type } } } }` };",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "data.team.states.nodes"
+            ]
+        },
+        {
+            "actionId": "assign_issue",
+            "displayName": "Assign Issue",
+            "method": "POST",
+            "path": "",
+            "inputSchema": [
+                {
+                    "key": "issueId",
+                    "label": "Issue ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "assigneeId",
+                    "label": "Assignee ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return { query: `mutation { issueUpdate(id: \"${$inputs.issueId}\", input: { assigneeId: \"${$inputs.assigneeId}\" }) { issue { id } } }` };",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "data.issueUpdate.issue.id"
+            ]
+        },
+        {
+            "actionId": "list_labels",
+            "displayName": "List Labels",
+            "method": "POST",
+            "path": "",
+            "inputSchema": [
+                {
+                    "key": "teamId",
+                    "label": "Team ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return { query: `query { team(id: \"${$inputs.teamId}\") { labels { nodes { id name } } } }` };",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "data.team.labels.nodes"
+            ]
+        },
+        {
+            "actionId": "search_issues",
+            "displayName": "Search Issues",
+            "method": "POST",
+            "path": "",
+            "inputSchema": [
+                {
+                    "key": "term",
+                    "label": "Search Term",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return { query: `query { issueSearch(query: \"${$inputs.term}\", first: 20) { nodes { id title } } }` };",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "data.issueSearch.nodes"
+            ]
+        },
+        {
+            "actionId": "get_viewer",
+            "displayName": "Get Viewer",
+            "method": "POST",
+            "path": "",
+            "inputSchema": [],
+            "inputScript": "return { query: `query { viewer { id name email } }` };",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "data.viewer"
+            ]
+        }
+    ],
+    "connectionSetup": {
+        "fields": [
+            {
+                "label": "API Key",
+                "key": "token",
+                "sensitive": true,
+                "hint": "Found in Linear settings under API"
+            }
+        ]
+    },
+    "verifyAction": {
+        "method": "POST",
+        "path": ""
+    }
 }
-

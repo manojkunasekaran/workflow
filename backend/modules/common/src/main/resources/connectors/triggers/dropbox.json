@@ -1,0 +1,91 @@
+{
+  "connectorId": "dropbox",
+  "triggers": [
+    {
+      "triggerId": "new_files",
+      "displayName": "New files",
+      "description": "Poll Dropbox folder for new entries.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "path",
+          "label": "Folder Path",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false,
+          "defaultValue": ""
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "POST",
+            "url": "https://api.dropboxapi.com/2/files/list_folder",
+            "body": "{\"path\":\"{path}\",\"recursive\":false}"
+          },
+          "detection": {
+            "itemsPath": "$.entries",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "folder_changed",
+      "displayName": "Folder listing changed",
+      "description": "Poll folder listing for any change.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "path",
+          "label": "Folder Path",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false,
+          "defaultValue": ""
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "RESPONSE_CHANGED",
+          "http": {
+            "method": "POST",
+            "url": "https://api.dropboxapi.com/2/files/list_folder",
+            "body": "{\"path\":\"{path}\",\"recursive\":false}"
+          },
+          "detection": {
+            "hashIgnorePaths": [
+              "$.cursor"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_shared_links",
+      "displayName": "New shared links",
+      "description": "Poll shared links for new entries.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "POST",
+            "url": "https://api.dropboxapi.com/2/sharing/list_shared_links",
+            "body": "{}"
+          },
+          "detection": {
+            "itemsPath": "$.links",
+            "keyPaths": [
+              "url"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

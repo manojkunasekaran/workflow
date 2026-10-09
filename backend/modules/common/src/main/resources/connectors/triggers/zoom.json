@@ -1,0 +1,129 @@
+{
+  "connectorId": "zoom",
+  "triggers": [
+    {
+      "triggerId": "new_upcoming_meetings",
+      "displayName": "New upcoming meetings",
+      "description": "Polls for upcoming scheduled meetings for the authenticated user.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://api.zoom.us/v2/users/me/meetings?type=upcoming&page_size=100"
+          },
+          "detection": {
+            "itemsPath": "$.meetings",
+            "keyPaths": ["uuid"]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_recordings",
+      "displayName": "New cloud recordings",
+      "description": "Polls for new cloud recordings on the user account.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://api.zoom.us/v2/users/me/recordings?page_size=100"
+          },
+          "detection": {
+            "itemsPath": "$.meetings",
+            "keyPaths": ["uuid"]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "meeting_started",
+      "displayName": "Meeting started",
+      "description": "Webhook when a meeting starts (requires Zoom Event Subscription app).",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.zoom.us/v2/webhooks",
+            "body": "{\"subscription_name\":\"Workflow360 meeting started\",\"event\":\"meeting.started\",\"endpoint_url\":\"{{callbackUrl}}\"}"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://api.zoom.us/v2/webhooks/{{subscriptionId}}"
+          },
+          "subscriptionIdPath": "$.webhook_id",
+          "inbound": {
+            "verificationMode": "HMAC_SHA256",
+            "headerName": "x-zm-signature",
+            "eventIdPath": "$.event_ts",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "meeting_ended",
+      "displayName": "Meeting ended",
+      "description": "Webhook when a meeting ends.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.zoom.us/v2/webhooks",
+            "body": "{\"subscription_name\":\"Workflow360 meeting ended\",\"event\":\"meeting.ended\",\"endpoint_url\":\"{{callbackUrl}}\"}"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://api.zoom.us/v2/webhooks/{{subscriptionId}}"
+          },
+          "subscriptionIdPath": "$.webhook_id",
+          "inbound": {
+            "verificationMode": "HMAC_SHA256",
+            "headerName": "x-zm-signature",
+            "eventIdPath": "$.event_ts",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "recording_completed",
+      "displayName": "Recording completed",
+      "description": "Webhook when a cloud recording finishes processing.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api.zoom.us/v2/webhooks",
+            "body": "{\"subscription_name\":\"Workflow360 recording completed\",\"event\":\"recording.completed\",\"endpoint_url\":\"{{callbackUrl}}\"}"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://api.zoom.us/v2/webhooks/{{subscriptionId}}"
+          },
+          "subscriptionIdPath": "$.webhook_id",
+          "inbound": {
+            "verificationMode": "HMAC_SHA256",
+            "headerName": "x-zm-signature",
+            "eventIdPath": "$.event_ts",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    }
+  ]
+}

@@ -36,7 +36,7 @@ public class WorkflowDefinitionService {
             definition.setId(UUID.randomUUID().toString());
         }
         WorkflowDefinition saved = repository.save(definition);
-        triggerActivationService.sync(saved);
+        syncTriggersAfterSave(saved, true);
         return saved;
     }
 
@@ -58,8 +58,29 @@ public class WorkflowDefinitionService {
         existing.setInputs(definition.getInputs());
 
         WorkflowDefinition saved = repository.save(existing);
-        triggerActivationService.sync(saved);
+        syncTriggersAfterSave(saved, false);
         return saved;
+    }
+
+    /**
+     * Activates runtime triggers after persist. On create, removes the definition if sync fails so
+     * clients do not see "save failed" while orphaned rows remain (e.g. encryption misconfiguration).
+     */
+    private void syncTriggersAfterSave(WorkflowDefinition saved, boolean isCreate) {
+        try {
+            triggerActivationService.sync(saved);
+        } catch (RuntimeException ex) {
+            log.error("Trigger sync failed for workflow {}", saved.getId(), ex);
+            if (isCreate) {
+                try {
+                    triggerActivationService.deactivate(saved.getId());
+                } catch (RuntimeException deactivateEx) {
+                    log.warn("Failed to deactivate triggers while rolling back workflow {}", saved.getId(), deactivateEx);
+                }
+                repository.deleteById(saved.getId());
+            }
+            throw ex;
+        }
     }
 
     public List<WorkflowDefinition> getAllWorkflowDefinitions() {

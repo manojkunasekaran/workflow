@@ -1,0 +1,443 @@
+{
+    "connectorId": "gitlab",
+    "displayName": "GitLab",
+    "icon": "https://api.iconify.design/logos/gitlab.svg",
+    "category": "DevOps",
+    "taskType": "CONNECTOR_TASK",
+    "baseUrl": "https://gitlab.com/api/v4",
+    "authType": "CUSTOM_HEADER",
+    "actions": [
+        {
+            "actionId": "list_projects",
+            "displayName": "List Projects",
+            "method": "GET",
+            "path": "/projects",
+            "inputSchema": [
+                {
+                    "key": "membership",
+                    "label": "Membership Only",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": "true"
+                }
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "get_project",
+            "displayName": "Get Project",
+            "method": "GET",
+            "path": "/projects/{project_id}",
+            "inputSchema": [
+                {
+                    "key": "project_id",
+                    "label": "Project ID or URL-encoded path",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "project_id"
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "create_project",
+            "displayName": "Create Project",
+            "method": "POST",
+            "path": "/projects",
+            "inputSchema": [
+                {
+                    "key": "name",
+                    "label": "Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "visibility",
+                    "label": "Visibility",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": "private"
+                }
+            ],
+            "inputScript": "return {name:$inputs.name,visibility:$inputs.visibility||'private'};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "list_issues",
+            "displayName": "List Issues",
+            "method": "GET",
+            "path": "/projects/{project_id}/issues",
+            "inputSchema": [
+                {
+                    "key": "project_id",
+                    "label": "Project ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "project_id"
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "get_issue",
+            "displayName": "Get Issue",
+            "method": "GET",
+            "path": "/projects/{project_id}/issues/{issue_iid}",
+            "inputSchema": [
+                {
+                    "key": "project_id",
+                    "label": "Project ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "issue_iid",
+                    "label": "Issue IID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "project_id",
+                "issue_iid"
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "create_issue",
+            "displayName": "Create Issue",
+            "method": "POST",
+            "path": "/projects/{project_id}/issues",
+            "inputSchema": [
+                {
+                    "key": "project_id",
+                    "label": "Project ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "title",
+                    "label": "Title",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "description",
+                    "label": "Description",
+                    "type": "TEXTAREA",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "project_id"
+            ],
+            "inputScript": "return {title:$inputs.title,description:$inputs.description||''};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "update_issue",
+            "displayName": "Update Issue",
+            "method": "PUT",
+            "path": "/projects/{project_id}/issues/{issue_iid}",
+            "inputSchema": [
+                {
+                    "key": "project_id",
+                    "label": "Project ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "issue_iid",
+                    "label": "Issue IID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "state_event",
+                    "label": "State Event",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "project_id",
+                "issue_iid"
+            ],
+            "inputScript": "const b={}; if($inputs.state_event) b.state_event=$inputs.state_event; return b;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "list_merge_requests",
+            "displayName": "List Merge Requests",
+            "method": "GET",
+            "path": "/projects/{project_id}/merge_requests",
+            "inputSchema": [
+                {
+                    "key": "project_id",
+                    "label": "Project ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "project_id"
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "get_merge_request",
+            "displayName": "Get Merge Request",
+            "method": "GET",
+            "path": "/projects/{project_id}/merge_requests/{mr_iid}",
+            "inputSchema": [
+                {
+                    "key": "project_id",
+                    "label": "Project ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "mr_iid",
+                    "label": "MR IID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "project_id",
+                "mr_iid"
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "create_merge_request",
+            "displayName": "Create Merge Request",
+            "method": "POST",
+            "path": "/projects/{project_id}/merge_requests",
+            "inputSchema": [
+                {
+                    "key": "project_id",
+                    "label": "Project ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "title",
+                    "label": "Title",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "source_branch",
+                    "label": "Source Branch",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "target_branch",
+                    "label": "Target Branch",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "project_id"
+            ],
+            "inputScript": "return {title:$inputs.title,source_branch:$inputs.source_branch,target_branch:$inputs.target_branch};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "list_pipelines",
+            "displayName": "List Pipelines",
+            "method": "GET",
+            "path": "/projects/{project_id}/pipelines",
+            "inputSchema": [
+                {
+                    "key": "project_id",
+                    "label": "Project ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "project_id"
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "get_pipeline",
+            "displayName": "Get Pipeline",
+            "method": "GET",
+            "path": "/projects/{project_id}/pipelines/{pipeline_id}",
+            "inputSchema": [
+                {
+                    "key": "project_id",
+                    "label": "Project ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "pipeline_id",
+                    "label": "Pipeline ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "project_id",
+                "pipeline_id"
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "create_pipeline",
+            "displayName": "Create Pipeline",
+            "method": "POST",
+            "path": "/projects/{project_id}/pipeline",
+            "inputSchema": [
+                {
+                    "key": "project_id",
+                    "label": "Project ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "ref",
+                    "label": "Ref",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "defaultValue": "main"
+                }
+            ],
+            "pathParams": [
+                "project_id"
+            ],
+            "inputScript": "return {ref:$inputs.ref||'main'};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "list_commits",
+            "displayName": "List Commits",
+            "method": "GET",
+            "path": "/projects/{project_id}/repository/commits",
+            "inputSchema": [
+                {
+                    "key": "project_id",
+                    "label": "Project ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "project_id"
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "get_current_user",
+            "displayName": "Get Current User",
+            "method": "GET",
+            "path": "/user",
+            "inputSchema": [],
+            "outputPaths": [
+                "$"
+            ]
+        }
+    ],
+    "credentialGuide": {
+        "description": "For self-managed GitLab, clone and set baseUrl to https://your.gitlab.example/api/v4",
+        "fields": [
+            {
+                "key": "PRIVATE-TOKEN",
+                "label": "PRIVATE-TOKEN",
+                "hint": "Personal access token with api scope"
+            }
+        ]
+    },
+    "connectionSetup": {
+        "fields": [
+            {
+                "label": "PRIVATE-TOKEN",
+                "key": "PRIVATE-TOKEN",
+                "sensitive": true
+            }
+        ]
+    },
+    "verifyAction": {
+        "method": "GET",
+        "path": "/user"
+    }
+}

@@ -1,0 +1,314 @@
+{
+    "connectorId": "whatsapp_business",
+    "displayName": "WhatsApp Business",
+    "icon": "https://api.iconify.design/logos/whatsapp-icon.svg",
+    "category": "Communication",
+    "taskType": "CONNECTOR_TASK",
+    "baseUrl": "https://graph.facebook.com/v21.0",
+    "authType": "BEARER_TOKEN",
+    "credentialGuide": {
+        "fields": [
+            {
+                "key": "token",
+                "label": "System User Access Token",
+                "hint": "Meta Business Settings \u2192 System Users \u2192 Generate token with whatsapp_business_messaging and whatsapp_business_management",
+                "docUrl": "https://developers.facebook.com/docs/whatsapp/cloud-api/get-started"
+            }
+        ]
+    },
+    "actions": [
+        {
+            "actionId": "send_text_message",
+            "displayName": "Send Text Message",
+            "method": "POST",
+            "path": "/{phoneNumberId}/messages",
+            "pathParams": ["phoneNumberId"],
+            "fixedHeaders": {"Content-Type": "application/json"},
+            "inputSchema": [
+                {"key": "phoneNumberId", "label": "Phone Number ID", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "to", "label": "Recipient Phone (E.164)", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "body", "label": "Message Text", "type": "TEXTAREA", "required": true, "supportsExpression": true},
+                {"key": "preview_url", "label": "Enable Link Preview", "type": "BOOLEAN", "required": false, "supportsExpression": false}
+            ],
+            "inputScript": "const m={messaging_product:'whatsapp',to:$inputs.to,type:'text',text:{body:$inputs.body}}; if($inputs.preview_url===true) m.text.preview_url=true; return m;",
+            "outputPaths": ["messaging_product", "messages", "contacts"]
+        },
+        {
+            "actionId": "send_template_message",
+            "displayName": "Send Template Message",
+            "method": "POST",
+            "path": "/{phoneNumberId}/messages",
+            "pathParams": ["phoneNumberId"],
+            "fixedHeaders": {"Content-Type": "application/json"},
+            "inputSchema": [
+                {"key": "phoneNumberId", "label": "Phone Number ID", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "to", "label": "Recipient Phone (E.164)", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "template_name", "label": "Template Name", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "language_code", "label": "Language Code", "type": "STRING", "required": true, "defaultValue": "en_US", "supportsExpression": true},
+                {"key": "components", "label": "Template Components (JSON)", "type": "JSON", "required": false, "supportsExpression": true}
+            ],
+            "inputScript": "const t={name:$inputs.template_name,language:{code:$inputs.language_code}}; if($inputs.components){const c=typeof $inputs.components==='string'?JSON.parse($inputs.components):$inputs.components; if(c&&c.length) t.components=c;} return {messaging_product:'whatsapp',to:$inputs.to,type:'template',template:t};",
+            "outputPaths": ["messages", "contacts"]
+        },
+        {
+            "actionId": "send_media_message",
+            "displayName": "Send Media Message",
+            "method": "POST",
+            "path": "/{phoneNumberId}/messages",
+            "pathParams": ["phoneNumberId"],
+            "fixedHeaders": {"Content-Type": "application/json"},
+            "inputSchema": [
+                {"key": "phoneNumberId", "label": "Phone Number ID", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "to", "label": "Recipient Phone", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "media_type", "label": "Media Type", "type": "SELECT", "required": true, "supportsExpression": false, "options": [{"label": "Image", "value": "image"}, {"label": "Document", "value": "document"}, {"label": "Audio", "value": "audio"}, {"label": "Video", "value": "video"}]},
+                {"key": "media_id", "label": "Media ID", "type": "STRING", "required": false, "supportsExpression": true},
+                {"key": "media_link", "label": "Media Link URL", "type": "STRING", "required": false, "supportsExpression": true},
+                {"key": "caption", "label": "Caption", "type": "STRING", "required": false, "supportsExpression": true}
+            ],
+            "inputScript": "const type=$inputs.media_type; const media={}; if($inputs.media_id) media.id=$inputs.media_id; else if($inputs.media_link) media.link=$inputs.media_link; if($inputs.caption&&(type==='image'||type==='video'||type==='document')) media.caption=$inputs.caption; const body={messaging_product:'whatsapp',to:$inputs.to,type}; body[type]=media; return body;",
+            "outputPaths": ["messages"]
+        },
+        {
+            "actionId": "mark_message_read",
+            "displayName": "Mark Message as Read",
+            "method": "POST",
+            "path": "/{phoneNumberId}/messages",
+            "pathParams": ["phoneNumberId"],
+            "fixedHeaders": {"Content-Type": "application/json"},
+            "inputSchema": [
+                {"key": "phoneNumberId", "label": "Phone Number ID", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "message_id", "label": "WhatsApp Message ID", "type": "STRING", "required": true, "supportsExpression": true}
+            ],
+            "inputScript": "return {messaging_product:'whatsapp',status:'read',message_id:$inputs.message_id};",
+            "outputPaths": ["success"]
+        },
+        {
+            "actionId": "upload_media",
+            "displayName": "Upload Media",
+            "method": "POST",
+            "path": "/{phoneNumberId}/media",
+            "pathParams": ["phoneNumberId"],
+            "inputSchema": [
+                {"key": "phoneNumberId", "label": "Phone Number ID", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "mime_type", "label": "MIME Type", "type": "STRING", "required": true, "supportsExpression": true, "placeholder": "image/jpeg"},
+                {"key": "file_url", "label": "Public File URL", "type": "STRING", "required": true, "supportsExpression": true}
+            ],
+            "inputScript": "return {messaging_product:'whatsapp',type:$inputs.mime_type,url:$inputs.file_url};",
+            "fixedHeaders": {"Content-Type": "application/json"},
+            "outputPaths": ["id"]
+        },
+        {
+            "actionId": "get_media",
+            "displayName": "Get Media Metadata",
+            "method": "GET",
+            "path": "/{mediaId}",
+            "pathParams": ["mediaId"],
+            "inputSchema": [
+                {"key": "mediaId", "label": "Media ID", "type": "STRING", "required": true, "supportsExpression": true}
+            ],
+            "outputPaths": ["url", "mime_type", "sha256", "file_size"]
+        },
+        {
+            "actionId": "delete_media",
+            "displayName": "Delete Media",
+            "method": "DELETE",
+            "path": "/{mediaId}",
+            "pathParams": ["mediaId"],
+            "inputSchema": [
+                {"key": "mediaId", "label": "Media ID", "type": "STRING", "required": true, "supportsExpression": true}
+            ],
+            "outputPaths": ["success"]
+        },
+        {
+            "actionId": "list_phone_numbers",
+            "displayName": "List Phone Numbers",
+            "method": "GET",
+            "path": "/{wabaId}/phone_numbers",
+            "pathParams": ["wabaId"],
+            "inputSchema": [
+                {"key": "wabaId", "label": "WhatsApp Business Account ID", "type": "STRING", "required": true, "supportsExpression": true}
+            ],
+            "outputPaths": ["data", "paging"]
+        },
+        {
+            "actionId": "get_phone_number",
+            "displayName": "Get Phone Number",
+            "method": "GET",
+            "path": "/{phoneNumberId}",
+            "pathParams": ["phoneNumberId"],
+            "inputSchema": [
+                {"key": "phoneNumberId", "label": "Phone Number ID", "type": "STRING", "required": true, "supportsExpression": true}
+            ],
+            "outputPaths": ["id", "display_phone_number", "verified_name", "quality_rating"]
+        },
+        {
+            "actionId": "get_business_profile",
+            "displayName": "Get Business Profile",
+            "method": "GET",
+            "path": "/{phoneNumberId}/whatsapp_business_profile",
+            "pathParams": ["phoneNumberId"],
+            "inputSchema": [
+                {"key": "phoneNumberId", "label": "Phone Number ID", "type": "STRING", "required": true, "supportsExpression": true}
+            ],
+            "outputPaths": ["data"]
+        },
+        {
+            "actionId": "update_business_profile",
+            "displayName": "Update Business Profile",
+            "method": "POST",
+            "path": "/{phoneNumberId}/whatsapp_business_profile",
+            "pathParams": ["phoneNumberId"],
+            "fixedHeaders": {"Content-Type": "application/json"},
+            "inputSchema": [
+                {"key": "phoneNumberId", "label": "Phone Number ID", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "about", "label": "About Text", "type": "STRING", "required": false, "supportsExpression": true},
+                {"key": "address", "label": "Address", "type": "STRING", "required": false, "supportsExpression": true},
+                {"key": "description", "label": "Description", "type": "STRING", "required": false, "supportsExpression": true},
+                {"key": "email", "label": "Email", "type": "STRING", "required": false, "supportsExpression": true},
+                {"key": "websites", "label": "Websites (JSON array)", "type": "JSON", "required": false, "supportsExpression": true}
+            ],
+            "inputScript": "const b={messaging_product:'whatsapp'}; ['about','address','description','email'].forEach(k=>{if($inputs[k]) b[k]=$inputs[k];}); if($inputs.websites){b.websites=typeof $inputs.websites==='string'?JSON.parse($inputs.websites):$inputs.websites;} return b;",
+            "outputPaths": ["success"]
+        },
+        {
+            "actionId": "list_message_templates",
+            "displayName": "List Message Templates",
+            "method": "GET",
+            "path": "/{wabaId}/message_templates",
+            "pathParams": ["wabaId"],
+            "inputSchema": [
+                {"key": "wabaId", "label": "WABA ID", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "limit", "label": "Limit", "type": "NUMBER", "required": false, "defaultValue": 50, "supportsExpression": true},
+                {"key": "name", "label": "Filter by Name", "type": "STRING", "required": false, "supportsExpression": true}
+            ],
+            "outputPaths": ["data", "paging"]
+        },
+        {
+            "actionId": "create_message_template",
+            "displayName": "Create Message Template",
+            "method": "POST",
+            "path": "/{wabaId}/message_templates",
+            "pathParams": ["wabaId"],
+            "fixedHeaders": {"Content-Type": "application/json"},
+            "inputSchema": [
+                {"key": "wabaId", "label": "WABA ID", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "name", "label": "Template Name", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "language", "label": "Language Code", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "category", "label": "Category", "type": "SELECT", "required": true, "supportsExpression": false, "options": [{"label": "Marketing", "value": "MARKETING"}, {"label": "Utility", "value": "UTILITY"}, {"label": "Authentication", "value": "AUTHENTICATION"}]},
+                {"key": "components", "label": "Components (JSON array)", "type": "JSON", "required": true, "supportsExpression": true}
+            ],
+            "inputScript": "return {name:$inputs.name,language:$inputs.language,category:$inputs.category,components:typeof $inputs.components==='string'?JSON.parse($inputs.components):$inputs.components};",
+            "outputPaths": ["id", "status", "category"]
+        },
+        {
+            "actionId": "delete_message_template",
+            "displayName": "Delete Message Template",
+            "method": "DELETE",
+            "path": "/{wabaId}/message_templates",
+            "pathParams": ["wabaId"],
+            "inputSchema": [
+                {"key": "wabaId", "label": "WABA ID", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "name", "label": "Template Name", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "hsm_id", "label": "Template ID (hsm_id)", "type": "STRING", "required": false, "supportsExpression": true}
+            ],
+            "outputPaths": ["success"]
+        },
+        {
+            "actionId": "get_waba",
+            "displayName": "Get WhatsApp Business Account",
+            "method": "GET",
+            "path": "/{wabaId}",
+            "pathParams": ["wabaId"],
+            "inputSchema": [
+                {"key": "wabaId", "label": "WABA ID", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "fields", "label": "Fields", "type": "STRING", "required": false, "defaultValue": "id,name,timezone_id,message_template_namespace", "supportsExpression": false}
+            ],
+            "outputPaths": ["id", "name", "timezone_id"]
+        },
+        {
+            "actionId": "register_phone_number",
+            "displayName": "Register Phone Number",
+            "method": "POST",
+            "path": "/{phoneNumberId}/register",
+            "pathParams": ["phoneNumberId"],
+            "fixedHeaders": {"Content-Type": "application/json"},
+            "inputSchema": [
+                {"key": "phoneNumberId", "label": "Phone Number ID", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "pin", "label": "6-Digit PIN", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "messaging_product", "label": "Messaging Product", "type": "STRING", "required": false, "defaultValue": "whatsapp", "supportsExpression": false}
+            ],
+            "inputScript": "return {messaging_product:$inputs.messaging_product||'whatsapp',pin:$inputs.pin};",
+            "outputPaths": ["success"]
+        },
+        {
+            "actionId": "request_verification_code",
+            "displayName": "Request Verification Code",
+            "method": "POST",
+            "path": "/{phoneNumberId}/request_code",
+            "pathParams": ["phoneNumberId"],
+            "fixedHeaders": {"Content-Type": "application/json"},
+            "inputSchema": [
+                {"key": "phoneNumberId", "label": "Phone Number ID", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "code_method", "label": "Delivery Method", "type": "SELECT", "required": true, "supportsExpression": false, "options": [{"label": "SMS", "value": "SMS"}, {"label": "Voice", "value": "VOICE"}]},
+                {"key": "language", "label": "Language", "type": "STRING", "required": false, "defaultValue": "en_US", "supportsExpression": true}
+            ],
+            "inputScript": "return {code_method:$inputs.code_method,language:$inputs.language||'en_US'};",
+            "outputPaths": ["success"]
+        },
+        {
+            "actionId": "verify_phone_number",
+            "displayName": "Verify Phone Number",
+            "method": "POST",
+            "path": "/{phoneNumberId}/verify_code",
+            "pathParams": ["phoneNumberId"],
+            "fixedHeaders": {"Content-Type": "application/json"},
+            "inputSchema": [
+                {"key": "phoneNumberId", "label": "Phone Number ID", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "code", "label": "Verification Code", "type": "STRING", "required": true, "supportsExpression": true}
+            ],
+            "inputScript": "return {code:$inputs.code};",
+            "outputPaths": ["success"]
+        },
+        {
+            "actionId": "send_reaction",
+            "displayName": "Send Reaction",
+            "method": "POST",
+            "path": "/{phoneNumberId}/messages",
+            "pathParams": ["phoneNumberId"],
+            "fixedHeaders": {"Content-Type": "application/json"},
+            "inputSchema": [
+                {"key": "phoneNumberId", "label": "Phone Number ID", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "to", "label": "Recipient Phone", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "message_id", "label": "Message ID to React To", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "emoji", "label": "Emoji", "type": "STRING", "required": true, "supportsExpression": true}
+            ],
+            "inputScript": "return {messaging_product:'whatsapp',recipient_type:'individual',to:$inputs.to,type:'reaction',reaction:{message_id:$inputs.message_id,emoji:$inputs.emoji}};",
+            "outputPaths": ["messages"]
+        },
+        {
+            "actionId": "get_message_template_namespace",
+            "displayName": "Get Template Namespace",
+            "method": "GET",
+            "path": "/{wabaId}",
+            "pathParams": ["wabaId"],
+            "inputSchema": [
+                {"key": "wabaId", "label": "WABA ID", "type": "STRING", "required": true, "supportsExpression": true}
+            ],
+            "outputPaths": ["message_template_namespace", "id", "name"]
+        }
+    ],
+    "connectionSetup": {
+        "fields": [
+            {
+                "label": "Access Token",
+                "key": "token",
+                "sensitive": true,
+                "hint": "Permanent token from Meta System User with WhatsApp permissions"
+            }
+        ]
+    },
+    "verifyAction": {
+        "method": "GET",
+        "path": "/me?fields=id,name"
+    }
+}

@@ -1,0 +1,49 @@
+{
+  "connectorId": "microsoft_outlook",
+  "triggers": [
+    {
+      "triggerId": "new_inbox_messages",
+      "displayName": "New inbox messages",
+      "description": "Poll inbox for new messages.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://graph.microsoft.com/v1.0/me/mailFolders/inbox/messages?$top=50&$orderby=receivedDateTime desc"
+          },
+          "detection": {
+            "itemsPath": "$.value",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_calendar_events",
+      "displayName": "New calendar events",
+      "description": "Poll calendar events.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://graph.microsoft.com/v1.0/me/events?$top=50&$orderby=createdDateTime desc"
+          },
+          "detection": {
+            "itemsPath": "$.value",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

@@ -20,6 +20,7 @@ import {
     type IntegrationInsightsTabHandle,
 } from './components/IntegrationInsightsTab';
 import { UseCaseInsightsSheet } from './components/UseCaseInsightsSheet';
+import { RetryFailedInsightsConfirmDescription } from './components/RetryFailedInsightsConfirmDescription';
 import { cn } from '@/lib/utils';
 
 export default function IntegrationDetailPage() {
@@ -147,11 +148,8 @@ export default function IntegrationDetailPage() {
             } else if (result.queuedCount === 0) {
                 setInsightsActionError('Failed runs could not be re-queued. Check server logs for details.');
             } else {
-                const capNote = result.batchLimitApplied
-                    ? ` (batch limit ${result.batchLimit}; refresh metrics to see updates)`
-                    : '';
                 setInsightsActionMessage(
-                    `Re-queued ${result.queuedCount} failed run${result.queuedCount === 1 ? '' : 's'}${capNote}.`,
+                    `Re-queued ${result.queuedCount} failed run${result.queuedCount === 1 ? '' : 's'}.`,
                 );
             }
             insightsTabRef.current?.refresh();
@@ -421,22 +419,15 @@ export default function IntegrationDetailPage() {
             <ConfirmDialog
                 open={retryFailedOpen}
                 onOpenChange={(open) => !open && !isRetryingFailed && setRetryFailedOpen(open)}
-                title="Retry failed runs"
+                title="Retry failed runs?"
                 description={
-                    <>
-                        Re-queue failed workflow executions for this integration using the same trigger inputs as each
-                        failed run. Studio test runs are excluded. The server processes the most recent failures first,
-                        up to its configured batch limit per request.
-                        {insightsSnapshot && insightsSnapshot.failedRuns > 0 ? (
-                            <>
-                                {' '}
-                                Current failed run count:{' '}
-                                <strong>{insightsSnapshot.failedRuns}</strong>.
-                            </>
-                        ) : null}
-                    </>
+                    <RetryFailedInsightsConfirmDescription
+                        scope="integration"
+                        failedCount={insightsSnapshot?.failedRuns ?? 0}
+                    />
                 }
-                confirmLabel="Retry failed"
+                confirmLabel="Yes, retry failed runs"
+                cancelLabel="Cancel"
                 isConfirming={isRetryingFailed}
                 onConfirm={confirmRetryFailedExecutions}
             />

@@ -1,23 +1,52 @@
 {
-  "connectorId": "neo4j",
-  "displayName": "Neo4j",
-  "icon": "https://cdn.simpleicons.org/neo4j/018BFF",
-  "category": "Database",
-  "taskType": "NEO4J_TASK",
-  "baseUrl": "",
-  "authType": "NONE",
-  "connectionSetup": {
-    "fields": [
-      { "key": "host", "label": "Host URI", "type": "text", "required": true, "description": "Neo4j connection URI (e.g., neo4j://localhost)" },
-      { "key": "port", "label": "Port", "type": "text", "required": false, "description": "Neo4j port (default: 7687)" },
-      { "key": "database", "label": "Database", "type": "text", "required": false, "description": "Neo4j database name (default: neo4j)" },
-      { "key": "username", "label": "Username", "type": "text", "required": true },
-      { "key": "password", "label": "Password", "type": "password", "required": true, "sensitive": true }
-    ]
-  },
-  "credentialGuide": {
-    "fields": []
-  },
-  "actions": [],
-  "verifyAction": null
+    "connectorId": "neo4j",
+    "displayName": "Neo4j",
+    "icon": "https://api.iconify.design/logos/neo4j.svg",
+    "category": "Database",
+    "taskType": "NEO4J_TASK",
+    "baseUrl": "",
+    "authType": "NONE",
+    "connectionSetup": {
+        "fields": [
+            {
+                "key": "host",
+                "label": "Host URI",
+                "type": "text",
+                "required": true,
+                "description": "Neo4j connection URI (e.g., neo4j://localhost)"
+            },
+            {
+                "key": "port",
+                "label": "Port",
+                "type": "text",
+                "required": false,
+                "description": "Neo4j port (default: 7687)"
+            },
+            {
+                "key": "database",
+                "label": "Database",
+                "type": "text",
+                "required": false,
+                "description": "Neo4j database name (default: neo4j)"
+            },
+            {
+                "key": "username",
+                "label": "Username",
+                "type": "text",
+                "required": true
+            },
+            {
+                "key": "password",
+                "label": "Password",
+                "type": "password",
+                "required": true,
+                "sensitive": true
+            }
+        ]
+    },
+    "credentialGuide": {
+        "fields": []
+    },
+    "actions": [],
+    "verifyAction": null
 }

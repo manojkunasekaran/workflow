@@ -1,14 +1,18 @@
 {
     "connectorId": "cohere",
     "displayName": "Cohere",
-    "icon": "https://cdn.simpleicons.org/cohere/3959A4",
+    "icon": "https://www.google.com/s2/favicons?domain=cohere.com&sz=128",
     "category": "AI",
     "taskType": "AGENTS_TASK",
     "baseUrl": "https://api.cohere.com/v1",
     "authType": "BEARER_TOKEN",
     "credentialGuide": {
         "fields": [
-            { "key": "token", "label": "API Key", "hint": "Cohere API Key" }
+            {
+                "key": "token",
+                "label": "API Key",
+                "hint": "Cohere API Key"
+            }
         ]
     },
     "actions": [
@@ -18,12 +22,29 @@
             "method": "POST",
             "path": "/embed",
             "inputSchema": [
-                { "key": "texts", "label": "Texts (JSON array)", "type": "TEXTAREA", "required": true },
-                { "key": "model", "label": "Model", "type": "STRING", "defaultValue": "embed-english-v3.0" },
-                { "key": "inputType", "label": "Input Type", "type": "STRING", "defaultValue": "search_document" }
+                {
+                    "key": "texts",
+                    "label": "Texts (JSON array)",
+                    "type": "TEXTAREA",
+                    "required": true
+                },
+                {
+                    "key": "model",
+                    "label": "Model",
+                    "type": "STRING",
+                    "defaultValue": "embed-english-v3.0"
+                },
+                {
+                    "key": "inputType",
+                    "label": "Input Type",
+                    "type": "STRING",
+                    "defaultValue": "search_document"
+                }
             ],
             "inputScript": "return { texts: JSON.parse($inputs.texts), model: $inputs.model, input_type: $inputs.inputType };",
-            "outputPaths": ["embeddings"]
+            "outputPaths": [
+                "embeddings"
+            ]
         },
         {
             "actionId": "rerank",
@@ -31,18 +52,43 @@
             "method": "POST",
             "path": "/rerank",
             "inputSchema": [
-                { "key": "query", "label": "Search Query", "type": "STRING", "required": true },
-                { "key": "documents", "label": "Documents (JSON array of strings/objects)", "type": "TEXTAREA", "required": true },
-                { "key": "model", "label": "Model", "type": "STRING", "defaultValue": "rerank-english-v3.0" },
-                { "key": "topN", "label": "Top N", "type": "NUMBER" }
+                {
+                    "key": "query",
+                    "label": "Search Query",
+                    "type": "STRING",
+                    "required": true
+                },
+                {
+                    "key": "documents",
+                    "label": "Documents (JSON array of strings/objects)",
+                    "type": "TEXTAREA",
+                    "required": true
+                },
+                {
+                    "key": "model",
+                    "label": "Model",
+                    "type": "STRING",
+                    "defaultValue": "rerank-english-v3.0"
+                },
+                {
+                    "key": "topN",
+                    "label": "Top N",
+                    "type": "NUMBER"
+                }
             ],
             "inputScript": "return { query: $inputs.query, documents: JSON.parse($inputs.documents), model: $inputs.model, top_n: $inputs.topN };",
-            "outputPaths": ["results"]
+            "outputPaths": [
+                "results"
+            ]
         }
     ],
     "connectionSetup": {
         "fields": [
-            { "label": "API Key", "key": "token", "sensitive": true }
+            {
+                "label": "API Key",
+                "key": "token",
+                "sensitive": true
+            }
         ]
     },
     "verifyAction": {

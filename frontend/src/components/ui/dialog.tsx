@@ -25,10 +25,13 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 
 const DialogContent = React.forwardRef<
     React.ElementRef<typeof DialogPrimitive.Content>,
-    React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & { blocking?: boolean }
->(({ className, children, blocking = true, ...props }, ref) => (
+    React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & {
+        blocking?: boolean;
+        overlayClassName?: string;
+    }
+>(({ className, children, blocking = true, overlayClassName, ...props }, ref) => (
     <DialogPortal>
-        <DialogOverlay blocking={blocking} />
+        <DialogOverlay blocking={blocking} className={overlayClassName} />
         <DialogPrimitive.Content
             ref={ref}
             className={cn(

@@ -1,0 +1,258 @@
+{
+    "connectorId": "meta_lead_ads",
+    "displayName": "Meta Lead Ads",
+    "icon": "https://api.iconify.design/logos/meta.svg",
+    "category": "CRM",
+    "taskType": "CONNECTOR_TASK",
+    "baseUrl": "https://graph.facebook.com/v21.0",
+    "authType": "OAUTH2",
+    "oauth2Config": {
+        "authorizationUrl": "https://www.facebook.com/v21.0/dialog/oauth",
+        "tokenUrl": "https://graph.facebook.com/v21.0/oauth/access_token",
+        "defaultScopes": [
+            "pages_show_list",
+            "pages_read_engagement",
+            "leads_retrieval",
+            "ads_read"
+        ]
+    },
+    "credentialGuide": {
+        "fields": [
+            {"key": "client_id", "label": "App ID", "hint": "Meta Developer App with Marketing API access"},
+            {"key": "client_secret", "label": "App Secret"}
+        ]
+    },
+    "actions": [
+        {
+            "actionId": "get_me",
+            "displayName": "Get Current User",
+            "method": "GET",
+            "path": "/me",
+            "inputSchema": [
+                {"key": "fields", "label": "Fields", "type": "STRING", "required": false, "defaultValue": "id,name,email", "supportsExpression": false}
+            ],
+            "outputPaths": ["id", "name", "email"]
+        },
+        {
+            "actionId": "list_pages",
+            "displayName": "List Pages",
+            "method": "GET",
+            "path": "/me/accounts",
+            "inputSchema": [
+                {"key": "limit", "label": "Limit", "type": "NUMBER", "required": false, "defaultValue": 100, "supportsExpression": true},
+                {"key": "fields", "label": "Fields", "type": "STRING", "required": false, "defaultValue": "id,name,access_token,category", "supportsExpression": false}
+            ],
+            "outputPaths": ["data", "paging"]
+        },
+        {
+            "actionId": "get_page",
+            "displayName": "Get Page",
+            "method": "GET",
+            "path": "/{pageId}",
+            "pathParams": ["pageId"],
+            "inputSchema": [
+                {"key": "pageId", "label": "Page ID", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "fields", "label": "Fields", "type": "STRING", "required": false, "defaultValue": "id,name,category,fan_count", "supportsExpression": false}
+            ],
+            "outputPaths": ["id", "name", "category"]
+        },
+        {
+            "actionId": "list_leadgen_forms",
+            "displayName": "List Lead Gen Forms",
+            "method": "GET",
+            "path": "/{pageId}/leadgen_forms",
+            "pathParams": ["pageId"],
+            "inputSchema": [
+                {"key": "pageId", "label": "Page ID", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "limit", "label": "Limit", "type": "NUMBER", "required": false, "defaultValue": 50, "supportsExpression": true}
+            ],
+            "outputPaths": ["data", "paging"]
+        },
+        {
+            "actionId": "get_leadgen_form",
+            "displayName": "Get Lead Gen Form",
+            "method": "GET",
+            "path": "/{formId}",
+            "pathParams": ["formId"],
+            "inputSchema": [
+                {"key": "formId", "label": "Form ID", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "fields", "label": "Fields", "type": "STRING", "required": false, "defaultValue": "id,name,status,leads_count,created_time", "supportsExpression": false}
+            ],
+            "outputPaths": ["id", "name", "status", "leads_count"]
+        },
+        {
+            "actionId": "list_leads",
+            "displayName": "List Leads",
+            "method": "GET",
+            "path": "/{formId}/leads",
+            "pathParams": ["formId"],
+            "inputSchema": [
+                {"key": "formId", "label": "Lead Gen Form ID", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "limit", "label": "Limit", "type": "NUMBER", "required": false, "defaultValue": 50, "supportsExpression": true},
+                {"key": "filtering", "label": "Filtering (JSON)", "type": "JSON", "required": false, "supportsExpression": true}
+            ],
+            "outputPaths": ["data", "paging"]
+        },
+        {
+            "actionId": "get_lead",
+            "displayName": "Get Lead",
+            "method": "GET",
+            "path": "/{leadId}",
+            "pathParams": ["leadId"],
+            "inputSchema": [
+                {"key": "leadId", "label": "Lead ID", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "fields", "label": "Fields", "type": "STRING", "required": false, "defaultValue": "id,created_time,field_data,ad_id,form_id", "supportsExpression": false}
+            ],
+            "outputPaths": ["id", "created_time", "field_data", "form_id"]
+        },
+        {
+            "actionId": "create_leadgen_form",
+            "displayName": "Create Lead Gen Form",
+            "method": "POST",
+            "path": "/{pageId}/leadgen_forms",
+            "pathParams": ["pageId"],
+            "fixedHeaders": {"Content-Type": "application/json"},
+            "inputSchema": [
+                {"key": "pageId", "label": "Page ID", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "name", "label": "Form Name", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "questions", "label": "Questions (JSON array)", "type": "JSON", "required": true, "supportsExpression": true},
+                {"key": "privacy_policy", "label": "Privacy Policy (JSON)", "type": "JSON", "required": true, "supportsExpression": true},
+                {"key": "follow_up_action_url", "label": "Follow-up URL", "type": "STRING", "required": false, "supportsExpression": true}
+            ],
+            "inputScript": "const f={name:$inputs.name,questions:typeof $inputs.questions==='string'?JSON.parse($inputs.questions):$inputs.questions,privacy_policy:typeof $inputs.privacy_policy==='string'?JSON.parse($inputs.privacy_policy):$inputs.privacy_policy}; if($inputs.follow_up_action_url) f.follow_up_action_url=$inputs.follow_up_action_url; return f;",
+            "outputPaths": ["id", "name"]
+        },
+        {
+            "actionId": "archive_leadgen_form",
+            "displayName": "Archive Lead Gen Form",
+            "method": "POST",
+            "path": "/{formId}",
+            "pathParams": ["formId"],
+            "fixedHeaders": {"Content-Type": "application/json"},
+            "inputSchema": [
+                {"key": "formId", "label": "Form ID", "type": "STRING", "required": true, "supportsExpression": true}
+            ],
+            "inputScript": "return {status:'ARCHIVED'};",
+            "outputPaths": ["success"]
+        },
+        {
+            "actionId": "list_ad_accounts",
+            "displayName": "List Ad Accounts",
+            "method": "GET",
+            "path": "/me/adaccounts",
+            "inputSchema": [
+                {"key": "fields", "label": "Fields", "type": "STRING", "required": false, "defaultValue": "id,name,account_status,currency", "supportsExpression": false},
+                {"key": "limit", "label": "Limit", "type": "NUMBER", "required": false, "defaultValue": 50, "supportsExpression": true}
+            ],
+            "outputPaths": ["data", "paging"]
+        },
+        {
+            "actionId": "get_ad_account",
+            "displayName": "Get Ad Account",
+            "method": "GET",
+            "path": "/act_{adAccountId}",
+            "pathParams": ["adAccountId"],
+            "inputSchema": [
+                {"key": "adAccountId", "label": "Ad Account ID (numeric)", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "fields", "label": "Fields", "type": "STRING", "required": false, "defaultValue": "id,name,account_status,currency,timezone_name", "supportsExpression": false}
+            ],
+            "outputPaths": ["id", "name", "account_status"]
+        },
+        {
+            "actionId": "list_campaigns",
+            "displayName": "List Campaigns",
+            "method": "GET",
+            "path": "/act_{adAccountId}/campaigns",
+            "pathParams": ["adAccountId"],
+            "inputSchema": [
+                {"key": "adAccountId", "label": "Ad Account ID", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "fields", "label": "Fields", "type": "STRING", "required": false, "defaultValue": "id,name,status,objective", "supportsExpression": false},
+                {"key": "limit", "label": "Limit", "type": "NUMBER", "required": false, "defaultValue": 50, "supportsExpression": true}
+            ],
+            "outputPaths": ["data", "paging"]
+        },
+        {
+            "actionId": "list_ads",
+            "displayName": "List Ads",
+            "method": "GET",
+            "path": "/act_{adAccountId}/ads",
+            "pathParams": ["adAccountId"],
+            "inputSchema": [
+                {"key": "adAccountId", "label": "Ad Account ID", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "fields", "label": "Fields", "type": "STRING", "required": false, "defaultValue": "id,name,status,creative", "supportsExpression": false},
+                {"key": "limit", "label": "Limit", "type": "NUMBER", "required": false, "defaultValue": 50, "supportsExpression": true}
+            ],
+            "outputPaths": ["data", "paging"]
+        },
+        {
+            "actionId": "list_leads_by_page",
+            "displayName": "List Leads by Page",
+            "method": "GET",
+            "path": "/{pageId}/leadgen_forms",
+            "pathParams": ["pageId"],
+            "inputSchema": [
+                {"key": "pageId", "label": "Page ID", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "fields", "label": "Form Fields", "type": "STRING", "required": false, "defaultValue": "id,name,leads_count", "supportsExpression": false}
+            ],
+            "outputPaths": ["data"]
+        },
+        {
+            "actionId": "subscribe_page_leadgen",
+            "displayName": "Subscribe Page to Leadgen Webhooks",
+            "method": "POST",
+            "path": "/{pageId}/subscribed_apps",
+            "pathParams": ["pageId"],
+            "fixedHeaders": {"Content-Type": "application/json"},
+            "inputSchema": [
+                {"key": "pageId", "label": "Page ID", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "subscribed_fields", "label": "Subscribed Fields", "type": "STRING", "required": false, "defaultValue": "leadgen", "supportsExpression": false}
+            ],
+            "inputScript": "return {subscribed_fields:[$inputs.subscribed_fields||'leadgen']};",
+            "outputPaths": ["success"]
+        },
+        {
+            "actionId": "get_page_subscribed_apps",
+            "displayName": "Get Page Subscribed Apps",
+            "method": "GET",
+            "path": "/{pageId}/subscribed_apps",
+            "pathParams": ["pageId"],
+            "inputSchema": [
+                {"key": "pageId", "label": "Page ID", "type": "STRING", "required": true, "supportsExpression": true}
+            ],
+            "outputPaths": ["data"]
+        },
+        {
+            "actionId": "delete_lead",
+            "displayName": "Delete Lead",
+            "method": "DELETE",
+            "path": "/{leadId}",
+            "pathParams": ["leadId"],
+            "inputSchema": [
+                {"key": "leadId", "label": "Lead ID", "type": "STRING", "required": true, "supportsExpression": true}
+            ],
+            "outputPaths": ["success"]
+        },
+        {
+            "actionId": "test_leadgen_form",
+            "displayName": "Create Test Lead",
+            "method": "POST",
+            "path": "/{formId}/test_leads",
+            "pathParams": ["formId"],
+            "fixedHeaders": {"Content-Type": "application/json"},
+            "inputSchema": [
+                {"key": "formId", "label": "Form ID", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "field_data", "label": "Field Data (JSON array)", "type": "JSON", "required": true, "supportsExpression": true}
+            ],
+            "inputScript": "return {field_data:typeof $inputs.field_data==='string'?JSON.parse($inputs.field_data):$inputs.field_data};",
+            "outputPaths": ["id"]
+        }
+    ],
+    "connectionSetup": {
+        "description": "Connect Meta account for Lead Ads retrieval.",
+        "buttonLabel": "Sign in with Meta"
+    },
+    "verifyAction": {
+        "method": "GET",
+        "path": "/me?fields=id,name"
+    }
+}

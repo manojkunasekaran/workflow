@@ -1,0 +1,459 @@
+{
+    "connectorId": "rabbitmq",
+    "displayName": "RabbitMQ",
+    "icon": "https://api.iconify.design/logos/rabbitmq.svg",
+    "category": "Messaging",
+    "taskType": "CONNECTOR_TASK",
+    "baseUrl": "https://example.com:15672/api",
+    "authType": "BASIC_AUTH",
+    "actions": [
+        {
+            "actionId": "list_queues",
+            "displayName": "List Queues",
+            "method": "GET",
+            "path": "/queues",
+            "inputSchema": [],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "get_queue",
+            "displayName": "Get Queue",
+            "method": "GET",
+            "path": "/queues/{vhost}/{name}",
+            "inputSchema": [
+                {
+                    "key": "vhost",
+                    "label": "Vhost",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "defaultValue": "%2F"
+                },
+                {
+                    "key": "name",
+                    "label": "Queue Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "vhost",
+                "name"
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "create_queue",
+            "displayName": "Create Queue",
+            "method": "PUT",
+            "path": "/queues/{vhost}/{name}",
+            "inputSchema": [
+                {
+                    "key": "vhost",
+                    "label": "Vhost",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "defaultValue": "%2F"
+                },
+                {
+                    "key": "name",
+                    "label": "Queue Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "durable",
+                    "label": "Durable",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": "true"
+                }
+            ],
+            "pathParams": [
+                "vhost",
+                "name"
+            ],
+            "inputScript": "return {durable:$inputs.durable!=='false'};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "delete_queue",
+            "displayName": "Delete Queue",
+            "method": "DELETE",
+            "path": "/queues/{vhost}/{name}",
+            "inputSchema": [
+                {
+                    "key": "vhost",
+                    "label": "Vhost",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "defaultValue": "%2F"
+                },
+                {
+                    "key": "name",
+                    "label": "Queue Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "vhost",
+                "name"
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "list_exchanges",
+            "displayName": "List Exchanges",
+            "method": "GET",
+            "path": "/exchanges",
+            "inputSchema": [],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "get_exchange",
+            "displayName": "Get Exchange",
+            "method": "GET",
+            "path": "/exchanges/{vhost}/{name}",
+            "inputSchema": [
+                {
+                    "key": "vhost",
+                    "label": "Vhost",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "defaultValue": "%2F"
+                },
+                {
+                    "key": "name",
+                    "label": "Exchange Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "vhost",
+                "name"
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "create_exchange",
+            "displayName": "Create Exchange",
+            "method": "PUT",
+            "path": "/exchanges/{vhost}/{name}",
+            "inputSchema": [
+                {
+                    "key": "vhost",
+                    "label": "Vhost",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "defaultValue": "%2F"
+                },
+                {
+                    "key": "name",
+                    "label": "Exchange Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "type",
+                    "label": "Type",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "defaultValue": "topic"
+                }
+            ],
+            "pathParams": [
+                "vhost",
+                "name"
+            ],
+            "inputScript": "return {type:$inputs.type||'topic',durable:true};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "list_bindings",
+            "displayName": "List Bindings",
+            "method": "GET",
+            "path": "/bindings",
+            "inputSchema": [],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "create_binding",
+            "displayName": "Create Binding",
+            "method": "POST",
+            "path": "/bindings/{vhost}/e/{exchange}/q/{queue}",
+            "inputSchema": [
+                {
+                    "key": "vhost",
+                    "label": "Vhost",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "defaultValue": "%2F"
+                },
+                {
+                    "key": "exchange",
+                    "label": "Exchange",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "queue",
+                    "label": "Queue",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "routing_key",
+                    "label": "Routing Key",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "vhost",
+                "exchange",
+                "queue"
+            ],
+            "inputScript": "return {routing_key:$inputs.routing_key||''};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "publish_message",
+            "displayName": "Publish Message",
+            "method": "POST",
+            "path": "/exchanges/{vhost}/{exchange}/publish",
+            "inputSchema": [
+                {
+                    "key": "vhost",
+                    "label": "Vhost",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "defaultValue": "%2F"
+                },
+                {
+                    "key": "exchange",
+                    "label": "Exchange",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "routing_key",
+                    "label": "Routing Key",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "payload",
+                    "label": "Payload",
+                    "type": "TEXTAREA",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "payload_encoding",
+                    "label": "Encoding",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": "string"
+                }
+            ],
+            "pathParams": [
+                "vhost",
+                "exchange"
+            ],
+            "inputScript": "return {routing_key:$inputs.routing_key||'',payload:$inputs.payload,payload_encoding:$inputs.payload_encoding||'string',properties:{}};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "routed"
+            ]
+        },
+        {
+            "actionId": "get_messages",
+            "displayName": "Get Messages",
+            "method": "POST",
+            "path": "/queues/{vhost}/{name}/get",
+            "inputSchema": [
+                {
+                    "key": "vhost",
+                    "label": "Vhost",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "defaultValue": "%2F"
+                },
+                {
+                    "key": "name",
+                    "label": "Queue Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "count",
+                    "label": "Count",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true,
+                    "defaultValue": 1
+                }
+            ],
+            "pathParams": [
+                "vhost",
+                "name"
+            ],
+            "inputScript": "return {count:$inputs.count||1,ackmode:'ack_requeue_true',encoding:'auto'};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "purge_queue",
+            "displayName": "Purge Queue",
+            "method": "DELETE",
+            "path": "/queues/{vhost}/{name}/contents",
+            "inputSchema": [
+                {
+                    "key": "vhost",
+                    "label": "Vhost",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "defaultValue": "%2F"
+                },
+                {
+                    "key": "name",
+                    "label": "Queue Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "vhost",
+                "name"
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "list_connections",
+            "displayName": "List Connections",
+            "method": "GET",
+            "path": "/connections",
+            "inputSchema": [],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "list_channels",
+            "displayName": "List Channels",
+            "method": "GET",
+            "path": "/channels",
+            "inputSchema": [],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "get_overview",
+            "displayName": "Get Overview",
+            "method": "GET",
+            "path": "/overview",
+            "inputSchema": [],
+            "outputPaths": [
+                "$"
+            ]
+        }
+    ],
+    "credentialGuide": {
+        "description": "RabbitMQ Management HTTP API (default port 15672). Set baseUrl to http(s)://HOST:15672/api",
+        "fields": [
+            {
+                "key": "username",
+                "label": "Username",
+                "hint": "Management user"
+            },
+            {
+                "key": "password",
+                "label": "Password",
+                "hint": "Management password"
+            },
+            {
+                "key": "baseUrl",
+                "label": "Management API URL",
+                "hint": "https://rabbit.example.com:15672/api"
+            }
+        ]
+    },
+    "connectionSetup": {
+        "fields": [
+            {
+                "label": "Username",
+                "key": "username"
+            },
+            {
+                "label": "Password",
+                "key": "password",
+                "sensitive": true
+            }
+        ]
+    },
+    "verifyAction": {
+        "method": "GET",
+        "path": "/overview"
+    }
+}

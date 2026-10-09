@@ -1,147 +1,146 @@
 {
-    "connectorId":  "salesforce",
-    "displayName":  "Salesforce",
-    "icon":  "https://cdn.simpleicons.org/salesforce/00A1E0",
-    "category":  "CRM / Sales",
+    "connectorId": "salesforce",
+    "displayName": "Salesforce",
+    "icon": "https://api.iconify.design/logos/salesforce.svg",
+    "category": "CRM / Sales",
     "taskType": "CONNECTOR_TASK",
-    "baseUrl":  "https://{instance_url}/services/data/v60.0",
-    "authType":  "OAUTH2",
-    "oauth2Config":  {
-                         "authorizationUrl":  "https://login.salesforce.com/services/oauth2/authorize",
-                         "tokenUrl":  "https://login.salesforce.com/services/oauth2/token",
-                         "defaultScopes":  [
-                                               "api",
-                                               "refresh_token"
-                                           ]
-                     },
-    "actions":  [
-                    {
-                        "actionId":  "create_lead",
-                        "displayName":  "Create Lead",
-                        "method":  "POST",
-                        "path":  "/sobjects/Lead",
-                        "pathParams":  [
-                                           "instance_url"
-                                       ],
-                        "inputSchema":  [
-                                            {
-                                                "key":  "instance_url",
-                                                "label":  "Instance Domain",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true,
-                                                "description":  "e.g., your-domain.my.salesforce.com"
-                                            },
-                                            {
-                                                "key":  "LastName",
-                                                "label":  "Last Name",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "Company",
-                                                "label":  "Company",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "Email",
-                                                "label":  "Email",
-                                                "type":  "STRING",
-                                                "required":  false,
-                                                "supportsExpression":  true
-                                            }
-                                        ],
-                        "inputScript":  "return { LastName: $inputs.LastName, Company: $inputs.Company, Email: $inputs.Email };",
-                        "outputPaths":  [
-                                            "id",
-                                            "success"
-                                        ]
-                    },
-                    {
-                        "actionId":  "get_lead",
-                        "displayName":  "Get Lead",
-                        "method":  "GET",
-                        "path":  "/sobjects/Lead/{leadId}",
-                        "pathParams":  [
-                                           "instance_url",
-                                           "leadId"
-                                       ],
-                        "inputSchema":  [
-                                            {
-                                                "key":  "instance_url",
-                                                "label":  "Instance Domain",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "leadId",
-                                                "label":  "Lead ID",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            }
-                                        ],
-                        "outputPaths":  [
-                                            "Id",
-                                            "Name",
-                                            "Company",
-                                            "Email"
-                                        ]
-                    },
-                    {
-                        "actionId":  "update_lead",
-                        "displayName":  "Update Lead",
-                        "method":  "PATCH",
-                        "path":  "/sobjects/Lead/{leadId}",
-                        "pathParams":  [
-                                           "instance_url",
-                                           "leadId"
-                                       ],
-                        "inputSchema":  [
-                                            {
-                                                "key":  "instance_url",
-                                                "label":  "Instance Domain",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "leadId",
-                                                "label":  "Lead ID",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "Company",
-                                                "label":  "Company",
-                                                "type":  "STRING",
-                                                "required":  false,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "Email",
-                                                "label":  "Email",
-                                                "type":  "STRING",
-                                                "required":  false,
-                                                "supportsExpression":  true
-                                            }
-                                        ],
-                        "inputScript":  "let body = {}; if ($inputs.Company) body.Company = $inputs.Company; if ($inputs.Email) body.Email = $inputs.Email; return body;",
-                        "outputPaths":  []
-                    }
-                ],
-    "connectionSetup":  {
-                            "description":  "Connect your Salesforce account to allow workflows to access it securely.",
-                            "buttonLabel":  "Sign in with Salesforce"
-                        },
-    "verifyAction":  {
-                         "method":  "GET",
-                         "path":  "/"
-                     }
+    "baseUrl": "https://{instance_url}/services/data/v60.0",
+    "authType": "OAUTH2",
+    "oauth2Config": {
+        "authorizationUrl": "https://login.salesforce.com/services/oauth2/authorize",
+        "tokenUrl": "https://login.salesforce.com/services/oauth2/token",
+        "defaultScopes": [
+            "api",
+            "refresh_token"
+        ]
+    },
+    "actions": [
+        {
+            "actionId": "create_lead",
+            "displayName": "Create Lead",
+            "method": "POST",
+            "path": "/sobjects/Lead",
+            "pathParams": [
+                "instance_url"
+            ],
+            "inputSchema": [
+                {
+                    "key": "instance_url",
+                    "label": "Instance Domain",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "description": "e.g., your-domain.my.salesforce.com"
+                },
+                {
+                    "key": "LastName",
+                    "label": "Last Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "Company",
+                    "label": "Company",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "Email",
+                    "label": "Email",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return { LastName: $inputs.LastName, Company: $inputs.Company, Email: $inputs.Email };",
+            "outputPaths": [
+                "id",
+                "success"
+            ]
+        },
+        {
+            "actionId": "get_lead",
+            "displayName": "Get Lead",
+            "method": "GET",
+            "path": "/sobjects/Lead/{leadId}",
+            "pathParams": [
+                "instance_url",
+                "leadId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "instance_url",
+                    "label": "Instance Domain",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "leadId",
+                    "label": "Lead ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "Id",
+                "Name",
+                "Company",
+                "Email"
+            ]
+        },
+        {
+            "actionId": "update_lead",
+            "displayName": "Update Lead",
+            "method": "PATCH",
+            "path": "/sobjects/Lead/{leadId}",
+            "pathParams": [
+                "instance_url",
+                "leadId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "instance_url",
+                    "label": "Instance Domain",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "leadId",
+                    "label": "Lead ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "Company",
+                    "label": "Company",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "Email",
+                    "label": "Email",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "let body = {}; if ($inputs.Company) body.Company = $inputs.Company; if ($inputs.Email) body.Email = $inputs.Email; return body;",
+            "outputPaths": []
+        }
+    ],
+    "connectionSetup": {
+        "description": "Connect your Salesforce account to allow workflows to access it securely.",
+        "buttonLabel": "Sign in with Salesforce"
+    },
+    "verifyAction": {
+        "method": "GET",
+        "path": "/"
+    }
 }
-

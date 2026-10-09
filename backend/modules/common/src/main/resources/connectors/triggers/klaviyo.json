@@ -1,0 +1,71 @@
+{
+  "connectorId": "klaviyo",
+  "triggers": [
+    {
+      "triggerId": "new_profiles",
+      "displayName": "New profiles",
+      "description": "Poll Klaviyo profiles.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://a.klaviyo.com/api/profiles?page[size]=50"
+          },
+          "detection": {
+            "itemsPath": "$.data",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_campaigns",
+      "displayName": "New campaigns",
+      "description": "Poll campaigns.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://a.klaviyo.com/api/campaigns"
+          },
+          "detection": {
+            "itemsPath": "$.data",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_events",
+      "displayName": "New events",
+      "description": "Poll recent metrics activity via profiles (proxy poll).",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://a.klaviyo.com/api/metrics"
+          },
+          "detection": {
+            "itemsPath": "$.data",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

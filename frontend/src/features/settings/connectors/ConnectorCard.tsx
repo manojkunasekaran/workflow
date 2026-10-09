@@ -1,7 +1,6 @@
-import { useState } from 'react';
 import { Settings2, Trash2, KeyRound, Puzzle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import { ConnectorIcon } from '@/components/ConnectorIcon';
 import { type ConnectorManifest, type ConnectorAuthType } from '@/api/connectorApi';
 
 const AUTH_LABELS: Record<ConnectorAuthType, string> = {
@@ -17,50 +16,6 @@ function resolveAuthLabel(authType: ConnectorAuthType): string {
     return AUTH_LABELS[authType] ?? authType;
 }
 
-function ConnectorIcon({ connector, className }: { connector: ConnectorManifest, className?: string }) {
-    const [imgError, setImgError] = useState(false);
-
-    const isUrl = connector.icon?.startsWith('http');
-    const isLocalFile = connector.icon?.endsWith('.svg') || connector.icon?.endsWith('.png');
-    const isSvgInline = connector.icon?.startsWith('<');
-
-    const initials = connector.displayName
-        .split(' ')
-        .slice(0, 2)
-        .map((w) => w[0])
-        .join('')
-        .toUpperCase();
-
-    if (!imgError && connector.icon && (isUrl || isLocalFile)) {
-        return (
-            <div className={cn("flex shrink-0 items-center justify-center rounded-md border bg-background overflow-hidden", className)}>
-                <img
-                    src={isUrl ? connector.icon : `/connectors/${connector.icon}`}
-                    alt={connector.displayName}
-                    className="h-3/4 w-3/4 object-contain"
-                    onError={() => setImgError(true)}
-                />
-            </div>
-        );
-    }
-
-    if (isSvgInline && connector.icon) {
-        return (
-            <div
-                className={cn("flex shrink-0 items-center justify-center rounded-md border bg-background text-muted-foreground [&>svg]:h-3/4 [&>svg]:w-3/4", className)}
-                dangerouslySetInnerHTML={{ __html: connector.icon }}
-            />
-        );
-    }
-
-    // Fallback: initials avatar
-    return (
-        <div className={cn("flex shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary font-semibold text-xs border border-primary/20", className)}>
-            {initials}
-        </div>
-    );
-}
-
 export interface ConnectorCardProps {
     connector: ConnectorManifest;
     onNavigate: (path: string) => void;
@@ -74,7 +29,7 @@ export function ConnectorCard({ connector, onNavigate, onDelete }: ConnectorCard
             onClick={() => onNavigate(`/apps/${connector.connectorId}`)}
         >
             <div className="flex items-center gap-3">
-                <ConnectorIcon connector={connector} className="h-10 w-10" />
+                <ConnectorIcon icon={connector.icon} name={connector.displayName} size="md" className="h-10 w-10" />
                 <div className="flex flex-col">
                     <span className="font-bold text-base text-foreground">{connector.displayName}</span>
                     <div className="mt-1">

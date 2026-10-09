@@ -28,6 +28,7 @@ import {
 } from '@/features/integrations/lib/useCaseInsightsFormatters';
 import { InsightsMetricsOverview } from './insights/InsightsMetricsOverview';
 import { InsightsPanelSkeleton } from './insights/InsightsPanelSkeleton';
+import { RetryFailedInsightsConfirmDescription } from './RetryFailedInsightsConfirmDescription';
 
 interface UseCaseInsightsSheetProps {
     integrationId: string;
@@ -110,11 +111,8 @@ export function UseCaseInsightsSheet({
             } else if (result.queuedCount === 0) {
                 setActionError('Failed runs could not be re-queued. Check server logs for details.');
             } else {
-                const capNote = result.batchLimitApplied
-                    ? ` (batch limit ${result.batchLimit})`
-                    : '';
                 setActionMessage(
-                    `Re-queued ${result.queuedCount} failed run${result.queuedCount === 1 ? '' : 's'} for this use case${capNote}.`,
+                    `Re-queued ${result.queuedCount} failed run${result.queuedCount === 1 ? '' : 's'} for this use case.`,
                 );
             }
             await loadDetail();
@@ -304,22 +302,16 @@ export function UseCaseInsightsSheet({
             <ConfirmDialog
                 open={retryOpen}
                 onOpenChange={(next) => !next && !isRetrying && setRetryOpen(next)}
-                title="Retry failed runs for this use case"
+                elevated
+                title="Retry failed runs for this use case?"
                 description={
-                    <>
-                        Re-queue failed executions for this workflow only, using the same trigger inputs as each failed
-                        run. Studio test runs are excluded. The server processes the most recent failures first, up to
-                        its configured batch limit.
-                        {detail && detail.failedRuns > 0 ? (
-                            <>
-                                {' '}
-                                Current failed run count for this use case:{' '}
-                                <strong>{detail.failedRuns}</strong>.
-                            </>
-                        ) : null}
-                    </>
+                    <RetryFailedInsightsConfirmDescription
+                        scope="use-case"
+                        failedCount={detail?.failedRuns ?? 0}
+                    />
                 }
-                confirmLabel="Retry failed"
+                confirmLabel="Yes, retry failed runs"
+                cancelLabel="Cancel"
                 isConfirming={isRetrying}
                 onConfirm={confirmRetryFailed}
             />

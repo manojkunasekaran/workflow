@@ -1,0 +1,216 @@
+{
+    "displayName": "Snowflake",
+    "icon": "https://api.iconify.design/logos/snowflake-icon.svg",
+    "category": "Analytics",
+    "baseUrl": "https://example.snowflakecomputing.com/api/v2",
+    "authType": "BEARER_TOKEN",
+    "credentialGuide": {
+        "fields": [
+            {
+                "key": "token",
+                "label": "Personal Access Token or OAuth token"
+            },
+            {
+                "key": "baseUrl",
+                "label": "Account API URL",
+                "hint": "https://ACCOUNT.snowflakecomputing.com/api/v2"
+            }
+        ],
+        "description": "Set baseUrl to your account-specific Snowflake SQL API endpoint."
+    },
+    "connectionSetup": {
+        "fields": [
+            {
+                "label": "Access Token",
+                "key": "token",
+                "sensitive": true
+            }
+        ]
+    },
+    "verifyAction": {
+        "method": "GET",
+        "path": "/statements?limit=1"
+    },
+    "actions": [
+        {
+            "actionId": "submit_sql",
+            "displayName": "Submit SQL Statement",
+            "method": "POST",
+            "path": "/statements",
+            "inputSchema": [
+                {
+                    "key": "statement",
+                    "label": "SQL Statement",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "warehouse",
+                    "label": "Warehouse",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "database",
+                    "label": "Database",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "schema",
+                    "label": "Schema",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": "PUBLIC"
+                }
+            ],
+            "inputScript": "const b={statement:$inputs.statement}; if($inputs.warehouse) b.warehouse=$inputs.warehouse; if($inputs.database) b.database=$inputs.database; if($inputs.schema) b.schema=$inputs.schema; return b;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "statementHandle",
+                "status"
+            ]
+        },
+        {
+            "actionId": "get_statement_status",
+            "displayName": "Get Statement Status",
+            "method": "GET",
+            "path": "/statements/{statementHandle}",
+            "pathParams": [
+                "statementHandle"
+            ],
+            "inputSchema": [
+                {
+                    "key": "statementHandle",
+                    "label": "Statement Handle",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "statementHandle",
+                "status"
+            ]
+        },
+        {
+            "actionId": "get_statement_result",
+            "displayName": "Get Statement Result",
+            "method": "GET",
+            "path": "/statements/{statementHandle}/result",
+            "pathParams": [
+                "statementHandle"
+            ],
+            "inputSchema": [
+                {
+                    "key": "statementHandle",
+                    "label": "Statement Handle",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "data",
+                "resultSetMetaData"
+            ]
+        },
+        {
+            "actionId": "cancel_statement",
+            "displayName": "Cancel Statement",
+            "method": "POST",
+            "path": "/statements/{statementHandle}/cancel",
+            "pathParams": [
+                "statementHandle"
+            ],
+            "inputSchema": [
+                {
+                    "key": "statementHandle",
+                    "label": "Statement Handle",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "statementHandle"
+            ]
+        },
+        {
+            "actionId": "list_statements",
+            "displayName": "List Statements",
+            "method": "GET",
+            "path": "/statements",
+            "inputSchema": [
+                {
+                    "key": "limit",
+                    "label": "Limit",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 10
+                }
+            ],
+            "outputPaths": [
+                "data"
+            ]
+        },
+        {
+            "actionId": "execute_query",
+            "displayName": "Execute Query (alias)",
+            "method": "POST",
+            "path": "/statements",
+            "inputSchema": [
+                {
+                    "key": "statement",
+                    "label": "SQL Statement",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return {statement:$inputs.statement};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "statementHandle"
+            ]
+        },
+        {
+            "actionId": "get_query_history",
+            "displayName": "Get Query History",
+            "method": "GET",
+            "path": "/statements",
+            "inputSchema": [
+                {
+                    "key": "partition",
+                    "label": "Partition Info",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "data"
+            ]
+        },
+        {
+            "actionId": "check_health",
+            "displayName": "Check API Health",
+            "method": "GET",
+            "path": "/statements",
+            "outputPaths": [
+                "data"
+            ]
+        }
+    ],
+    "connectorId": "snowflake",
+    "taskType": "CONNECTOR_TASK"
+}

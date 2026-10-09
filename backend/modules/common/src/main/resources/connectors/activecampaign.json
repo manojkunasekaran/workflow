@@ -1,0 +1,404 @@
+{
+    "connectorId": "activecampaign",
+    "displayName": "ActiveCampaign",
+    "icon": "https://api.iconify.design/logos/active-campaign.svg",
+    "category": "Marketing",
+    "taskType": "CONNECTOR_TASK",
+    "baseUrl": "https://example.api-us1.com/api/3",
+    "authType": "API_KEY",
+    "actions": [
+        {
+            "actionId": "list_contacts",
+            "displayName": "List Contacts",
+            "method": "GET",
+            "path": "/contacts",
+            "inputSchema": [
+                {
+                    "key": "limit",
+                    "label": "Limit",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 50
+                }
+            ],
+            "outputPaths": [
+                "contacts"
+            ]
+        },
+        {
+            "actionId": "get_contact",
+            "displayName": "Get Contact",
+            "method": "GET",
+            "path": "/contacts/{contactId}",
+            "inputSchema": [
+                {
+                    "key": "contactId",
+                    "label": "Contact ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "contactId"
+            ],
+            "outputPaths": [
+                "contact"
+            ]
+        },
+        {
+            "actionId": "create_contact",
+            "displayName": "Create Contact",
+            "method": "POST",
+            "path": "/contacts",
+            "inputSchema": [
+                {
+                    "key": "email",
+                    "label": "Email",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "firstName",
+                    "label": "First Name",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "lastName",
+                    "label": "Last Name",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return {contact:{email:$inputs.email,firstName:$inputs.firstName,lastName:$inputs.lastName}};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "contact.id"
+            ]
+        },
+        {
+            "actionId": "update_contact",
+            "displayName": "Update Contact",
+            "method": "PUT",
+            "path": "/contacts/{contactId}",
+            "inputSchema": [
+                {
+                    "key": "contactId",
+                    "label": "Contact ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "email",
+                    "label": "Email",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "firstName",
+                    "label": "First Name",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "contactId"
+            ],
+            "inputScript": "const c={}; if($inputs.email) c.email=$inputs.email; if($inputs.firstName) c.firstName=$inputs.firstName; return {contact:c};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "contact.id"
+            ]
+        },
+        {
+            "actionId": "delete_contact",
+            "displayName": "Delete Contact",
+            "method": "DELETE",
+            "path": "/contacts/{contactId}",
+            "inputSchema": [
+                {
+                    "key": "contactId",
+                    "label": "Contact ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "contactId"
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "list_deals",
+            "displayName": "List Deals",
+            "method": "GET",
+            "path": "/deals",
+            "inputSchema": [
+                {
+                    "key": "limit",
+                    "label": "Limit",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 50
+                }
+            ],
+            "outputPaths": [
+                "deals"
+            ]
+        },
+        {
+            "actionId": "get_deal",
+            "displayName": "Get Deal",
+            "method": "GET",
+            "path": "/deals/{dealId}",
+            "inputSchema": [
+                {
+                    "key": "dealId",
+                    "label": "Deal ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "dealId"
+            ],
+            "outputPaths": [
+                "deal"
+            ]
+        },
+        {
+            "actionId": "create_deal",
+            "displayName": "Create Deal",
+            "method": "POST",
+            "path": "/deals",
+            "inputSchema": [
+                {
+                    "key": "title",
+                    "label": "Title",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "value",
+                    "label": "Value",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "currency",
+                    "label": "Currency",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": "usd"
+                }
+            ],
+            "inputScript": "return {deal:{title:$inputs.title,value:$inputs.value||0,currency:$inputs.currency||'usd'}};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "deal.id"
+            ]
+        },
+        {
+            "actionId": "update_deal",
+            "displayName": "Update Deal",
+            "method": "PUT",
+            "path": "/deals/{dealId}",
+            "inputSchema": [
+                {
+                    "key": "dealId",
+                    "label": "Deal ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "title",
+                    "label": "Title",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "stage",
+                    "label": "Stage ID",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "dealId"
+            ],
+            "inputScript": "const d={}; if($inputs.title) d.title=$inputs.title; if($inputs.stage) d.stage=$inputs.stage; return {deal:d};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "deal.id"
+            ]
+        },
+        {
+            "actionId": "list_tags",
+            "displayName": "List Tags",
+            "method": "GET",
+            "path": "/tags",
+            "inputSchema": [],
+            "outputPaths": [
+                "tags"
+            ]
+        },
+        {
+            "actionId": "create_tag",
+            "displayName": "Create Tag",
+            "method": "POST",
+            "path": "/tags",
+            "inputSchema": [
+                {
+                    "key": "tag",
+                    "label": "Tag Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return {tag:{tag:$inputs.tag,type:'contact'}};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "tag.id"
+            ]
+        },
+        {
+            "actionId": "add_contact_tag",
+            "displayName": "Add Tag to Contact",
+            "method": "POST",
+            "path": "/contactTags",
+            "inputSchema": [
+                {
+                    "key": "contact",
+                    "label": "Contact ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "tag",
+                    "label": "Tag ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return {contactTag:{contact:$inputs.contact,tag:$inputs.tag}};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "contactTag.id"
+            ]
+        },
+        {
+            "actionId": "list_automations",
+            "displayName": "List Automations",
+            "method": "GET",
+            "path": "/automations",
+            "inputSchema": [],
+            "outputPaths": [
+                "automations"
+            ]
+        },
+        {
+            "actionId": "get_automation",
+            "displayName": "Get Automation",
+            "method": "GET",
+            "path": "/automations/{automationId}",
+            "inputSchema": [
+                {
+                    "key": "automationId",
+                    "label": "Automation ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "automationId"
+            ],
+            "outputPaths": [
+                "automation"
+            ]
+        },
+        {
+            "actionId": "list_lists",
+            "displayName": "List Lists",
+            "method": "GET",
+            "path": "/lists",
+            "inputSchema": [],
+            "outputPaths": [
+                "lists"
+            ]
+        },
+        {
+            "actionId": "list_campaigns",
+            "displayName": "List Campaigns",
+            "method": "GET",
+            "path": "/campaigns",
+            "inputSchema": [],
+            "outputPaths": [
+                "campaigns"
+            ]
+        }
+    ],
+    "authHeaderName": "Api-Token",
+    "credentialGuide": {
+        "description": "Set baseUrl to https://YOUR_ACCOUNT.api-us1.com/api/3 (region may vary).",
+        "fields": [
+            {
+                "key": "apiKey",
+                "label": "API Token",
+                "hint": "Settings → Developer"
+            },
+            {
+                "key": "baseUrl",
+                "label": "Base URL",
+                "hint": "https://YOUR_ACCOUNT.api-us1.com/api/3"
+            }
+        ]
+    },
+    "connectionSetup": {
+        "fields": [
+            {
+                "label": "API Token",
+                "key": "apiKey",
+                "sensitive": true
+            }
+        ]
+    },
+    "verifyAction": {
+        "method": "GET",
+        "path": "/users/me"
+    }
+}

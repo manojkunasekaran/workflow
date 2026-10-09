@@ -1,0 +1,103 @@
+{
+  "connectorId": "meta_lead_ads",
+  "triggers": [
+    {
+      "triggerId": "new_leads",
+      "displayName": "New leads",
+      "description": "Polls a lead gen form for newly submitted leads.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {"key": "formId", "label": "Lead Gen Form ID", "type": "STRING", "required": true, "supportsExpression": false}
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://graph.facebook.com/v21.0/{formId}/leads?limit=100&fields=id,created_time,field_data"
+          },
+          "detection": {
+            "itemsPath": "$.data",
+            "keyPaths": ["id"]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_leadgen_forms",
+      "displayName": "New lead gen forms",
+      "description": "Polls a Facebook Page for new lead generation forms.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {"key": "pageId", "label": "Page ID", "type": "STRING", "required": true, "supportsExpression": false}
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://graph.facebook.com/v21.0/{pageId}/leadgen_forms?limit=100&fields=id,name,status,created_time"
+          },
+          "detection": {
+            "itemsPath": "$.data",
+            "keyPaths": ["id"]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "leadgen_form_updated",
+      "displayName": "Lead gen forms updated",
+      "description": "Polls for changes in lead form metadata on a page.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {"key": "pageId", "label": "Page ID", "type": "STRING", "required": true, "supportsExpression": false}
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "UPDATED_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://graph.facebook.com/v21.0/{pageId}/leadgen_forms?limit=100&fields=id,name,status,leads_count"
+          },
+          "detection": {
+            "itemsPath": "$.data",
+            "keyPaths": ["id"],
+            "changePaths": ["status", "leads_count"]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "lead_created",
+      "displayName": "Lead created",
+      "description": "Webhook when a user submits a lead gen form (page leadgen subscription).",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [
+        {"key": "pageId", "label": "Page ID", "type": "STRING", "required": true, "supportsExpression": false},
+        {"key": "appId", "label": "Meta App ID", "type": "STRING", "required": true, "supportsExpression": false}
+      ],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://graph.facebook.com/v21.0/{pageId}/subscribed_apps",
+            "body": "{\"subscribed_fields\":[\"leadgen\"]}"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://graph.facebook.com/v21.0/{appId}/subscriptions"
+          },
+          "subscriptionIdPath": "$.success",
+          "inbound": {
+            "verificationMode": "HMAC_SHA256",
+            "headerName": "X-Hub-Signature-256",
+            "eventIdPath": "$.entry[0].changes[0].value.leadgen_id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    }
+  ]
+}

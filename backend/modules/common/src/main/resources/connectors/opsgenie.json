@@ -1,0 +1,369 @@
+{
+    "connectorId": "opsgenie",
+    "displayName": "Opsgenie",
+    "icon": "https://api.iconify.design/logos/opsgenie.svg",
+    "category": "Incident Management",
+    "taskType": "CONNECTOR_TASK",
+    "baseUrl": "https://api.opsgenie.com/v2",
+    "authType": "CUSTOM_HEADER",
+    "actions": [
+        {
+            "actionId": "list_alerts",
+            "displayName": "List Alerts",
+            "method": "GET",
+            "path": "/alerts",
+            "inputSchema": [
+                {
+                    "key": "limit",
+                    "label": "Limit",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 20
+                }
+            ],
+            "outputPaths": [
+                "data"
+            ]
+        },
+        {
+            "actionId": "get_alert",
+            "displayName": "Get Alert",
+            "method": "GET",
+            "path": "/alerts/{identifier}",
+            "inputSchema": [
+                {
+                    "key": "identifier",
+                    "label": "Alert ID or Alias",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "identifier"
+            ],
+            "outputPaths": [
+                "data"
+            ]
+        },
+        {
+            "actionId": "create_alert",
+            "displayName": "Create Alert",
+            "method": "POST",
+            "path": "/alerts",
+            "inputSchema": [
+                {
+                    "key": "message",
+                    "label": "Message",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "alias",
+                    "label": "Alias",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "description",
+                    "label": "Description",
+                    "type": "TEXTAREA",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "const b={message:$inputs.message}; if($inputs.alias) b.alias=$inputs.alias; if($inputs.description) b.description=$inputs.description; return b;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "requestId"
+            ]
+        },
+        {
+            "actionId": "close_alert",
+            "displayName": "Close Alert",
+            "method": "POST",
+            "path": "/alerts/{identifier}/close",
+            "inputSchema": [
+                {
+                    "key": "identifier",
+                    "label": "Alert ID or Alias",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "note",
+                    "label": "Note",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "identifier"
+            ],
+            "inputScript": "return $inputs.note?{note:$inputs.note}:{};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "result"
+            ]
+        },
+        {
+            "actionId": "acknowledge_alert",
+            "displayName": "Acknowledge Alert",
+            "method": "POST",
+            "path": "/alerts/{identifier}/acknowledge",
+            "inputSchema": [
+                {
+                    "key": "identifier",
+                    "label": "Alert ID or Alias",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "identifier"
+            ],
+            "outputPaths": [
+                "result"
+            ]
+        },
+        {
+            "actionId": "list_incidents",
+            "displayName": "List Incidents",
+            "method": "GET",
+            "path": "/incidents",
+            "inputSchema": [],
+            "outputPaths": [
+                "data"
+            ]
+        },
+        {
+            "actionId": "get_incident",
+            "displayName": "Get Incident",
+            "method": "GET",
+            "path": "/incidents/{identifier}",
+            "inputSchema": [
+                {
+                    "key": "identifier",
+                    "label": "Incident ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "identifier"
+            ],
+            "outputPaths": [
+                "data"
+            ]
+        },
+        {
+            "actionId": "create_incident",
+            "displayName": "Create Incident",
+            "method": "POST",
+            "path": "/incidents",
+            "inputSchema": [
+                {
+                    "key": "message",
+                    "label": "Message",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "priority",
+                    "label": "Priority",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": "P3"
+                }
+            ],
+            "inputScript": "return {message:$inputs.message,priority:$inputs.priority||'P3'};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "incidentId"
+            ]
+        },
+        {
+            "actionId": "close_incident",
+            "displayName": "Close Incident",
+            "method": "POST",
+            "path": "/incidents/{identifier}/close",
+            "inputSchema": [
+                {
+                    "key": "identifier",
+                    "label": "Incident ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "identifier"
+            ],
+            "outputPaths": [
+                "result"
+            ]
+        },
+        {
+            "actionId": "list_teams",
+            "displayName": "List Teams",
+            "method": "GET",
+            "path": "/teams",
+            "inputSchema": [],
+            "outputPaths": [
+                "data"
+            ]
+        },
+        {
+            "actionId": "get_team",
+            "displayName": "Get Team",
+            "method": "GET",
+            "path": "/teams/{identifier}",
+            "inputSchema": [
+                {
+                    "key": "identifier",
+                    "label": "Team ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "identifier"
+            ],
+            "outputPaths": [
+                "data"
+            ]
+        },
+        {
+            "actionId": "list_users",
+            "displayName": "List Users",
+            "method": "GET",
+            "path": "/users",
+            "inputSchema": [],
+            "outputPaths": [
+                "data"
+            ]
+        },
+        {
+            "actionId": "get_user",
+            "displayName": "Get User",
+            "method": "GET",
+            "path": "/users/{identifier}",
+            "inputSchema": [
+                {
+                    "key": "identifier",
+                    "label": "User ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "identifier"
+            ],
+            "outputPaths": [
+                "data"
+            ]
+        },
+        {
+            "actionId": "list_schedules",
+            "displayName": "List Schedules",
+            "method": "GET",
+            "path": "/schedules",
+            "inputSchema": [],
+            "outputPaths": [
+                "data"
+            ]
+        },
+        {
+            "actionId": "get_on_call",
+            "displayName": "Get On-Call",
+            "method": "GET",
+            "path": "/schedules/{identifier}/on-calls",
+            "inputSchema": [
+                {
+                    "key": "identifier",
+                    "label": "Schedule ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "identifier"
+            ],
+            "outputPaths": [
+                "data"
+            ]
+        },
+        {
+            "actionId": "add_alert_note",
+            "displayName": "Add Alert Note",
+            "method": "POST",
+            "path": "/alerts/{identifier}/notes",
+            "inputSchema": [
+                {
+                    "key": "identifier",
+                    "label": "Alert ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "note",
+                    "label": "Note",
+                    "type": "TEXTAREA",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "identifier"
+            ],
+            "inputScript": "return {note:$inputs.note};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "$"
+            ]
+        }
+    ],
+    "credentialGuide": {
+        "fields": [
+            {
+                "key": "Authorization",
+                "label": "Authorization",
+                "hint": "GenieKey YOUR_API_KEY"
+            }
+        ]
+    },
+    "connectionSetup": {
+        "fields": [
+            {
+                "label": "Authorization",
+                "key": "Authorization",
+                "sensitive": true
+            }
+        ]
+    },
+    "verifyAction": {
+        "method": "GET",
+        "path": "/users"
+    }
+}

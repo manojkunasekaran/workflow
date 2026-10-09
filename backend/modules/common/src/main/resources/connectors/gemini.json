@@ -1,2 +1,33 @@
-{"connectorId": "gemini", "displayName": "Google Gemini", "icon": "https://cdn.simpleicons.org/google/4285F4", "category": "AI",
- "taskType": "AGENTS_TASK", "baseUrl": "https://generativelanguage.googleapis.com/v1beta", "authType": "API_KEY", "authHeaderName": "x-goog-api-key", "credentialGuide": {"fields": [{"key": "apiKey", "label": "API Key", "hint": "Get it from Google AI Studio"}]}, "actions": [], "connectionSetup": {"fields": [{"label": "API Key", "key": "apiKey", "sensitive": true}]}, "verifyAction": {"method": "GET", "path": "/"}}
+{
+    "connectorId": "gemini",
+    "displayName": "Google Gemini",
+    "icon": "https://api.iconify.design/logos/google-icon.svg",
+    "category": "AI",
+    "taskType": "AGENTS_TASK",
+    "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+    "authType": "API_KEY",
+    "authHeaderName": "x-goog-api-key",
+    "credentialGuide": {
+        "fields": [
+            {
+                "key": "apiKey",
+                "label": "API Key",
+                "hint": "Get it from Google AI Studio"
+            }
+        ]
+    },
+    "actions": [],
+    "connectionSetup": {
+        "fields": [
+            {
+                "label": "API Key",
+                "key": "apiKey",
+                "sensitive": true
+            }
+        ]
+    },
+    "verifyAction": {
+        "method": "GET",
+        "path": "/"
+    }
+}

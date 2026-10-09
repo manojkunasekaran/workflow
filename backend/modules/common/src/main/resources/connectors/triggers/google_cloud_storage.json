@@ -1,0 +1,35 @@
+{
+  "connectorId": "google_cloud_storage",
+  "triggers": [
+    {
+      "triggerId": "new_objects",
+      "displayName": "New objects",
+      "description": "Poll bucket objects.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "bucket",
+          "label": "Bucket Name",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://storage.googleapis.com/storage/v1/b/{bucket}/o?maxResults=100"
+          },
+          "detection": {
+            "itemsPath": "$.items",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

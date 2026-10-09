@@ -1,0 +1,27 @@
+{
+  "connectorId": "servicenow",
+  "triggers": [
+    {
+      "triggerId": "new_incidents",
+      "displayName": "New incidents",
+      "description": "Poll incidents.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://instance.service-now.com/api/now/table/incident?sysparm_limit=100&sysparm_query=ORDERBYDESCsys_created_on"
+          },
+          "detection": {
+            "itemsPath": "$.result",
+            "keyPaths": [
+              "sys_id"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

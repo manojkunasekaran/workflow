@@ -1,0 +1,236 @@
+{
+    "displayName": "Xero",
+    "icon": "https://api.iconify.design/logos/xero.svg",
+    "category": "Finance",
+    "baseUrl": "https://api.xero.com/api.xro/2.0",
+    "authType": "OAUTH2",
+    "oauth2Config": {
+        "authorizationUrl": "https://login.xero.com/identity/connect/authorize",
+        "tokenUrl": "https://identity.xero.com/connect/token",
+        "defaultScopes": [
+            "accounting.transactions",
+            "accounting.contacts",
+            "offline_access"
+        ]
+    },
+    "credentialGuide": {
+        "fields": [
+            {
+                "key": "client_id",
+                "label": "Client ID"
+            },
+            {
+                "key": "client_secret",
+                "label": "Client Secret"
+            }
+        ]
+    },
+    "connectionSetup": {
+        "description": "Connect Xero accounting.",
+        "buttonLabel": "Sign in with Xero"
+    },
+    "verifyAction": {
+        "method": "GET",
+        "path": "/Organisation"
+    },
+    "actions": [
+        {
+            "actionId": "list_contacts",
+            "displayName": "List Contacts",
+            "method": "GET",
+            "path": "/Contacts",
+            "inputSchema": [
+                {
+                    "key": "where",
+                    "label": "Where Filter",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "page",
+                    "label": "Page",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 1
+                }
+            ],
+            "outputPaths": [
+                "Contacts"
+            ]
+        },
+        {
+            "actionId": "get_contact",
+            "displayName": "Get Contact",
+            "method": "GET",
+            "path": "/Contacts/{contactId}",
+            "pathParams": [
+                "contactId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "contactId",
+                    "label": "Contact ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "Contacts"
+            ]
+        },
+        {
+            "actionId": "create_contact",
+            "displayName": "Create Contact",
+            "method": "POST",
+            "path": "/Contacts",
+            "inputSchema": [
+                {
+                    "key": "name",
+                    "label": "Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "email",
+                    "label": "Email Address",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "const c={Name:$inputs.name}; if($inputs.email) c.EmailAddress={Address:$inputs.email}; return {Contacts:[c]};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "Contacts"
+            ]
+        },
+        {
+            "actionId": "list_invoices",
+            "displayName": "List Invoices",
+            "method": "GET",
+            "path": "/Invoices",
+            "inputSchema": [
+                {
+                    "key": "where",
+                    "label": "Where Filter",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "page",
+                    "label": "Page",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 1
+                }
+            ],
+            "outputPaths": [
+                "Invoices"
+            ]
+        },
+        {
+            "actionId": "get_invoice",
+            "displayName": "Get Invoice",
+            "method": "GET",
+            "path": "/Invoices/{invoiceId}",
+            "pathParams": [
+                "invoiceId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "invoiceId",
+                    "label": "Invoice ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "Invoices"
+            ]
+        },
+        {
+            "actionId": "create_invoice",
+            "displayName": "Create Invoice",
+            "method": "POST",
+            "path": "/Invoices",
+            "inputSchema": [
+                {
+                    "key": "invoice",
+                    "label": "Invoice JSON",
+                    "type": "JSON",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "const inv=typeof $inputs.invoice==='string'?JSON.parse($inputs.invoice):$inputs.invoice; return {Invoices:[inv]};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "Invoices"
+            ]
+        },
+        {
+            "actionId": "update_invoice",
+            "displayName": "Update Invoice",
+            "method": "POST",
+            "path": "/Invoices/{invoiceId}",
+            "pathParams": [
+                "invoiceId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "invoiceId",
+                    "label": "Invoice ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "invoice",
+                    "label": "Invoice JSON",
+                    "type": "JSON",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "const inv=typeof $inputs.invoice==='string'?JSON.parse($inputs.invoice):$inputs.invoice; return {Invoices:[Object.assign({InvoiceID:$inputs.invoiceId}, inv)]};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "Invoices"
+            ]
+        },
+        {
+            "actionId": "list_accounts",
+            "displayName": "List Accounts",
+            "method": "GET",
+            "path": "/Accounts",
+            "inputSchema": [
+                {
+                    "key": "page",
+                    "label": "Page",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 1
+                }
+            ],
+            "outputPaths": [
+                "Accounts"
+            ]
+        }
+    ],
+    "connectorId": "xero",
+    "taskType": "CONNECTOR_TASK"
+}

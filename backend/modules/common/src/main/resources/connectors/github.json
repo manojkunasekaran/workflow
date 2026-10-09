@@ -1,169 +1,168 @@
 {
-    "connectorId":  "github",
-    "displayName":  "GitHub",
-    "icon":  "https://cdn.simpleicons.org/github/181717",
-    "category":  "Productivity",
+    "connectorId": "github",
+    "displayName": "GitHub",
+    "icon": "https://api.iconify.design/logos/github-icon.svg",
+    "category": "Productivity",
     "taskType": "CONNECTOR_TASK",
-    "baseUrl":  "https://api.github.com",
-    "authType":  "BEARER_TOKEN",
-    "credentialGuide":  {
-                            "fields":  [
-                                           {
-                                               "key":  "token",
-                                               "label":  "Personal Access Token",
-                                               "hint":  "Generate in Developer Settings"
-                                           }
-                                       ]
-                        },
-    "actions":  [
-                    {
-                        "actionId":  "create_issue",
-                        "displayName":  "Create Issue",
-                        "method":  "POST",
-                        "path":  "/repos/{owner}/{repo}/issues",
-                        "pathParams":  [
-                                           "owner",
-                                           "repo"
-                                       ],
-                        "inputSchema":  [
-                                            {
-                                                "key":  "owner",
-                                                "label":  "Owner",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "repo",
-                                                "label":  "Repository",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "title",
-                                                "label":  "Title",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "body",
-                                                "label":  "Body",
-                                                "type":  "TEXTAREA",
-                                                "required":  false,
-                                                "supportsExpression":  true
-                                            }
-                                        ],
-                        "inputScript":  "return { title: $inputs.title, body: $inputs.body };",
-                        "outputPaths":  [
-                                            "id",
-                                            "number",
-                                            "html_url"
-                                        ]
-                    },
-                    {
-                        "actionId":  "get_issue",
-                        "displayName":  "Get Issue",
-                        "method":  "GET",
-                        "path":  "/repos/{owner}/{repo}/issues/{issue_number}",
-                        "pathParams":  [
-                                           "owner",
-                                           "repo",
-                                           "issue_number"
-                                       ],
-                        "inputSchema":  [
-                                            {
-                                                "key":  "owner",
-                                                "label":  "Owner",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "repo",
-                                                "label":  "Repository",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "issue_number",
-                                                "label":  "Issue Number",
-                                                "type":  "NUMBER",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            }
-                                        ],
-                        "outputPaths":  [
-                                            "id",
-                                            "number",
-                                            "title",
-                                            "state",
-                                            "html_url"
-                                        ]
-                    },
-                    {
-                        "actionId":  "update_issue",
-                        "displayName":  "Update Issue",
-                        "method":  "PATCH",
-                        "path":  "/repos/{owner}/{repo}/issues/{issue_number}",
-                        "pathParams":  [
-                                           "owner",
-                                           "repo",
-                                           "issue_number"
-                                       ],
-                        "inputSchema":  [
-                                            {
-                                                "key":  "owner",
-                                                "label":  "Owner",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "repo",
-                                                "label":  "Repository",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "issue_number",
-                                                "label":  "Issue Number",
-                                                "type":  "NUMBER",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "state",
-                                                "label":  "State (open/closed)",
-                                                "type":  "STRING",
-                                                "required":  false,
-                                                "supportsExpression":  true
-                                            }
-                                        ],
-                        "inputScript":  "let body = {}; if ($inputs.state) body.state = $inputs.state; return body;",
-                        "outputPaths":  [
-                                            "id",
-                                            "number",
-                                            "state"
-                                        ]
-                    }
-                ],
-    "connectionSetup":  {
-                            "fields":  [
-                                           {
-                                               "label":  "Personal Access Token",
-                                               "key":  "token",
-                                               "sensitive":  true,
-                                               "hint":  "Generate in Developer Settings"
-                                           }
-                                       ]
-                        },
-    "verifyAction":  {
-                         "method":  "GET",
-                         "path":  "/"
-                     }
+    "baseUrl": "https://api.github.com",
+    "authType": "BEARER_TOKEN",
+    "credentialGuide": {
+        "fields": [
+            {
+                "key": "token",
+                "label": "Personal Access Token",
+                "hint": "Generate in Developer Settings"
+            }
+        ]
+    },
+    "actions": [
+        {
+            "actionId": "create_issue",
+            "displayName": "Create Issue",
+            "method": "POST",
+            "path": "/repos/{owner}/{repo}/issues",
+            "pathParams": [
+                "owner",
+                "repo"
+            ],
+            "inputSchema": [
+                {
+                    "key": "owner",
+                    "label": "Owner",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "repo",
+                    "label": "Repository",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "title",
+                    "label": "Title",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "body",
+                    "label": "Body",
+                    "type": "TEXTAREA",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return { title: $inputs.title, body: $inputs.body };",
+            "outputPaths": [
+                "id",
+                "number",
+                "html_url"
+            ]
+        },
+        {
+            "actionId": "get_issue",
+            "displayName": "Get Issue",
+            "method": "GET",
+            "path": "/repos/{owner}/{repo}/issues/{issue_number}",
+            "pathParams": [
+                "owner",
+                "repo",
+                "issue_number"
+            ],
+            "inputSchema": [
+                {
+                    "key": "owner",
+                    "label": "Owner",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "repo",
+                    "label": "Repository",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "issue_number",
+                    "label": "Issue Number",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "id",
+                "number",
+                "title",
+                "state",
+                "html_url"
+            ]
+        },
+        {
+            "actionId": "update_issue",
+            "displayName": "Update Issue",
+            "method": "PATCH",
+            "path": "/repos/{owner}/{repo}/issues/{issue_number}",
+            "pathParams": [
+                "owner",
+                "repo",
+                "issue_number"
+            ],
+            "inputSchema": [
+                {
+                    "key": "owner",
+                    "label": "Owner",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "repo",
+                    "label": "Repository",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "issue_number",
+                    "label": "Issue Number",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "state",
+                    "label": "State (open/closed)",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "let body = {}; if ($inputs.state) body.state = $inputs.state; return body;",
+            "outputPaths": [
+                "id",
+                "number",
+                "state"
+            ]
+        }
+    ],
+    "connectionSetup": {
+        "fields": [
+            {
+                "label": "Personal Access Token",
+                "key": "token",
+                "sensitive": true,
+                "hint": "Generate in Developer Settings"
+            }
+        ]
+    },
+    "verifyAction": {
+        "method": "GET",
+        "path": "/"
+    }
 }
-

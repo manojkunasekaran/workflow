@@ -1,23 +1,52 @@
 {
-  "connectorId": "mongodb",
-  "displayName": "MongoDB",
-  "icon": "https://cdn.simpleicons.org/mongodb/47A248",
-  "category": "Database",
-  "taskType": "MONGO_TASK",
-  "baseUrl": "",
-  "authType": "NONE",
-  "connectionSetup": {
-    "fields": [
-      { "key": "host", "label": "Host", "type": "text", "required": true, "description": "MongoDB host address" },
-      { "key": "port", "label": "Port", "type": "text", "required": false, "description": "MongoDB port (default: 27017)" },
-      { "key": "database", "label": "Database", "type": "text", "required": true, "description": "Database name" },
-      { "key": "username", "label": "Username", "type": "text", "required": false },
-      { "key": "password", "label": "Password", "type": "password", "required": false, "sensitive": true }
-    ]
-  },
-  "credentialGuide": {
-    "fields": []
-  },
-  "actions": [],
-  "verifyAction": null
+    "connectorId": "mongodb",
+    "displayName": "MongoDB",
+    "icon": "https://api.iconify.design/logos/mongodb-icon.svg",
+    "category": "Database",
+    "taskType": "MONGO_TASK",
+    "baseUrl": "",
+    "authType": "NONE",
+    "connectionSetup": {
+        "fields": [
+            {
+                "key": "host",
+                "label": "Host",
+                "type": "text",
+                "required": true,
+                "description": "MongoDB host address"
+            },
+            {
+                "key": "port",
+                "label": "Port",
+                "type": "text",
+                "required": false,
+                "description": "MongoDB port (default: 27017)"
+            },
+            {
+                "key": "database",
+                "label": "Database",
+                "type": "text",
+                "required": true,
+                "description": "Database name"
+            },
+            {
+                "key": "username",
+                "label": "Username",
+                "type": "text",
+                "required": false
+            },
+            {
+                "key": "password",
+                "label": "Password",
+                "type": "password",
+                "required": false,
+                "sensitive": true
+            }
+        ]
+    },
+    "credentialGuide": {
+        "fields": []
+    },
+    "actions": [],
+    "verifyAction": null
 }

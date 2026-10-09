@@ -1,0 +1,693 @@
+{
+    "connectorId": "wordpress",
+    "displayName": "WordPress",
+    "icon": "https://api.iconify.design/logos/wordpress.svg",
+    "category": "CMS",
+    "taskType": "CONNECTOR_TASK",
+    "baseUrl": "https://example.com/wp-json/wp/v2",
+    "authType": "BASIC_AUTH",
+    "credentialGuide": {
+        "description": "Duplicate the app and set baseUrl to your site REST URL (https://YOUR_SITE/wp-json/wp/v2). Use Application Passwords (Basic Auth) or clone with BEARER_TOKEN for JWT plugins.",
+        "fields": [
+            {
+                "key": "username",
+                "label": "WordPress Username",
+                "hint": "Users \u2192 Profile \u2192 Application Passwords"
+            },
+            {
+                "key": "password",
+                "label": "Application Password",
+                "hint": "Generated application password (not your login password)"
+            },
+            {
+                "key": "baseUrl",
+                "label": "Site Base URL",
+                "hint": "Set to https://YOUR_SITE/wp-json/wp/v2 when cloning"
+            }
+        ]
+    },
+    "connectionSetup": {
+        "fields": [
+            {
+                "label": "Username",
+                "key": "username",
+                "sensitive": false
+            },
+            {
+                "label": "Application Password",
+                "key": "password",
+                "sensitive": true
+            }
+        ]
+    },
+    "verifyAction": {
+        "method": "GET",
+        "path": "/users/me"
+    },
+    "actions": [
+        {
+            "actionId": "list_posts",
+            "displayName": "List Posts",
+            "method": "GET",
+            "path": "/posts",
+            "inputSchema": [
+                {
+                    "key": "limit",
+                    "label": "Limit",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 50
+                },
+                {
+                    "key": "status",
+                    "label": "Status",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": "publish"
+                }
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "get_post",
+            "displayName": "Get Post",
+            "method": "GET",
+            "path": "/posts/{postId}",
+            "inputSchema": [
+                {
+                    "key": "postId",
+                    "label": "Post ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "postId"
+            ],
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "create_post",
+            "displayName": "Create Post",
+            "method": "POST",
+            "path": "/posts",
+            "inputSchema": [
+                {
+                    "key": "title",
+                    "label": "Title",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "content",
+                    "label": "Content",
+                    "type": "TEXTAREA",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "status",
+                    "label": "Status",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": "draft"
+                }
+            ],
+            "inputScript": "return {title:$inputs.title,content:$inputs.content||'',status:$inputs.status||'draft'};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "update_post",
+            "displayName": "Update Post",
+            "method": "POST",
+            "path": "/posts/{postId}",
+            "inputSchema": [
+                {
+                    "key": "postId",
+                    "label": "Post ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "title",
+                    "label": "Title",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "content",
+                    "label": "Content",
+                    "type": "TEXTAREA",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "status",
+                    "label": "Status",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "postId"
+            ],
+            "inputScript": "const b={}; if($inputs.title) b.title=$inputs.title; if($inputs.content!=null) b.content=$inputs.content; if($inputs.status) b.status=$inputs.status; return b;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "delete_post",
+            "displayName": "Delete Post",
+            "method": "DELETE",
+            "path": "/posts/{postId}",
+            "inputSchema": [
+                {
+                    "key": "postId",
+                    "label": "Post ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "postId"
+            ],
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "list_pages",
+            "displayName": "List Pages",
+            "method": "GET",
+            "path": "/pages",
+            "inputSchema": [
+                {
+                    "key": "limit",
+                    "label": "Limit",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 50
+                }
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "get_page",
+            "displayName": "Get Page",
+            "method": "GET",
+            "path": "/pages/{pageId}",
+            "inputSchema": [
+                {
+                    "key": "pageId",
+                    "label": "Page ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "pageId"
+            ],
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "create_page",
+            "displayName": "Create Page",
+            "method": "POST",
+            "path": "/pages",
+            "inputSchema": [
+                {
+                    "key": "title",
+                    "label": "Title",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "content",
+                    "label": "Content",
+                    "type": "TEXTAREA",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "status",
+                    "label": "Status",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": "draft"
+                }
+            ],
+            "inputScript": "return {title:$inputs.title,content:$inputs.content||'',status:$inputs.status||'draft'};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "update_page",
+            "displayName": "Update Page",
+            "method": "POST",
+            "path": "/pages/{pageId}",
+            "inputSchema": [
+                {
+                    "key": "pageId",
+                    "label": "Page ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "title",
+                    "label": "Title",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "content",
+                    "label": "Content",
+                    "type": "TEXTAREA",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "pageId"
+            ],
+            "inputScript": "const b={}; if($inputs.title) b.title=$inputs.title; if($inputs.content!=null) b.content=$inputs.content; return b;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "delete_page",
+            "displayName": "Delete Page",
+            "method": "DELETE",
+            "path": "/pages/{pageId}",
+            "inputSchema": [
+                {
+                    "key": "pageId",
+                    "label": "Page ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "pageId"
+            ],
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "list_users",
+            "displayName": "List Users",
+            "method": "GET",
+            "path": "/users",
+            "inputSchema": [
+                {
+                    "key": "limit",
+                    "label": "Limit",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 50
+                }
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "get_user",
+            "displayName": "Get User",
+            "method": "GET",
+            "path": "/users/{userId}",
+            "inputSchema": [
+                {
+                    "key": "userId",
+                    "label": "User ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "userId"
+            ],
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "create_user",
+            "displayName": "Create User",
+            "method": "POST",
+            "path": "/users",
+            "inputSchema": [
+                {
+                    "key": "username",
+                    "label": "Username",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "email",
+                    "label": "Email",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "password",
+                    "label": "Password",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return {username:$inputs.username,email:$inputs.email,password:$inputs.password};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "update_user",
+            "displayName": "Update User",
+            "method": "POST",
+            "path": "/users/{userId}",
+            "inputSchema": [
+                {
+                    "key": "userId",
+                    "label": "User ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "email",
+                    "label": "Email",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "first_name",
+                    "label": "First Name",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "userId"
+            ],
+            "inputScript": "const b={}; if($inputs.email) b.email=$inputs.email; if($inputs.first_name) b.first_name=$inputs.first_name; return b;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "delete_user",
+            "displayName": "Delete User",
+            "method": "DELETE",
+            "path": "/users/{userId}",
+            "inputSchema": [
+                {
+                    "key": "userId",
+                    "label": "User ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "userId"
+            ],
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "list_media",
+            "displayName": "List Media",
+            "method": "GET",
+            "path": "/media",
+            "inputSchema": [
+                {
+                    "key": "limit",
+                    "label": "Limit",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 50
+                }
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "get_media",
+            "displayName": "Get Media",
+            "method": "GET",
+            "path": "/media/{mediaId}",
+            "inputSchema": [
+                {
+                    "key": "mediaId",
+                    "label": "Media ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "mediaId"
+            ],
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "create_media",
+            "displayName": "Create Media",
+            "method": "POST",
+            "path": "/media",
+            "inputSchema": [
+                {
+                    "key": "title",
+                    "label": "Title",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "source_url",
+                    "label": "Source URL",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "const b={title:$inputs.title}; if($inputs.source_url) b.source_url=$inputs.source_url; return b;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "delete_media",
+            "displayName": "Delete Media",
+            "method": "DELETE",
+            "path": "/media/{mediaId}",
+            "inputSchema": [
+                {
+                    "key": "mediaId",
+                    "label": "Media ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "mediaId"
+            ],
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "list_comments",
+            "displayName": "List Comments",
+            "method": "GET",
+            "path": "/comments",
+            "inputSchema": [
+                {
+                    "key": "limit",
+                    "label": "Limit",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 50
+                },
+                {
+                    "key": "post",
+                    "label": "Post ID",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "get_comment",
+            "displayName": "Get Comment",
+            "method": "GET",
+            "path": "/comments/{commentId}",
+            "inputSchema": [
+                {
+                    "key": "commentId",
+                    "label": "Comment ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "commentId"
+            ],
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "create_comment",
+            "displayName": "Create Comment",
+            "method": "POST",
+            "path": "/comments",
+            "inputSchema": [
+                {
+                    "key": "post",
+                    "label": "Post ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "content",
+                    "label": "Content",
+                    "type": "TEXTAREA",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return {post:$inputs.post,content:$inputs.content};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "update_comment",
+            "displayName": "Update Comment",
+            "method": "POST",
+            "path": "/comments/{commentId}",
+            "inputSchema": [
+                {
+                    "key": "commentId",
+                    "label": "Comment ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "content",
+                    "label": "Content",
+                    "type": "TEXTAREA",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "commentId"
+            ],
+            "inputScript": "return {content:$inputs.content};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "delete_comment",
+            "displayName": "Delete Comment",
+            "method": "DELETE",
+            "path": "/comments/{commentId}",
+            "inputSchema": [
+                {
+                    "key": "commentId",
+                    "label": "Comment ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "commentId"
+            ],
+            "outputPaths": [
+                "id"
+            ]
+        }
+    ]
+}

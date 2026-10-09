@@ -1,0 +1,475 @@
+{
+    "connectorId": "microsoft_onedrive",
+    "displayName": "Microsoft OneDrive",
+    "icon": "https://api.iconify.design/logos/microsoft-onedrive.svg",
+    "category": "Storage",
+    "taskType": "CONNECTOR_TASK",
+    "baseUrl": "https://graph.microsoft.com/v1.0",
+    "authType": "OAUTH2",
+    "oauth2Config": {
+        "authorizationUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+        "tokenUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+        "defaultScopes": [
+            "Files.ReadWrite",
+            "Files.Read.All",
+            "offline_access"
+        ]
+    },
+    "credentialGuide": {
+        "fields": [
+            {
+                "key": "client_id",
+                "label": "Client ID"
+            },
+            {
+                "key": "client_secret",
+                "label": "Client Secret"
+            }
+        ]
+    },
+    "connectionSetup": {
+        "description": "Connect OneDrive to manage files, sharing, and search from workflows.",
+        "buttonLabel": "Sign in with Microsoft"
+    },
+    "verifyAction": {
+        "method": "GET",
+        "path": "/me"
+    },
+    "actions": [
+        {
+            "actionId": "get_drive",
+            "displayName": "Get My Drive",
+            "method": "GET",
+            "path": "/me/drive",
+            "inputSchema": [],
+            "outputPaths": [
+                "id",
+                "driveType",
+                "quota"
+            ]
+        },
+        {
+            "actionId": "list_drives",
+            "displayName": "List Drives",
+            "method": "GET",
+            "path": "/me/drives",
+            "inputSchema": [
+                {
+                    "key": "top",
+                    "label": "Top",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 50
+                }
+            ],
+            "outputPaths": [
+                "value"
+            ]
+        },
+        {
+            "actionId": "list_root_children",
+            "displayName": "List Root Items",
+            "method": "GET",
+            "path": "/me/drive/root/children",
+            "inputSchema": [
+                {
+                    "key": "top",
+                    "label": "Top",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 50
+                }
+            ],
+            "outputPaths": [
+                "value"
+            ]
+        },
+        {
+            "actionId": "list_folder_children",
+            "displayName": "List Folder Children",
+            "method": "GET",
+            "path": "/me/drive/items/{parentId}/children",
+            "pathParams": [
+                "parentId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "parentId",
+                    "label": "Parent Item ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "description": "Folder item ID; use root ID from drive root."
+                }
+            ],
+            "outputPaths": [
+                "value"
+            ]
+        },
+        {
+            "actionId": "get_item",
+            "displayName": "Get Item Metadata",
+            "method": "GET",
+            "path": "/me/drive/items/{itemId}",
+            "pathParams": [
+                "itemId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "itemId",
+                    "label": "Item ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "id",
+                "name",
+                "size",
+                "webUrl"
+            ]
+        },
+        {
+            "actionId": "get_item_by_path",
+            "displayName": "Get Item by Path",
+            "method": "GET",
+            "path": "/me/drive/root:/{itemPath}:",
+            "pathParams": [
+                "itemPath"
+            ],
+            "inputSchema": [
+                {
+                    "key": "itemPath",
+                    "label": "Item Path",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "placeholder": "Documents/report.pdf"
+                }
+            ],
+            "outputPaths": [
+                "id",
+                "name",
+                "webUrl"
+            ]
+        },
+        {
+            "actionId": "create_folder",
+            "displayName": "Create Folder",
+            "method": "POST",
+            "path": "/me/drive/items/{parentId}/children",
+            "pathParams": [
+                "parentId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "parentId",
+                    "label": "Parent Item ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "description": "Folder item ID; use root ID from drive root."
+                },
+                {
+                    "key": "name",
+                    "label": "Folder Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return { name: $inputs.name, folder: {}, '@microsoft.graph.conflictBehavior': 'rename' };",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id",
+                "name",
+                "webUrl"
+            ]
+        },
+        {
+            "actionId": "upload_file_content",
+            "displayName": "Upload File Content",
+            "description": "Uploads small file content to a path under a parent folder.",
+            "method": "PUT",
+            "path": "/me/drive/items/{parentId}:/{fileName}:/content",
+            "pathParams": [
+                "parentId",
+                "fileName"
+            ],
+            "inputSchema": [
+                {
+                    "key": "parentId",
+                    "label": "Parent Item ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "description": "Folder item ID; use root ID from drive root."
+                },
+                {
+                    "key": "fileName",
+                    "label": "File Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "content",
+                    "label": "File Content",
+                    "type": "TEXTAREA",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "fixedHeaders": {
+                "Content-Type": "text/plain"
+            },
+            "outputPaths": [
+                "id",
+                "name",
+                "webUrl"
+            ]
+        },
+        {
+            "actionId": "download_file",
+            "displayName": "Download File Content",
+            "method": "GET",
+            "path": "/me/drive/items/{itemId}/content",
+            "pathParams": [
+                "itemId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "itemId",
+                    "label": "Item ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": []
+        },
+        {
+            "actionId": "delete_item",
+            "displayName": "Delete Item",
+            "method": "DELETE",
+            "path": "/me/drive/items/{itemId}",
+            "pathParams": [
+                "itemId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "itemId",
+                    "label": "Item ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": []
+        },
+        {
+            "actionId": "copy_item",
+            "displayName": "Copy Item",
+            "method": "POST",
+            "path": "/me/drive/items/{itemId}/copy",
+            "pathParams": [
+                "itemId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "itemId",
+                    "label": "Item ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "name",
+                    "label": "Copy Name",
+                    "type": false,
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "parentReferenceId",
+                    "label": "Destination Folder ID",
+                    "type": false,
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "const p={}; if($inputs.name) p.name=$inputs.name; if($inputs.parentReferenceId) p.parentReference={id:$inputs.parentReferenceId}; return p;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": []
+        },
+        {
+            "actionId": "move_item",
+            "displayName": "Move Item",
+            "method": "PATCH",
+            "path": "/me/drive/items/{itemId}",
+            "pathParams": [
+                "itemId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "itemId",
+                    "label": "Item ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "parentReferenceId",
+                    "label": "Destination Folder ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return { parentReference: { id: $inputs.parentReferenceId } };",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id",
+                "name",
+                "parentReference"
+            ]
+        },
+        {
+            "actionId": "create_share_link",
+            "displayName": "Create Share Link",
+            "method": "POST",
+            "path": "/me/drive/items/{itemId}/createLink",
+            "pathParams": [
+                "itemId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "itemId",
+                    "label": "Item ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "type",
+                    "label": "Link Type",
+                    "type": false,
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": "view"
+                },
+                {
+                    "key": "scope",
+                    "label": "Scope",
+                    "type": false,
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": "anonymous"
+                }
+            ],
+            "inputScript": "return { type: $inputs.type || 'view', scope: $inputs.scope || 'anonymous' };",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "link"
+            ]
+        },
+        {
+            "actionId": "search_drive",
+            "displayName": "Search Drive",
+            "method": "GET",
+            "path": "/me/drive/root/search(q='{query}')",
+            "pathParams": [
+                "query"
+            ],
+            "inputSchema": [
+                {
+                    "key": "query",
+                    "label": "Search Query",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "value"
+            ]
+        },
+        {
+            "actionId": "list_shared_with_me",
+            "displayName": "List Shared With Me",
+            "method": "GET",
+            "path": "/me/drive/sharedWithMe",
+            "inputSchema": [],
+            "outputPaths": [
+                "value"
+            ]
+        },
+        {
+            "actionId": "create_upload_session",
+            "displayName": "Create Upload Session",
+            "method": "POST",
+            "path": "/me/drive/items/{parentId}:/{fileName}:/createUploadSession",
+            "pathParams": [
+                "parentId",
+                "fileName"
+            ],
+            "inputSchema": [
+                {
+                    "key": "parentId",
+                    "label": "Parent Item ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "description": "Folder item ID; use root ID from drive root."
+                },
+                {
+                    "key": "fileName",
+                    "label": "File Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return { item: { '@microsoft.graph.conflictBehavior': 'rename', name: $inputs.fileName } };",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "uploadUrl",
+                "expirationDateTime"
+            ]
+        },
+        {
+            "actionId": "get_item_versions",
+            "displayName": "List Item Versions",
+            "method": "GET",
+            "path": "/me/drive/items/{itemId}/versions",
+            "pathParams": [
+                "itemId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "itemId",
+                    "label": "Item ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "value"
+            ]
+        }
+    ]
+}

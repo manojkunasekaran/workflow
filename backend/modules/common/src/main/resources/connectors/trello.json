@@ -1,0 +1,607 @@
+{
+    "connectorId": "trello",
+    "displayName": "Trello",
+    "icon": "https://api.iconify.design/logos/trello.svg",
+    "category": "Project Management",
+    "taskType": "CONNECTOR_TASK",
+    "baseUrl": "https://api.trello.com/1",
+    "authType": "BEARER_TOKEN",
+    "credentialGuide": {
+        "description": "Trello uses an API Key and User Token. Use BEARER_TOKEN with the user token, or clone this connector with authType CUSTOM_HEADER and store key/token as header fields. Query-string auth: set baseUrl to https://api.trello.com/1?key=YOUR_KEY and use BEARER for the token.",
+        "fields": [
+            {
+                "key": "apiKey",
+                "label": "API Key",
+                "hint": "From https://trello.com/power-ups/admin",
+                "docUrl": "https://developer.atlassian.com/cloud/trello/guides/rest-api/api-introduction/"
+            },
+            {
+                "key": "token",
+                "label": "User Token",
+                "hint": "Generate via Trello authorize URL with your API key"
+            }
+        ]
+    },
+    "connectionSetup": {
+        "fields": [
+            {
+                "label": "API Key",
+                "key": "apiKey",
+                "sensitive": false
+            },
+            {
+                "label": "User Token",
+                "key": "token",
+                "sensitive": true
+            }
+        ]
+    },
+    "verifyAction": {
+        "method": "GET",
+        "path": "/members/me"
+    },
+    "actions": [
+        {
+            "actionId": "list_boards",
+            "displayName": "List Boards",
+            "method": "GET",
+            "path": "/members/me/boards",
+            "inputSchema": [
+                {
+                    "key": "limit",
+                    "label": "Limit",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 50
+                }
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "get_board",
+            "displayName": "Get Board",
+            "method": "GET",
+            "path": "/boards/{boardId}",
+            "inputSchema": [
+                {
+                    "key": "boardId",
+                    "label": "Board ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "boardId"
+            ],
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "create_board",
+            "displayName": "Create Board",
+            "method": "POST",
+            "path": "/boards",
+            "inputSchema": [
+                {
+                    "key": "name",
+                    "label": "Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "desc",
+                    "label": "Description",
+                    "type": "TEXTAREA",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "defaultLists",
+                    "label": "Create Default Lists",
+                    "type": "BOOLEAN",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": true
+                }
+            ],
+            "inputScript": "return {name:$inputs.name, desc:$inputs.desc||'', defaultLists:$inputs.defaultLists!==false};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "update_board",
+            "displayName": "Update Board",
+            "method": "PUT",
+            "path": "/boards/{boardId}",
+            "inputSchema": [
+                {
+                    "key": "boardId",
+                    "label": "Board ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "name",
+                    "label": "Name",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "desc",
+                    "label": "Description",
+                    "type": "TEXTAREA",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "closed",
+                    "label": "Closed",
+                    "type": "BOOLEAN",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "boardId"
+            ],
+            "inputScript": "const b={}; if($inputs.name) b.name=$inputs.name; if($inputs.desc!=null) b.desc=$inputs.desc; if($inputs.closed!=null) b.closed=$inputs.closed; return b;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "delete_board",
+            "displayName": "Delete Board",
+            "method": "DELETE",
+            "path": "/boards/{boardId}",
+            "inputSchema": [
+                {
+                    "key": "boardId",
+                    "label": "Board ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "boardId"
+            ],
+            "outputPaths": [
+                "_"
+            ]
+        },
+        {
+            "actionId": "list_lists",
+            "displayName": "List Lists on Board",
+            "method": "GET",
+            "path": "/boards/{boardId}/lists",
+            "inputSchema": [
+                {
+                    "key": "boardId",
+                    "label": "Board ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "boardId"
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "get_list",
+            "displayName": "Get List",
+            "method": "GET",
+            "path": "/lists/{listId}",
+            "inputSchema": [
+                {
+                    "key": "listId",
+                    "label": "List ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "listId"
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "create_list",
+            "displayName": "Create List",
+            "method": "POST",
+            "path": "/lists",
+            "inputSchema": [
+                {
+                    "key": "name",
+                    "label": "Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "idBoard",
+                    "label": "Board ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return {name:$inputs.name, idBoard:$inputs.idBoard};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "update_list",
+            "displayName": "Update List",
+            "method": "PUT",
+            "path": "/lists/{listId}",
+            "inputSchema": [
+                {
+                    "key": "listId",
+                    "label": "List ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "name",
+                    "label": "Name",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "closed",
+                    "label": "Closed",
+                    "type": "BOOLEAN",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "listId"
+            ],
+            "inputScript": "const b={}; if($inputs.name) b.name=$inputs.name; if($inputs.closed!=null) b.closed=$inputs.closed; return b;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "archive_list",
+            "displayName": "Archive List",
+            "method": "PUT",
+            "path": "/lists/{listId}/closed",
+            "inputSchema": [
+                {
+                    "key": "listId",
+                    "label": "List ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "listId"
+            ],
+            "inputScript": "return {value:true};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "list_cards",
+            "displayName": "List Cards on Board",
+            "method": "GET",
+            "path": "/boards/{boardId}/cards",
+            "inputSchema": [
+                {
+                    "key": "boardId",
+                    "label": "Board ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "limit",
+                    "label": "Limit",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 100
+                }
+            ],
+            "pathParams": [
+                "boardId"
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "get_card",
+            "displayName": "Get Card",
+            "method": "GET",
+            "path": "/cards/{cardId}",
+            "inputSchema": [
+                {
+                    "key": "cardId",
+                    "label": "Card ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "cardId"
+            ],
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "create_card",
+            "displayName": "Create Card",
+            "method": "POST",
+            "path": "/cards",
+            "inputSchema": [
+                {
+                    "key": "name",
+                    "label": "Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "idList",
+                    "label": "List ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "desc",
+                    "label": "Description",
+                    "type": "TEXTAREA",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "idMembers",
+                    "label": "Member IDs (comma-separated)",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "const b={name:$inputs.name,idList:$inputs.idList}; if($inputs.desc) b.desc=$inputs.desc; if($inputs.idMembers) b.idMembers=$inputs.idMembers.split(',').map(s=>s.trim()); return b;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "update_card",
+            "displayName": "Update Card",
+            "method": "PUT",
+            "path": "/cards/{cardId}",
+            "inputSchema": [
+                {
+                    "key": "cardId",
+                    "label": "Card ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "name",
+                    "label": "Name",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "desc",
+                    "label": "Description",
+                    "type": "TEXTAREA",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "closed",
+                    "label": "Closed",
+                    "type": "BOOLEAN",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "cardId"
+            ],
+            "inputScript": "const b={}; if($inputs.name) b.name=$inputs.name; if($inputs.desc!=null) b.desc=$inputs.desc; if($inputs.closed!=null) b.closed=$inputs.closed; return b;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "delete_card",
+            "displayName": "Delete Card",
+            "method": "DELETE",
+            "path": "/cards/{cardId}",
+            "inputSchema": [
+                {
+                    "key": "cardId",
+                    "label": "Card ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "cardId"
+            ],
+            "outputPaths": [
+                "_"
+            ]
+        },
+        {
+            "actionId": "move_card",
+            "displayName": "Move Card to List",
+            "method": "PUT",
+            "path": "/cards/{cardId}",
+            "inputSchema": [
+                {
+                    "key": "cardId",
+                    "label": "Card ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "idList",
+                    "label": "Target List ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "cardId"
+            ],
+            "inputScript": "return {idList:$inputs.idList};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "get_member_me",
+            "displayName": "Get Current Member",
+            "method": "GET",
+            "path": "/members/me",
+            "inputSchema": [],
+            "outputPaths": [
+                "id",
+                "username",
+                "fullName"
+            ]
+        },
+        {
+            "actionId": "list_board_members",
+            "displayName": "List Board Members",
+            "method": "GET",
+            "path": "/boards/{boardId}/members",
+            "inputSchema": [
+                {
+                    "key": "boardId",
+                    "label": "Board ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "boardId"
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "list_board_actions",
+            "displayName": "List Board Actions",
+            "method": "GET",
+            "path": "/boards/{boardId}/actions",
+            "inputSchema": [
+                {
+                    "key": "boardId",
+                    "label": "Board ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "limit",
+                    "label": "Limit",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 50
+                },
+                {
+                    "key": "filter",
+                    "label": "Filter",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": "all"
+                }
+            ],
+            "pathParams": [
+                "boardId"
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "get_action",
+            "displayName": "Get Action",
+            "method": "GET",
+            "path": "/actions/{actionId}",
+            "inputSchema": [
+                {
+                    "key": "actionId",
+                    "label": "Action ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "actionId"
+            ],
+            "outputPaths": [
+                "id"
+            ]
+        }
+    ]
+}

@@ -1,292 +1,292 @@
 {
-    "connectorId":  "notion",
-    "displayName":  "Notion",
-    "icon":  "https://cdn.simpleicons.org/notion/000000",
-    "category":  "Productivity",
+    "connectorId": "notion",
+    "displayName": "Notion",
+    "icon": "https://api.iconify.design/logos/notion-icon.svg",
+    "category": "Productivity",
     "taskType": "CONNECTOR_TASK",
-    "baseUrl":  "https://api.notion.com/v1",
-    "authType":  "BEARER_TOKEN",
-    "credentialGuide":  {
-                            "fields":  [
-                                           {
-                                               "key":  "token",
-                                               "label":  "Internal Integration Secret",
-                                               "hint":  "Found in Notion Integrations dashboard",
-                                               "docUrl":  "https://www.notion.so/my-integrations"
-                                           }
-                                       ]
+    "baseUrl": "https://api.notion.com/v1",
+    "authType": "BEARER_TOKEN",
+    "credentialGuide": {
+        "fields": [
+            {
+                "key": "token",
+                "label": "Internal Integration Secret",
+                "hint": "Found in Notion Integrations dashboard",
+                "docUrl": "https://www.notion.so/my-integrations"
+            }
+        ]
+    },
+    "actions": [
+        {
+            "actionId": "create_page",
+            "displayName": "Create Page",
+            "method": "POST",
+            "path": "/pages",
+            "fixedHeaders": {
+                "Notion-Version": "2022-06-28",
+                "Content-Type": "application/json"
+            },
+            "inputSchema": [
+                {
+                    "key": "parent",
+                    "label": "Parent (JSON)",
+                    "type": "JSON",
+                    "required": true,
+                    "supportsExpression": true,
+                    "description": "e.g. {\"database_id\": \"xyz\"} or {\"page_id\": \"xyz\"}"
+                },
+                {
+                    "key": "properties",
+                    "label": "Properties (JSON)",
+                    "type": "JSON",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "children",
+                    "label": "Page Content Blocks (JSON Array)",
+                    "type": "JSON",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "id",
+                "created_time",
+                "url"
+            ]
+        },
+        {
+            "actionId": "get_page",
+            "displayName": "Get Page",
+            "method": "GET",
+            "path": "/pages/{pageId}",
+            "pathParams": [
+                "pageId"
+            ],
+            "fixedHeaders": {
+                "Notion-Version": "2022-06-28"
+            },
+            "inputSchema": [
+                {
+                    "key": "pageId",
+                    "label": "Page ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "id",
+                "url",
+                "properties",
+                "created_time",
+                "last_edited_time"
+            ]
+        },
+        {
+            "actionId": "update_page",
+            "displayName": "Update Page Properties",
+            "method": "PATCH",
+            "path": "/pages/{pageId}",
+            "pathParams": [
+                "pageId"
+            ],
+            "fixedHeaders": {
+                "Notion-Version": "2022-06-28",
+                "Content-Type": "application/json"
+            },
+            "inputSchema": [
+                {
+                    "key": "pageId",
+                    "label": "Page ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "properties",
+                    "label": "Properties to Update (JSON)",
+                    "type": "JSON",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "archived",
+                    "label": "Archive Page",
+                    "type": "BOOLEAN",
+                    "required": false,
+                    "supportsExpression": false
+                }
+            ],
+            "outputPaths": [
+                "id",
+                "url",
+                "last_edited_time"
+            ]
+        },
+        {
+            "actionId": "query_database",
+            "displayName": "Query Database",
+            "method": "POST",
+            "path": "/databases/{databaseId}/query",
+            "pathParams": [
+                "databaseId"
+            ],
+            "fixedHeaders": {
+                "Notion-Version": "2022-06-28",
+                "Content-Type": "application/json"
+            },
+            "inputSchema": [
+                {
+                    "key": "databaseId",
+                    "label": "Database ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "filter",
+                    "label": "Filter (JSON)",
+                    "type": "JSON",
+                    "required": false,
+                    "supportsExpression": true,
+                    "description": "Notion filter object"
+                },
+                {
+                    "key": "sorts",
+                    "label": "Sorts (JSON Array)",
+                    "type": "JSON",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "page_size",
+                    "label": "Page Size",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 100
+                }
+            ],
+            "outputPaths": [
+                "results",
+                "has_more",
+                "next_cursor"
+            ]
+        },
+        {
+            "actionId": "append_block_children",
+            "displayName": "Append Block Children",
+            "method": "PATCH",
+            "path": "/blocks/{blockId}/children",
+            "pathParams": [
+                "blockId"
+            ],
+            "fixedHeaders": {
+                "Notion-Version": "2022-06-28",
+                "Content-Type": "application/json"
+            },
+            "inputSchema": [
+                {
+                    "key": "blockId",
+                    "label": "Block or Page ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "children",
+                    "label": "Block Children (JSON Array)",
+                    "type": "JSON",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "results"
+            ]
+        },
+        {
+            "actionId": "get_database",
+            "displayName": "Get Database",
+            "method": "GET",
+            "path": "/databases/{databaseId}",
+            "pathParams": [
+                "databaseId"
+            ],
+            "fixedHeaders": {
+                "Notion-Version": "2022-06-28"
+            },
+            "inputSchema": [
+                {
+                    "key": "databaseId",
+                    "label": "Database ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "id",
+                "title",
+                "url",
+                "properties"
+            ]
+        },
+        {
+            "actionId": "search",
+            "displayName": "Search Pages & Databases",
+            "method": "POST",
+            "path": "/search",
+            "fixedHeaders": {
+                "Notion-Version": "2022-06-28",
+                "Content-Type": "application/json"
+            },
+            "inputSchema": [
+                {
+                    "key": "query",
+                    "label": "Search Query",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "filter_value",
+                    "label": "Filter by Type",
+                    "type": "SELECT",
+                    "required": false,
+                    "supportsExpression": false,
+                    "options": [
+                        {
+                            "label": "Pages",
+                            "value": "page"
                         },
-    "actions":  [
-                    {
-                        "actionId":  "create_page",
-                        "displayName":  "Create Page",
-                        "method":  "POST",
-                        "path":  "/pages",
-                        "fixedHeaders":  {
-                                             "Notion-Version":  "2022-06-28",
-                                             "Content-Type":  "application/json"
-                                         },
-                        "inputSchema":  [
-                                            {
-                                                "key":  "parent",
-                                                "label":  "Parent (JSON)",
-                                                "type":  "JSON",
-                                                "required":  true,
-                                                "supportsExpression":  true,
-                                                "description":  "e.g. {\"database_id\": \"xyz\"} or {\"page_id\": \"xyz\"}"
-                                            },
-                                            {
-                                                "key":  "properties",
-                                                "label":  "Properties (JSON)",
-                                                "type":  "JSON",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "children",
-                                                "label":  "Page Content Blocks (JSON Array)",
-                                                "type":  "JSON",
-                                                "required":  false,
-                                                "supportsExpression":  true
-                                            }
-                                        ],
-                        "outputPaths":  [
-                                            "id",
-                                            "created_time",
-                                            "url"
-                                        ]
-                    },
-                    {
-                        "actionId":  "get_page",
-                        "displayName":  "Get Page",
-                        "method":  "GET",
-                        "path":  "/pages/{pageId}",
-                        "pathParams":  [
-                                           "pageId"
-                                       ],
-                        "fixedHeaders":  {
-                                             "Notion-Version":  "2022-06-28"
-                                         },
-                        "inputSchema":  [
-                                            {
-                                                "key":  "pageId",
-                                                "label":  "Page ID",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            }
-                                        ],
-                        "outputPaths":  [
-                                            "id",
-                                            "url",
-                                            "properties",
-                                            "created_time",
-                                            "last_edited_time"
-                                        ]
-                    },
-                    {
-                        "actionId":  "update_page",
-                        "displayName":  "Update Page Properties",
-                        "method":  "PATCH",
-                        "path":  "/pages/{pageId}",
-                        "pathParams":  [
-                                           "pageId"
-                                       ],
-                        "fixedHeaders":  {
-                                             "Notion-Version":  "2022-06-28",
-                                             "Content-Type":  "application/json"
-                                         },
-                        "inputSchema":  [
-                                            {
-                                                "key":  "pageId",
-                                                "label":  "Page ID",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "properties",
-                                                "label":  "Properties to Update (JSON)",
-                                                "type":  "JSON",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "archived",
-                                                "label":  "Archive Page",
-                                                "type":  "BOOLEAN",
-                                                "required":  false,
-                                                "supportsExpression":  false
-                                            }
-                                        ],
-                        "outputPaths":  [
-                                            "id",
-                                            "url",
-                                            "last_edited_time"
-                                        ]
-                    },
-                    {
-                        "actionId":  "query_database",
-                        "displayName":  "Query Database",
-                        "method":  "POST",
-                        "path":  "/databases/{databaseId}/query",
-                        "pathParams":  [
-                                           "databaseId"
-                                       ],
-                        "fixedHeaders":  {
-                                             "Notion-Version":  "2022-06-28",
-                                             "Content-Type":  "application/json"
-                                         },
-                        "inputSchema":  [
-                                            {
-                                                "key":  "databaseId",
-                                                "label":  "Database ID",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "filter",
-                                                "label":  "Filter (JSON)",
-                                                "type":  "JSON",
-                                                "required":  false,
-                                                "supportsExpression":  true,
-                                                "description":  "Notion filter object"
-                                            },
-                                            {
-                                                "key":  "sorts",
-                                                "label":  "Sorts (JSON Array)",
-                                                "type":  "JSON",
-                                                "required":  false,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "page_size",
-                                                "label":  "Page Size",
-                                                "type":  "NUMBER",
-                                                "required":  false,
-                                                "supportsExpression":  true,
-                                                "defaultValue":  100
-                                            }
-                                        ],
-                        "outputPaths":  [
-                                            "results",
-                                            "has_more",
-                                            "next_cursor"
-                                        ]
-                    },
-                    {
-                        "actionId":  "append_block_children",
-                        "displayName":  "Append Block Children",
-                        "method":  "PATCH",
-                        "path":  "/blocks/{blockId}/children",
-                        "pathParams":  [
-                                           "blockId"
-                                       ],
-                        "fixedHeaders":  {
-                                             "Notion-Version":  "2022-06-28",
-                                             "Content-Type":  "application/json"
-                                         },
-                        "inputSchema":  [
-                                            {
-                                                "key":  "blockId",
-                                                "label":  "Block or Page ID",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "children",
-                                                "label":  "Block Children (JSON Array)",
-                                                "type":  "JSON",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            }
-                                        ],
-                        "outputPaths":  [
-                                            "results"
-                                        ]
-                    },
-                    {
-                        "actionId":  "get_database",
-                        "displayName":  "Get Database",
-                        "method":  "GET",
-                        "path":  "/databases/{databaseId}",
-                        "pathParams":  [
-                                           "databaseId"
-                                       ],
-                        "fixedHeaders":  {
-                                             "Notion-Version":  "2022-06-28"
-                                         },
-                        "inputSchema":  [
-                                            {
-                                                "key":  "databaseId",
-                                                "label":  "Database ID",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            }
-                                        ],
-                        "outputPaths":  [
-                                            "id",
-                                            "title",
-                                            "url",
-                                            "properties"
-                                        ]
-                    },
-                    {
-                        "actionId":  "search",
-                        "displayName":  "Search Pages \u0026 Databases",
-                        "method":  "POST",
-                        "path":  "/search",
-                        "fixedHeaders":  {
-                                             "Notion-Version":  "2022-06-28",
-                                             "Content-Type":  "application/json"
-                                         },
-                        "inputSchema":  [
-                                            {
-                                                "key":  "query",
-                                                "label":  "Search Query",
-                                                "type":  "STRING",
-                                                "required":  false,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "filter_value",
-                                                "label":  "Filter by Type",
-                                                "type":  "SELECT",
-                                                "required":  false,
-                                                "supportsExpression":  false,
-                                                "options":  [
-                                                                {
-                                                                    "label":  "Pages",
-                                                                    "value":  "page"
-                                                                },
-                                                                {
-                                                                    "label":  "Databases",
-                                                                    "value":  "database"
-                                                                }
-                                                            ]
-                                            }
-                                        ],
-                        "outputPaths":  [
-                                            "results",
-                                            "has_more"
-                                        ]
-                    }
-                ],
-    "connectionSetup":  {
-                            "fields":  [
-                                           {
-                                               "label":  "API Key",
-                                               "key":  "token",
-                                               "sensitive":  true,
-                                               "hint":  "Found in Notion Integrations dashboard"
-                                           }
-                                       ]
-                        },
-    "verifyAction":  {
-                         "method":  "GET",
-                         "path":  "/pages/{pageId}"
-                     }
+                        {
+                            "label": "Databases",
+                            "value": "database"
+                        }
+                    ]
+                }
+            ],
+            "outputPaths": [
+                "results",
+                "has_more"
+            ]
+        }
+    ],
+    "connectionSetup": {
+        "fields": [
+            {
+                "label": "API Key",
+                "key": "token",
+                "sensitive": true,
+                "hint": "Found in Notion Integrations dashboard"
+            }
+        ]
+    },
+    "verifyAction": {
+        "method": "GET",
+        "path": "/pages/{pageId}"
+    }
 }

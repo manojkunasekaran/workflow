@@ -1,0 +1,96 @@
+{
+  "connectorId": "supabase",
+  "triggers": [
+    {
+      "triggerId": "new_rows",
+      "displayName": "New rows",
+      "description": "Poll new rows in a table.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "table",
+          "label": "Table",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://example.supabase.co/rest/v1/{table}?select=*&order=created_at.desc&limit=50"
+          },
+          "detection": {
+            "itemsPath": "$",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "updated_rows",
+      "displayName": "Updated rows",
+      "description": "Poll updated rows.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "table",
+          "label": "Table",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "UPDATED",
+          "http": {
+            "method": "GET",
+            "url": "https://example.supabase.co/rest/v1/{table}?select=*&order=updated_at.desc&limit=50"
+          },
+          "detection": {
+            "itemsPath": "$",
+            "keyPaths": [
+              "id"
+            ],
+            "updateKeyPath": "updated_at"
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_storage_objects",
+      "displayName": "New storage objects",
+      "description": "Poll object list in a bucket.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "bucket",
+          "label": "Bucket",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://example.supabase.co/storage/v1/object/list/{bucket}"
+          },
+          "detection": {
+            "itemsPath": "$",
+            "keyPaths": [
+              "name"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

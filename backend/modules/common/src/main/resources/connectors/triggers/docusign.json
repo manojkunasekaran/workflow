@@ -1,0 +1,35 @@
+{
+  "connectorId": "docusign",
+  "triggers": [
+    {
+      "triggerId": "envelope_status_changes",
+      "displayName": "Envelope updates",
+      "description": "Poll envelopes.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "accountId",
+          "label": "Account ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://demo.docusign.net/restapi/v2.1/accounts/{accountId}/envelopes?from_date=2020-01-01T00:00:00Z"
+          },
+          "detection": {
+            "itemsPath": "$.envelopes",
+            "keyPaths": [
+              "envelopeId"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

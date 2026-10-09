@@ -1,0 +1,126 @@
+{
+  "connectorId": "trello",
+  "triggers": [
+    {
+      "triggerId": "new_cards",
+      "displayName": "New cards",
+      "description": "Poll cards on a Trello board.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "boardId",
+          "label": "Board ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://api.trello.com/1/boards/{boardId}/cards?limit=50"
+          },
+          "detection": {
+            "itemsPath": "$",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "updated_cards",
+      "displayName": "Updated cards",
+      "description": "Poll updated cards on a board.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "boardId",
+          "label": "Board ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "UPDATED",
+          "http": {
+            "method": "GET",
+            "url": "https://api.trello.com/1/boards/{boardId}/cards?limit=50"
+          },
+          "detection": {
+            "itemsPath": "$",
+            "keyPaths": [
+              "id"
+            ],
+            "updateKeyPath": "dateLastActivity"
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_lists",
+      "displayName": "New lists",
+      "description": "Poll lists created on a board.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "boardId",
+          "label": "Board ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://api.trello.com/1/boards/{boardId}/lists"
+          },
+          "detection": {
+            "itemsPath": "$",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_board_actions",
+      "displayName": "New board actions",
+      "description": "Poll activity actions on a board.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "boardId",
+          "label": "Board ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://api.trello.com/1/boards/{boardId}/actions?limit=50"
+          },
+          "detection": {
+            "itemsPath": "$",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

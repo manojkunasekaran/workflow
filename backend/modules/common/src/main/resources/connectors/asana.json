@@ -1,0 +1,607 @@
+{
+    "connectorId": "asana",
+    "displayName": "Asana",
+    "icon": "https://api.iconify.design/logos/asana.svg",
+    "category": "Project Management",
+    "taskType": "CONNECTOR_TASK",
+    "baseUrl": "https://app.asana.com/api/1.0",
+    "authType": "BEARER_TOKEN",
+    "credentialGuide": {
+        "description": "Create a Personal Access Token in Asana developer settings.",
+        "fields": [
+            {
+                "key": "token",
+                "label": "Personal Access Token",
+                "hint": "Asana My Settings \u2192 Apps \u2192 Manage Developer Apps \u2192 Personal access tokens",
+                "docUrl": "https://developers.asana.com/docs/personal-access-token"
+            }
+        ]
+    },
+    "connectionSetup": {
+        "fields": [
+            {
+                "label": "Personal Access Token",
+                "key": "token",
+                "sensitive": true
+            }
+        ]
+    },
+    "verifyAction": {
+        "method": "GET",
+        "path": "/users/me"
+    },
+    "actions": [
+        {
+            "actionId": "list_tasks",
+            "displayName": "List Tasks",
+            "method": "GET",
+            "path": "/tasks",
+            "inputSchema": [
+                {
+                    "key": "project",
+                    "label": "Project GID",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "assignee",
+                    "label": "Assignee GID",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "limit",
+                    "label": "Limit",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 100
+                }
+            ],
+            "outputPaths": [
+                "data"
+            ]
+        },
+        {
+            "actionId": "get_task",
+            "displayName": "Get Task",
+            "method": "GET",
+            "path": "/tasks/{taskGid}",
+            "inputSchema": [
+                {
+                    "key": "taskGid",
+                    "label": "Task GID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "taskGid"
+            ],
+            "outputPaths": [
+                "data"
+            ]
+        },
+        {
+            "actionId": "create_task",
+            "displayName": "Create Task",
+            "method": "POST",
+            "path": "/tasks",
+            "inputSchema": [
+                {
+                    "key": "name",
+                    "label": "Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "projects",
+                    "label": "Project GIDs (comma-separated)",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "notes",
+                    "label": "Notes",
+                    "type": "TEXTAREA",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "const d={name:$inputs.name}; if($inputs.notes) d.notes=$inputs.notes; if($inputs.projects) d.projects=$inputs.projects.split(',').map(s=>s.trim()); return {data:d};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "data.gid"
+            ]
+        },
+        {
+            "actionId": "update_task",
+            "displayName": "Update Task",
+            "method": "PUT",
+            "path": "/tasks/{taskGid}",
+            "inputSchema": [
+                {
+                    "key": "taskGid",
+                    "label": "Task GID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "name",
+                    "label": "Name",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "completed",
+                    "label": "Completed",
+                    "type": "BOOLEAN",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "notes",
+                    "label": "Notes",
+                    "type": "TEXTAREA",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "taskGid"
+            ],
+            "inputScript": "const d={}; if($inputs.name) d.name=$inputs.name; if($inputs.completed!=null) d.completed=$inputs.completed; if($inputs.notes!=null) d.notes=$inputs.notes; return {data:d};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "data.gid"
+            ]
+        },
+        {
+            "actionId": "delete_task",
+            "displayName": "Delete Task",
+            "method": "DELETE",
+            "path": "/tasks/{taskGid}",
+            "inputSchema": [
+                {
+                    "key": "taskGid",
+                    "label": "Task GID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "taskGid"
+            ],
+            "outputPaths": [
+                "data"
+            ]
+        },
+        {
+            "actionId": "search_tasks",
+            "displayName": "Search Tasks in Workspace",
+            "method": "GET",
+            "path": "/workspaces/{workspaceGid}/tasks/search",
+            "inputSchema": [
+                {
+                    "key": "workspaceGid",
+                    "label": "Workspace GID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "text",
+                    "label": "Search Text",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "workspaceGid"
+            ],
+            "outputPaths": [
+                "data"
+            ]
+        },
+        {
+            "actionId": "list_projects",
+            "displayName": "List Projects",
+            "method": "GET",
+            "path": "/projects",
+            "inputSchema": [
+                {
+                    "key": "workspace",
+                    "label": "Workspace GID",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "limit",
+                    "label": "Limit",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 100
+                }
+            ],
+            "outputPaths": [
+                "data"
+            ]
+        },
+        {
+            "actionId": "get_project",
+            "displayName": "Get Project",
+            "method": "GET",
+            "path": "/projects/{projectGid}",
+            "inputSchema": [
+                {
+                    "key": "projectGid",
+                    "label": "Project GID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "projectGid"
+            ],
+            "outputPaths": [
+                "data"
+            ]
+        },
+        {
+            "actionId": "create_project",
+            "displayName": "Create Project",
+            "method": "POST",
+            "path": "/projects",
+            "inputSchema": [
+                {
+                    "key": "name",
+                    "label": "Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "workspace",
+                    "label": "Workspace GID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return {data:{name:$inputs.name,workspace:$inputs.workspace}};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "data.gid"
+            ]
+        },
+        {
+            "actionId": "update_project",
+            "displayName": "Update Project",
+            "method": "PUT",
+            "path": "/projects/{projectGid}",
+            "inputSchema": [
+                {
+                    "key": "projectGid",
+                    "label": "Project GID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "name",
+                    "label": "Name",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "notes",
+                    "label": "Notes",
+                    "type": "TEXTAREA",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "projectGid"
+            ],
+            "inputScript": "const d={}; if($inputs.name) d.name=$inputs.name; if($inputs.notes!=null) d.notes=$inputs.notes; return {data:d};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "data.gid"
+            ]
+        },
+        {
+            "actionId": "delete_project",
+            "displayName": "Delete Project",
+            "method": "DELETE",
+            "path": "/projects/{projectGid}",
+            "inputSchema": [
+                {
+                    "key": "projectGid",
+                    "label": "Project GID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "projectGid"
+            ],
+            "outputPaths": [
+                "data"
+            ]
+        },
+        {
+            "actionId": "list_sections",
+            "displayName": "List Sections in Project",
+            "method": "GET",
+            "path": "/projects/{projectGid}/sections",
+            "inputSchema": [
+                {
+                    "key": "projectGid",
+                    "label": "Project GID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "limit",
+                    "label": "Limit",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 100
+                }
+            ],
+            "pathParams": [
+                "projectGid"
+            ],
+            "outputPaths": [
+                "data"
+            ]
+        },
+        {
+            "actionId": "get_section",
+            "displayName": "Get Section",
+            "method": "GET",
+            "path": "/sections/{sectionGid}",
+            "inputSchema": [
+                {
+                    "key": "sectionGid",
+                    "label": "Section GID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "sectionGid"
+            ],
+            "outputPaths": [
+                "data"
+            ]
+        },
+        {
+            "actionId": "create_section",
+            "displayName": "Create Section",
+            "method": "POST",
+            "path": "/sections",
+            "inputSchema": [
+                {
+                    "key": "name",
+                    "label": "Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "project",
+                    "label": "Project GID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return {data:{name:$inputs.name,project:$inputs.project}};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "data.gid"
+            ]
+        },
+        {
+            "actionId": "update_section",
+            "displayName": "Update Section",
+            "method": "PUT",
+            "path": "/sections/{sectionGid}",
+            "inputSchema": [
+                {
+                    "key": "sectionGid",
+                    "label": "Section GID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "name",
+                    "label": "Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "sectionGid"
+            ],
+            "inputScript": "return {data:{name:$inputs.name}};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "data.gid"
+            ]
+        },
+        {
+            "actionId": "delete_section",
+            "displayName": "Delete Section",
+            "method": "DELETE",
+            "path": "/sections/{sectionGid}",
+            "inputSchema": [
+                {
+                    "key": "sectionGid",
+                    "label": "Section GID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "sectionGid"
+            ],
+            "outputPaths": [
+                "data"
+            ]
+        },
+        {
+            "actionId": "list_stories",
+            "displayName": "List Stories on Task",
+            "method": "GET",
+            "path": "/tasks/{taskGid}/stories",
+            "inputSchema": [
+                {
+                    "key": "taskGid",
+                    "label": "Task GID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "limit",
+                    "label": "Limit",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 100
+                }
+            ],
+            "pathParams": [
+                "taskGid"
+            ],
+            "outputPaths": [
+                "data"
+            ]
+        },
+        {
+            "actionId": "create_story",
+            "displayName": "Create Comment on Task",
+            "method": "POST",
+            "path": "/tasks/{taskGid}/stories",
+            "inputSchema": [
+                {
+                    "key": "taskGid",
+                    "label": "Task GID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "text",
+                    "label": "Comment Text",
+                    "type": "TEXTAREA",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "taskGid"
+            ],
+            "inputScript": "return {data:{text:$inputs.text}};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "data.gid"
+            ]
+        },
+        {
+            "actionId": "list_tags",
+            "displayName": "List Tags in Workspace",
+            "method": "GET",
+            "path": "/workspaces/{workspaceGid}/tags",
+            "inputSchema": [
+                {
+                    "key": "workspaceGid",
+                    "label": "Workspace GID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "limit",
+                    "label": "Limit",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 100
+                }
+            ],
+            "pathParams": [
+                "workspaceGid"
+            ],
+            "outputPaths": [
+                "data"
+            ]
+        },
+        {
+            "actionId": "create_tag",
+            "displayName": "Create Tag",
+            "method": "POST",
+            "path": "/tags",
+            "inputSchema": [
+                {
+                    "key": "name",
+                    "label": "Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "workspace",
+                    "label": "Workspace GID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return {data:{name:$inputs.name,workspace:$inputs.workspace}};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "data.gid"
+            ]
+        }
+    ]
+}

@@ -1,0 +1,777 @@
+{
+    "displayName": "OneBill",
+    "icon": "https://www.google.com/s2/favicons?domain=onebillsoftware.com&sz=128",
+    "category": "Finance / Billing",
+    "baseUrl": "https://app.onebillsoftware.com",
+    "authType": "CUSTOM_HEADER",
+    "credentialGuide": {
+        "fields": [
+            {
+                "key": "Authorization",
+                "label": "Authorization",
+                "hint": "Bearer {access_token} from OneBill OAuth"
+            },
+            {
+                "key": "X-OB-Tenant-Identifier",
+                "label": "Tenant Identifier",
+                "hint": "Your OneBill tenant ID (same as OAuth client_id)"
+            }
+        ]
+    },
+    "connectionSetup": {
+        "fields": [
+            {
+                "label": "Authorization",
+                "key": "Authorization",
+                "sensitive": true,
+                "hint": "Format: Bearer <token>"
+            },
+            {
+                "label": "Tenant Identifier",
+                "key": "X-OB-Tenant-Identifier",
+                "sensitive": false
+            }
+        ]
+    },
+    "verifyAction": {
+        "method": "GET",
+        "path": "/rest/ProductService/v1/products?resultCount=1"
+    },
+    "actions": [
+        {
+            "actionId": "list_subscribers",
+            "displayName": "List Subscribers",
+            "method": "GET",
+            "path": "/rest/SubscriberService/v1/subscribers",
+            "inputSchema": [
+                {
+                    "key": "searchString",
+                    "label": "Search String",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "resultCount",
+                    "label": "Result Count",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 50
+                }
+            ],
+            "outputPaths": [
+                "subscribers",
+                "totalCount"
+            ]
+        },
+        {
+            "actionId": "get_subscriber",
+            "displayName": "Get Subscriber",
+            "method": "GET",
+            "path": "/rest/SubscriberService/v1/subscribers/{accountNumber}",
+            "pathParams": [
+                "accountNumber"
+            ],
+            "inputSchema": [
+                {
+                    "key": "accountNumber",
+                    "label": "Account Number",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "accountNumber",
+                "accountName",
+                "status"
+            ]
+        },
+        {
+            "actionId": "create_subscriber",
+            "displayName": "Create Subscriber",
+            "method": "POST",
+            "path": "/rest/SubscriberService/v1/subscribers",
+            "inputSchema": [
+                {
+                    "key": "body",
+                    "label": "Subscriber JSON Body",
+                    "type": "JSON",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return typeof $inputs.body === 'string' ? JSON.parse($inputs.body) : $inputs.body;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "accountNumber",
+                "status"
+            ]
+        },
+        {
+            "actionId": "update_subscriber",
+            "displayName": "Update Subscriber",
+            "method": "PUT",
+            "path": "/rest/SubscriberService/v1/subscribers/{accountNumber}",
+            "pathParams": [
+                "accountNumber"
+            ],
+            "inputSchema": [
+                {
+                    "key": "accountNumber",
+                    "label": "Account Number",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "body",
+                    "label": "Update JSON Body",
+                    "type": "JSON",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return typeof $inputs.body === 'string' ? JSON.parse($inputs.body) : $inputs.body;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "accountNumber",
+                "status"
+            ]
+        },
+        {
+            "actionId": "list_leads",
+            "displayName": "List Leads",
+            "method": "GET",
+            "path": "/rest/LeadService/v1/leads",
+            "inputSchema": [
+                {
+                    "key": "resultCount",
+                    "label": "Result Count",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 50
+                }
+            ],
+            "outputPaths": [
+                "leads",
+                "totalCount"
+            ]
+        },
+        {
+            "actionId": "get_lead",
+            "displayName": "Get Lead",
+            "method": "GET",
+            "path": "/rest/LeadService/v1/leads/{leadId}",
+            "pathParams": [
+                "leadId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "leadId",
+                    "label": "Lead ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "leadId",
+                "status"
+            ]
+        },
+        {
+            "actionId": "create_lead",
+            "displayName": "Create Lead",
+            "method": "POST",
+            "path": "/rest/LeadService/v1/leads",
+            "inputSchema": [
+                {
+                    "key": "body",
+                    "label": "Lead JSON Body",
+                    "type": "JSON",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return typeof $inputs.body === 'string' ? JSON.parse($inputs.body) : $inputs.body;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "leadId"
+            ]
+        },
+        {
+            "actionId": "update_lead",
+            "displayName": "Update Lead",
+            "method": "PUT",
+            "path": "/rest/LeadService/v1/leads/{leadId}",
+            "pathParams": [
+                "leadId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "leadId",
+                    "label": "Lead ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "body",
+                    "label": "Update JSON Body",
+                    "type": "JSON",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return typeof $inputs.body === 'string' ? JSON.parse($inputs.body) : $inputs.body;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "leadId"
+            ]
+        },
+        {
+            "actionId": "list_orders",
+            "displayName": "List Orders",
+            "method": "GET",
+            "path": "/rest/OrderService/v1/orders",
+            "inputSchema": [
+                {
+                    "key": "resultCount",
+                    "label": "Result Count",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 50
+                }
+            ],
+            "outputPaths": [
+                "orders",
+                "totalCount"
+            ]
+        },
+        {
+            "actionId": "get_order",
+            "displayName": "Get Order",
+            "method": "GET",
+            "path": "/rest/OrderService/v1/orders/{orderId}",
+            "pathParams": [
+                "orderId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "orderId",
+                    "label": "Order ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "orderId",
+                "orderStatus"
+            ]
+        },
+        {
+            "actionId": "create_order",
+            "displayName": "Create Order",
+            "method": "POST",
+            "path": "/rest/OrderService/v1/orders",
+            "inputSchema": [
+                {
+                    "key": "body",
+                    "label": "Order JSON Body",
+                    "type": "JSON",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return typeof $inputs.body === 'string' ? JSON.parse($inputs.body) : $inputs.body;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "orderId"
+            ]
+        },
+        {
+            "actionId": "list_invoices",
+            "displayName": "List Invoices",
+            "method": "GET",
+            "path": "/rest/InvoiceService/v1/invoices",
+            "inputSchema": [
+                {
+                    "key": "resultCount",
+                    "label": "Result Count",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 50
+                }
+            ],
+            "outputPaths": [
+                "invoices",
+                "totalCount"
+            ]
+        },
+        {
+            "actionId": "get_invoice",
+            "displayName": "Get Invoice",
+            "method": "GET",
+            "path": "/rest/InvoiceService/v1/invoices/{invoiceNumber}",
+            "pathParams": [
+                "invoiceNumber"
+            ],
+            "inputSchema": [
+                {
+                    "key": "invoiceNumber",
+                    "label": "Invoice Number",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "invoiceNumber",
+                "invoiceStatus",
+                "amount"
+            ]
+        },
+        {
+            "actionId": "list_payments",
+            "displayName": "List Payments",
+            "method": "GET",
+            "path": "/rest/PaymentService/v1/payments",
+            "inputSchema": [
+                {
+                    "key": "resultCount",
+                    "label": "Result Count",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 50
+                }
+            ],
+            "outputPaths": [
+                "payments",
+                "totalCount"
+            ]
+        },
+        {
+            "actionId": "create_payment",
+            "displayName": "Create Payment",
+            "method": "POST",
+            "path": "/rest/PaymentService/v1/payments",
+            "inputSchema": [
+                {
+                    "key": "body",
+                    "label": "Payment JSON Body",
+                    "type": "JSON",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return typeof $inputs.body === 'string' ? JSON.parse($inputs.body) : $inputs.body;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "paymentId",
+                "status"
+            ]
+        },
+        {
+            "actionId": "list_products",
+            "displayName": "List Products",
+            "method": "GET",
+            "path": "/rest/ProductService/v1/products",
+            "inputSchema": [
+                {
+                    "key": "resultCount",
+                    "label": "Result Count",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 50
+                }
+            ],
+            "outputPaths": [
+                "products",
+                "totalCount"
+            ]
+        },
+        {
+            "actionId": "get_product",
+            "displayName": "Get Product",
+            "method": "GET",
+            "path": "/rest/ProductService/v1/products/{productCode}",
+            "pathParams": [
+                "productCode"
+            ],
+            "inputSchema": [
+                {
+                    "key": "productCode",
+                    "label": "Product Code",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "productCode",
+                "productName"
+            ]
+        },
+        {
+            "actionId": "list_bundles",
+            "displayName": "List Bundles",
+            "method": "GET",
+            "path": "/rest/BundleService/v1/bundles",
+            "inputSchema": [
+                {
+                    "key": "resultCount",
+                    "label": "Result Count",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 50
+                }
+            ],
+            "outputPaths": [
+                "bundles",
+                "totalCount"
+            ]
+        },
+        {
+            "actionId": "get_bundle",
+            "displayName": "Get Bundle",
+            "method": "GET",
+            "path": "/rest/BundleService/v1/bundles/{bundleCode}",
+            "pathParams": [
+                "bundleCode"
+            ],
+            "inputSchema": [
+                {
+                    "key": "bundleCode",
+                    "label": "Bundle Code",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "bundleCode",
+                "bundleName"
+            ]
+        },
+        {
+            "actionId": "create_bundle",
+            "displayName": "Create Bundle",
+            "method": "POST",
+            "path": "/rest/BundleService/v1/bundles",
+            "inputSchema": [
+                {
+                    "key": "body",
+                    "label": "Bundle JSON Body",
+                    "type": "JSON",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return typeof $inputs.body === 'string' ? JSON.parse($inputs.body) : $inputs.body;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "bundleCode"
+            ]
+        },
+        {
+            "actionId": "list_tickets",
+            "displayName": "List Tickets",
+            "method": "GET",
+            "path": "/rest/TicketService/v1/tickets",
+            "inputSchema": [
+                {
+                    "key": "resultCount",
+                    "label": "Result Count",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 50
+                }
+            ],
+            "outputPaths": [
+                "tickets",
+                "totalCount"
+            ]
+        },
+        {
+            "actionId": "get_ticket",
+            "displayName": "Get Ticket",
+            "method": "GET",
+            "path": "/rest/TicketService/v1/tickets/{ticketId}",
+            "pathParams": [
+                "ticketId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "ticketId",
+                    "label": "Ticket ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "ticketId",
+                "status"
+            ]
+        },
+        {
+            "actionId": "create_ticket",
+            "displayName": "Create Ticket",
+            "method": "POST",
+            "path": "/rest/TicketService/v1/tickets",
+            "inputSchema": [
+                {
+                    "key": "body",
+                    "label": "Ticket JSON Body",
+                    "type": "JSON",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return typeof $inputs.body === 'string' ? JSON.parse($inputs.body) : $inputs.body;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "ticketId"
+            ]
+        },
+        {
+            "actionId": "update_ticket",
+            "displayName": "Update Ticket",
+            "method": "PUT",
+            "path": "/rest/TicketService/v1/tickets/{ticketId}",
+            "pathParams": [
+                "ticketId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "ticketId",
+                    "label": "Ticket ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "body",
+                    "label": "Update JSON Body",
+                    "type": "JSON",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return typeof $inputs.body === 'string' ? JSON.parse($inputs.body) : $inputs.body;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "ticketId",
+                "status"
+            ]
+        },
+        {
+            "actionId": "list_partners",
+            "displayName": "List Partners",
+            "method": "GET",
+            "path": "/rest/PartnerService/v1/partners",
+            "inputSchema": [
+                {
+                    "key": "resultCount",
+                    "label": "Result Count",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 50
+                }
+            ],
+            "outputPaths": [
+                "partners",
+                "totalCount"
+            ]
+        },
+        {
+            "actionId": "get_partner",
+            "displayName": "Get Partner",
+            "method": "GET",
+            "path": "/rest/PartnerService/v1/partners/{partnerId}",
+            "pathParams": [
+                "partnerId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "partnerId",
+                    "label": "Partner ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "partnerId",
+                "partnerName"
+            ]
+        },
+        {
+            "actionId": "create_partner",
+            "displayName": "Create Partner",
+            "method": "POST",
+            "path": "/rest/PartnerService/v1/partners",
+            "inputSchema": [
+                {
+                    "key": "body",
+                    "label": "Partner JSON Body",
+                    "type": "JSON",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return typeof $inputs.body === 'string' ? JSON.parse($inputs.body) : $inputs.body;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "partnerId"
+            ]
+        },
+        {
+            "actionId": "list_vendors",
+            "displayName": "List Vendors",
+            "method": "GET",
+            "path": "/rest/VendorService/v1/vendors",
+            "inputSchema": [
+                {
+                    "key": "resultCount",
+                    "label": "Result Count",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 50
+                }
+            ],
+            "outputPaths": [
+                "vendors",
+                "totalCount"
+            ]
+        },
+        {
+            "actionId": "get_vendor",
+            "displayName": "Get Vendor",
+            "method": "GET",
+            "path": "/rest/VendorService/v1/vendors/{vendorId}",
+            "pathParams": [
+                "vendorId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "vendorId",
+                    "label": "Vendor ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "vendorId",
+                "vendorName"
+            ]
+        },
+        {
+            "actionId": "create_vendor",
+            "displayName": "Create Vendor",
+            "method": "POST",
+            "path": "/rest/VendorService/v1/vendors",
+            "inputSchema": [
+                {
+                    "key": "body",
+                    "label": "Vendor JSON Body",
+                    "type": "JSON",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return typeof $inputs.body === 'string' ? JSON.parse($inputs.body) : $inputs.body;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "vendorId"
+            ]
+        },
+        {
+            "actionId": "get_subscriber_contacts",
+            "displayName": "Get Subscriber Contacts",
+            "method": "GET",
+            "path": "/rest/SubscriberService/v1/subscribers/{accountNumber}/contacts",
+            "pathParams": [
+                "accountNumber"
+            ],
+            "inputSchema": [
+                {
+                    "key": "accountNumber",
+                    "label": "Account Number",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "contacts"
+            ]
+        },
+        {
+            "actionId": "list_subscriber_orders",
+            "displayName": "List Subscriber Orders",
+            "method": "GET",
+            "path": "/rest/SubscriberService/v1/subscribers/{accountNumber}/orders",
+            "pathParams": [
+                "accountNumber"
+            ],
+            "inputSchema": [
+                {
+                    "key": "accountNumber",
+                    "label": "Account Number",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "resultCount",
+                    "label": "Result Count",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 50
+                }
+            ],
+            "outputPaths": [
+                "orders"
+            ]
+        }
+    ],
+    "connectorId": "onebill",
+    "taskType": "CONNECTOR_TASK"
+}

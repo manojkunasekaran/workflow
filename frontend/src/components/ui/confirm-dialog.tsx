@@ -20,6 +20,8 @@ export type ConfirmDialogProps = {
     onConfirm: () => void | Promise<void>;
     isConfirming?: boolean;
     destructive?: boolean;
+    /** Raise above sheets and other z-50 overlays (e.g. insights side panel). */
+    elevated?: boolean;
 };
 
 export function ConfirmDialog({
@@ -32,6 +34,7 @@ export function ConfirmDialog({
     onConfirm,
     isConfirming = false,
     destructive = false,
+    elevated = false,
 }: ConfirmDialogProps) {
     const handleConfirm = () => {
         void onConfirm();
@@ -39,7 +42,10 @@ export function ConfirmDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-md gap-0 p-0">
+            <DialogContent
+                className={elevated ? 'z-[100] max-w-lg gap-0 p-0' : 'max-w-lg gap-0 p-0'}
+                overlayClassName={elevated ? 'z-[100]' : undefined}
+            >
                 <div className="px-6 pb-2 pt-6">
                     <DialogHeader className="space-y-2 text-left">
                         <DialogTitle>{title}</DialogTitle>

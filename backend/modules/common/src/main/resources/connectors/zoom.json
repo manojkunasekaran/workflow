@@ -1,0 +1,264 @@
+{
+    "connectorId": "zoom",
+    "displayName": "Zoom",
+    "icon": "https://api.iconify.design/logos/zoom.svg",
+    "category": "Communication",
+    "taskType": "CONNECTOR_TASK",
+    "baseUrl": "https://api.zoom.us/v2",
+    "authType": "OAUTH2",
+    "oauth2Config": {
+        "authorizationUrl": "https://zoom.us/oauth/authorize",
+        "tokenUrl": "https://zoom.us/oauth/token",
+        "defaultScopes": [
+            "user:read",
+            "meeting:read",
+            "meeting:write",
+            "recording:read"
+        ]
+    },
+    "credentialGuide": {
+        "fields": [
+            {"key": "client_id", "label": "Client ID", "hint": "Zoom Marketplace Server-to-Server OAuth or OAuth app"},
+            {"key": "client_secret", "label": "Client Secret"}
+        ]
+    },
+    "actions": [
+        {
+            "actionId": "get_current_user",
+            "displayName": "Get Current User",
+            "method": "GET",
+            "path": "/users/me",
+            "inputSchema": [],
+            "outputPaths": ["id", "email", "first_name", "last_name", "type"]
+        },
+        {
+            "actionId": "list_users",
+            "displayName": "List Users",
+            "method": "GET",
+            "path": "/users",
+            "inputSchema": [
+                {"key": "status", "label": "Status", "type": "SELECT", "required": false, "supportsExpression": false, "options": [{"label": "Active", "value": "active"}, {"label": "Inactive", "value": "inactive"}, {"label": "Pending", "value": "pending"}]},
+                {"key": "page_size", "label": "Page Size", "type": "NUMBER", "required": false, "defaultValue": 30, "supportsExpression": true}
+            ],
+            "outputPaths": ["users", "page_count", "total_records"]
+        },
+        {
+            "actionId": "get_user",
+            "displayName": "Get User",
+            "method": "GET",
+            "path": "/users/{userId}",
+            "pathParams": ["userId"],
+            "inputSchema": [
+                {"key": "userId", "label": "User ID or email", "type": "STRING", "required": true, "supportsExpression": true}
+            ],
+            "outputPaths": ["id", "email", "first_name", "last_name"]
+        },
+        {
+            "actionId": "create_meeting",
+            "displayName": "Create Meeting",
+            "method": "POST",
+            "path": "/users/{userId}/meetings",
+            "pathParams": ["userId"],
+            "fixedHeaders": {"Content-Type": "application/json"},
+            "inputSchema": [
+                {"key": "userId", "label": "Host User ID", "type": "STRING", "required": true, "supportsExpression": true, "defaultValue": "me"},
+                {"key": "topic", "label": "Topic", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "type", "label": "Meeting Type", "type": "NUMBER", "required": false, "defaultValue": 2, "supportsExpression": true, "description": "1=instant, 2=scheduled, 3=recurring no fixed, 8=recurring fixed"},
+                {"key": "start_time", "label": "Start Time (ISO 8601)", "type": "STRING", "required": false, "supportsExpression": true},
+                {"key": "duration", "label": "Duration (minutes)", "type": "NUMBER", "required": false, "supportsExpression": true},
+                {"key": "timezone", "label": "Timezone", "type": "STRING", "required": false, "supportsExpression": true},
+                {"key": "agenda", "label": "Agenda", "type": "STRING", "required": false, "supportsExpression": true}
+            ],
+            "inputScript": "const m={topic:$inputs.topic,type:$inputs.type||2}; ['start_time','duration','timezone','agenda'].forEach(k=>{if($inputs[k]!=null&&$inputs[k]!=='') m[k]=$inputs[k];}); return m;",
+            "outputPaths": ["id", "join_url", "start_url", "uuid"]
+        },
+        {
+            "actionId": "get_meeting",
+            "displayName": "Get Meeting",
+            "method": "GET",
+            "path": "/meetings/{meetingId}",
+            "pathParams": ["meetingId"],
+            "inputSchema": [
+                {"key": "meetingId", "label": "Meeting ID", "type": "STRING", "required": true, "supportsExpression": true}
+            ],
+            "outputPaths": ["id", "topic", "start_time", "join_url", "status"]
+        },
+        {
+            "actionId": "update_meeting",
+            "displayName": "Update Meeting",
+            "method": "PATCH",
+            "path": "/meetings/{meetingId}",
+            "pathParams": ["meetingId"],
+            "fixedHeaders": {"Content-Type": "application/json"},
+            "inputSchema": [
+                {"key": "meetingId", "label": "Meeting ID", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "topic", "label": "Topic", "type": "STRING", "required": false, "supportsExpression": true},
+                {"key": "start_time", "label": "Start Time", "type": "STRING", "required": false, "supportsExpression": true},
+                {"key": "duration", "label": "Duration (minutes)", "type": "NUMBER", "required": false, "supportsExpression": true},
+                {"key": "agenda", "label": "Agenda", "type": "STRING", "required": false, "supportsExpression": true}
+            ],
+            "inputScript": "const m={}; ['topic','start_time','duration','agenda'].forEach(k=>{if($inputs[k]!=null&&$inputs[k]!=='') m[k]=$inputs[k];}); return m;",
+            "outputPaths": ["id", "topic", "start_time"]
+        },
+        {
+            "actionId": "delete_meeting",
+            "displayName": "Delete Meeting",
+            "method": "DELETE",
+            "path": "/meetings/{meetingId}",
+            "pathParams": ["meetingId"],
+            "inputSchema": [
+                {"key": "meetingId", "label": "Meeting ID", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "schedule_for_reminder", "label": "Schedule For Reminder", "type": "BOOLEAN", "required": false, "supportsExpression": false}
+            ],
+            "outputPaths": []
+        },
+        {
+            "actionId": "list_meetings",
+            "displayName": "List User Meetings",
+            "method": "GET",
+            "path": "/users/{userId}/meetings",
+            "pathParams": ["userId"],
+            "inputSchema": [
+                {"key": "userId", "label": "User ID", "type": "STRING", "required": true, "supportsExpression": true, "defaultValue": "me"},
+                {"key": "type", "label": "Type", "type": "SELECT", "required": false, "supportsExpression": false, "defaultValue": "scheduled", "options": [{"label": "Scheduled", "value": "scheduled"}, {"label": "Live", "value": "live"}, {"label": "Upcoming", "value": "upcoming"}, {"label": "Previous", "value": "previous_meetings"}]},
+                {"key": "page_size", "label": "Page Size", "type": "NUMBER", "required": false, "defaultValue": 30, "supportsExpression": true}
+            ],
+            "outputPaths": ["meetings", "page_count", "total_records"]
+        },
+        {
+            "actionId": "list_registrants",
+            "displayName": "List Meeting Registrants",
+            "method": "GET",
+            "path": "/meetings/{meetingId}/registrants",
+            "pathParams": ["meetingId"],
+            "inputSchema": [
+                {"key": "meetingId", "label": "Meeting ID", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "status", "label": "Status", "type": "SELECT", "required": false, "supportsExpression": false, "options": [{"label": "Approved", "value": "approved"}, {"label": "Pending", "value": "pending"}, {"label": "Denied", "value": "denied"}]}
+            ],
+            "outputPaths": ["registrants", "total_records"]
+        },
+        {
+            "actionId": "add_registrant",
+            "displayName": "Add Meeting Registrant",
+            "method": "POST",
+            "path": "/meetings/{meetingId}/registrants",
+            "pathParams": ["meetingId"],
+            "fixedHeaders": {"Content-Type": "application/json"},
+            "inputSchema": [
+                {"key": "meetingId", "label": "Meeting ID", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "email", "label": "Email", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "first_name", "label": "First Name", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "last_name", "label": "Last Name", "type": "STRING", "required": false, "supportsExpression": true}
+            ],
+            "inputScript": "const r={email:$inputs.email,first_name:$inputs.first_name}; if($inputs.last_name) r.last_name=$inputs.last_name; return r;",
+            "outputPaths": ["registrant_id", "join_url"]
+        },
+        {
+            "actionId": "list_recordings",
+            "displayName": "List User Recordings",
+            "method": "GET",
+            "path": "/users/{userId}/recordings",
+            "pathParams": ["userId"],
+            "inputSchema": [
+                {"key": "userId", "label": "User ID", "type": "STRING", "required": true, "supportsExpression": true, "defaultValue": "me"},
+                {"key": "from", "label": "From Date (yyyy-MM-dd)", "type": "STRING", "required": false, "supportsExpression": true},
+                {"key": "to", "label": "To Date (yyyy-MM-dd)", "type": "STRING", "required": false, "supportsExpression": true},
+                {"key": "page_size", "label": "Page Size", "type": "NUMBER", "required": false, "defaultValue": 30, "supportsExpression": true}
+            ],
+            "outputPaths": ["meetings", "from", "to"]
+        },
+        {
+            "actionId": "get_meeting_recordings",
+            "displayName": "Get Meeting Recordings",
+            "method": "GET",
+            "path": "/meetings/{meetingId}/recordings",
+            "pathParams": ["meetingId"],
+            "inputSchema": [
+                {"key": "meetingId", "label": "Meeting ID or UUID", "type": "STRING", "required": true, "supportsExpression": true}
+            ],
+            "outputPaths": ["uuid", "id", "recording_files", "download_access_token"]
+        },
+        {
+            "actionId": "update_meeting_status",
+            "displayName": "Update Meeting Status",
+            "method": "PUT",
+            "path": "/meetings/{meetingId}/status",
+            "pathParams": ["meetingId"],
+            "fixedHeaders": {"Content-Type": "application/json"},
+            "inputSchema": [
+                {"key": "meetingId", "label": "Meeting ID", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "action", "label": "Action", "type": "SELECT", "required": true, "supportsExpression": false, "options": [{"label": "End", "value": "end"}]}
+            ],
+            "inputScript": "return {action:$inputs.action};",
+            "outputPaths": []
+        },
+        {
+            "actionId": "get_meeting_invitation",
+            "displayName": "Get Meeting Invitation",
+            "method": "GET",
+            "path": "/meetings/{meetingId}/invitation",
+            "pathParams": ["meetingId"],
+            "inputSchema": [
+                {"key": "meetingId", "label": "Meeting ID", "type": "STRING", "required": true, "supportsExpression": true}
+            ],
+            "outputPaths": ["invitation"]
+        },
+        {
+            "actionId": "list_past_instances",
+            "displayName": "List Past Meeting Instances",
+            "method": "GET",
+            "path": "/past_meetings/{meetingId}/instances",
+            "pathParams": ["meetingId"],
+            "inputSchema": [
+                {"key": "meetingId", "label": "Meeting UUID", "type": "STRING", "required": true, "supportsExpression": true}
+            ],
+            "outputPaths": ["meetings"]
+        },
+        {
+            "actionId": "get_meeting_polls",
+            "displayName": "List Meeting Polls",
+            "method": "GET",
+            "path": "/meetings/{meetingId}/polls",
+            "pathParams": ["meetingId"],
+            "inputSchema": [
+                {"key": "meetingId", "label": "Meeting ID", "type": "STRING", "required": true, "supportsExpression": true}
+            ],
+            "outputPaths": ["polls"]
+        },
+        {
+            "actionId": "create_meeting_poll",
+            "displayName": "Create Meeting Poll",
+            "method": "POST",
+            "path": "/meetings/{meetingId}/polls",
+            "pathParams": ["meetingId"],
+            "fixedHeaders": {"Content-Type": "application/json"},
+            "inputSchema": [
+                {"key": "meetingId", "label": "Meeting ID", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "title", "label": "Poll Title", "type": "STRING", "required": true, "supportsExpression": true},
+                {"key": "questions", "label": "Questions (JSON array)", "type": "JSON", "required": true, "supportsExpression": true}
+            ],
+            "inputScript": "return {title:$inputs.title,questions:typeof $inputs.questions==='string'?JSON.parse($inputs.questions):$inputs.questions};",
+            "outputPaths": ["id", "title"]
+        },
+        {
+            "actionId": "list_webinars",
+            "displayName": "List Webinars",
+            "method": "GET",
+            "path": "/users/{userId}/webinars",
+            "pathParams": ["userId"],
+            "inputSchema": [
+                {"key": "userId", "label": "User ID", "type": "STRING", "required": true, "supportsExpression": true, "defaultValue": "me"},
+                {"key": "page_size", "label": "Page Size", "type": "NUMBER", "required": false, "defaultValue": 30, "supportsExpression": true}
+            ],
+            "outputPaths": ["webinars", "total_records"]
+        }
+    ],
+    "connectionSetup": {
+        "description": "Connect your Zoom account via OAuth.",
+        "buttonLabel": "Sign in with Zoom"
+    },
+    "verifyAction": {
+        "method": "GET",
+        "path": "/users/me"
+    }
+}

@@ -1,0 +1,94 @@
+{
+  "connectorId": "wordpress",
+  "triggers": [
+    {
+      "triggerId": "new_posts",
+      "displayName": "New posts",
+      "description": "Poll WordPress posts.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://example.com/wp-json/wp/v2/posts?per_page=50&status=publish"
+          },
+          "detection": {
+            "itemsPath": "$",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "updated_posts",
+      "displayName": "Updated posts",
+      "description": "Poll updated WordPress posts.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "UPDATED",
+          "http": {
+            "method": "GET",
+            "url": "https://example.com/wp-json/wp/v2/posts?per_page=50&status=publish"
+          },
+          "detection": {
+            "itemsPath": "$",
+            "keyPaths": [
+              "id"
+            ],
+            "updateKeyPath": "modified"
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_pages",
+      "displayName": "New pages",
+      "description": "Poll WordPress pages.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://example.com/wp-json/wp/v2/pages?per_page=50"
+          },
+          "detection": {
+            "itemsPath": "$",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_comments",
+      "displayName": "New comments",
+      "description": "Poll WordPress comments.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://example.com/wp-json/wp/v2/comments?per_page=50"
+          },
+          "detection": {
+            "itemsPath": "$",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,478 @@
+{
+    "connectorId": "supabase",
+    "displayName": "Supabase",
+    "icon": "https://api.iconify.design/logos/supabase-icon.svg",
+    "category": "Database",
+    "taskType": "CONNECTOR_TASK",
+    "baseUrl": "https://example.supabase.co",
+    "authType": "API_KEY",
+    "actions": [
+        {
+            "actionId": "list_rows",
+            "displayName": "List Rows",
+            "method": "GET",
+            "path": "/rest/v1/{table}",
+            "inputSchema": [
+                {
+                    "key": "table",
+                    "label": "Table",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "table"
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "get_row",
+            "displayName": "Get Row",
+            "method": "GET",
+            "path": "/rest/v1/{table}",
+            "inputSchema": [
+                {
+                    "key": "table",
+                    "label": "Table",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "id",
+                    "label": "Row ID (eq filter)",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "table"
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "insert_row",
+            "displayName": "Insert Row",
+            "method": "POST",
+            "path": "/rest/v1/{table}",
+            "inputSchema": [
+                {
+                    "key": "table",
+                    "label": "Table",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "body",
+                    "label": "Row JSON",
+                    "type": "JSON",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "table"
+            ],
+            "inputScript": "return typeof $inputs.body==='string'?JSON.parse($inputs.body):$inputs.body;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "update_row",
+            "displayName": "Update Row",
+            "method": "PATCH",
+            "path": "/rest/v1/{table}",
+            "inputSchema": [
+                {
+                    "key": "table",
+                    "label": "Table",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "id",
+                    "label": "Row ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "body",
+                    "label": "Updates JSON",
+                    "type": "JSON",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "table"
+            ],
+            "inputScript": "const b=typeof $inputs.body==='string'?JSON.parse($inputs.body):$inputs.body; b.id=$inputs.id; return b;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "delete_row",
+            "displayName": "Delete Row",
+            "method": "DELETE",
+            "path": "/rest/v1/{table}",
+            "inputSchema": [
+                {
+                    "key": "table",
+                    "label": "Table",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "id",
+                    "label": "Row ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "table"
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "upsert_row",
+            "displayName": "Upsert Row",
+            "method": "POST",
+            "path": "/rest/v1/{table}",
+            "inputSchema": [
+                {
+                    "key": "table",
+                    "label": "Table",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "body",
+                    "label": "Row JSON",
+                    "type": "JSON",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "table"
+            ],
+            "inputScript": "return typeof $inputs.body==='string'?JSON.parse($inputs.body):$inputs.body;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "rpc_call",
+            "displayName": "RPC Function",
+            "method": "POST",
+            "path": "/rest/v1/rpc/{functionName}",
+            "inputSchema": [
+                {
+                    "key": "functionName",
+                    "label": "Function Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "args",
+                    "label": "Arguments JSON",
+                    "type": "JSON",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "functionName"
+            ],
+            "inputScript": "return $inputs.args?(typeof $inputs.args==='string'?JSON.parse($inputs.args):$inputs.args):{};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "list_storage_buckets",
+            "displayName": "List Storage Buckets",
+            "method": "GET",
+            "path": "/storage/v1/bucket",
+            "inputSchema": [],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "list_storage_objects",
+            "displayName": "List Storage Objects",
+            "method": "POST",
+            "path": "/storage/v1/object/list/{bucket}",
+            "inputSchema": [
+                {
+                    "key": "bucket",
+                    "label": "Bucket",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "prefix",
+                    "label": "Prefix",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "limit",
+                    "label": "Limit",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 100
+                }
+            ],
+            "pathParams": [
+                "bucket"
+            ],
+            "inputScript": "return {prefix:$inputs.prefix||'',limit:$inputs.limit||100,offset:0};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "upload_storage_object",
+            "displayName": "Upload Storage Object",
+            "method": "POST",
+            "path": "/storage/v1/object/{bucket}/{path}",
+            "inputSchema": [
+                {
+                    "key": "bucket",
+                    "label": "Bucket",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "path",
+                    "label": "Object Path",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "content",
+                    "label": "Content",
+                    "type": "TEXTAREA",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "bucket",
+                "path"
+            ],
+            "inputScript": "return $inputs.content;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "download_storage_object",
+            "displayName": "Download Storage Object",
+            "method": "GET",
+            "path": "/storage/v1/object/{bucket}/{path}",
+            "inputSchema": [
+                {
+                    "key": "bucket",
+                    "label": "Bucket",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "path",
+                    "label": "Object Path",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "bucket",
+                "path"
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "delete_storage_object",
+            "displayName": "Delete Storage Object",
+            "method": "DELETE",
+            "path": "/storage/v1/object/{bucket}/{path}",
+            "inputSchema": [
+                {
+                    "key": "bucket",
+                    "label": "Bucket",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "path",
+                    "label": "Object Path",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "bucket",
+                "path"
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "create_signed_url",
+            "displayName": "Create Signed URL",
+            "method": "POST",
+            "path": "/storage/v1/object/sign/{bucket}/{path}",
+            "inputSchema": [
+                {
+                    "key": "bucket",
+                    "label": "Bucket",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "path",
+                    "label": "Object Path",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "expiresIn",
+                    "label": "Expires In (seconds)",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true,
+                    "defaultValue": 3600
+                }
+            ],
+            "pathParams": [
+                "bucket",
+                "path"
+            ],
+            "inputScript": "return {expiresIn:$inputs.expiresIn||3600};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "signedURL"
+            ]
+        },
+        {
+            "actionId": "get_auth_settings",
+            "displayName": "Get Auth Settings",
+            "method": "GET",
+            "path": "/auth/v1/settings",
+            "inputSchema": [],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "list_users",
+            "displayName": "List Auth Users",
+            "method": "GET",
+            "path": "/auth/v1/admin/users",
+            "inputSchema": [
+                {
+                    "key": "page",
+                    "label": "Page",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 1
+                },
+                {
+                    "key": "per_page",
+                    "label": "Per Page",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 50
+                }
+            ],
+            "outputPaths": [
+                "users"
+            ]
+        }
+    ],
+    "authHeaderName": "apikey",
+    "credentialGuide": {
+        "description": "Set baseUrl to https://YOUR_PROJECT.supabase.co. Use the service role or anon API key.",
+        "fields": [
+            {
+                "key": "apiKey",
+                "label": "API Key",
+                "hint": "Project Settings → API → anon or service_role key"
+            },
+            {
+                "key": "baseUrl",
+                "label": "Project URL",
+                "hint": "https://YOUR_PROJECT.supabase.co"
+            }
+        ]
+    },
+    "connectionSetup": {
+        "fields": [
+            {
+                "label": "API Key",
+                "key": "apiKey",
+                "sensitive": true
+            }
+        ]
+    },
+    "verifyAction": {
+        "method": "GET",
+        "path": "/rest/v1/"
+    }
+}
