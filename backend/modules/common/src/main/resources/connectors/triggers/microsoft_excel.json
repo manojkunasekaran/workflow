@@ -1,0 +1,99 @@
+{
+  "connectorId": "microsoft_excel",
+  "triggers": [
+    {
+      "triggerId": "worksheet_added",
+      "displayName": "New worksheet",
+      "description": "Poll workbook worksheets for new sheets.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "itemId",
+          "label": "Workbook Item ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://graph.microsoft.com/v1.0/me/drive/items/{itemId}/workbook/worksheets"
+          },
+          "detection": {
+            "itemsPath": "$.value",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "table_rows_added",
+      "displayName": "New table rows",
+      "description": "Poll Excel table rows.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "itemId",
+          "label": "Workbook Item ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "tableId",
+          "label": "Table ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://graph.microsoft.com/v1.0/me/drive/items/{itemId}/workbook/tables/{tableId}/rows"
+          },
+          "detection": {
+            "itemsPath": "$.value",
+            "keyPaths": [
+              "index"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "workbook_changed",
+      "displayName": "Workbook metadata changed",
+      "description": "Poll workbook metadata for changes.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "itemId",
+          "label": "Workbook Item ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "RESPONSE_CHANGED",
+          "http": {
+            "method": "GET",
+            "url": "https://graph.microsoft.com/v1.0/me/drive/items/{itemId}/workbook"
+          },
+          "detection": {
+            "hashIgnorePaths": []
+          }
+        }
+      }
+    }
+  ]
+}

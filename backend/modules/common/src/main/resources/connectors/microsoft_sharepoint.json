@@ -1,0 +1,570 @@
+{
+    "connectorId": "microsoft_sharepoint",
+    "displayName": "Microsoft SharePoint",
+    "icon": "https://api.iconify.design/simple-icons/microsoftsharepoint.svg",
+    "category": "Collaboration",
+    "taskType": "CONNECTOR_TASK",
+    "baseUrl": "https://graph.microsoft.com/v1.0",
+    "authType": "OAUTH2",
+    "oauth2Config": {
+        "authorizationUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+        "tokenUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+        "defaultScopes": [
+            "Sites.ReadWrite.All",
+            "Files.ReadWrite.All",
+            "offline_access"
+        ]
+    },
+    "credentialGuide": {
+        "fields": [
+            {
+                "key": "client_id",
+                "label": "Client ID"
+            },
+            {
+                "key": "client_secret",
+                "label": "Client Secret"
+            }
+        ]
+    },
+    "connectionSetup": {
+        "description": "Connect SharePoint sites, lists, and document libraries via Microsoft Graph.",
+        "buttonLabel": "Sign in with Microsoft"
+    },
+    "verifyAction": {
+        "method": "GET",
+        "path": "/me"
+    },
+    "actions": [
+        {
+            "actionId": "search_sites",
+            "displayName": "Search Sites",
+            "method": "GET",
+            "path": "/sites?search={search}",
+            "inputSchema": [
+                {
+                    "key": "search",
+                    "label": "Search Term",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "placeholder": "contoso"
+                }
+            ],
+            "outputPaths": [
+                "value"
+            ],
+            "pathParams": [
+                "search"
+            ]
+        },
+        {
+            "actionId": "get_site",
+            "displayName": "Get Site",
+            "method": "GET",
+            "path": "/sites/{siteId}",
+            "pathParams": [
+                "siteId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "siteId",
+                    "label": "Site ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "id",
+                "displayName",
+                "webUrl"
+            ]
+        },
+        {
+            "actionId": "get_site_by_hostname_path",
+            "displayName": "Get Site by Host and Path",
+            "method": "GET",
+            "path": "/sites/{hostname}:/{sitePath}:",
+            "pathParams": [
+                "hostname",
+                "sitePath"
+            ],
+            "inputSchema": [
+                {
+                    "key": "hostname",
+                    "label": "Hostname",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "placeholder": "contoso.sharepoint.com"
+                },
+                {
+                    "key": "sitePath",
+                    "label": "Site Path",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "placeholder": "sites/marketing"
+                }
+            ],
+            "outputPaths": [
+                "id",
+                "displayName",
+                "webUrl"
+            ]
+        },
+        {
+            "actionId": "list_site_lists",
+            "displayName": "List Site Lists",
+            "method": "GET",
+            "path": "/sites/{siteId}/lists",
+            "pathParams": [
+                "siteId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "siteId",
+                    "label": "Site ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "value"
+            ]
+        },
+        {
+            "actionId": "get_list",
+            "displayName": "Get List",
+            "method": "GET",
+            "path": "/sites/{siteId}/lists/{listId}",
+            "pathParams": [
+                "siteId",
+                "listId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "siteId",
+                    "label": "Site ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "listId",
+                    "label": "List ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "id",
+                "displayName",
+                "webUrl"
+            ]
+        },
+        {
+            "actionId": "list_list_items",
+            "displayName": "List List Items",
+            "method": "GET",
+            "path": "/sites/{siteId}/lists/{listId}/items",
+            "pathParams": [
+                "siteId",
+                "listId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "siteId",
+                    "label": "Site ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "listId",
+                    "label": "List ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "top",
+                    "label": "Top",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 50
+                }
+            ],
+            "outputPaths": [
+                "value"
+            ]
+        },
+        {
+            "actionId": "get_list_item",
+            "displayName": "Get List Item",
+            "method": "GET",
+            "path": "/sites/{siteId}/lists/{listId}/items/{itemId}",
+            "pathParams": [
+                "siteId",
+                "listId",
+                "itemId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "siteId",
+                    "label": "Site ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "listId",
+                    "label": "List ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "itemId",
+                    "label": "Item ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "id",
+                "fields"
+            ]
+        },
+        {
+            "actionId": "create_list_item",
+            "displayName": "Create List Item",
+            "method": "POST",
+            "path": "/sites/{siteId}/lists/{listId}/items",
+            "pathParams": [
+                "siteId",
+                "listId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "siteId",
+                    "label": "Site ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "listId",
+                    "label": "List ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "fieldsJson",
+                    "label": "Fields (JSON object)",
+                    "type": "TEXTAREA",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return { fields: JSON.parse($inputs.fieldsJson) };",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id",
+                "fields"
+            ]
+        },
+        {
+            "actionId": "update_list_item",
+            "displayName": "Update List Item",
+            "method": "PATCH",
+            "path": "/sites/{siteId}/lists/{listId}/items/{itemId}/fields",
+            "pathParams": [
+                "siteId",
+                "listId",
+                "itemId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "siteId",
+                    "label": "Site ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "listId",
+                    "label": "List ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "itemId",
+                    "label": "Item ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "fieldsJson",
+                    "label": "Fields (JSON object)",
+                    "type": "TEXTAREA",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return JSON.parse($inputs.fieldsJson);",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "delete_list_item",
+            "displayName": "Delete List Item",
+            "method": "DELETE",
+            "path": "/sites/{siteId}/lists/{listId}/items/{itemId}",
+            "pathParams": [
+                "siteId",
+                "listId",
+                "itemId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "siteId",
+                    "label": "Site ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "listId",
+                    "label": "List ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "itemId",
+                    "label": "Item ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": []
+        },
+        {
+            "actionId": "get_site_drive",
+            "displayName": "Get Site Default Drive",
+            "method": "GET",
+            "path": "/sites/{siteId}/drive",
+            "pathParams": [
+                "siteId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "siteId",
+                    "label": "Site ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "id",
+                "name",
+                "webUrl"
+            ]
+        },
+        {
+            "actionId": "list_site_drive_root_children",
+            "displayName": "List Site Drive Root Items",
+            "method": "GET",
+            "path": "/sites/{siteId}/drive/root/children",
+            "pathParams": [
+                "siteId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "siteId",
+                    "label": "Site ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "value"
+            ]
+        },
+        {
+            "actionId": "get_site_drive_item",
+            "displayName": "Get Site Drive Item",
+            "method": "GET",
+            "path": "/sites/{siteId}/drive/items/{itemId}",
+            "pathParams": [
+                "siteId",
+                "itemId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "siteId",
+                    "label": "Site ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "itemId",
+                    "label": "Drive Item ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "id",
+                "name",
+                "webUrl"
+            ]
+        },
+        {
+            "actionId": "download_site_drive_item",
+            "displayName": "Download Site Drive File",
+            "method": "GET",
+            "path": "/sites/{siteId}/drive/items/{itemId}/content",
+            "pathParams": [
+                "siteId",
+                "itemId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "siteId",
+                    "label": "Site ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "itemId",
+                    "label": "Drive Item ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": []
+        },
+        {
+            "actionId": "upload_site_drive_file",
+            "displayName": "Upload Site Drive File",
+            "method": "PUT",
+            "path": "/sites/{siteId}/drive/items/{parentId}:/{fileName}:/content",
+            "pathParams": [
+                "siteId",
+                "parentId",
+                "fileName"
+            ],
+            "inputSchema": [
+                {
+                    "key": "siteId",
+                    "label": "Site ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "parentId",
+                    "label": "Parent Folder ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "fileName",
+                    "label": "File Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "content",
+                    "label": "File Content",
+                    "type": "TEXTAREA",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "fixedHeaders": {
+                "Content-Type": "text/plain"
+            },
+            "outputPaths": [
+                "id",
+                "name",
+                "webUrl"
+            ]
+        },
+        {
+            "actionId": "list_site_subsites",
+            "displayName": "List Site Subsites",
+            "method": "GET",
+            "path": "/sites/{siteId}/sites",
+            "pathParams": [
+                "siteId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "siteId",
+                    "label": "Site ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "value"
+            ]
+        },
+        {
+            "actionId": "get_list_columns",
+            "displayName": "Get List Columns",
+            "method": "GET",
+            "path": "/sites/{siteId}/lists/{listId}/columns",
+            "pathParams": [
+                "siteId",
+                "listId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "siteId",
+                    "label": "Site ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "listId",
+                    "label": "List ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "value"
+            ]
+        }
+    ]
+}

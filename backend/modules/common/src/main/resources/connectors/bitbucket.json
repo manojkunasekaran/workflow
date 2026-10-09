@@ -1,0 +1,501 @@
+{
+    "connectorId": "bitbucket",
+    "displayName": "Bitbucket",
+    "icon": "https://api.iconify.design/logos/bitbucket.svg",
+    "category": "DevOps",
+    "taskType": "CONNECTOR_TASK",
+    "baseUrl": "https://api.bitbucket.org/2.0",
+    "authType": "BEARER_TOKEN",
+    "actions": [
+        {
+            "actionId": "list_workspaces",
+            "displayName": "List Workspaces",
+            "method": "GET",
+            "path": "/workspaces",
+            "inputSchema": [],
+            "outputPaths": [
+                "values"
+            ]
+        },
+        {
+            "actionId": "list_repositories",
+            "displayName": "List Repositories",
+            "method": "GET",
+            "path": "/repositories/{workspace}",
+            "inputSchema": [
+                {
+                    "key": "workspace",
+                    "label": "Workspace",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "workspace"
+            ],
+            "outputPaths": [
+                "values"
+            ]
+        },
+        {
+            "actionId": "get_repository",
+            "displayName": "Get Repository",
+            "method": "GET",
+            "path": "/repositories/{workspace}/{repo_slug}",
+            "inputSchema": [
+                {
+                    "key": "workspace",
+                    "label": "Workspace",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "repo_slug",
+                    "label": "Repo Slug",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "workspace",
+                "repo_slug"
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "create_repository",
+            "displayName": "Create Repository",
+            "method": "POST",
+            "path": "/repositories/{workspace}/{repo_slug}",
+            "inputSchema": [
+                {
+                    "key": "workspace",
+                    "label": "Workspace",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "repo_slug",
+                    "label": "Repo Slug",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "is_private",
+                    "label": "Private",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": "true"
+                }
+            ],
+            "pathParams": [
+                "workspace",
+                "repo_slug"
+            ],
+            "inputScript": "return {scm:'git',is_private:$inputs.is_private!=='false'};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "uuid"
+            ]
+        },
+        {
+            "actionId": "list_pullrequests",
+            "displayName": "List Pull Requests",
+            "method": "GET",
+            "path": "/repositories/{workspace}/{repo_slug}/pullrequests",
+            "inputSchema": [
+                {
+                    "key": "workspace",
+                    "label": "Workspace",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "repo_slug",
+                    "label": "Repo Slug",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "workspace",
+                "repo_slug"
+            ],
+            "outputPaths": [
+                "values"
+            ]
+        },
+        {
+            "actionId": "get_pullrequest",
+            "displayName": "Get Pull Request",
+            "method": "GET",
+            "path": "/repositories/{workspace}/{repo_slug}/pullrequests/{pull_request_id}",
+            "inputSchema": [
+                {
+                    "key": "workspace",
+                    "label": "Workspace",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "repo_slug",
+                    "label": "Repo Slug",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "pull_request_id",
+                    "label": "Pull Request ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "workspace",
+                "repo_slug",
+                "pull_request_id"
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "create_pullrequest",
+            "displayName": "Create Pull Request",
+            "method": "POST",
+            "path": "/repositories/{workspace}/{repo_slug}/pullrequests",
+            "inputSchema": [
+                {
+                    "key": "workspace",
+                    "label": "Workspace",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "repo_slug",
+                    "label": "Repo Slug",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "title",
+                    "label": "Title",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "source_branch",
+                    "label": "Source Branch",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "destination_branch",
+                    "label": "Destination Branch",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "workspace",
+                "repo_slug"
+            ],
+            "inputScript": "return {title:$inputs.title,source:{branch:{name:$inputs.source_branch}},destination:{branch:{name:$inputs.destination_branch}}};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "list_commits",
+            "displayName": "List Commits",
+            "method": "GET",
+            "path": "/repositories/{workspace}/{repo_slug}/commits",
+            "inputSchema": [
+                {
+                    "key": "workspace",
+                    "label": "Workspace",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "repo_slug",
+                    "label": "Repo Slug",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "workspace",
+                "repo_slug"
+            ],
+            "outputPaths": [
+                "values"
+            ]
+        },
+        {
+            "actionId": "get_commit",
+            "displayName": "Get Commit",
+            "method": "GET",
+            "path": "/repositories/{workspace}/{repo_slug}/commit/{commit}",
+            "inputSchema": [
+                {
+                    "key": "workspace",
+                    "label": "Workspace",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "repo_slug",
+                    "label": "Repo Slug",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "commit",
+                    "label": "Commit Hash",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "workspace",
+                "repo_slug",
+                "commit"
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "list_branches",
+            "displayName": "List Branches",
+            "method": "GET",
+            "path": "/repositories/{workspace}/{repo_slug}/refs/branches",
+            "inputSchema": [
+                {
+                    "key": "workspace",
+                    "label": "Workspace",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "repo_slug",
+                    "label": "Repo Slug",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "workspace",
+                "repo_slug"
+            ],
+            "outputPaths": [
+                "values"
+            ]
+        },
+        {
+            "actionId": "list_webhooks",
+            "displayName": "List Webhooks",
+            "method": "GET",
+            "path": "/repositories/{workspace}/{repo_slug}/hooks",
+            "inputSchema": [
+                {
+                    "key": "workspace",
+                    "label": "Workspace",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "repo_slug",
+                    "label": "Repo Slug",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "workspace",
+                "repo_slug"
+            ],
+            "outputPaths": [
+                "values"
+            ]
+        },
+        {
+            "actionId": "create_webhook",
+            "displayName": "Create Webhook",
+            "method": "POST",
+            "path": "/repositories/{workspace}/{repo_slug}/hooks",
+            "inputSchema": [
+                {
+                    "key": "workspace",
+                    "label": "Workspace",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "repo_slug",
+                    "label": "Repo Slug",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "description",
+                    "label": "Description",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "url",
+                    "label": "Callback URL",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "workspace",
+                "repo_slug"
+            ],
+            "inputScript": "return {description:$inputs.description,url:$inputs.url,active:true,events:['repo:push','pullrequest:created']};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "uuid"
+            ]
+        },
+        {
+            "actionId": "list_pipeline_runs",
+            "displayName": "List Pipeline Runs",
+            "method": "GET",
+            "path": "/repositories/{workspace}/{repo_slug}/pipelines",
+            "inputSchema": [
+                {
+                    "key": "workspace",
+                    "label": "Workspace",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "repo_slug",
+                    "label": "Repo Slug",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "workspace",
+                "repo_slug"
+            ],
+            "outputPaths": [
+                "values"
+            ]
+        },
+        {
+            "actionId": "get_pipeline",
+            "displayName": "Get Pipeline",
+            "method": "GET",
+            "path": "/repositories/{workspace}/{repo_slug}/pipelines/{pipeline_uuid}",
+            "inputSchema": [
+                {
+                    "key": "workspace",
+                    "label": "Workspace",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "repo_slug",
+                    "label": "Repo Slug",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "pipeline_uuid",
+                    "label": "Pipeline UUID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "workspace",
+                "repo_slug",
+                "pipeline_uuid"
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "get_current_user",
+            "displayName": "Get Current User",
+            "method": "GET",
+            "path": "/user",
+            "inputSchema": [],
+            "outputPaths": [
+                "$"
+            ]
+        }
+    ],
+    "credentialGuide": {
+        "fields": [
+            {
+                "key": "token",
+                "label": "Access Token",
+                "hint": "OAuth or app password / repository access token as Bearer"
+            }
+        ]
+    },
+    "connectionSetup": {
+        "fields": [
+            {
+                "label": "Access Token",
+                "key": "token",
+                "sensitive": true
+            }
+        ]
+    },
+    "verifyAction": {
+        "method": "GET",
+        "path": "/user"
+    }
+}

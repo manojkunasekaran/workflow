@@ -1,0 +1,145 @@
+{
+  "connectorId": "paypal",
+  "triggers": [
+    {
+      "triggerId": "checkout_order_approved",
+      "displayName": "Checkout order approved",
+      "description": "Triggers when a buyer approves a checkout order.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api-m.paypal.com/v1/notifications/webhooks",
+            "body": "{\"url\":\"{{callbackUrl}}\",\"event_types\":[{\"name\":\"CHECKOUT.ORDER.APPROVED\"}]}"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://api-m.paypal.com/v1/notifications/webhooks/{{subscriptionId}}"
+          },
+          "subscriptionIdPath": "$.id",
+          "inbound": {
+            "verificationMode": "HMAC_SHA256",
+            "headerName": "PAYPAL-TRANSMISSION-SIG",
+            "eventIdPath": "$.id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "payment_capture_completed",
+      "displayName": "Payment capture completed",
+      "description": "Triggers when a payment capture completes successfully.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api-m.paypal.com/v1/notifications/webhooks",
+            "body": "{\"url\":\"{{callbackUrl}}\",\"event_types\":[{\"name\":\"PAYMENT.CAPTURE.COMPLETED\"}]}"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://api-m.paypal.com/v1/notifications/webhooks/{{subscriptionId}}"
+          },
+          "subscriptionIdPath": "$.id",
+          "inbound": {
+            "verificationMode": "HMAC_SHA256",
+            "headerName": "PAYPAL-TRANSMISSION-SIG",
+            "eventIdPath": "$.id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "payment_capture_denied",
+      "displayName": "Payment capture denied",
+      "description": "Triggers when a payment capture is denied.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api-m.paypal.com/v1/notifications/webhooks",
+            "body": "{\"url\":\"{{callbackUrl}}\",\"event_types\":[{\"name\":\"PAYMENT.CAPTURE.DENIED\"}]}"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://api-m.paypal.com/v1/notifications/webhooks/{{subscriptionId}}"
+          },
+          "subscriptionIdPath": "$.id",
+          "inbound": {
+            "verificationMode": "HMAC_SHA256",
+            "headerName": "PAYPAL-TRANSMISSION-SIG",
+            "eventIdPath": "$.id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "payment_capture_refunded",
+      "displayName": "Payment capture refunded",
+      "description": "Triggers when a captured payment is refunded.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api-m.paypal.com/v1/notifications/webhooks",
+            "body": "{\"url\":\"{{callbackUrl}}\",\"event_types\":[{\"name\":\"PAYMENT.CAPTURE.REFUNDED\"}]}"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://api-m.paypal.com/v1/notifications/webhooks/{{subscriptionId}}"
+          },
+          "subscriptionIdPath": "$.id",
+          "inbound": {
+            "verificationMode": "HMAC_SHA256",
+            "headerName": "PAYPAL-TRANSMISSION-SIG",
+            "eventIdPath": "$.id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    },
+    {
+      "triggerId": "invoice_paid",
+      "displayName": "Invoice paid",
+      "description": "Triggers when a PayPal invoice is paid.",
+      "triggerType": "WEBHOOK",
+      "inputSchema": [],
+      "preset": {
+        "webhook": {
+          "subscribeHttp": {
+            "method": "POST",
+            "url": "https://api-m.paypal.com/v1/notifications/webhooks",
+            "body": "{\"url\":\"{{callbackUrl}}\",\"event_types\":[{\"name\":\"INVOICING.INVOICE.PAID\"}]}"
+          },
+          "unsubscribeHttp": {
+            "method": "DELETE",
+            "url": "https://api-m.paypal.com/v1/notifications/webhooks/{{subscriptionId}}"
+          },
+          "subscriptionIdPath": "$.id",
+          "inbound": {
+            "verificationMode": "HMAC_SHA256",
+            "headerName": "PAYPAL-TRANSMISSION-SIG",
+            "eventIdPath": "$.id",
+            "ignoreDuplicates": true
+          },
+          "deliveryMode": "SUBSCRIBE"
+        }
+      }
+    }
+  ]
+}

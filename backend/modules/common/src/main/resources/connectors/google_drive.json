@@ -1,0 +1,394 @@
+{
+    "connectorId": "google_drive",
+    "displayName": "Google Drive",
+    "icon": "https://api.iconify.design/logos/google-drive.svg",
+    "category": "Storage",
+    "taskType": "CONNECTOR_TASK",
+    "baseUrl": "https://www.googleapis.com/drive/v3",
+    "authType": "OAUTH2",
+    "oauth2Config": {
+        "authorizationUrl": "https://accounts.google.com/o/oauth2/v2/auth",
+        "tokenUrl": "https://oauth2.googleapis.com/token",
+        "defaultScopes": [
+            "https://www.googleapis.com/auth/drive"
+        ]
+    },
+    "actions": [
+        {
+            "actionId": "list_files",
+            "displayName": "List Files",
+            "method": "GET",
+            "path": "/files",
+            "inputSchema": [
+                {
+                    "key": "q",
+                    "label": "Search Query",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true,
+                    "placeholder": "e.g. mimeType='application/vnd.google-apps.folder'"
+                },
+                {
+                    "key": "pageSize",
+                    "label": "Page Size",
+                    "type": "NUMBER",
+                    "required": false,
+                    "defaultValue": 50,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "orderBy",
+                    "label": "Order By",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true,
+                    "placeholder": "e.g. modifiedTime desc"
+                }
+            ],
+            "outputPaths": [
+                "files",
+                "nextPageToken"
+            ]
+        },
+        {
+            "actionId": "get_file",
+            "displayName": "Get File Metadata",
+            "method": "GET",
+            "path": "/files/{fileId}",
+            "pathParams": [
+                "fileId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "fileId",
+                    "label": "File ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "fields",
+                    "label": "Fields (optional)",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": false,
+                    "defaultValue": "id,name,mimeType,webViewLink,parents,modifiedTime"
+                }
+            ],
+            "outputPaths": [
+                "id",
+                "name",
+                "mimeType",
+                "webViewLink",
+                "modifiedTime"
+            ]
+        },
+        {
+            "actionId": "create_folder",
+            "displayName": "Create Folder",
+            "method": "POST",
+            "path": "/files",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "inputSchema": [
+                {
+                    "key": "name",
+                    "label": "Folder Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "parentId",
+                    "label": "Parent Folder ID",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "const meta = { name: $inputs.name, mimeType: 'application/vnd.google-apps.folder' }; if ($inputs.parentId) meta.parents = [$inputs.parentId]; return meta;",
+            "outputPaths": [
+                "id",
+                "name",
+                "webViewLink"
+            ]
+        },
+        {
+            "actionId": "upload_file",
+            "displayName": "Upload File (metadata)",
+            "description": "Creates file metadata. Binary content requires multipart or resumable upload per Google Drive API.",
+            "method": "POST",
+            "path": "/files",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "inputSchema": [
+                {
+                    "key": "name",
+                    "label": "File Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "parentId",
+                    "label": "Parent Folder ID",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "mimeType",
+                    "label": "MIME Type",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": "application/octet-stream"
+                },
+                {
+                    "key": "content",
+                    "label": "Text Content (optional)",
+                    "type": "TEXTAREA",
+                    "required": false,
+                    "supportsExpression": true,
+                    "description": "Small text payloads only; use resumable upload for large or binary files."
+                }
+            ],
+            "inputScript": "const meta = { name: $inputs.name, mimeType: $inputs.mimeType || 'application/octet-stream' }; if ($inputs.parentId) meta.parents = [$inputs.parentId]; return meta;",
+            "outputPaths": [
+                "id",
+                "name",
+                "webViewLink"
+            ]
+        },
+        {
+            "actionId": "copy_file",
+            "displayName": "Copy File",
+            "method": "POST",
+            "path": "/files/{fileId}/copy",
+            "pathParams": [
+                "fileId"
+            ],
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "inputSchema": [
+                {
+                    "key": "fileId",
+                    "label": "Source File ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "name",
+                    "label": "Copy Name",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "parentId",
+                    "label": "Destination Folder ID",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "const body = {}; if ($inputs.name) body.name = $inputs.name; if ($inputs.parentId) body.parents = [$inputs.parentId]; return body;",
+            "outputPaths": [
+                "id",
+                "name",
+                "webViewLink"
+            ]
+        },
+        {
+            "actionId": "move_file",
+            "displayName": "Move File",
+            "method": "PATCH",
+            "path": "/files/{fileId}",
+            "pathParams": [
+                "fileId"
+            ],
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "inputSchema": [
+                {
+                    "key": "fileId",
+                    "label": "File ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "parentId",
+                    "label": "New Parent Folder ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "removeParentId",
+                    "label": "Previous Parent Folder ID",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true,
+                    "description": "Required when moving out of a folder; use the folder the file is currently in."
+                }
+            ],
+            "inputScript": "return { addParents: $inputs.parentId, removeParents: $inputs.removeParentId || undefined };",
+            "outputPaths": [
+                "id",
+                "name",
+                "parents"
+            ]
+        },
+        {
+            "actionId": "share_file",
+            "displayName": "Share File",
+            "method": "POST",
+            "path": "/files/{fileId}/permissions",
+            "pathParams": [
+                "fileId"
+            ],
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "inputSchema": [
+                {
+                    "key": "fileId",
+                    "label": "File ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "role",
+                    "label": "Role",
+                    "type": "SELECT",
+                    "required": true,
+                    "supportsExpression": false,
+                    "defaultValue": "reader",
+                    "options": [
+                        {
+                            "label": "Reader",
+                            "value": "reader"
+                        },
+                        {
+                            "label": "Writer",
+                            "value": "writer"
+                        },
+                        {
+                            "label": "Commenter",
+                            "value": "commenter"
+                        }
+                    ]
+                },
+                {
+                    "key": "type",
+                    "label": "Grantee Type",
+                    "type": "SELECT",
+                    "required": true,
+                    "supportsExpression": false,
+                    "defaultValue": "user",
+                    "options": [
+                        {
+                            "label": "User",
+                            "value": "user"
+                        },
+                        {
+                            "label": "Group",
+                            "value": "group"
+                        },
+                        {
+                            "label": "Anyone",
+                            "value": "anyone"
+                        }
+                    ]
+                },
+                {
+                    "key": "emailAddress",
+                    "label": "Email Address",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true,
+                    "description": "Required when type is user or group."
+                }
+            ],
+            "inputScript": "const body = { role: $inputs.role, type: $inputs.type }; if ($inputs.emailAddress) body.emailAddress = $inputs.emailAddress; return body;",
+            "outputPaths": [
+                "id",
+                "role",
+                "type"
+            ]
+        },
+        {
+            "actionId": "delete_file",
+            "displayName": "Delete File",
+            "method": "DELETE",
+            "path": "/files/{fileId}",
+            "pathParams": [
+                "fileId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "fileId",
+                    "label": "File ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": []
+        },
+        {
+            "actionId": "export_file",
+            "displayName": "Export Google Doc",
+            "method": "GET",
+            "path": "/files/{fileId}/export",
+            "pathParams": [
+                "fileId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "fileId",
+                    "label": "File ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "mimeType",
+                    "label": "Export MIME Type",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "placeholder": "e.g. application/pdf"
+                }
+            ],
+            "outputPaths": []
+        }
+    ],
+    "connectionSetup": {
+        "description": "Connect Google Drive to list, organize, and share files from workflows.",
+        "buttonLabel": "Sign in with Google Drive"
+    },
+    "verifyAction": {
+        "method": "GET",
+        "path": "/about?fields=user,storageQuota"
+    },
+    "credentialGuide": {
+        "fields": [
+            {
+                "key": "client_id",
+                "label": "Client ID"
+            },
+            {
+                "key": "client_secret",
+                "label": "Client Secret"
+            }
+        ]
+    }
+}

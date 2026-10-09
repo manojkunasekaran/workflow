@@ -1,0 +1,282 @@
+{
+    "displayName": "QuickBooks Online",
+    "icon": "https://api.iconify.design/simple-icons/intuit.svg?color=%232d3648",
+    "category": "Finance",
+    "baseUrl": "https://quickbooks.api.intuit.com",
+    "authType": "OAUTH2",
+    "oauth2Config": {
+        "authorizationUrl": "https://appcenter.intuit.com/connect/oauth2",
+        "tokenUrl": "https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer",
+        "defaultScopes": [
+            "com.intuit.quickbooks.accounting"
+        ]
+    },
+    "credentialGuide": {
+        "fields": [
+            {
+                "key": "client_id",
+                "label": "Client ID"
+            },
+            {
+                "key": "client_secret",
+                "label": "Client Secret"
+            }
+        ]
+    },
+    "connectionSetup": {
+        "description": "Connect QuickBooks Online.",
+        "buttonLabel": "Sign in with Intuit"
+    },
+    "verifyAction": {
+        "method": "GET",
+        "path": "/v3/company/{realmId}/companyinfo/{realmId}",
+        "pathParams": [
+            "realmId"
+        ]
+    },
+    "actions": [
+        {
+            "actionId": "create_customer",
+            "displayName": "Create Customer",
+            "method": "POST",
+            "path": "/v3/company/{realmId}/customer",
+            "pathParams": [
+                "realmId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "realmId",
+                    "label": "Company ID (Realm ID)",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "displayName",
+                    "label": "Display Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "primaryEmail",
+                    "label": "Primary Email",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "const c={DisplayName:$inputs.displayName}; if($inputs.primaryEmail) c.PrimaryEmailAddr={Address:$inputs.primaryEmail}; return c;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "Customer.Id",
+                "Customer.DisplayName"
+            ]
+        },
+        {
+            "actionId": "get_customer",
+            "displayName": "Get Customer",
+            "method": "GET",
+            "path": "/v3/company/{realmId}/customer/{customerId}",
+            "pathParams": [
+                "realmId",
+                "customerId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "realmId",
+                    "label": "Realm ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "customerId",
+                    "label": "Customer ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "Customer"
+            ]
+        },
+        {
+            "actionId": "list_customers",
+            "displayName": "List Customers",
+            "method": "GET",
+            "path": "/v3/company/{realmId}/query",
+            "pathParams": [
+                "realmId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "realmId",
+                    "label": "Realm ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "query",
+                    "label": "SQL Query",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": "select * from Customer maxresults 25"
+                }
+            ],
+            "outputPaths": [
+                "QueryResponse"
+            ]
+        },
+        {
+            "actionId": "create_invoice",
+            "displayName": "Create Invoice",
+            "method": "POST",
+            "path": "/v3/company/{realmId}/invoice",
+            "pathParams": [
+                "realmId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "realmId",
+                    "label": "Realm ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "invoice",
+                    "label": "Invoice JSON",
+                    "type": "JSON",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return typeof $inputs.invoice==='string'?JSON.parse($inputs.invoice):$inputs.invoice;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "Invoice.Id"
+            ]
+        },
+        {
+            "actionId": "get_invoice",
+            "displayName": "Get Invoice",
+            "method": "GET",
+            "path": "/v3/company/{realmId}/invoice/{invoiceId}",
+            "pathParams": [
+                "realmId",
+                "invoiceId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "realmId",
+                    "label": "Realm ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "invoiceId",
+                    "label": "Invoice ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "Invoice"
+            ]
+        },
+        {
+            "actionId": "list_invoices",
+            "displayName": "List Invoices",
+            "method": "GET",
+            "path": "/v3/company/{realmId}/query",
+            "pathParams": [
+                "realmId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "realmId",
+                    "label": "Realm ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "query",
+                    "label": "SQL Query",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": "select * from Invoice maxresults 25"
+                }
+            ],
+            "outputPaths": [
+                "QueryResponse"
+            ]
+        },
+        {
+            "actionId": "create_payment",
+            "displayName": "Create Payment",
+            "method": "POST",
+            "path": "/v3/company/{realmId}/payment",
+            "pathParams": [
+                "realmId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "realmId",
+                    "label": "Realm ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "payment",
+                    "label": "Payment JSON",
+                    "type": "JSON",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return typeof $inputs.payment==='string'?JSON.parse($inputs.payment):$inputs.payment;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "Payment.Id"
+            ]
+        },
+        {
+            "actionId": "get_company_info",
+            "displayName": "Get Company Info",
+            "method": "GET",
+            "path": "/v3/company/{realmId}/companyinfo/{realmId}",
+            "pathParams": [
+                "realmId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "realmId",
+                    "label": "Realm ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "CompanyInfo"
+            ]
+        }
+    ],
+    "connectorId": "quickbooks_online",
+    "taskType": "CONNECTOR_TASK"
+}

@@ -1,0 +1,44 @@
+{
+  "connectorId": "google_contacts",
+  "triggers": [
+    {
+      "triggerId": "new_contacts",
+      "displayName": "New contacts",
+      "description": "Triggers when new contacts appear in the connection list.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://people.googleapis.com/v1/people/me/connections?pageSize=100&personFields=names,emailAddresses,metadata"
+          },
+          "detection": {
+            "itemsPath": "$.connections",
+            "keyPaths": ["resourceName"]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "contacts_changed",
+      "displayName": "Contacts changed",
+      "description": "Triggers when the contacts list response changes.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "RESPONSE_CHANGED",
+          "http": {
+            "method": "GET",
+            "url": "https://people.googleapis.com/v1/people/me/connections?pageSize=100&personFields=names,emailAddresses,metadata"
+          },
+          "detection": {
+            "hashIgnorePaths": ["$.nextPageToken", "$.totalPeople"]
+          }
+        }
+      }
+    }
+  ]
+}

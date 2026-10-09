@@ -1,0 +1,97 @@
+{
+  "connectorId": "google_forms",
+  "triggers": [
+    {
+      "triggerId": "new_responses",
+      "displayName": "New responses",
+      "description": "Poll form responses.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "formId",
+          "label": "Form ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://forms.googleapis.com/v1/forms/{formId}/responses?pageSize=50"
+          },
+          "detection": {
+            "itemsPath": "$.responses",
+            "keyPaths": [
+              "responseId"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "updated_responses",
+      "displayName": "Updated responses",
+      "description": "Poll responses (updated).",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "formId",
+          "label": "Form ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "UPDATED",
+          "http": {
+            "method": "GET",
+            "url": "https://forms.googleapis.com/v1/forms/{formId}/responses?pageSize=50"
+          },
+          "detection": {
+            "itemsPath": "$.responses",
+            "keyPaths": [
+              "responseId"
+            ],
+            "updateKeyPath": "lastSubmittedTime"
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_forms",
+      "displayName": "New forms (by ID watch)",
+      "description": "Poll a known form for structural changes.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "formId",
+          "label": "Form ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "UPDATED",
+          "http": {
+            "method": "GET",
+            "url": "https://forms.googleapis.com/v1/forms/{formId}"
+          },
+          "detection": {
+            "itemsPath": "$",
+            "keyPaths": [
+              "formId"
+            ],
+            "updateKeyPath": "revisionId"
+          }
+        }
+      }
+    }
+  ]
+}

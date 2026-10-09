@@ -1,0 +1,285 @@
+{
+    "displayName": "Amazon SQS",
+    "icon": "https://api.iconify.design/logos/aws.svg",
+    "category": "Messaging",
+    "baseUrl": "https://sqs.us-east-1.amazonaws.com",
+    "authType": "CUSTOM_HEADER",
+    "credentialGuide": {
+        "fields": [
+            {
+                "key": "Authorization",
+                "label": "Authorization",
+                "hint": "AWS SigV4 Authorization"
+            },
+            {
+                "key": "X-Amz-Date",
+                "label": "X-Amz-Date"
+            },
+            {
+                "key": "X-Amz-Security-Token",
+                "label": "Session Token",
+                "hint": "Optional"
+            }
+        ]
+    },
+    "connectionSetup": {
+        "fields": [
+            {
+                "label": "Authorization",
+                "key": "Authorization",
+                "sensitive": true
+            }
+        ]
+    },
+    "verifyAction": {
+        "method": "POST",
+        "path": "/"
+    },
+    "actions": [
+        {
+            "actionId": "send_message",
+            "displayName": "Send Message",
+            "method": "POST",
+            "path": "/",
+            "inputSchema": [
+                {
+                    "key": "queueUrl",
+                    "label": "Queue URL",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "messageBody",
+                    "label": "Message Body",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "delaySeconds",
+                    "label": "Delay Seconds",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": "0"
+                }
+            ],
+            "inputScript": "return {Action:'SendMessage',Version:'2012-11-05',QueueUrl:$inputs.queueUrl,MessageBody:$inputs.messageBody,DelaySeconds:$inputs.delaySeconds||'0'};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "SendMessageResponse"
+            ]
+        },
+        {
+            "actionId": "receive_messages",
+            "displayName": "Receive Messages",
+            "method": "POST",
+            "path": "/",
+            "inputSchema": [
+                {
+                    "key": "queueUrl",
+                    "label": "Queue URL",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "maxNumberOfMessages",
+                    "label": "Max Messages",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 10
+                },
+                {
+                    "key": "waitTimeSeconds",
+                    "label": "Wait Time Seconds",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 0
+                }
+            ],
+            "inputScript": "return {Action:'ReceiveMessage',Version:'2012-11-05',QueueUrl:$inputs.queueUrl,MaxNumberOfMessages:String($inputs.maxNumberOfMessages||10),WaitTimeSeconds:String($inputs.waitTimeSeconds||0)};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "ReceiveMessageResponse"
+            ]
+        },
+        {
+            "actionId": "delete_message",
+            "displayName": "Delete Message",
+            "method": "POST",
+            "path": "/",
+            "inputSchema": [
+                {
+                    "key": "queueUrl",
+                    "label": "Queue URL",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "receiptHandle",
+                    "label": "Receipt Handle",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return {Action:'DeleteMessage',Version:'2012-11-05',QueueUrl:$inputs.queueUrl,ReceiptHandle:$inputs.receiptHandle};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "DeleteMessageResponse"
+            ]
+        },
+        {
+            "actionId": "get_queue_attributes",
+            "displayName": "Get Queue Attributes",
+            "method": "POST",
+            "path": "/",
+            "inputSchema": [
+                {
+                    "key": "queueUrl",
+                    "label": "Queue URL",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "attributeNames",
+                    "label": "Attribute Names",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": "All"
+                }
+            ],
+            "inputScript": "return {Action:'GetQueueAttributes',Version:'2012-11-05',QueueUrl:$inputs.queueUrl,AttributeNames:[$inputs.attributeNames||'All']};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "GetQueueAttributesResponse"
+            ]
+        },
+        {
+            "actionId": "create_queue",
+            "displayName": "Create Queue",
+            "method": "POST",
+            "path": "/",
+            "inputSchema": [
+                {
+                    "key": "queueName",
+                    "label": "Queue Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "attributes",
+                    "label": "Attributes JSON",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "const b={Action:'CreateQueue',Version:'2012-11-05',QueueName:$inputs.queueName}; if($inputs.attributes) b.Attributes=typeof $inputs.attributes==='string'?JSON.parse($inputs.attributes):$inputs.attributes; return b;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "CreateQueueResponse"
+            ]
+        },
+        {
+            "actionId": "list_queues",
+            "displayName": "List Queues",
+            "method": "POST",
+            "path": "/",
+            "inputSchema": [
+                {
+                    "key": "queueNamePrefix",
+                    "label": "Queue Name Prefix",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "const b={Action:'ListQueues',Version:'2012-11-05'}; if($inputs.queueNamePrefix) b.QueueNamePrefix=$inputs.queueNamePrefix; return b;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "ListQueuesResponse"
+            ]
+        },
+        {
+            "actionId": "purge_queue",
+            "displayName": "Purge Queue",
+            "method": "POST",
+            "path": "/",
+            "inputSchema": [
+                {
+                    "key": "queueUrl",
+                    "label": "Queue URL",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return {Action:'PurgeQueue',Version:'2012-11-05',QueueUrl:$inputs.queueUrl};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "PurgeQueueResponse"
+            ]
+        },
+        {
+            "actionId": "change_message_visibility",
+            "displayName": "Change Message Visibility",
+            "method": "POST",
+            "path": "/",
+            "inputSchema": [
+                {
+                    "key": "queueUrl",
+                    "label": "Queue URL",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "receiptHandle",
+                    "label": "Receipt Handle",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "visibilityTimeout",
+                    "label": "Visibility Timeout",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return {Action:'ChangeMessageVisibility',Version:'2012-11-05',QueueUrl:$inputs.queueUrl,ReceiptHandle:$inputs.receiptHandle,VisibilityTimeout:String($inputs.visibilityTimeout)};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "ChangeMessageVisibilityResponse"
+            ]
+        }
+    ],
+    "connectorId": "amazon_sqs",
+    "taskType": "CONNECTOR_TASK"
+}

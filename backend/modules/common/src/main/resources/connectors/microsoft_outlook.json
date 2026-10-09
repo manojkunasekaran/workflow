@@ -1,0 +1,299 @@
+{
+    "displayName": "Microsoft Outlook",
+    "icon": "https://api.iconify.design/simple-icons/microsoftoutlook.svg?color=%230078d4",
+    "category": "Communication",
+    "baseUrl": "https://graph.microsoft.com/v1.0",
+    "authType": "OAUTH2",
+    "oauth2Config": {
+        "authorizationUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+        "tokenUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+        "defaultScopes": [
+            "Mail.Read",
+            "Mail.Send",
+            "Calendars.ReadWrite",
+            "offline_access"
+        ]
+    },
+    "credentialGuide": {
+        "fields": [
+            {
+                "key": "client_id",
+                "label": "Client ID"
+            },
+            {
+                "key": "client_secret",
+                "label": "Client Secret"
+            }
+        ]
+    },
+    "connectionSetup": {
+        "description": "Connect Outlook mail and calendar via Microsoft Graph.",
+        "buttonLabel": "Sign in with Microsoft"
+    },
+    "verifyAction": {
+        "method": "GET",
+        "path": "/me"
+    },
+    "actions": [
+        {
+            "actionId": "list_messages",
+            "displayName": "List Messages",
+            "method": "GET",
+            "path": "/me/messages",
+            "inputSchema": [
+                {
+                    "key": "top",
+                    "label": "Top",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 25
+                },
+                {
+                    "key": "filter",
+                    "label": "OData Filter",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "value"
+            ]
+        },
+        {
+            "actionId": "get_message",
+            "displayName": "Get Message",
+            "method": "GET",
+            "path": "/me/messages/{messageId}",
+            "pathParams": [
+                "messageId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "messageId",
+                    "label": "Message ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "id",
+                "subject",
+                "bodyPreview"
+            ]
+        },
+        {
+            "actionId": "send_mail",
+            "displayName": "Send Mail",
+            "method": "POST",
+            "path": "/me/sendMail",
+            "inputSchema": [
+                {
+                    "key": "to",
+                    "label": "To (comma-separated)",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "subject",
+                    "label": "Subject",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "body",
+                    "label": "Body",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "bodyIsHtml",
+                    "label": "HTML Body",
+                    "type": "BOOLEAN",
+                    "required": false,
+                    "supportsExpression": false
+                }
+            ],
+            "inputScript": "const to = ($inputs.to || '').split(',').map(e=>({emailAddress:{address:e.trim()}})).filter(x=>x.emailAddress.address); return { message: { subject: $inputs.subject, body: { contentType: ($inputs.bodyIsHtml ? 'HTML' : 'Text'), content: $inputs.body }, toRecipients: to }, saveToSentItems: true };",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": []
+        },
+        {
+            "actionId": "list_calendar_events",
+            "displayName": "List Calendar Events",
+            "method": "GET",
+            "path": "/me/events",
+            "inputSchema": [
+                {
+                    "key": "top",
+                    "label": "Top",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 25
+                },
+                {
+                    "key": "filter",
+                    "label": "OData Filter",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "value"
+            ]
+        },
+        {
+            "actionId": "get_calendar_event",
+            "displayName": "Get Calendar Event",
+            "method": "GET",
+            "path": "/me/events/{eventId}",
+            "pathParams": [
+                "eventId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "eventId",
+                    "label": "Event ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "id",
+                "subject",
+                "start",
+                "end"
+            ]
+        },
+        {
+            "actionId": "create_calendar_event",
+            "displayName": "Create Calendar Event",
+            "method": "POST",
+            "path": "/me/events",
+            "inputSchema": [
+                {
+                    "key": "subject",
+                    "label": "Subject",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "startDateTime",
+                    "label": "Start (ISO 8601)",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "endDateTime",
+                    "label": "End (ISO 8601)",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "timeZone",
+                    "label": "Time Zone",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": "UTC"
+                },
+                {
+                    "key": "body",
+                    "label": "Body",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return { subject: $inputs.subject, start: { dateTime: $inputs.startDateTime, timeZone: $inputs.timeZone || 'UTC' }, end: { dateTime: $inputs.endDateTime, timeZone: $inputs.timeZone || 'UTC' }, body: { contentType: 'Text', content: $inputs.body || '' } };",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id",
+                "subject"
+            ]
+        },
+        {
+            "actionId": "update_calendar_event",
+            "displayName": "Update Calendar Event",
+            "method": "PATCH",
+            "path": "/me/events/{eventId}",
+            "pathParams": [
+                "eventId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "eventId",
+                    "label": "Event ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "subject",
+                    "label": "Subject",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "startDateTime",
+                    "label": "Start (ISO 8601)",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "endDateTime",
+                    "label": "End (ISO 8601)",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "const b={}; if($inputs.subject) b.subject=$inputs.subject; if($inputs.startDateTime) b.start={dateTime:$inputs.startDateTime,timeZone:'UTC'}; if($inputs.endDateTime) b.end={dateTime:$inputs.endDateTime,timeZone:'UTC'}; return b;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id",
+                "subject"
+            ]
+        },
+        {
+            "actionId": "delete_calendar_event",
+            "displayName": "Delete Calendar Event",
+            "method": "DELETE",
+            "path": "/me/events/{eventId}",
+            "pathParams": [
+                "eventId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "eventId",
+                    "label": "Event ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": []
+        }
+    ],
+    "connectorId": "microsoft_outlook",
+    "taskType": "CONNECTOR_TASK"
+}

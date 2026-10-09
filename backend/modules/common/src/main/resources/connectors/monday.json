@@ -1,133 +1,132 @@
 {
-    "connectorId":  "monday",
-    "displayName":  "Monday.com",
-    "icon":  "https://cdn.simpleicons.org/mondaydotcom/FF3D57",
-    "category":  "Project Management",
+    "connectorId": "monday",
+    "displayName": "Monday.com",
+    "icon": "https://www.google.com/s2/favicons?domain=monday.com&sz=128",
+    "category": "Project Management",
     "taskType": "CONNECTOR_TASK",
-    "baseUrl":  "https://api.monday.com/v2",
-    "authType":  "BEARER_TOKEN",
-    "credentialGuide":  {
-                            "fields":  [
-                                           {
-                                               "key":  "token",
-                                               "label":  "API Token",
-                                               "hint":  "From Developers -\u003e Developer Data"
-                                           }
-                                       ]
-                        },
-    "actions":  [
-                    {
-                        "actionId":  "create_item",
-                        "displayName":  "Create Item",
-                        "method":  "POST",
-                        "path":  "",
-                        "inputSchema":  [
-                                            {
-                                                "key":  "boardId",
-                                                "label":  "Board ID",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "itemName",
-                                                "label":  "Item Name",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            }
-                                        ],
-                        "inputScript":  "return { query: `mutation { create_item (board_id: ${$inputs.boardId}, item_name: \"${$inputs.itemName}\") { id } }` };",
-                        "outputPaths":  [
-                                            "data.create_item.id"
-                                        ]
-                    },
-                    {
-                        "actionId":  "get_item",
-                        "displayName":  "Get Item",
-                        "method":  "POST",
-                        "path":  "",
-                        "inputSchema":  [
-                                            {
-                                                "key":  "itemId",
-                                                "label":  "Item ID",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            }
-                                        ],
-                        "inputScript":  "return { query: `{ items (ids: [${$inputs.itemId}]) { name column_values { id text } } }` };",
-                        "outputPaths":  [
-                                            "data.items.0.name"
-                                        ]
-                    },
-                    {
-                        "actionId":  "update_item",
-                        "displayName":  "Update Item",
-                        "method":  "POST",
-                        "path":  "",
-                        "inputSchema":  [
-                                            {
-                                                "key":  "boardId",
-                                                "label":  "Board ID",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "itemId",
-                                                "label":  "Item ID",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "columnValues",
-                                                "label":  "Column Values (JSON)",
-                                                "type":  "JSON",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            }
-                                        ],
-                        "inputScript":  "return { query: `mutation { change_multiple_column_values(item_id: ${$inputs.itemId}, board_id: ${$inputs.boardId}, column_values: \"${JSON.stringify($inputs.columnValues).replace(/\"/g, '\\\\\"')}\") { id } }` };",
-                        "outputPaths":  [
-                                            "data.change_multiple_column_values.id"
-                                        ]
-                    },
-                    {
-                        "actionId":  "list_boards",
-                        "displayName":  "List Boards",
-                        "method":  "POST",
-                        "path":  "",
-                        "inputSchema":  [
-                                            {
-                                                "key":  "limit",
-                                                "label":  "Limit",
-                                                "type":  "NUMBER",
-                                                "required":  false,
-                                                "defaultValue":  25,
-                                                "supportsExpression":  true
-                                            }
-                                        ],
-                        "inputScript":  "return { query: `{ boards (limit: ${$inputs.limit || 25}) { id name } }` };",
-                        "outputPaths":  [
-                                            "data.boards"
-                                        ]
-                    }
-                ],
-    "connectionSetup":  {
-                            "fields":  [
-                                           {
-                                               "label":  "API Key",
-                                               "key":  "token",
-                                               "sensitive":  true,
-                                               "hint":  "From Developers -\u003e Developer Data"
-                                           }
-                                       ]
-                        },
-    "verifyAction":  {
-                         "method":  "GET",
-                         "path":  "/"
-                     }
+    "baseUrl": "https://api.monday.com/v2",
+    "authType": "BEARER_TOKEN",
+    "credentialGuide": {
+        "fields": [
+            {
+                "key": "token",
+                "label": "API Token",
+                "hint": "From Developers -> Developer Data"
+            }
+        ]
+    },
+    "actions": [
+        {
+            "actionId": "create_item",
+            "displayName": "Create Item",
+            "method": "POST",
+            "path": "",
+            "inputSchema": [
+                {
+                    "key": "boardId",
+                    "label": "Board ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "itemName",
+                    "label": "Item Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return { query: `mutation { create_item (board_id: ${$inputs.boardId}, item_name: \"${$inputs.itemName}\") { id } }` };",
+            "outputPaths": [
+                "data.create_item.id"
+            ]
+        },
+        {
+            "actionId": "get_item",
+            "displayName": "Get Item",
+            "method": "POST",
+            "path": "",
+            "inputSchema": [
+                {
+                    "key": "itemId",
+                    "label": "Item ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return { query: `{ items (ids: [${$inputs.itemId}]) { name column_values { id text } } }` };",
+            "outputPaths": [
+                "data.items.0.name"
+            ]
+        },
+        {
+            "actionId": "update_item",
+            "displayName": "Update Item",
+            "method": "POST",
+            "path": "",
+            "inputSchema": [
+                {
+                    "key": "boardId",
+                    "label": "Board ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "itemId",
+                    "label": "Item ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "columnValues",
+                    "label": "Column Values (JSON)",
+                    "type": "JSON",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return { query: `mutation { change_multiple_column_values(item_id: ${$inputs.itemId}, board_id: ${$inputs.boardId}, column_values: \"${JSON.stringify($inputs.columnValues).replace(/\"/g, '\\\\\"')}\") { id } }` };",
+            "outputPaths": [
+                "data.change_multiple_column_values.id"
+            ]
+        },
+        {
+            "actionId": "list_boards",
+            "displayName": "List Boards",
+            "method": "POST",
+            "path": "",
+            "inputSchema": [
+                {
+                    "key": "limit",
+                    "label": "Limit",
+                    "type": "NUMBER",
+                    "required": false,
+                    "defaultValue": 25,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return { query: `{ boards (limit: ${$inputs.limit || 25}) { id name } }` };",
+            "outputPaths": [
+                "data.boards"
+            ]
+        }
+    ],
+    "connectionSetup": {
+        "fields": [
+            {
+                "label": "API Key",
+                "key": "token",
+                "sensitive": true,
+                "hint": "From Developers -> Developer Data"
+            }
+        ]
+    },
+    "verifyAction": {
+        "method": "GET",
+        "path": "/"
+    }
 }
-

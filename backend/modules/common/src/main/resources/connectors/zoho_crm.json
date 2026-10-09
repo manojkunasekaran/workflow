@@ -1,0 +1,244 @@
+{
+    "displayName": "Zoho CRM",
+    "icon": "https://api.iconify.design/logos/zoho.svg",
+    "category": "CRM",
+    "baseUrl": "https://www.zohoapis.com/crm/v3",
+    "authType": "OAUTH2",
+    "oauth2Config": {
+        "authorizationUrl": "https://accounts.zoho.com/oauth/v2/auth",
+        "tokenUrl": "https://accounts.zoho.com/oauth/v2/token",
+        "defaultScopes": [
+            "ZohoCRM.modules.ALL",
+            "ZohoCRM.settings.ALL"
+        ]
+    },
+    "credentialGuide": {
+        "fields": [
+            {
+                "key": "client_id",
+                "label": "Client ID"
+            },
+            {
+                "key": "client_secret",
+                "label": "Client Secret"
+            }
+        ]
+    },
+    "connectionSetup": {
+        "description": "Connect Zoho CRM.",
+        "buttonLabel": "Sign in with Zoho"
+    },
+    "verifyAction": {
+        "method": "GET",
+        "path": "/org"
+    },
+    "actions": [
+        {
+            "actionId": "list_contacts",
+            "displayName": "List Contacts",
+            "method": "GET",
+            "path": "/Contacts",
+            "inputSchema": [
+                {
+                    "key": "per_page",
+                    "label": "Per Page",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 50
+                },
+                {
+                    "key": "page",
+                    "label": "Page",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 1
+                }
+            ],
+            "outputPaths": [
+                "data"
+            ]
+        },
+        {
+            "actionId": "get_contact",
+            "displayName": "Get Contact",
+            "method": "GET",
+            "path": "/Contacts/{contactId}",
+            "pathParams": [
+                "contactId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "contactId",
+                    "label": "Contact ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "data"
+            ]
+        },
+        {
+            "actionId": "create_contact",
+            "displayName": "Create Contact",
+            "method": "POST",
+            "path": "/Contacts",
+            "inputSchema": [
+                {
+                    "key": "lastName",
+                    "label": "Last Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "firstName",
+                    "label": "First Name",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "email",
+                    "label": "Email",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "const d=[{Last_Name:$inputs.lastName}]; if($inputs.firstName) d[0].First_Name=$inputs.firstName; if($inputs.email) d[0].Email=$inputs.email; return {data:d};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "data"
+            ]
+        },
+        {
+            "actionId": "update_contact",
+            "displayName": "Update Contact",
+            "method": "PUT",
+            "path": "/Contacts/{contactId}",
+            "pathParams": [
+                "contactId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "contactId",
+                    "label": "Contact ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "data",
+                    "label": "Contact Fields JSON",
+                    "type": "JSON",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "const row=typeof $inputs.data==='string'?JSON.parse($inputs.data):$inputs.data; return {data:[Object.assign({id:$inputs.contactId}, row)]};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "data"
+            ]
+        },
+        {
+            "actionId": "list_deals",
+            "displayName": "List Deals",
+            "method": "GET",
+            "path": "/Deals",
+            "inputSchema": [
+                {
+                    "key": "per_page",
+                    "label": "Per Page",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 50
+                }
+            ],
+            "outputPaths": [
+                "data"
+            ]
+        },
+        {
+            "actionId": "create_deal",
+            "displayName": "Create Deal",
+            "method": "POST",
+            "path": "/Deals",
+            "inputSchema": [
+                {
+                    "key": "dealName",
+                    "label": "Deal Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "amount",
+                    "label": "Amount",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "const d=[{Deal_Name:$inputs.dealName}]; if($inputs.amount!=null) d[0].Amount=$inputs.amount; return {data:d};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "data"
+            ]
+        },
+        {
+            "actionId": "list_accounts",
+            "displayName": "List Accounts",
+            "method": "GET",
+            "path": "/Accounts",
+            "inputSchema": [
+                {
+                    "key": "per_page",
+                    "label": "Per Page",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 50
+                }
+            ],
+            "outputPaths": [
+                "data"
+            ]
+        },
+        {
+            "actionId": "create_account",
+            "displayName": "Create Account",
+            "method": "POST",
+            "path": "/Accounts",
+            "inputSchema": [
+                {
+                    "key": "accountName",
+                    "label": "Account Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return {data:[{Account_Name:$inputs.accountName}]};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "data"
+            ]
+        }
+    ],
+    "connectorId": "zoho_crm",
+    "taskType": "CONNECTOR_TASK"
+}

@@ -1,0 +1,562 @@
+{
+    "connectorId": "microsoft_excel",
+    "displayName": "Microsoft Excel",
+    "icon": "https://api.iconify.design/mdi/microsoft-excel.svg",
+    "category": "Productivity",
+    "taskType": "CONNECTOR_TASK",
+    "baseUrl": "https://graph.microsoft.com/v1.0",
+    "authType": "OAUTH2",
+    "oauth2Config": {
+        "authorizationUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+        "tokenUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+        "defaultScopes": [
+            "Files.ReadWrite",
+            "offline_access"
+        ]
+    },
+    "credentialGuide": {
+        "fields": [
+            {
+                "key": "client_id",
+                "label": "Client ID"
+            },
+            {
+                "key": "client_secret",
+                "label": "Client Secret"
+            }
+        ]
+    },
+    "connectionSetup": {
+        "description": "Connect Microsoft Excel workbooks via Microsoft Graph workbook APIs.",
+        "buttonLabel": "Sign in with Microsoft"
+    },
+    "verifyAction": {
+        "method": "GET",
+        "path": "/me"
+    },
+    "actions": [
+        {
+            "actionId": "list_worksheets",
+            "displayName": "List Worksheets",
+            "method": "GET",
+            "path": "/me/drive/items/{itemId}/workbook/worksheets",
+            "pathParams": [
+                "itemId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "itemId",
+                    "label": "Drive Item ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "description": "Workbook file ID in OneDrive or SharePoint drive."
+                }
+            ],
+            "outputPaths": [
+                "value"
+            ]
+        },
+        {
+            "actionId": "get_worksheet",
+            "displayName": "Get Worksheet",
+            "method": "GET",
+            "path": "/me/drive/items/{itemId}/workbook/worksheets/{worksheetId}",
+            "pathParams": [
+                "itemId",
+                "worksheetId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "itemId",
+                    "label": "Drive Item ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "description": "Workbook file ID in OneDrive or SharePoint drive."
+                },
+                {
+                    "key": "worksheetId",
+                    "label": "Worksheet ID or Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "id",
+                "name",
+                "visibility"
+            ]
+        },
+        {
+            "actionId": "add_worksheet",
+            "displayName": "Add Worksheet",
+            "method": "POST",
+            "path": "/me/drive/items/{itemId}/workbook/worksheets/add",
+            "pathParams": [
+                "itemId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "itemId",
+                    "label": "Drive Item ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "description": "Workbook file ID in OneDrive or SharePoint drive."
+                },
+                {
+                    "key": "name",
+                    "label": "Worksheet Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return { name: $inputs.name };",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id",
+                "name"
+            ]
+        },
+        {
+            "actionId": "delete_worksheet",
+            "displayName": "Delete Worksheet",
+            "method": "DELETE",
+            "path": "/me/drive/items/{itemId}/workbook/worksheets/{worksheetId}",
+            "pathParams": [
+                "itemId",
+                "worksheetId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "itemId",
+                    "label": "Drive Item ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "description": "Workbook file ID in OneDrive or SharePoint drive."
+                },
+                {
+                    "key": "worksheetId",
+                    "label": "Worksheet ID or Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": []
+        },
+        {
+            "actionId": "create_workbook_session",
+            "displayName": "Create Workbook Session",
+            "method": "POST",
+            "path": "/me/drive/items/{itemId}/workbook/createSession",
+            "pathParams": [
+                "itemId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "itemId",
+                    "label": "Drive Item ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "description": "Workbook file ID in OneDrive or SharePoint drive."
+                },
+                {
+                    "key": "persistChanges",
+                    "label": "Persist Changes",
+                    "type": "BOOLEAN",
+                    "required": false,
+                    "supportsExpression": false,
+                    "defaultValue": true
+                }
+            ],
+            "inputScript": "return { persistChanges: $inputs.persistChanges !== false };",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "close_workbook_session",
+            "displayName": "Close Workbook Session",
+            "method": "POST",
+            "path": "/me/drive/items/{itemId}/workbook/closeSession",
+            "pathParams": [
+                "itemId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "itemId",
+                    "label": "Drive Item ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "description": "Workbook file ID in OneDrive or SharePoint drive."
+                }
+            ],
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "inputScript": "return {};",
+            "outputPaths": []
+        },
+        {
+            "actionId": "get_range",
+            "displayName": "Get Range",
+            "method": "GET",
+            "path": "/me/drive/items/{itemId}/workbook/worksheets/{worksheetId}/range(address='{address}')",
+            "pathParams": [
+                "itemId",
+                "worksheetId",
+                "address"
+            ],
+            "inputSchema": [
+                {
+                    "key": "itemId",
+                    "label": "Drive Item ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "description": "Workbook file ID in OneDrive or SharePoint drive."
+                },
+                {
+                    "key": "worksheetId",
+                    "label": "Worksheet ID or Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "address",
+                    "label": "Range Address",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "placeholder": "A1:C10"
+                }
+            ],
+            "outputPaths": [
+                "address",
+                "values",
+                "formulas"
+            ]
+        },
+        {
+            "actionId": "update_range",
+            "displayName": "Update Range",
+            "method": "PATCH",
+            "path": "/me/drive/items/{itemId}/workbook/worksheets/{worksheetId}/range(address='{address}')",
+            "pathParams": [
+                "itemId",
+                "worksheetId",
+                "address"
+            ],
+            "inputSchema": [
+                {
+                    "key": "itemId",
+                    "label": "Drive Item ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "description": "Workbook file ID in OneDrive or SharePoint drive."
+                },
+                {
+                    "key": "worksheetId",
+                    "label": "Worksheet ID or Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "address",
+                    "label": "Range Address",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "placeholder": "A1:C10"
+                },
+                {
+                    "key": "values",
+                    "label": "Values (JSON 2D array)",
+                    "type": "TEXTAREA",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return { values: JSON.parse($inputs.values) };",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "address",
+                "values"
+            ]
+        },
+        {
+            "actionId": "clear_range",
+            "displayName": "Clear Range",
+            "method": "POST",
+            "path": "/me/drive/items/{itemId}/workbook/worksheets/{worksheetId}/range(address='{address}')/clear",
+            "pathParams": [
+                "itemId",
+                "worksheetId",
+                "address"
+            ],
+            "inputSchema": [
+                {
+                    "key": "itemId",
+                    "label": "Drive Item ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "description": "Workbook file ID in OneDrive or SharePoint drive."
+                },
+                {
+                    "key": "worksheetId",
+                    "label": "Worksheet ID or Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "address",
+                    "label": "Range Address",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "placeholder": "A1:C10"
+                },
+                {
+                    "key": "applyTo",
+                    "label": "Apply To",
+                    "type": false,
+                    "required": true,
+                    "supportsExpression": true,
+                    "defaultValue": "All"
+                }
+            ],
+            "inputScript": "return { applyTo: $inputs.applyTo || 'All' };",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": []
+        },
+        {
+            "actionId": "get_used_range",
+            "displayName": "Get Used Range",
+            "method": "GET",
+            "path": "/me/drive/items/{itemId}/workbook/worksheets/{worksheetId}/usedRange",
+            "pathParams": [
+                "itemId",
+                "worksheetId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "itemId",
+                    "label": "Drive Item ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "description": "Workbook file ID in OneDrive or SharePoint drive."
+                },
+                {
+                    "key": "worksheetId",
+                    "label": "Worksheet ID or Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "address",
+                "values"
+            ]
+        },
+        {
+            "actionId": "list_tables",
+            "displayName": "List Tables",
+            "method": "GET",
+            "path": "/me/drive/items/{itemId}/workbook/tables",
+            "pathParams": [
+                "itemId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "itemId",
+                    "label": "Drive Item ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "description": "Workbook file ID in OneDrive or SharePoint drive."
+                }
+            ],
+            "outputPaths": [
+                "value"
+            ]
+        },
+        {
+            "actionId": "get_table",
+            "displayName": "Get Table",
+            "method": "GET",
+            "path": "/me/drive/items/{itemId}/workbook/tables/{tableId}",
+            "pathParams": [
+                "itemId",
+                "tableId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "itemId",
+                    "label": "Drive Item ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "description": "Workbook file ID in OneDrive or SharePoint drive."
+                },
+                {
+                    "key": "tableId",
+                    "label": "Table ID or Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "id",
+                "name"
+            ]
+        },
+        {
+            "actionId": "list_table_rows",
+            "displayName": "List Table Rows",
+            "method": "GET",
+            "path": "/me/drive/items/{itemId}/workbook/tables/{tableId}/rows",
+            "pathParams": [
+                "itemId",
+                "tableId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "itemId",
+                    "label": "Drive Item ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "description": "Workbook file ID in OneDrive or SharePoint drive."
+                },
+                {
+                    "key": "tableId",
+                    "label": "Table ID or Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "value"
+            ]
+        },
+        {
+            "actionId": "add_table_row",
+            "displayName": "Add Table Row",
+            "method": "POST",
+            "path": "/me/drive/items/{itemId}/workbook/tables/{tableId}/rows/add",
+            "pathParams": [
+                "itemId",
+                "tableId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "itemId",
+                    "label": "Drive Item ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "description": "Workbook file ID in OneDrive or SharePoint drive."
+                },
+                {
+                    "key": "tableId",
+                    "label": "Table ID or Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "values",
+                    "label": "Row Values (JSON array)",
+                    "type": "TEXTAREA",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return { values: [JSON.parse($inputs.values)] };",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "index",
+                "values"
+            ]
+        },
+        {
+            "actionId": "list_charts",
+            "displayName": "List Charts",
+            "method": "GET",
+            "path": "/me/drive/items/{itemId}/workbook/worksheets/{worksheetId}/charts",
+            "pathParams": [
+                "itemId",
+                "worksheetId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "itemId",
+                    "label": "Drive Item ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "description": "Workbook file ID in OneDrive or SharePoint drive."
+                },
+                {
+                    "key": "worksheetId",
+                    "label": "Worksheet ID or Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "value"
+            ]
+        },
+        {
+            "actionId": "get_workbook",
+            "displayName": "Get Workbook",
+            "method": "GET",
+            "path": "/me/drive/items/{itemId}/workbook",
+            "pathParams": [
+                "itemId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "itemId",
+                    "label": "Drive Item ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "description": "Workbook file ID in OneDrive or SharePoint drive."
+                }
+            ],
+            "outputPaths": [
+                "application"
+            ]
+        }
+    ]
+}

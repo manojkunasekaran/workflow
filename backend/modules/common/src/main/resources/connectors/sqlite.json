@@ -1,17 +1,25 @@
 {
-  "connectorId": "sqlite",
-  "displayName": "SQLite",
-  "icon": "https://cdn.simpleicons.org/sqlite/003B57",
-  "category": "Database",
-  "taskType": "DB_TASK",
-  "baseUrl": "",
-  "authType": "NONE",
-  "connectionSetup": {
-    "fields": [
-      { "key": "database", "label": "Database File Path", "type": "text", "required": true, "description": "Absolute path to the SQLite file, e.g. /data/mydb.sqlite" }
-    ]
-  },
-  "credentialGuide": { "fields": [] },
-  "actions": [],
-  "verifyAction": null
+    "connectorId": "sqlite",
+    "displayName": "SQLite",
+    "icon": "https://api.iconify.design/simple-icons/sqlite.svg?color=%23003b57",
+    "category": "Database",
+    "taskType": "DB_TASK",
+    "baseUrl": "",
+    "authType": "NONE",
+    "connectionSetup": {
+        "fields": [
+            {
+                "key": "database",
+                "label": "Database File Path",
+                "type": "text",
+                "required": true,
+                "description": "Absolute path to the SQLite file, e.g. /data/mydb.sqlite"
+            }
+        ]
+    },
+    "credentialGuide": {
+        "fields": []
+    },
+    "actions": [],
+    "verifyAction": null
 }

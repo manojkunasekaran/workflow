@@ -1,0 +1,42 @@
+{
+  "connectorId": "microsoft_teams",
+  "triggers": [
+    {
+      "triggerId": "new_channel_messages",
+      "displayName": "New channel messages",
+      "description": "Poll messages in a channel.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "teamId",
+          "label": "Team ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        },
+        {
+          "key": "channelId",
+          "label": "Channel ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://graph.microsoft.com/v1.0/teams/{teamId}/channels/{channelId}/messages?$top=50"
+          },
+          "detection": {
+            "itemsPath": "$.value",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,495 @@
+{
+    "connectorId": "dropbox",
+    "displayName": "Dropbox",
+    "icon": "https://api.iconify.design/logos/dropbox.svg",
+    "category": "Storage",
+    "taskType": "CONNECTOR_TASK",
+    "baseUrl": "",
+    "authType": "OAUTH2",
+    "oauth2Config": {
+        "authorizationUrl": "https://www.dropbox.com/oauth2/authorize",
+        "tokenUrl": "https://api.dropboxapi.com/oauth2/token",
+        "defaultScopes": [
+            "files.content.read",
+            "files.content.write",
+            "sharing.read",
+            "sharing.write",
+            "account_info.read"
+        ]
+    },
+    "credentialGuide": {
+        "fields": [
+            {
+                "key": "client_id",
+                "label": "App Key"
+            },
+            {
+                "key": "client_secret",
+                "label": "App Secret"
+            }
+        ]
+    },
+    "connectionSetup": {
+        "description": "Connect Dropbox for file metadata (api.dropboxapi.com) and binary transfer (content.dropboxapi.com).",
+        "buttonLabel": "Sign in with Dropbox"
+    },
+    "verifyAction": {
+        "method": "POST",
+        "path": "https://api.dropboxapi.com/2/users/get_current_account"
+    },
+    "actions": [
+        {
+            "actionId": "get_current_account",
+            "displayName": "Get Current Account",
+            "method": "POST",
+            "path": "https://api.dropboxapi.com/2/users/get_current_account",
+            "inputSchema": [],
+            "outputPaths": [
+                "account_id",
+                "name",
+                "email"
+            ]
+        },
+        {
+            "actionId": "list_folder",
+            "displayName": "List Folder",
+            "method": "POST",
+            "path": "https://api.dropboxapi.com/2/files/list_folder",
+            "inputSchema": [
+                {
+                    "key": "path",
+                    "label": "Dropbox Path",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "placeholder": "/folder/file.txt"
+                },
+                {
+                    "key": "recursive",
+                    "label": "Recursive",
+                    "type": "BOOLEAN",
+                    "required": false,
+                    "supportsExpression": false,
+                    "defaultValue": false
+                }
+            ],
+            "inputScript": "return { path: $inputs.path, recursive: $inputs.recursive === true };",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "entries",
+                "cursor",
+                "has_more"
+            ]
+        },
+        {
+            "actionId": "list_folder_continue",
+            "displayName": "List Folder Continue",
+            "method": "POST",
+            "path": "https://api.dropboxapi.com/2/files/list_folder/continue",
+            "inputSchema": [
+                {
+                    "key": "cursor",
+                    "label": "Cursor",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return { cursor: $inputs.cursor };",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "entries",
+                "cursor",
+                "has_more"
+            ]
+        },
+        {
+            "actionId": "get_metadata",
+            "displayName": "Get Metadata",
+            "method": "POST",
+            "path": "https://api.dropboxapi.com/2/files/get_metadata",
+            "inputSchema": [
+                {
+                    "key": "path",
+                    "label": "Dropbox Path",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "placeholder": "/folder/file.txt"
+                }
+            ],
+            "inputScript": "return { path: $inputs.path };",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "name",
+                "path_display",
+                "size",
+                ".tag"
+            ]
+        },
+        {
+            "actionId": "create_folder",
+            "displayName": "Create Folder",
+            "method": "POST",
+            "path": "https://api.dropboxapi.com/2/files/create_folder_v2",
+            "inputSchema": [
+                {
+                    "key": "path",
+                    "label": "Dropbox Path",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "placeholder": "/folder/file.txt"
+                }
+            ],
+            "inputScript": "return { path: $inputs.path, autorename: false };",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "metadata"
+            ]
+        },
+        {
+            "actionId": "delete_item",
+            "displayName": "Delete",
+            "method": "POST",
+            "path": "https://api.dropboxapi.com/2/files/delete_v2",
+            "inputSchema": [
+                {
+                    "key": "path",
+                    "label": "Dropbox Path",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "placeholder": "/folder/file.txt"
+                }
+            ],
+            "inputScript": "return { path: $inputs.path };",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "metadata"
+            ]
+        },
+        {
+            "actionId": "move_item",
+            "displayName": "Move",
+            "method": "POST",
+            "path": "https://api.dropboxapi.com/2/files/move_v2",
+            "inputSchema": [
+                {
+                    "key": "fromPath",
+                    "label": "From Path",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "placeholder": "/folder/file.txt"
+                },
+                {
+                    "key": "toPath",
+                    "label": "To Path",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "placeholder": "/folder/file.txt"
+                }
+            ],
+            "inputScript": "return { from_path: $inputs.fromPath, to_path: $inputs.toPath, autorename: false };",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "metadata"
+            ]
+        },
+        {
+            "actionId": "copy_item",
+            "displayName": "Copy",
+            "method": "POST",
+            "path": "https://api.dropboxapi.com/2/files/copy_v2",
+            "inputSchema": [
+                {
+                    "key": "fromPath",
+                    "label": "From Path",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "placeholder": "/folder/file.txt"
+                },
+                {
+                    "key": "toPath",
+                    "label": "To Path",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "placeholder": "/folder/file.txt"
+                }
+            ],
+            "inputScript": "return { from_path: $inputs.fromPath, to_path: $inputs.toPath, autorename: false };",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "metadata"
+            ]
+        },
+        {
+            "actionId": "search",
+            "displayName": "Search Files",
+            "method": "POST",
+            "path": "https://api.dropboxapi.com/2/files/search_v2",
+            "inputSchema": [
+                {
+                    "key": "query",
+                    "label": "Search Query",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "path",
+                    "label": "Folder Path",
+                    "type": false,
+                    "required": true,
+                    "supportsExpression": true,
+                    "placeholder": "/"
+                }
+            ],
+            "inputScript": "const b={query:$inputs.query}; if($inputs.path) b.options={path:$inputs.path}; return b;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "matches",
+                "has_more"
+            ]
+        },
+        {
+            "actionId": "create_shared_link",
+            "displayName": "Create Shared Link",
+            "method": "POST",
+            "path": "https://api.dropboxapi.com/2/sharing/create_shared_link_with_settings",
+            "inputSchema": [
+                {
+                    "key": "path",
+                    "label": "Dropbox Path",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "placeholder": "/folder/file.txt"
+                }
+            ],
+            "inputScript": "return { path: $inputs.path };",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "url",
+                "name"
+            ]
+        },
+        {
+            "actionId": "list_shared_links",
+            "displayName": "List Shared Links",
+            "method": "POST",
+            "path": "https://api.dropboxapi.com/2/sharing/list_shared_links",
+            "inputSchema": [
+                {
+                    "key": "path",
+                    "label": "Path (optional)",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true,
+                    "placeholder": "/"
+                }
+            ],
+            "inputScript": "const b={}; if($inputs.path) b.path=$inputs.path; return b;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "links"
+            ]
+        },
+        {
+            "actionId": "get_temporary_link",
+            "displayName": "Get Temporary Download Link",
+            "method": "POST",
+            "path": "https://api.dropboxapi.com/2/files/get_temporary_link",
+            "inputSchema": [
+                {
+                    "key": "path",
+                    "label": "Dropbox Path",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "placeholder": "/folder/file.txt"
+                }
+            ],
+            "inputScript": "return { path: $inputs.path };",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "link",
+                "metadata"
+            ]
+        },
+        {
+            "actionId": "download_file",
+            "displayName": "Download File (content API)",
+            "description": "Uses content.dropboxapi.com. Dropbox-API-Arg header must include the file path JSON.",
+            "method": "POST",
+            "path": "https://content.dropboxapi.com/2/files/download",
+            "inputSchema": [
+                {
+                    "key": "path",
+                    "label": "Dropbox Path",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "placeholder": "/folder/file.txt"
+                }
+            ],
+            "fixedHeaders": {
+                "Dropbox-API-Arg": "{\"path\":\"/\"}"
+            },
+            "outputPaths": []
+        },
+        {
+            "actionId": "upload_file",
+            "displayName": "Upload File (content API)",
+            "description": "Uses content.dropboxapi.com with Dropbox-API-Arg path and octet-stream body.",
+            "method": "POST",
+            "path": "https://content.dropboxapi.com/2/files/upload",
+            "inputSchema": [
+                {
+                    "key": "path",
+                    "label": "Dropbox Path",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "placeholder": "/folder/file.txt"
+                },
+                {
+                    "key": "content",
+                    "label": "File Content",
+                    "type": "TEXTAREA",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "fixedHeaders": {
+                "Content-Type": "application/octet-stream",
+                "Dropbox-API-Arg": "{\"path\":\"/upload.txt\",\"mode\":\"add\",\"autorename\":true}"
+            },
+            "outputPaths": [
+                "name",
+                "path_display",
+                "size"
+            ]
+        },
+        {
+            "actionId": "upload_session_start",
+            "displayName": "Start Upload Session",
+            "method": "POST",
+            "path": "https://api.dropboxapi.com/2/files/upload_session/start",
+            "inputSchema": [
+                {
+                    "key": "close",
+                    "label": "Close Session",
+                    "type": "BOOLEAN",
+                    "required": false,
+                    "supportsExpression": false,
+                    "defaultValue": false
+                }
+            ],
+            "inputScript": "return { close: $inputs.close === true };",
+            "fixedHeaders": {
+                "Content-Type": "application/octet-stream"
+            },
+            "outputPaths": [
+                "session_id"
+            ]
+        },
+        {
+            "actionId": "upload_session_finish",
+            "displayName": "Finish Upload Session",
+            "method": "POST",
+            "path": "https://api.dropboxapi.com/2/files/upload_session/finish",
+            "inputSchema": [
+                {
+                    "key": "sessionId",
+                    "label": "Session ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "offset",
+                    "label": "Offset",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "path",
+                    "label": "Destination Path",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "placeholder": "/folder/file.txt"
+                }
+            ],
+            "inputScript": "return { cursor: { session_id: $inputs.sessionId, offset: Number($inputs.offset) }, commit: { path: $inputs.path, mode: 'add', autorename: true } };",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "name",
+                "path_display",
+                "size"
+            ]
+        },
+        {
+            "actionId": "list_revisions",
+            "displayName": "List File Revisions",
+            "method": "POST",
+            "path": "https://api.dropboxapi.com/2/files/list_revisions",
+            "inputSchema": [
+                {
+                    "key": "path",
+                    "label": "Dropbox Path",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true,
+                    "placeholder": "/folder/file.txt"
+                },
+                {
+                    "key": "limit",
+                    "label": "Limit",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 10
+                }
+            ],
+            "inputScript": "return { path: $inputs.path, limit: Number($inputs.limit || 10) };",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "entries",
+                "is_deleted"
+            ]
+        }
+    ]
+}

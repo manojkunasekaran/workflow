@@ -1,300 +1,300 @@
 {
-    "connectorId":  "telegram",
-    "displayName":  "Telegram",
-    "icon":  "https://cdn.simpleicons.org/telegram/26A5E4",
-    "category":  "Communication",
+    "connectorId": "telegram",
+    "displayName": "Telegram",
+    "icon": "https://api.iconify.design/logos/telegram.svg",
+    "category": "Communication",
     "taskType": "CONNECTOR_TASK",
-    "baseUrl":  "https://api.telegram.org",
-    "authType":  "NONE",
-    "credentialGuide":  {
-                            "fields":  [
-                                           {
-                                               "key":  "token",
-                                               "label":  "Bot Token",
-                                               "hint":  "Given by BotFather when you create a bot",
-                                               "docUrl":  "https://core.telegram.org/bots#botfather"
-                                           }
-                                       ]
+    "baseUrl": "https://api.telegram.org",
+    "authType": "NONE",
+    "credentialGuide": {
+        "fields": [
+            {
+                "key": "token",
+                "label": "Bot Token",
+                "hint": "Given by BotFather when you create a bot",
+                "docUrl": "https://core.telegram.org/bots#botfather"
+            }
+        ]
+    },
+    "actions": [
+        {
+            "actionId": "send_message",
+            "displayName": "Send Message",
+            "method": "POST",
+            "path": "/bot{token}/sendMessage",
+            "pathParams": [
+                "token"
+            ],
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "inputSchema": [
+                {
+                    "key": "token",
+                    "label": "Bot Token",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "chat_id",
+                    "label": "Chat ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "text",
+                    "label": "Message Text",
+                    "type": "TEXTAREA",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "parse_mode",
+                    "label": "Parse Mode",
+                    "type": "SELECT",
+                    "required": false,
+                    "supportsExpression": false,
+                    "defaultValue": "Markdown",
+                    "options": [
+                        {
+                            "label": "Markdown",
+                            "value": "Markdown"
                         },
-    "actions":  [
-                    {
-                        "actionId":  "send_message",
-                        "displayName":  "Send Message",
-                        "method":  "POST",
-                        "path":  "/bot{token}/sendMessage",
-                        "pathParams":  [
-                                           "token"
-                                       ],
-                        "fixedHeaders":  {
-                                             "Content-Type":  "application/json"
-                                         },
-                        "inputSchema":  [
-                                            {
-                                                "key":  "token",
-                                                "label":  "Bot Token",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "chat_id",
-                                                "label":  "Chat ID",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "text",
-                                                "label":  "Message Text",
-                                                "type":  "TEXTAREA",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "parse_mode",
-                                                "label":  "Parse Mode",
-                                                "type":  "SELECT",
-                                                "required":  false,
-                                                "supportsExpression":  false,
-                                                "defaultValue":  "Markdown",
-                                                "options":  [
-                                                                {
-                                                                    "label":  "Markdown",
-                                                                    "value":  "Markdown"
-                                                                },
-                                                                {
-                                                                    "label":  "HTML",
-                                                                    "value":  "HTML"
-                                                                },
-                                                                {
-                                                                    "label":  "None",
-                                                                    "value":  ""
-                                                                }
-                                                            ]
-                                            },
-                                            {
-                                                "key":  "disable_notification",
-                                                "label":  "Silent Message",
-                                                "type":  "BOOLEAN",
-                                                "required":  false,
-                                                "supportsExpression":  false
-                                            }
-                                        ],
-                        "outputPaths":  [
-                                            "ok",
-                                            "result.message_id",
-                                            "result.text"
-                                        ]
-                    },
-                    {
-                        "actionId":  "send_photo",
-                        "displayName":  "Send Photo",
-                        "method":  "POST",
-                        "path":  "/bot{token}/sendPhoto",
-                        "pathParams":  [
-                                           "token"
-                                       ],
-                        "fixedHeaders":  {
-                                             "Content-Type":  "application/json"
-                                         },
-                        "inputSchema":  [
-                                            {
-                                                "key":  "token",
-                                                "label":  "Bot Token",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "chat_id",
-                                                "label":  "Chat ID",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "photo",
-                                                "label":  "Photo URL or File ID",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "caption",
-                                                "label":  "Caption",
-                                                "type":  "STRING",
-                                                "required":  false,
-                                                "supportsExpression":  true
-                                            }
-                                        ],
-                        "outputPaths":  [
-                                            "ok",
-                                            "result.message_id"
-                                        ]
-                    },
-                    {
-                        "actionId":  "send_document",
-                        "displayName":  "Send Document",
-                        "method":  "POST",
-                        "path":  "/bot{token}/sendDocument",
-                        "pathParams":  [
-                                           "token"
-                                       ],
-                        "fixedHeaders":  {
-                                             "Content-Type":  "application/json"
-                                         },
-                        "inputSchema":  [
-                                            {
-                                                "key":  "token",
-                                                "label":  "Bot Token",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "chat_id",
-                                                "label":  "Chat ID",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "document",
-                                                "label":  "Document URL or File ID",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "caption",
-                                                "label":  "Caption",
-                                                "type":  "STRING",
-                                                "required":  false,
-                                                "supportsExpression":  true
-                                            }
-                                        ],
-                        "outputPaths":  [
-                                            "ok",
-                                            "result.message_id"
-                                        ]
-                    },
-                    {
-                        "actionId":  "send_poll",
-                        "displayName":  "Send Poll",
-                        "method":  "POST",
-                        "path":  "/bot{token}/sendPoll",
-                        "pathParams":  [
-                                           "token"
-                                       ],
-                        "fixedHeaders":  {
-                                             "Content-Type":  "application/json"
-                                         },
-                        "inputSchema":  [
-                                            {
-                                                "key":  "token",
-                                                "label":  "Bot Token",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "chat_id",
-                                                "label":  "Chat ID",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "question",
-                                                "label":  "Poll Question",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "options",
-                                                "label":  "Options (JSON Array of strings)",
-                                                "type":  "JSON",
-                                                "required":  true,
-                                                "supportsExpression":  true,
-                                                "description":  "e.g. [\"Yes\", \"No\", \"Maybe\"]"
-                                            }
-                                        ],
-                        "outputPaths":  [
-                                            "ok",
-                                            "result.message_id",
-                                            "result.poll.id"
-                                        ]
-                    },
-                    {
-                        "actionId":  "get_chat",
-                        "displayName":  "Get Chat Info",
-                        "method":  "GET",
-                        "path":  "/bot{token}/getChat",
-                        "pathParams":  [
-                                           "token"
-                                       ],
-                        "inputSchema":  [
-                                            {
-                                                "key":  "token",
-                                                "label":  "Bot Token",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "chat_id",
-                                                "label":  "Chat ID",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            }
-                                        ],
-                        "outputPaths":  [
-                                            "ok",
-                                            "result.id",
-                                            "result.title",
-                                            "result.type",
-                                            "result.username"
-                                        ]
-                    },
-                    {
-                        "actionId":  "pin_message",
-                        "displayName":  "Pin Message",
-                        "method":  "POST",
-                        "path":  "/bot{token}/pinChatMessage",
-                        "pathParams":  [
-                                           "token"
-                                       ],
-                        "fixedHeaders":  {
-                                             "Content-Type":  "application/json"
-                                         },
-                        "inputSchema":  [
-                                            {
-                                                "key":  "token",
-                                                "label":  "Bot Token",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "chat_id",
-                                                "label":  "Chat ID",
-                                                "type":  "STRING",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            },
-                                            {
-                                                "key":  "message_id",
-                                                "label":  "Message ID",
-                                                "type":  "NUMBER",
-                                                "required":  true,
-                                                "supportsExpression":  true
-                                            }
-                                        ],
-                        "outputPaths":  [
-                                            "ok"
-                                        ]
-                    }
-                ]
+                        {
+                            "label": "HTML",
+                            "value": "HTML"
+                        },
+                        {
+                            "label": "None",
+                            "value": ""
+                        }
+                    ]
+                },
+                {
+                    "key": "disable_notification",
+                    "label": "Silent Message",
+                    "type": "BOOLEAN",
+                    "required": false,
+                    "supportsExpression": false
+                }
+            ],
+            "outputPaths": [
+                "ok",
+                "result.message_id",
+                "result.text"
+            ]
+        },
+        {
+            "actionId": "send_photo",
+            "displayName": "Send Photo",
+            "method": "POST",
+            "path": "/bot{token}/sendPhoto",
+            "pathParams": [
+                "token"
+            ],
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "inputSchema": [
+                {
+                    "key": "token",
+                    "label": "Bot Token",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "chat_id",
+                    "label": "Chat ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "photo",
+                    "label": "Photo URL or File ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "caption",
+                    "label": "Caption",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "ok",
+                "result.message_id"
+            ]
+        },
+        {
+            "actionId": "send_document",
+            "displayName": "Send Document",
+            "method": "POST",
+            "path": "/bot{token}/sendDocument",
+            "pathParams": [
+                "token"
+            ],
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "inputSchema": [
+                {
+                    "key": "token",
+                    "label": "Bot Token",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "chat_id",
+                    "label": "Chat ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "document",
+                    "label": "Document URL or File ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "caption",
+                    "label": "Caption",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "ok",
+                "result.message_id"
+            ]
+        },
+        {
+            "actionId": "send_poll",
+            "displayName": "Send Poll",
+            "method": "POST",
+            "path": "/bot{token}/sendPoll",
+            "pathParams": [
+                "token"
+            ],
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "inputSchema": [
+                {
+                    "key": "token",
+                    "label": "Bot Token",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "chat_id",
+                    "label": "Chat ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "question",
+                    "label": "Poll Question",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "options",
+                    "label": "Options (JSON Array of strings)",
+                    "type": "JSON",
+                    "required": true,
+                    "supportsExpression": true,
+                    "description": "e.g. [\"Yes\", \"No\", \"Maybe\"]"
+                }
+            ],
+            "outputPaths": [
+                "ok",
+                "result.message_id",
+                "result.poll.id"
+            ]
+        },
+        {
+            "actionId": "get_chat",
+            "displayName": "Get Chat Info",
+            "method": "GET",
+            "path": "/bot{token}/getChat",
+            "pathParams": [
+                "token"
+            ],
+            "inputSchema": [
+                {
+                    "key": "token",
+                    "label": "Bot Token",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "chat_id",
+                    "label": "Chat ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "ok",
+                "result.id",
+                "result.title",
+                "result.type",
+                "result.username"
+            ]
+        },
+        {
+            "actionId": "pin_message",
+            "displayName": "Pin Message",
+            "method": "POST",
+            "path": "/bot{token}/pinChatMessage",
+            "pathParams": [
+                "token"
+            ],
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "inputSchema": [
+                {
+                    "key": "token",
+                    "label": "Bot Token",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "chat_id",
+                    "label": "Chat ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "message_id",
+                    "label": "Message ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "ok"
+            ]
+        }
+    ]
 }

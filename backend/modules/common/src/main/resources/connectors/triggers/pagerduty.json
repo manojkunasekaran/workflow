@@ -1,0 +1,80 @@
+{
+  "connectorId": "pagerduty",
+  "triggers": [
+    {
+      "triggerId": "new_incidents",
+      "displayName": "New incidents",
+      "description": "Poll incidents.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://api.pagerduty.com/incidents?limit=100&sort_by=created_at:desc"
+          },
+          "detection": {
+            "itemsPath": "$.incidents",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "updated_incidents",
+      "displayName": "Updated incidents",
+      "description": "Poll updated incidents.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "UPDATED",
+          "http": {
+            "method": "GET",
+            "url": "https://api.pagerduty.com/incidents?limit=100&sort_by=updated_at:desc"
+          },
+          "detection": {
+            "itemsPath": "$.incidents",
+            "keyPaths": [
+              "id"
+            ],
+            "updateKeyPath": "updated_at"
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_notes",
+      "displayName": "New incident notes",
+      "description": "Poll notes on an incident.",
+      "triggerType": "POLL",
+      "inputSchema": [
+        {
+          "key": "incident_id",
+          "label": "Incident ID",
+          "type": "STRING",
+          "required": true,
+          "supportsExpression": false
+        }
+      ],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://api.pagerduty.com/incidents/{incident_id}/notes"
+          },
+          "detection": {
+            "itemsPath": "$.notes",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,94 @@
+{
+  "connectorId": "shopify",
+  "triggers": [
+    {
+      "triggerId": "new_orders",
+      "displayName": "New orders",
+      "description": "Poll Shopify orders.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://example.myshopify.com/admin/api/2024-10/orders.json?limit=50&status=any"
+          },
+          "detection": {
+            "itemsPath": "$.orders",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "updated_orders",
+      "displayName": "Updated orders",
+      "description": "Poll updated orders.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "UPDATED",
+          "http": {
+            "method": "GET",
+            "url": "https://example.myshopify.com/admin/api/2024-10/orders.json?limit=50&status=any"
+          },
+          "detection": {
+            "itemsPath": "$.orders",
+            "keyPaths": [
+              "id"
+            ],
+            "updateKeyPath": "updated_at"
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_customers",
+      "displayName": "New customers",
+      "description": "Poll customers.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://example.myshopify.com/admin/api/2024-10/customers.json?limit=50"
+          },
+          "detection": {
+            "itemsPath": "$.customers",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_products",
+      "displayName": "New products",
+      "description": "Poll products.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://example.myshopify.com/admin/api/2024-10/products.json?limit=50"
+          },
+          "detection": {
+            "itemsPath": "$.products",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

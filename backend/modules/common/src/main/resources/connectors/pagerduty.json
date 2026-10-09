@@ -1,0 +1,364 @@
+{
+    "connectorId": "pagerduty",
+    "displayName": "PagerDuty",
+    "icon": "https://api.iconify.design/logos/pagerduty.svg",
+    "category": "Incident Management",
+    "taskType": "CONNECTOR_TASK",
+    "baseUrl": "https://api.pagerduty.com",
+    "authType": "BEARER_TOKEN",
+    "actions": [
+        {
+            "actionId": "list_incidents",
+            "displayName": "List Incidents",
+            "method": "GET",
+            "path": "/incidents",
+            "inputSchema": [
+                {
+                    "key": "limit",
+                    "label": "Limit",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 25
+                }
+            ],
+            "outputPaths": [
+                "incidents"
+            ]
+        },
+        {
+            "actionId": "get_incident",
+            "displayName": "Get Incident",
+            "method": "GET",
+            "path": "/incidents/{id}",
+            "inputSchema": [
+                {
+                    "key": "id",
+                    "label": "Incident ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "id"
+            ],
+            "outputPaths": [
+                "incident"
+            ]
+        },
+        {
+            "actionId": "create_incident",
+            "displayName": "Create Incident",
+            "method": "POST",
+            "path": "/incidents",
+            "inputSchema": [
+                {
+                    "key": "title",
+                    "label": "Title",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "service_id",
+                    "label": "Service ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "urgency",
+                    "label": "Urgency",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": "high"
+                }
+            ],
+            "inputScript": "return {incident:{type:'incident',title:$inputs.title,service:{id:$inputs.service_id,type:'service_reference'},urgency:$inputs.urgency||'high'}};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "incident.id"
+            ]
+        },
+        {
+            "actionId": "update_incident",
+            "displayName": "Update Incident",
+            "method": "PUT",
+            "path": "/incidents/{id}",
+            "inputSchema": [
+                {
+                    "key": "id",
+                    "label": "Incident ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "status",
+                    "label": "Status",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "resolution",
+                    "label": "Resolution",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "id"
+            ],
+            "inputScript": "const i={type:'incident'}; if($inputs.status) i.status=$inputs.status; if($inputs.resolution) i.resolution=$inputs.resolution; return {incident:i};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "incident.id"
+            ]
+        },
+        {
+            "actionId": "list_services",
+            "displayName": "List Services",
+            "method": "GET",
+            "path": "/services",
+            "inputSchema": [
+                {
+                    "key": "limit",
+                    "label": "Limit",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 25
+                }
+            ],
+            "outputPaths": [
+                "services"
+            ]
+        },
+        {
+            "actionId": "get_service",
+            "displayName": "Get Service",
+            "method": "GET",
+            "path": "/services/{id}",
+            "inputSchema": [
+                {
+                    "key": "id",
+                    "label": "Service ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "id"
+            ],
+            "outputPaths": [
+                "service"
+            ]
+        },
+        {
+            "actionId": "create_service",
+            "displayName": "Create Service",
+            "method": "POST",
+            "path": "/services",
+            "inputSchema": [
+                {
+                    "key": "name",
+                    "label": "Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "escalation_policy_id",
+                    "label": "Escalation Policy ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return {service:{type:'service',name:$inputs.name,escalation_policy:{id:$inputs.escalation_policy_id,type:'escalation_policy_reference'}}};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "service.id"
+            ]
+        },
+        {
+            "actionId": "list_oncalls",
+            "displayName": "List On-Calls",
+            "method": "GET",
+            "path": "/oncalls",
+            "inputSchema": [],
+            "outputPaths": [
+                "oncalls"
+            ]
+        },
+        {
+            "actionId": "list_schedules",
+            "displayName": "List Schedules",
+            "method": "GET",
+            "path": "/schedules",
+            "inputSchema": [],
+            "outputPaths": [
+                "schedules"
+            ]
+        },
+        {
+            "actionId": "get_schedule",
+            "displayName": "Get Schedule",
+            "method": "GET",
+            "path": "/schedules/{id}",
+            "inputSchema": [
+                {
+                    "key": "id",
+                    "label": "Schedule ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "id"
+            ],
+            "outputPaths": [
+                "schedule"
+            ]
+        },
+        {
+            "actionId": "list_incident_notes",
+            "displayName": "List Incident Notes",
+            "method": "GET",
+            "path": "/incidents/{id}/notes",
+            "inputSchema": [
+                {
+                    "key": "id",
+                    "label": "Incident ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "id"
+            ],
+            "outputPaths": [
+                "notes"
+            ]
+        },
+        {
+            "actionId": "create_incident_note",
+            "displayName": "Create Incident Note",
+            "method": "POST",
+            "path": "/incidents/{id}/notes",
+            "inputSchema": [
+                {
+                    "key": "id",
+                    "label": "Incident ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "content",
+                    "label": "Content",
+                    "type": "TEXTAREA",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "id"
+            ],
+            "inputScript": "return {note:{content:$inputs.content}};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "note.id"
+            ]
+        },
+        {
+            "actionId": "list_users",
+            "displayName": "List Users",
+            "method": "GET",
+            "path": "/users",
+            "inputSchema": [],
+            "outputPaths": [
+                "users"
+            ]
+        },
+        {
+            "actionId": "get_user",
+            "displayName": "Get User",
+            "method": "GET",
+            "path": "/users/{id}",
+            "inputSchema": [
+                {
+                    "key": "id",
+                    "label": "User ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "id"
+            ],
+            "outputPaths": [
+                "user"
+            ]
+        },
+        {
+            "actionId": "list_teams",
+            "displayName": "List Teams",
+            "method": "GET",
+            "path": "/teams",
+            "inputSchema": [],
+            "outputPaths": [
+                "teams"
+            ]
+        },
+        {
+            "actionId": "list_escalation_policies",
+            "displayName": "List Escalation Policies",
+            "method": "GET",
+            "path": "/escalation_policies",
+            "inputSchema": [],
+            "outputPaths": [
+                "escalation_policies"
+            ]
+        }
+    ],
+    "authHeaderPrefix": "Token token=",
+    "credentialGuide": {
+        "fields": [
+            {
+                "key": "token",
+                "label": "API Token",
+                "hint": "PagerDuty → Integrations → API Access Keys"
+            }
+        ]
+    },
+    "connectionSetup": {
+        "fields": [
+            {
+                "label": "API Token",
+                "key": "token",
+                "sensitive": true
+            }
+        ]
+    },
+    "verifyAction": {
+        "method": "GET",
+        "path": "/users/me"
+    }
+}

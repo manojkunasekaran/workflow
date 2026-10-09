@@ -1,0 +1,393 @@
+{
+    "connectorId": "klaviyo",
+    "displayName": "Klaviyo",
+    "icon": "https://www.google.com/s2/favicons?domain=klaviyo.com&sz=128",
+    "category": "Marketing",
+    "taskType": "CONNECTOR_TASK",
+    "baseUrl": "https://a.klaviyo.com/api",
+    "authType": "CUSTOM_HEADER",
+    "actions": [
+        {
+            "actionId": "list_profiles",
+            "displayName": "List Profiles",
+            "method": "GET",
+            "path": "/profiles",
+            "inputSchema": [
+                {
+                    "key": "page_size",
+                    "label": "Page Size",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 50
+                }
+            ],
+            "outputPaths": [
+                "data"
+            ]
+        },
+        {
+            "actionId": "get_profile",
+            "displayName": "Get Profile",
+            "method": "GET",
+            "path": "/profiles/{profile_id}",
+            "inputSchema": [
+                {
+                    "key": "profile_id",
+                    "label": "Profile ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "profile_id"
+            ],
+            "outputPaths": [
+                "data"
+            ]
+        },
+        {
+            "actionId": "create_profile",
+            "displayName": "Create Profile",
+            "method": "POST",
+            "path": "/profiles",
+            "inputSchema": [
+                {
+                    "key": "email",
+                    "label": "Email",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "first_name",
+                    "label": "First Name",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "last_name",
+                    "label": "Last Name",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return {data:{type:'profile',attributes:{email:$inputs.email,first_name:$inputs.first_name,last_name:$inputs.last_name}}};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "data"
+            ]
+        },
+        {
+            "actionId": "update_profile",
+            "displayName": "Update Profile",
+            "method": "PATCH",
+            "path": "/profiles/{profile_id}",
+            "inputSchema": [
+                {
+                    "key": "profile_id",
+                    "label": "Profile ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "first_name",
+                    "label": "First Name",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "last_name",
+                    "label": "Last Name",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "profile_id"
+            ],
+            "inputScript": "const a={}; if($inputs.first_name) a.first_name=$inputs.first_name; if($inputs.last_name) a.last_name=$inputs.last_name; return {data:{type:'profile',id:$inputs.profile_id,attributes:a}};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "data"
+            ]
+        },
+        {
+            "actionId": "list_lists",
+            "displayName": "List Lists",
+            "method": "GET",
+            "path": "/lists",
+            "inputSchema": [],
+            "outputPaths": [
+                "data"
+            ]
+        },
+        {
+            "actionId": "get_list",
+            "displayName": "Get List",
+            "method": "GET",
+            "path": "/lists/{list_id}",
+            "inputSchema": [
+                {
+                    "key": "list_id",
+                    "label": "List ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "list_id"
+            ],
+            "outputPaths": [
+                "data"
+            ]
+        },
+        {
+            "actionId": "create_list",
+            "displayName": "Create List",
+            "method": "POST",
+            "path": "/lists",
+            "inputSchema": [
+                {
+                    "key": "name",
+                    "label": "Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return {data:{type:'list',attributes:{name:$inputs.name}}};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "data"
+            ]
+        },
+        {
+            "actionId": "list_list_profiles",
+            "displayName": "List Profiles in List",
+            "method": "GET",
+            "path": "/lists/{list_id}/profiles",
+            "inputSchema": [
+                {
+                    "key": "list_id",
+                    "label": "List ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "list_id"
+            ],
+            "outputPaths": [
+                "data"
+            ]
+        },
+        {
+            "actionId": "add_profile_to_list",
+            "displayName": "Add Profile to List",
+            "method": "POST",
+            "path": "/lists/{list_id}/relationships/profiles",
+            "inputSchema": [
+                {
+                    "key": "list_id",
+                    "label": "List ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "profile_id",
+                    "label": "Profile ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "list_id"
+            ],
+            "inputScript": "return {data:[{type:'profile',id:$inputs.profile_id}]};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "list_campaigns",
+            "displayName": "List Campaigns",
+            "method": "GET",
+            "path": "/campaigns",
+            "inputSchema": [],
+            "outputPaths": [
+                "data"
+            ]
+        },
+        {
+            "actionId": "get_campaign",
+            "displayName": "Get Campaign",
+            "method": "GET",
+            "path": "/campaigns/{campaign_id}",
+            "inputSchema": [
+                {
+                    "key": "campaign_id",
+                    "label": "Campaign ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "campaign_id"
+            ],
+            "outputPaths": [
+                "data"
+            ]
+        },
+        {
+            "actionId": "create_event",
+            "displayName": "Create Event",
+            "method": "POST",
+            "path": "/events",
+            "inputSchema": [
+                {
+                    "key": "metric_name",
+                    "label": "Metric Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "profile_email",
+                    "label": "Profile Email",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "properties",
+                    "label": "Properties JSON",
+                    "type": "JSON",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "const p=$inputs.properties?(typeof $inputs.properties==='string'?JSON.parse($inputs.properties):$inputs.properties):{}; return {data:{type:'event',attributes:{metric:{data:{type:'metric',attributes:{name:$inputs.metric_name}}},profile:{data:{type:'profile',attributes:{email:$inputs.profile_email}}},properties:p}}};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "data"
+            ]
+        },
+        {
+            "actionId": "list_metrics",
+            "displayName": "List Metrics",
+            "method": "GET",
+            "path": "/metrics",
+            "inputSchema": [],
+            "outputPaths": [
+                "data"
+            ]
+        },
+        {
+            "actionId": "get_metric",
+            "displayName": "Get Metric",
+            "method": "GET",
+            "path": "/metrics/{metric_id}",
+            "inputSchema": [
+                {
+                    "key": "metric_id",
+                    "label": "Metric ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "metric_id"
+            ],
+            "outputPaths": [
+                "data"
+            ]
+        },
+        {
+            "actionId": "list_segments",
+            "displayName": "List Segments",
+            "method": "GET",
+            "path": "/segments",
+            "inputSchema": [],
+            "outputPaths": [
+                "data"
+            ]
+        },
+        {
+            "actionId": "get_segment",
+            "displayName": "Get Segment",
+            "method": "GET",
+            "path": "/segments/{segment_id}",
+            "inputSchema": [
+                {
+                    "key": "segment_id",
+                    "label": "Segment ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "segment_id"
+            ],
+            "outputPaths": [
+                "data"
+            ]
+        }
+    ],
+    "credentialGuide": {
+        "fields": [
+            {
+                "key": "Authorization",
+                "label": "Authorization Header",
+                "hint": "Value: Klaviyo-API YOUR_PRIVATE_KEY"
+            },
+            {
+                "key": "revision",
+                "label": "revision Header",
+                "hint": "e.g. 2024-10-15"
+            }
+        ]
+    },
+    "connectionSetup": {
+        "fields": [
+            {
+                "label": "Authorization",
+                "key": "Authorization",
+                "sensitive": true
+            },
+            {
+                "label": "revision",
+                "key": "revision",
+                "sensitive": false
+            }
+        ]
+    },
+    "verifyAction": {
+        "method": "GET",
+        "path": "/accounts"
+    }
+}

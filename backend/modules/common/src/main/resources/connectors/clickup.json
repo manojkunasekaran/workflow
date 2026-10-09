@@ -1,0 +1,416 @@
+{
+    "connectorId": "clickup",
+    "displayName": "ClickUp",
+    "icon": "https://api.iconify.design/logos/clickup.svg",
+    "category": "Project Management",
+    "taskType": "CONNECTOR_TASK",
+    "baseUrl": "https://api.clickup.com/api/v2",
+    "authType": "BEARER_TOKEN",
+    "actions": [
+        {
+            "actionId": "get_authorized_user",
+            "displayName": "Get Authorized User",
+            "method": "GET",
+            "path": "/user",
+            "inputSchema": [],
+            "outputPaths": [
+                "user"
+            ]
+        },
+        {
+            "actionId": "list_teams",
+            "displayName": "List Teams",
+            "method": "GET",
+            "path": "/team",
+            "inputSchema": [],
+            "outputPaths": [
+                "teams"
+            ]
+        },
+        {
+            "actionId": "list_spaces",
+            "displayName": "List Spaces",
+            "method": "GET",
+            "path": "/team/{team_id}/space",
+            "inputSchema": [
+                {
+                    "key": "team_id",
+                    "label": "Team ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "team_id"
+            ],
+            "outputPaths": [
+                "spaces"
+            ]
+        },
+        {
+            "actionId": "get_space",
+            "displayName": "Get Space",
+            "method": "GET",
+            "path": "/space/{space_id}",
+            "inputSchema": [
+                {
+                    "key": "space_id",
+                    "label": "Space ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "space_id"
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "list_folders",
+            "displayName": "List Folders",
+            "method": "GET",
+            "path": "/space/{space_id}/folder",
+            "inputSchema": [
+                {
+                    "key": "space_id",
+                    "label": "Space ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "space_id"
+            ],
+            "outputPaths": [
+                "folders"
+            ]
+        },
+        {
+            "actionId": "create_folder",
+            "displayName": "Create Folder",
+            "method": "POST",
+            "path": "/space/{space_id}/folder",
+            "inputSchema": [
+                {
+                    "key": "space_id",
+                    "label": "Space ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "name",
+                    "label": "Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "space_id"
+            ],
+            "inputScript": "return {name:$inputs.name};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "list_lists",
+            "displayName": "List Lists",
+            "method": "GET",
+            "path": "/folder/{folder_id}/list",
+            "inputSchema": [
+                {
+                    "key": "folder_id",
+                    "label": "Folder ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "folder_id"
+            ],
+            "outputPaths": [
+                "lists"
+            ]
+        },
+        {
+            "actionId": "create_list",
+            "displayName": "Create List",
+            "method": "POST",
+            "path": "/folder/{folder_id}/list",
+            "inputSchema": [
+                {
+                    "key": "folder_id",
+                    "label": "Folder ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "name",
+                    "label": "Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "folder_id"
+            ],
+            "inputScript": "return {name:$inputs.name};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "list_tasks",
+            "displayName": "List Tasks",
+            "method": "GET",
+            "path": "/list/{list_id}/task",
+            "inputSchema": [
+                {
+                    "key": "list_id",
+                    "label": "List ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "list_id"
+            ],
+            "outputPaths": [
+                "tasks"
+            ]
+        },
+        {
+            "actionId": "get_task",
+            "displayName": "Get Task",
+            "method": "GET",
+            "path": "/task/{task_id}",
+            "inputSchema": [
+                {
+                    "key": "task_id",
+                    "label": "Task ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "task_id"
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "create_task",
+            "displayName": "Create Task",
+            "method": "POST",
+            "path": "/list/{list_id}/task",
+            "inputSchema": [
+                {
+                    "key": "list_id",
+                    "label": "List ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "name",
+                    "label": "Name",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "description",
+                    "label": "Description",
+                    "type": "TEXTAREA",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "list_id"
+            ],
+            "inputScript": "const b={name:$inputs.name}; if($inputs.description) b.description=$inputs.description; return b;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "update_task",
+            "displayName": "Update Task",
+            "method": "PUT",
+            "path": "/task/{task_id}",
+            "inputSchema": [
+                {
+                    "key": "task_id",
+                    "label": "Task ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "name",
+                    "label": "Name",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "status",
+                    "label": "Status",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "task_id"
+            ],
+            "inputScript": "const b={}; if($inputs.name) b.name=$inputs.name; if($inputs.status) b.status=$inputs.status; return b;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "delete_task",
+            "displayName": "Delete Task",
+            "method": "DELETE",
+            "path": "/task/{task_id}",
+            "inputSchema": [
+                {
+                    "key": "task_id",
+                    "label": "Task ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "task_id"
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "list_task_comments",
+            "displayName": "List Task Comments",
+            "method": "GET",
+            "path": "/task/{task_id}/comment",
+            "inputSchema": [
+                {
+                    "key": "task_id",
+                    "label": "Task ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "task_id"
+            ],
+            "outputPaths": [
+                "comments"
+            ]
+        },
+        {
+            "actionId": "create_task_comment",
+            "displayName": "Create Task Comment",
+            "method": "POST",
+            "path": "/task/{task_id}/comment",
+            "inputSchema": [
+                {
+                    "key": "task_id",
+                    "label": "Task ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "comment_text",
+                    "label": "Comment",
+                    "type": "TEXTAREA",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "task_id"
+            ],
+            "inputScript": "return {comment_text:$inputs.comment_text};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "list_members",
+            "displayName": "List Team Members",
+            "method": "GET",
+            "path": "/team/{team_id}/member",
+            "inputSchema": [
+                {
+                    "key": "team_id",
+                    "label": "Team ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "team_id"
+            ],
+            "outputPaths": [
+                "members"
+            ]
+        }
+    ],
+    "credentialGuide": {
+        "fields": [
+            {
+                "key": "token",
+                "label": "Personal API Token",
+                "hint": "ClickUp Settings → Apps → API Token"
+            }
+        ]
+    },
+    "connectionSetup": {
+        "fields": [
+            {
+                "label": "API Token",
+                "key": "token",
+                "sensitive": true
+            }
+        ]
+    },
+    "verifyAction": {
+        "method": "GET",
+        "path": "/user"
+    }
+}

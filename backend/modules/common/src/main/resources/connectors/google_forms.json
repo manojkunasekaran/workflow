@@ -1,0 +1,438 @@
+{
+    "connectorId": "google_forms",
+    "displayName": "Google Forms",
+    "icon": "https://api.iconify.design/logos/google-icon.svg",
+    "category": "Forms",
+    "taskType": "CONNECTOR_TASK",
+    "baseUrl": "https://forms.googleapis.com/v1",
+    "authType": "OAUTH2",
+    "actions": [
+        {
+            "actionId": "create_form",
+            "displayName": "Create Form",
+            "method": "POST",
+            "path": "/forms",
+            "inputSchema": [
+                {
+                    "key": "title",
+                    "label": "Title",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return {info:{title:$inputs.title}};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "formId"
+            ]
+        },
+        {
+            "actionId": "get_form",
+            "displayName": "Get Form",
+            "method": "GET",
+            "path": "/forms/{formId}",
+            "inputSchema": [
+                {
+                    "key": "formId",
+                    "label": "Form ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "formId"
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "batch_update_form",
+            "displayName": "Batch Update Form",
+            "method": "POST",
+            "path": "/forms/{formId}:batchUpdate",
+            "inputSchema": [
+                {
+                    "key": "formId",
+                    "label": "Form ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "requests",
+                    "label": "Requests JSON",
+                    "type": "JSON",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "formId"
+            ],
+            "inputScript": "return {requests:typeof $inputs.requests==='string'?JSON.parse($inputs.requests):$inputs.requests};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "formId"
+            ]
+        },
+        {
+            "actionId": "list_form_responses",
+            "displayName": "List Form Responses",
+            "method": "GET",
+            "path": "/forms/{formId}/responses",
+            "inputSchema": [
+                {
+                    "key": "formId",
+                    "label": "Form ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "pageSize",
+                    "label": "Page Size",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 50
+                }
+            ],
+            "pathParams": [
+                "formId"
+            ],
+            "outputPaths": [
+                "responses"
+            ]
+        },
+        {
+            "actionId": "get_form_response",
+            "displayName": "Get Form Response",
+            "method": "GET",
+            "path": "/forms/{formId}/responses/{responseId}",
+            "inputSchema": [
+                {
+                    "key": "formId",
+                    "label": "Form ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "responseId",
+                    "label": "Response ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "formId",
+                "responseId"
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "create_watch",
+            "displayName": "Create Watch",
+            "method": "POST",
+            "path": "/forms/{formId}/watches",
+            "inputSchema": [
+                {
+                    "key": "formId",
+                    "label": "Form ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "topicName",
+                    "label": "Pub/Sub Topic",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "formId"
+            ],
+            "inputScript": "return {watch:{target:{topic:{topicName:$inputs.topicName}}}}};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id"
+            ]
+        },
+        {
+            "actionId": "list_watches",
+            "displayName": "List Watches",
+            "method": "GET",
+            "path": "/forms/{formId}/watches",
+            "inputSchema": [
+                {
+                    "key": "formId",
+                    "label": "Form ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "formId"
+            ],
+            "outputPaths": [
+                "watches"
+            ]
+        },
+        {
+            "actionId": "delete_watch",
+            "displayName": "Delete Watch",
+            "method": "DELETE",
+            "path": "/forms/{formId}/watches/{watchId}",
+            "inputSchema": [
+                {
+                    "key": "formId",
+                    "label": "Form ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "watchId",
+                    "label": "Watch ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "formId",
+                "watchId"
+            ],
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "get_settings",
+            "displayName": "Get Form Settings",
+            "method": "GET",
+            "path": "/forms/{formId}",
+            "inputSchema": [
+                {
+                    "key": "formId",
+                    "label": "Form ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "formId"
+            ],
+            "outputPaths": [
+                "settings"
+            ]
+        },
+        {
+            "actionId": "add_text_question",
+            "displayName": "Add Text Question",
+            "method": "POST",
+            "path": "/forms/{formId}:batchUpdate",
+            "inputSchema": [
+                {
+                    "key": "formId",
+                    "label": "Form ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "title",
+                    "label": "Question Title",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "formId"
+            ],
+            "inputScript": "return {requests:[{createItem:{item:{title:$inputs.title,questionItem:{question:{textQuestion:{}}}}},location:{index:0}}}]};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "add_multiple_choice_question",
+            "displayName": "Add Multiple Choice Question",
+            "method": "POST",
+            "path": "/forms/{formId}:batchUpdate",
+            "inputSchema": [
+                {
+                    "key": "formId",
+                    "label": "Form ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "title",
+                    "label": "Question Title",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "options",
+                    "label": "Options (comma-separated)",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "formId"
+            ],
+            "inputScript": "const opts=($inputs.options||'').split(',').map(o=>({value:o.trim()})); return {requests:[{createItem:{item:{title:$inputs.title,questionItem:{question:{choiceQuestion:{type:'RADIO',options:opts}}}}},location:{index:0}}}]};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "publish_form",
+            "displayName": "Publish Form (via settings update)",
+            "method": "POST",
+            "path": "/forms/{formId}:batchUpdate",
+            "inputSchema": [
+                {
+                    "key": "formId",
+                    "label": "Form ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "formId"
+            ],
+            "inputScript": "return {requests:[{updateSettings:{settings:{quizSettings:{isQuiz:false}},updateMask:'quizSettings.isQuiz'}}]};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "$"
+            ]
+        },
+        {
+            "actionId": "list_drive_forms",
+            "displayName": "List Forms (Drive search placeholder)",
+            "method": "GET",
+            "path": "/forms/{formId}",
+            "inputSchema": [
+                {
+                    "key": "formId",
+                    "label": "Form ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "formId"
+            ],
+            "outputPaths": [
+                "formId"
+            ]
+        },
+        {
+            "actionId": "duplicate_form_metadata",
+            "displayName": "Get Form Metadata",
+            "method": "GET",
+            "path": "/forms/{formId}",
+            "inputSchema": [
+                {
+                    "key": "formId",
+                    "label": "Form ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "formId"
+            ],
+            "outputPaths": [
+                "info"
+            ]
+        },
+        {
+            "actionId": "clear_responses_placeholder",
+            "displayName": "List Responses (paginated)",
+            "method": "GET",
+            "path": "/forms/{formId}/responses",
+            "inputSchema": [
+                {
+                    "key": "formId",
+                    "label": "Form ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "pageToken",
+                    "label": "Page Token",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "formId"
+            ],
+            "outputPaths": [
+                "responses",
+                "nextPageToken"
+            ]
+        }
+    ],
+    "oauth2Config": {
+        "authorizationUrl": "https://accounts.google.com/o/oauth2/auth",
+        "tokenUrl": "https://oauth2.googleapis.com/token",
+        "defaultScopes": [
+            "https://www.googleapis.com/auth/forms.body",
+            "https://www.googleapis.com/auth/forms.responses.readonly"
+        ]
+    },
+    "credentialGuide": {
+        "fields": [
+            {
+                "key": "access_token",
+                "label": "OAuth2",
+                "hint": "Connect via OAuth in Settings"
+            }
+        ]
+    },
+    "connectionSetup": {
+        "fields": []
+    },
+    "verifyAction": {
+        "method": "GET",
+        "path": "/forms"
+    }
+}

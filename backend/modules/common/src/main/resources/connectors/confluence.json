@@ -1,0 +1,334 @@
+{
+    "displayName": "Confluence",
+    "icon": "https://api.iconify.design/logos/confluence.svg",
+    "category": "Project Management",
+    "baseUrl": "https://api.atlassian.com/ex/confluence",
+    "authType": "OAUTH2",
+    "oauth2Config": {
+        "authorizationUrl": "https://auth.atlassian.com/authorize?audience=api.atlassian.com",
+        "tokenUrl": "https://auth.atlassian.com/oauth/token",
+        "defaultScopes": [
+            "read:confluence-content.all",
+            "write:confluence-content"
+        ]
+    },
+    "credentialGuide": {
+        "fields": [
+            {
+                "key": "client_id",
+                "label": "Client ID"
+            },
+            {
+                "key": "client_secret",
+                "label": "Client Secret"
+            }
+        ]
+    },
+    "connectionSetup": {
+        "description": "Connect Confluence Cloud.",
+        "buttonLabel": "Sign in with Atlassian"
+    },
+    "verifyAction": {
+        "method": "GET",
+        "path": "/{cloudId}/wiki/api/v2/spaces?limit=1",
+        "pathParams": [
+            "cloudId"
+        ]
+    },
+    "actions": [
+        {
+            "actionId": "list_spaces",
+            "displayName": "List Spaces",
+            "method": "GET",
+            "path": "/{cloudId}/wiki/api/v2/spaces",
+            "pathParams": [
+                "cloudId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "cloudId",
+                    "label": "Cloud ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "limit",
+                    "label": "Limit",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 25
+                }
+            ],
+            "outputPaths": [
+                "results"
+            ]
+        },
+        {
+            "actionId": "get_space",
+            "displayName": "Get Space",
+            "method": "GET",
+            "path": "/{cloudId}/wiki/api/v2/spaces/{spaceId}",
+            "pathParams": [
+                "cloudId",
+                "spaceId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "cloudId",
+                    "label": "Cloud ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "spaceId",
+                    "label": "Space ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "id",
+                "key",
+                "name"
+            ]
+        },
+        {
+            "actionId": "list_pages",
+            "displayName": "List Pages",
+            "method": "GET",
+            "path": "/{cloudId}/wiki/api/v2/pages",
+            "pathParams": [
+                "cloudId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "cloudId",
+                    "label": "Cloud ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "limit",
+                    "label": "Limit",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 25
+                },
+                {
+                    "key": "spaceId",
+                    "label": "Space ID",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "results"
+            ]
+        },
+        {
+            "actionId": "get_page",
+            "displayName": "Get Page",
+            "method": "GET",
+            "path": "/{cloudId}/wiki/api/v2/pages/{pageId}",
+            "pathParams": [
+                "cloudId",
+                "pageId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "cloudId",
+                    "label": "Cloud ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "pageId",
+                    "label": "Page ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "id",
+                "title",
+                "status"
+            ]
+        },
+        {
+            "actionId": "create_page",
+            "displayName": "Create Page",
+            "method": "POST",
+            "path": "/{cloudId}/wiki/api/v2/pages",
+            "pathParams": [
+                "cloudId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "cloudId",
+                    "label": "Cloud ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "spaceId",
+                    "label": "Space ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "title",
+                    "label": "Title",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "body",
+                    "label": "Body (storage format)",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "parentId",
+                    "label": "Parent Page ID",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "const b={spaceId:$inputs.spaceId,status:'current',title:$inputs.title,body:{representation:'storage',value:$inputs.body||''}}; if($inputs.parentId) b.parentId=$inputs.parentId; return b;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id",
+                "title"
+            ]
+        },
+        {
+            "actionId": "update_page",
+            "displayName": "Update Page",
+            "method": "PUT",
+            "path": "/{cloudId}/wiki/api/v2/pages/{pageId}",
+            "pathParams": [
+                "cloudId",
+                "pageId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "cloudId",
+                    "label": "Cloud ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "pageId",
+                    "label": "Page ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "title",
+                    "label": "Title",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "body",
+                    "label": "Body",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "versionNumber",
+                    "label": "Version Number",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "const b={id:$inputs.pageId,status:'current',version:{number:$inputs.versionNumber}}; if($inputs.title) b.title=$inputs.title; if($inputs.body!=null) b.body={representation:'storage',value:$inputs.body}; return b;",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "id",
+                "title"
+            ]
+        },
+        {
+            "actionId": "delete_page",
+            "displayName": "Delete Page",
+            "method": "DELETE",
+            "path": "/{cloudId}/wiki/api/v2/pages/{pageId}",
+            "pathParams": [
+                "cloudId",
+                "pageId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "cloudId",
+                    "label": "Cloud ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "pageId",
+                    "label": "Page ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": []
+        },
+        {
+            "actionId": "get_page_body",
+            "displayName": "Get Page Body",
+            "method": "GET",
+            "path": "/{cloudId}/wiki/api/v2/pages/{pageId}/body",
+            "pathParams": [
+                "cloudId",
+                "pageId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "cloudId",
+                    "label": "Cloud ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "pageId",
+                    "label": "Page ID",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "body"
+            ]
+        }
+    ],
+    "connectorId": "confluence",
+    "taskType": "CONNECTOR_TASK"
+}

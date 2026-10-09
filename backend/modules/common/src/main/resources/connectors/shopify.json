@@ -1,0 +1,508 @@
+{
+    "connectorId": "shopify",
+    "displayName": "Shopify",
+    "icon": "https://api.iconify.design/logos/shopify.svg",
+    "category": "E-commerce",
+    "baseUrl": "https://example.myshopify.com/admin/api/2024-10",
+    "authType": "BEARER_TOKEN",
+    "credentialGuide": {
+        "fields": [
+            {
+                "key": "token",
+                "label": "Admin API Access Token"
+            },
+            {
+                "key": "baseUrl",
+                "label": "Shop Base URL",
+                "hint": "Set to https://YOUR_SHOP.myshopify.com/admin/api/2024-10 when cloning"
+            }
+        ],
+        "description": "Duplicate the app and set baseUrl to your shop-specific Admin API URL."
+    },
+    "connectionSetup": {
+        "fields": [
+            {
+                "label": "Access Token",
+                "key": "token",
+                "sensitive": true
+            }
+        ]
+    },
+    "verifyAction": {
+        "method": "GET",
+        "path": "/shop.json"
+    },
+    "actions": [
+        {
+            "actionId": "list_orders",
+            "displayName": "List Orders",
+            "method": "GET",
+            "path": "/orders.json",
+            "inputSchema": [
+                {
+                    "key": "status",
+                    "label": "Status",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": "any"
+                },
+                {
+                    "key": "limit",
+                    "label": "Limit",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 50
+                }
+            ],
+            "outputPaths": [
+                "orders"
+            ]
+        },
+        {
+            "actionId": "get_order",
+            "displayName": "Get Order",
+            "method": "GET",
+            "path": "/orders/{orderId}.json",
+            "pathParams": [
+                "orderId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "orderId",
+                    "label": "Order ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "order"
+            ]
+        },
+        {
+            "actionId": "create_order",
+            "displayName": "Create Order",
+            "method": "POST",
+            "path": "/orders.json",
+            "inputSchema": [
+                {
+                    "key": "order",
+                    "label": "Order JSON",
+                    "type": "JSON",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return {order: typeof $inputs.order==='string'?JSON.parse($inputs.order):$inputs.order};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "order.id"
+            ]
+        },
+        {
+            "actionId": "list_customers",
+            "displayName": "List Customers",
+            "method": "GET",
+            "path": "/customers.json",
+            "inputSchema": [
+                {
+                    "key": "limit",
+                    "label": "Limit",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 50
+                }
+            ],
+            "outputPaths": [
+                "customers"
+            ]
+        },
+        {
+            "actionId": "get_customer",
+            "displayName": "Get Customer",
+            "method": "GET",
+            "path": "/customers/{customerId}.json",
+            "pathParams": [
+                "customerId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "customerId",
+                    "label": "Customer ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "customer"
+            ]
+        },
+        {
+            "actionId": "create_customer",
+            "displayName": "Create Customer",
+            "method": "POST",
+            "path": "/customers.json",
+            "inputSchema": [
+                {
+                    "key": "email",
+                    "label": "Email",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "firstName",
+                    "label": "First Name",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "lastName",
+                    "label": "Last Name",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return {customer:{email:$inputs.email,first_name:$inputs.firstName,last_name:$inputs.lastName}};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "customer.id"
+            ]
+        },
+        {
+            "actionId": "list_products",
+            "displayName": "List Products",
+            "method": "GET",
+            "path": "/products.json",
+            "inputSchema": [
+                {
+                    "key": "limit",
+                    "label": "Limit",
+                    "type": "NUMBER",
+                    "required": false,
+                    "supportsExpression": true,
+                    "defaultValue": 50
+                }
+            ],
+            "outputPaths": [
+                "products"
+            ]
+        },
+        {
+            "actionId": "get_product",
+            "displayName": "Get Product",
+            "method": "GET",
+            "path": "/products/{productId}.json",
+            "pathParams": [
+                "productId"
+            ],
+            "inputSchema": [
+                {
+                    "key": "productId",
+                    "label": "Product ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "product"
+            ]
+        },
+        {
+            "actionId": "update_order",
+            "displayName": "Update Order",
+            "method": "PUT",
+            "path": "/orders/{orderId}.json",
+            "inputSchema": [
+                {
+                    "key": "orderId",
+                    "label": "Order ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "note",
+                    "label": "Note",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "tags",
+                    "label": "Tags",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "orderId"
+            ],
+            "inputScript": "return {order:{id:$inputs.orderId,note:$inputs.note,tags:$inputs.tags}};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "order.id"
+            ]
+        },
+        {
+            "actionId": "cancel_order",
+            "displayName": "Cancel Order",
+            "method": "POST",
+            "path": "/orders/{orderId}/cancel.json",
+            "inputSchema": [
+                {
+                    "key": "orderId",
+                    "label": "Order ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "orderId"
+            ],
+            "inputScript": "return {};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "order.id"
+            ]
+        },
+        {
+            "actionId": "create_product",
+            "displayName": "Create Product",
+            "method": "POST",
+            "path": "/products.json",
+            "inputSchema": [
+                {
+                    "key": "title",
+                    "label": "Title",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "body_html",
+                    "label": "Description",
+                    "type": "TEXTAREA",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return {product:{title:$inputs.title,body_html:$inputs.body_html||''}};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "product.id"
+            ]
+        },
+        {
+            "actionId": "update_product",
+            "displayName": "Update Product",
+            "method": "PUT",
+            "path": "/products/{productId}.json",
+            "inputSchema": [
+                {
+                    "key": "productId",
+                    "label": "Product ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "title",
+                    "label": "Title",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "productId"
+            ],
+            "inputScript": "return {product:{id:$inputs.productId,title:$inputs.title}};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "product.id"
+            ]
+        },
+        {
+            "actionId": "update_customer",
+            "displayName": "Update Customer",
+            "method": "PUT",
+            "path": "/customers/{customerId}.json",
+            "inputSchema": [
+                {
+                    "key": "customerId",
+                    "label": "Customer ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "email",
+                    "label": "Email",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "phone",
+                    "label": "Phone",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "customerId"
+            ],
+            "inputScript": "const c={id:$inputs.customerId}; if($inputs.email) c.email=$inputs.email; if($inputs.phone) c.phone=$inputs.phone; return {customer:c};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "customer.id"
+            ]
+        },
+        {
+            "actionId": "list_locations",
+            "displayName": "List Locations",
+            "method": "GET",
+            "path": "/locations.json",
+            "inputSchema": [],
+            "outputPaths": [
+                "locations"
+            ]
+        },
+        {
+            "actionId": "list_inventory_levels",
+            "displayName": "List Inventory Levels",
+            "method": "GET",
+            "path": "/inventory_levels.json",
+            "inputSchema": [
+                {
+                    "key": "location_ids",
+                    "label": "Location IDs",
+                    "type": "STRING",
+                    "required": false,
+                    "supportsExpression": true
+                }
+            ],
+            "outputPaths": [
+                "inventory_levels"
+            ]
+        },
+        {
+            "actionId": "list_fulfillments",
+            "displayName": "List Fulfillments",
+            "method": "GET",
+            "path": "/orders/{orderId}/fulfillments.json",
+            "inputSchema": [
+                {
+                    "key": "orderId",
+                    "label": "Order ID",
+                    "type": "NUMBER",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "pathParams": [
+                "orderId"
+            ],
+            "outputPaths": [
+                "fulfillments"
+            ]
+        },
+        {
+            "actionId": "create_draft_order",
+            "displayName": "Create Draft Order",
+            "method": "POST",
+            "path": "/draft_orders.json",
+            "inputSchema": [
+                {
+                    "key": "line_items",
+                    "label": "Line Items JSON",
+                    "type": "JSON",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return {draft_order:{line_items:typeof $inputs.line_items==='string'?JSON.parse($inputs.line_items):$inputs.line_items}};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "draft_order.id"
+            ]
+        },
+        {
+            "actionId": "list_draft_orders",
+            "displayName": "List Draft Orders",
+            "method": "GET",
+            "path": "/draft_orders.json",
+            "inputSchema": [],
+            "outputPaths": [
+                "draft_orders"
+            ]
+        },
+        {
+            "actionId": "list_webhooks",
+            "displayName": "List Webhooks",
+            "method": "GET",
+            "path": "/webhooks.json",
+            "inputSchema": [],
+            "outputPaths": [
+                "webhooks"
+            ]
+        },
+        {
+            "actionId": "create_webhook",
+            "displayName": "Create Webhook",
+            "method": "POST",
+            "path": "/webhooks.json",
+            "inputSchema": [
+                {
+                    "key": "topic",
+                    "label": "Topic",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                },
+                {
+                    "key": "address",
+                    "label": "Callback URL",
+                    "type": "STRING",
+                    "required": true,
+                    "supportsExpression": true
+                }
+            ],
+            "inputScript": "return {webhook:{topic:$inputs.topic,address:$inputs.address,format:'json'}};",
+            "fixedHeaders": {
+                "Content-Type": "application/json"
+            },
+            "outputPaths": [
+                "webhook.id"
+            ]
+        }
+    ],
+    "taskType": "CONNECTOR_TASK"
+}

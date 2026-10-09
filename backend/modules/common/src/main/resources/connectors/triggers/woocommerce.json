@@ -1,0 +1,94 @@
+{
+  "connectorId": "woocommerce",
+  "triggers": [
+    {
+      "triggerId": "new_orders",
+      "displayName": "New orders",
+      "description": "Poll WooCommerce orders.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://example.com/wp-json/wc/v3/orders?per_page=50&status=any"
+          },
+          "detection": {
+            "itemsPath": "$",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "updated_orders",
+      "displayName": "Updated orders",
+      "description": "Poll updated WooCommerce orders.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "UPDATED",
+          "http": {
+            "method": "GET",
+            "url": "https://example.com/wp-json/wc/v3/orders?per_page=50&status=any"
+          },
+          "detection": {
+            "itemsPath": "$",
+            "keyPaths": [
+              "id"
+            ],
+            "updateKeyPath": "date_modified"
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_products",
+      "displayName": "New products",
+      "description": "Poll WooCommerce products.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://example.com/wp-json/wc/v3/products?per_page=50"
+          },
+          "detection": {
+            "itemsPath": "$",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "triggerId": "new_customers",
+      "displayName": "New customers",
+      "description": "Poll WooCommerce customers.",
+      "triggerType": "POLL",
+      "inputSchema": [],
+      "preset": {
+        "poll": {
+          "semantics": "NEW_ITEMS",
+          "http": {
+            "method": "GET",
+            "url": "https://example.com/wp-json/wc/v3/customers?per_page=50"
+          },
+          "detection": {
+            "itemsPath": "$",
+            "keyPaths": [
+              "id"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}
