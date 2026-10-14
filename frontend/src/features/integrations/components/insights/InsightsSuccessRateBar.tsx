@@ -24,7 +24,7 @@ export function InsightsSuccessRateBar({
             {showLabel ? (
                 <div className="flex items-center justify-between gap-2 text-xs">
                     <span className="text-muted-foreground">Success rate</span>
-                    <span className="font-medium tabular-nums text-emerald-700 dark:text-emerald-400">
+                    <span className="font-medium tabular-nums text-success">
                         {percent === null ? '—' : `${percent}%`}
                     </span>
                 </div>
@@ -42,11 +42,11 @@ export function InsightsSuccessRateBar({
                 ) : (
                     <>
                         <div
-                            className="h-full bg-emerald-500 transition-[width] duration-300"
+                            className="h-full bg-success transition-[width] duration-300"
                             style={{ width: `${((completedRuns / terminal) * 100).toFixed(2)}%` }}
                         />
                         <div
-                            className="h-full bg-red-400/90 dark:bg-red-500/80 transition-[width] duration-300"
+                            className="h-full bg-danger/90 transition-[width] duration-300"
                             style={{ width: `${((failedRuns / terminal) * 100).toFixed(2)}%` }}
                         />
                     </>

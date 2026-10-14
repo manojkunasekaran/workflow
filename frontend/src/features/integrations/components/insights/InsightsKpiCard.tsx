@@ -7,21 +7,21 @@ const variantStyles: Record<InsightsKpiVariant, string> = {
     neutral:
         'border-border/80 bg-card shadow-sm border-l-4 border-l-primary/70',
     success:
-        'border-emerald-200/80 bg-emerald-50/40 dark:border-emerald-900/60 dark:bg-emerald-950/25 border-l-4 border-l-emerald-500',
+        'border-success/30 bg-success-muted border-l-4 border-l-success',
     danger:
-        'border-red-200/80 bg-red-50/40 dark:border-red-900/60 dark:bg-red-950/20 border-l-4 border-l-red-500',
+        'border-danger/30 bg-danger-muted border-l-4 border-l-danger',
     warning:
-        'border-amber-200/80 bg-amber-50/40 dark:border-amber-900/60 dark:bg-amber-950/20 border-l-4 border-l-amber-500',
+        'border-warning/30 bg-warning-muted border-l-4 border-l-warning',
     info:
-        'border-sky-200/80 bg-sky-50/40 dark:border-sky-900/60 dark:bg-sky-950/25 border-l-4 border-l-sky-500',
+        'border-info/30 bg-info-muted border-l-4 border-l-info',
 };
 
 const iconStyles: Record<InsightsKpiVariant, string> = {
     neutral: 'bg-primary/10 text-primary',
-    success: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400',
-    danger: 'bg-red-500/15 text-red-700 dark:text-red-400',
-    warning: 'bg-amber-500/15 text-amber-700 dark:text-amber-400',
-    info: 'bg-sky-500/15 text-sky-700 dark:text-sky-400',
+    success: 'bg-success/15 text-success',
+    danger: 'bg-danger/15 text-danger',
+    warning: 'bg-warning/15 text-warning',
+    info: 'bg-info/15 text-info',
 };
 
 interface InsightsKpiCardProps {

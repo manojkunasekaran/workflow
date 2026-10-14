@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
     FlaskConical,
     CheckCircle2,
@@ -20,6 +20,13 @@ import {
 import { type ConnectorTestResult } from '@/api/connectorApi';
 import { workflowApi } from '@/api/workflowApi';
 import { useWorkflowStore } from '@/features/workflow-studio/store/workflowStore';
+import { sanitizeWorkflowDefinitionForTestNode } from '@/features/workflow-studio/lib/sanitizeTestNodeDraft';
+import {
+    CALLOUT_WARNING_INLINE,
+    JSON_PREVIEW_NUMBER,
+    JSON_PREVIEW_STRING,
+    jsonBooleanClass,
+} from './jsonPreviewStyles';
 
 // ─── JSON Tree Viewer ─────────────────────────────────────────────────────────
 
@@ -31,13 +38,13 @@ function JsonNode({ data, depth = 0 }: { data: unknown; depth?: number }) {
         return <span className="text-muted-foreground">null</span>;
     }
     if (typeof data === 'boolean') {
-        return <span className={data ? 'text-green-500' : 'text-red-500'}>{String(data)}</span>;
+        return <span className={jsonBooleanClass(data)}>{String(data)}</span>;
     }
     if (typeof data === 'number') {
-        return <span className="text-blue-500">{data}</span>;
+        return <span className={JSON_PREVIEW_NUMBER}>{data}</span>;
     }
     if (typeof data === 'string') {
-        return <span className="text-amber-600 dark:text-amber-400">"{data}"</span>;
+        return <span className={JSON_PREVIEW_STRING}>"{data}"</span>;
     }
     if (Array.isArray(data)) {
         return (
@@ -94,6 +101,7 @@ interface TaskTestPanelProps {
 export function TaskTestPanel({ parameters }: TaskTestPanelProps) {
     const [isRunning, setIsRunning] = useState(false);
     const [result, setResult] = useState<ConnectorTestResult | null>(null);
+    const testGenerationRef = useRef(0);
 
     const targetTaskId = (parameters.__taskId as string) || (parameters.taskId as string);
     const canRun = !!targetTaskId;
@@ -101,66 +109,58 @@ export function TaskTestPanel({ parameters }: TaskTestPanelProps) {
     const handleTest = async () => {
         if (!canRun) return;
 
+        const runId = ++testGenerationRef.current;
         setIsRunning(true);
         setResult(null);
         try {
-            // Get current unsaved canvas state
             const { nodes, edges } = useWorkflowStore.getState();
-            
-            // Reconstruct the full draft workflow definition from the canvas
-            // We need a dummy empty definition as a base, or we can build one minimally
+
             const { flowToDefinition } = await import('@/features/workflow-studio/lib/workflowGraph');
-            
-            // We need to somehow get the current definition base (e.g. name, triggers)
-            // But for testing a node, the backend only needs the tasks list.
-            const draftDefinition = flowToDefinition(
-                'Test Draft',
-                nodes,
-                edges,
-                { id: 'draft-test', name: 'Test Draft', tasks: [], layout: {} } as any
+
+            const draftDefinition = sanitizeWorkflowDefinitionForTestNode(
+                flowToDefinition(
+                    'Test Draft',
+                    nodes,
+                    edges,
+                    { id: 'draft-test', name: 'Test Draft', tasks: [], layout: {} } as any,
+                ),
             );
 
             const cachedSampleData: Record<string, unknown> = {};
             nodes.forEach(n => {
-                const nodeData = n.data as any;
+                const nodeData = n.data as { sampleData?: Record<string, unknown> };
                 if (nodeData?.sampleData) {
                     cachedSampleData[n.id] = nodeData.sampleData;
                 }
             });
 
-            // If it's a new task (not in the graph yet), we must append it so the engine finds it
-            const isNewTask = !!parameters.__isNewTask;
-            if (isNewTask) {
-                draftDefinition.tasks.push({
-                    taskId: targetTaskId,
-                    type: (parameters.__taskType as any) || 'HTTP_TASK',
-                    parameters: parameters
-                });
+            const res = await workflowApi.testNode(targetTaskId, draftDefinition, cachedSampleData);
+
+            if (runId !== testGenerationRef.current) {
+                return;
             }
 
-            const res = await workflowApi.testNode(targetTaskId, draftDefinition, cachedSampleData);
-            
             if (!res.success) {
                 const isTargetFail = res.failedTaskId === targetTaskId;
-                const prefix = isTargetFail 
-                    ? "Target task failed" 
+                const prefix = isTargetFail
+                    ? "Target task failed"
                     : `Upstream task '${res.failedTaskId || 'unknown'}' failed`;
-                
+
                 setResult({
                     success: false,
                     statusCode: 0,
                     durationMs: 0,
                     error: `${prefix}: ${res.error || 'Unknown error'}`
-                } as any);
+                } as ConnectorTestResult);
                 return;
             }
 
             setResult({
                 success: true,
-                statusCode: 200, // Mocked since we're using real execution now
+                statusCode: 200,
                 durationMs: 0,
                 response: res.targetResult
-            } as any);
+            } as ConnectorTestResult);
 
             if (res.newSampleData) {
                 Object.entries(res.newSampleData).forEach(([tid, data]) => {
@@ -168,11 +168,18 @@ export function TaskTestPanel({ parameters }: TaskTestPanelProps) {
                 });
             }
 
-        } catch (err: any) {
-            const message = err?.response?.data?.message || err instanceof Error ? err.message : 'Unknown error';
+        } catch (err: unknown) {
+            if (runId !== testGenerationRef.current) {
+                return;
+            }
+            const message =
+                (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+                || (err instanceof Error ? err.message : 'Unknown error');
             setResult({ success: false, statusCode: 0, durationMs: 0, error: message });
         } finally {
-            setIsRunning(false);
+            if (runId === testGenerationRef.current) {
+                setIsRunning(false);
+            }
         }
     };
 
@@ -192,74 +199,75 @@ export function TaskTestPanel({ parameters }: TaskTestPanelProps) {
             <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col p-5">
                 <DialogHeader className="shrink-0 mb-4">
                     <DialogTitle className="flex items-center gap-2">
-                        <FlaskConical className="h-5 w-5" />
-                        Test Action
+                        <FlaskConical className="h-5 w-5 text-muted-foreground" />
+                        Test task
                     </DialogTitle>
                 </DialogHeader>
 
-                <div className="flex-1 overflow-y-auto space-y-4 pr-2 scrollbar-thin">
-                    <div className="flex items-start gap-2 rounded-md bg-amber-500/10 border border-amber-500/20 p-3 text-sm text-amber-700 dark:text-amber-400">
-                        <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
-                        <span>
-                            <strong>DISCLAIMER:</strong> This will perform a <strong>live workflow execution</strong> up to this node.
-                            Any missing upstream tasks will be automatically executed to generate context. Real API side-effects will occur.
-                        </span>
-                    </div>
+                <div className="flex-1 min-h-0 overflow-y-auto space-y-4">
+                    <p className="text-sm text-muted-foreground">
+                        Runs this task against the current canvas (including unsaved edits). Upstream tasks execute with cached sample data when available.
+                    </p>
 
                     <Button
-                        variant="default"
-                        className="w-full gap-2"
-                        onClick={handleTest}
-                        disabled={!canRun || isRunning}
+                        type="button"
+                        size="sm"
+                        onClick={() => void handleTest()}
+                        disabled={isRunning || !canRun}
+                        className="gap-2"
                     >
                         {isRunning ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <>
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                Running…
+                            </>
                         ) : (
-                            <FlaskConical className="h-4 w-4" />
+                            <>
+                                <FlaskConical className="h-4 w-4" />
+                                Run Test
+                            </>
                         )}
-                        {isRunning ? 'Running…' : 'Run Test (Real API Call)'}
                     </Button>
 
-                    {result && (
-                        <div className="space-y-3 mt-4 border-t pt-4">
-                            {/* Status row */}
-                            <div className="flex items-center justify-between text-sm">
-                                <span className="flex items-center gap-1.5 font-medium">
-                                    {result.success ? (
-                                        <CheckCircle2 className="h-4 w-4 text-green-500" />
-                                    ) : (
-                                        <XCircle className="h-4 w-4 text-destructive" />
-                                    )}
+                    {result ? (
+                        <div className="rounded-lg border border-border bg-muted/20 p-4 space-y-3">
+                            <div className="flex items-center gap-2">
+                                {result.success ? (
+                                    <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                                ) : (
+                                    <XCircle className="h-5 w-5 text-destructive" />
+                                )}
+                                <span className="font-medium text-sm">
                                     {result.success ? 'Success' : 'Failed'}
-                                    {result.statusCode > 0 && (
-                                        <span className="text-muted-foreground font-normal">· HTTP {result.statusCode}</span>
-                                    )}
                                 </span>
-                                <span className="flex items-center gap-1 text-muted-foreground">
-                                    <Clock className="h-3.5 w-3.5" />
-                                    {result.durationMs}ms
-                                </span>
+                                {result.durationMs != null && result.durationMs > 0 ? (
+                                    <span className="text-xs text-muted-foreground flex items-center gap-1 ml-auto">
+                                        <Clock className="h-3 w-3" />
+                                        {result.durationMs}ms
+                                    </span>
+                                ) : null}
                             </div>
 
-                            {/* Error message */}
-                            {result.error && (
-                                <p className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-md p-3 font-mono break-all">
-                                    {result.error}
-                                </p>
-                            )}
+                            {result.error ? (
+                                <p className={CALLOUT_WARNING_INLINE}>{result.error}</p>
+                            ) : null}
 
-                            {/* Response tree */}
-                            {result.response !== undefined && result.response !== null && (
-                                <div className="rounded-md bg-muted/30 border p-3 text-sm font-mono overflow-y-auto max-h-[300px]">
-                                    <p className="text-muted-foreground mb-2 text-xs uppercase tracking-wide font-sans font-semibold">Response Body</p>
+                            {result.response != null ? (
+                                <div className="text-xs font-mono overflow-x-auto">
                                     <JsonNode data={result.response} />
                                 </div>
-                            )}
+                            ) : null}
+
+                            {!result.success && !result.error ? (
+                                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                    <AlertTriangle className="h-3.5 w-3.5" />
+                                    No detailed error message returned.
+                                </p>
+                            ) : null}
                         </div>
-                    )}
+                    ) : null}
                 </div>
             </DialogContent>
         </Dialog>
     );
 }
-

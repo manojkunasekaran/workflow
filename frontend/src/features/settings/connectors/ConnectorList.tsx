@@ -62,7 +62,7 @@ export interface ConnectorListHandle {
 }
 
 interface ConnectorListProps {
-    scope?: 'SYSTEM' | 'TENANT';
+    scope?: 'SYSTEM' | 'ORGANIZATION';
 }
 
 const ConnectorList = forwardRef<ConnectorListHandle, ConnectorListProps>(function ConnectorList(
@@ -71,7 +71,7 @@ const ConnectorList = forwardRef<ConnectorListHandle, ConnectorListProps>(functi
 ) {
     const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
-    const [activeTab, setActiveTab] = useState<'all' | 'system' | 'tenant'>('all');
+    const [activeTab, setActiveTab] = useState<'all' | 'system' | 'organization'>('all');
     const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
     const [allConnectors, setAllConnectors] = useState<ConnectorManifest[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -101,7 +101,7 @@ const ConnectorList = forwardRef<ConnectorListHandle, ConnectorListProps>(functi
     const connectors = allConnectors.filter((connector) => {
         // Tab filter
         if (activeTab === 'system' && connector.scope !== 'SYSTEM') return false;
-        if (activeTab === 'tenant' && connector.scope !== 'TENANT') return false;
+        if (activeTab === 'organization' && connector.scope !== 'ORGANIZATION') return false;
 
         // Search filter
         if (searchQuery) {
@@ -166,8 +166,8 @@ const ConnectorList = forwardRef<ConnectorListHandle, ConnectorListProps>(functi
                                 <Button 
                                     variant="ghost" 
                                     size="sm" 
-                                    className={cn("h-8", activeTab === 'tenant' && "bg-background shadow-sm")} 
-                                    onClick={() => setActiveTab('tenant')}
+                                    className={cn("h-8", activeTab === 'organization' && "bg-background shadow-sm")} 
+                                    onClick={() => setActiveTab('organization')}
                                 >
                                     My Apps
                                 </Button>

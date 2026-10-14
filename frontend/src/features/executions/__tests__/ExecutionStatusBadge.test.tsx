@@ -9,22 +9,24 @@ describe('ExecutionStatusBadge (H-043 to H-046)', () => {
     render(<ExecutionStatusBadge status="COMPLETED" />);
     const badge = screen.getByTestId('execution-status-badge');
     expect(badge).toHaveTextContent('Done');
-    expect(badge.className).toContain('bg-green-50');
+    expect(badge.className).toContain('bg-success-muted');
+    expect(badge.className).toContain('text-success');
   });
 
   it('H-044: renders correct colour (danger) for FAILED status', () => {
     render(<ExecutionStatusBadge status="FAILED" />);
     const badge = screen.getByTestId('execution-status-badge');
     expect(badge).toHaveTextContent('Failed');
-    expect(badge.className).toContain('bg-red-50');
+    expect(badge.className).toContain('bg-danger-muted');
+    expect(badge.className).toContain('text-danger');
   });
 
   it('H-045: renders correct colour (warning) for RUNNING status and shows spinner', () => {
     const { container } = render(<ExecutionStatusBadge status="RUNNING" />);
     const badge = screen.getByTestId('execution-status-badge');
     expect(badge).toHaveTextContent('Running');
-    // Running shows warning variant which usually maps to amber
-    expect(badge.className).toContain('bg-amber-50');
+    expect(badge.className).toContain('bg-warning-muted');
+    expect(badge.className).toContain('text-warning');
     
     // Check for spinner (lucide-react Loader2 renders svg with animate-spin class)
     const spinner = container.querySelector('.animate-spin');

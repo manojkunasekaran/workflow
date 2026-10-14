@@ -165,7 +165,7 @@ export function ExecutionView({
         return (
             <div data-testid="execution-error-view" className="flex h-full flex-col bg-background">
                 <div className="flex flex-1 flex-col items-center justify-center gap-4">
-                    <XCircle className="h-12 w-12 text-red-500" />
+                    <XCircle className="h-12 w-12 text-destructive" />
                     <p className="text-muted-foreground">{error ?? 'Execution not found'}</p>
                     {onBack ? (
                         <Button variant="outline" onClick={onBack}>

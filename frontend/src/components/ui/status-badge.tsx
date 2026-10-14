@@ -7,10 +7,13 @@ export const statusBadgeVariants = cva(
     {
         variants: {
             variant: {
-                success: 'border-green-200 bg-green-50 text-green-700',
-                danger: 'border-red-200 bg-red-50 text-red-700',
-                warning: 'border-amber-200 bg-amber-50 text-amber-700',
-                info: 'border-sky-200 bg-sky-50 text-sky-700',
+                success:
+                    'border-success/30 bg-success-muted text-success dark:border-success/40 dark:bg-success-muted dark:text-success',
+                danger:
+                    'border-danger/30 bg-danger-muted text-danger dark:border-danger/40 dark:bg-danger-muted dark:text-danger',
+                warning:
+                    'border-warning/30 bg-warning-muted text-warning dark:border-warning/40 dark:bg-warning-muted dark:text-warning',
+                info: 'border-info/30 bg-info-muted text-info dark:border-info/40 dark:bg-info-muted dark:text-info',
                 neutral: 'border-border bg-muted text-muted-foreground',
             },
             size: {

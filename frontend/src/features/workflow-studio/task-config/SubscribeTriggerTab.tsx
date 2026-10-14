@@ -34,7 +34,7 @@ const VERIFICATION_OPTIONS: Array<{ value: WebhookVerificationMode; label: strin
 export function createDefaultSubscribeWebhookConfig(): WebhookConfig {
     return {
         deliveryMode: 'SUBSCRIBE',
-        active: true,
+        active: false,
         subscribeHttp: {
             method: 'POST',
             url: '',
@@ -48,7 +48,7 @@ export function createDefaultSubscribeWebhookConfig(): WebhookConfig {
             timeoutMs: 30_000,
         },
         inbound: {
-            verificationMode: 'NONE',
+            verificationMode: 'HEADER_SECRET',
             ignoreDuplicates: true,
         },
     };
@@ -205,7 +205,7 @@ export function SubscribeTriggerTab({ workflowId, webhook, onChange }: Subscribe
                 {testMessage && (
                     <p className={cn(
                         'text-xs flex items-center gap-1',
-                        testSuccess ? 'text-green-600 dark:text-green-400' : 'text-destructive',
+                        testSuccess ? 'text-success' : 'text-destructive',
                     )}>
                         {testSuccess ? <CheckCircle2 className="h-3.5 w-3.5" /> : <XCircle className="h-3.5 w-3.5" />}
                         {testMessage}

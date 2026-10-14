@@ -92,6 +92,8 @@ interface WorkflowCanvasProps {
     nodes: StudioCanvasNode[];
     /** Authoritative store nodes for fork/converge route edges; avoids stale config-draft overlay. */
     edgeTopologyNodes?: StudioCanvasNode[];
+    /** Ignores position-only canvas updates for display edge rebuilds. */
+    topologyFingerprint?: string;
     chainEdges: Edge[];
     readOnly?: boolean;
     triggerConfig?: TriggerConfig;
@@ -117,6 +119,7 @@ interface WorkflowCanvasProps {
 function WorkflowCanvasInner({
     nodes,
     edgeTopologyNodes,
+    topologyFingerprint,
     chainEdges,
     readOnly = false,
     triggerConfig,
@@ -157,8 +160,6 @@ function WorkflowCanvasInner({
 
         const addHandleKeys = resolveInlineAddHandles(nodes, chainEdges);
         const showStartAdd = shouldShowStartAdd(nodes, chainEdges);
-        const workflowTasks = getTaskNodes(nodes).map((node) => node.data);
-
         return nodes
             .filter((node) => node.id !== ADD_TASK_NODE_ID)
             .map((node) => {
@@ -188,7 +189,6 @@ function WorkflowCanvasInner({
                             onMainSpine: spineSet.has(node.id),
                             hasBranchChainOut: branchChainOut.has(node.id),
                             isToolNode,
-                            workflowTasks,
                             validationErrors: taskValidationErrors?.get(node.id),
                             addHandleIds,
                             executionStatus: executionNodeStatuses?.get(node.id),
@@ -223,7 +223,7 @@ function WorkflowCanvasInner({
                 },
             };
         });
-    }, [chainEdges, topologyNodes]);
+    }, [chainEdges, topologyFingerprint, topologyNodes]);
 
     const [rfNodes, setRfNodes, onRfNodesChange] = useNodesState(displayNodes);
     const [rfEdges, setRfEdges, onRfEdgesChange] = useEdgesState(displayEdges);

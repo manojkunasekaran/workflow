@@ -1,6 +1,5 @@
 // Should read the rules before creating/updating the test files
 import { test, expect } from '@playwright/test';
-import { mockWorkflowApi, mockExecutionApi } from '../../tests/helpers/pages';
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
 

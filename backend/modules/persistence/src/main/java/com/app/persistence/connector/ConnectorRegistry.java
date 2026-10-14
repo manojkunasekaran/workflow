@@ -56,7 +56,7 @@ public class ConnectorRegistry {
     
     public Optional<ConnectorManifest> findById(String connectorId, String organizationId) {
         if (StringUtils.hasText(organizationId)) {
-            Optional<ConnectorManifestEntity> tenantEntity = repository.findByConnectorIdAndScopeAndOrganizationId(connectorId, ConnectorScope.TENANT, organizationId);
+            Optional<ConnectorManifestEntity> tenantEntity = repository.findByConnectorIdAndScopeAndOrganizationId(connectorId, ConnectorScope.ORGANIZATION, organizationId);
             if (tenantEntity.isPresent() && tenantEntity.get().isEnabled()) {
                 return tenantEntity.map(this::mapToDomain);
             }
@@ -83,11 +83,11 @@ public class ConnectorRegistry {
             }
         }
         
-        // 2. Add/Override with tenant connectors
+        // 2. Add/Override with organization connectors
         if (StringUtils.hasText(organizationId)) {
             List<ConnectorManifestEntity> tenantConnectors = repository.findByOrganizationId(organizationId);
             for (ConnectorManifestEntity entity : tenantConnectors) {
-                if (entity.isEnabled() && entity.getScope() == ConnectorScope.TENANT) {
+                if (entity.isEnabled() && entity.getScope() == ConnectorScope.ORGANIZATION) {
                     merged.put(entity.getConnectorId(), mapToDomain(entity));
                 }
             }
@@ -138,7 +138,7 @@ public class ConnectorRegistry {
                     .orElseThrow(() -> new IllegalArgumentException("Manifest not found: " + manifest.getId()));
         } else {
             entity = new ConnectorManifestEntity();
-            entity.setScope(manifest.getScope() != null ? manifest.getScope() : ConnectorScope.TENANT);
+            entity.setScope(manifest.getScope() != null ? manifest.getScope() : ConnectorScope.ORGANIZATION);
             entity.setOrganizationId(manifest.getOrganizationId());
         }
         

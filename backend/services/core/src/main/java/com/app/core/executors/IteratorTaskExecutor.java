@@ -1,19 +1,28 @@
 package com.app.core.executors;
 
 import com.app.common.entity.WorkflowExecution;
-import com.app.common.model.task.execution.IteratorTaskExecutionData;
-import com.app.common.model.task.parameters.IteratorTaskParameters;
-import com.app.common.model.task.execution.TaskExecutionResult;
 import com.app.common.model.task.TaskType;
 import com.app.common.model.task.WorkflowTask;
+import com.app.common.model.task.execution.IteratorTaskExecutionData;
+import com.app.common.model.task.execution.TaskExecutionResult;
+import com.app.common.model.task.parameters.IteratorTaskConstraints;
+import com.app.common.model.task.parameters.IteratorTaskParameters;
 import com.app.core.model.ExecutionContext;
 import com.app.core.service.TaskExecutor;
 import com.app.core.service.VariableResolver;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Executor for Iterator (Loop) tasks.
@@ -25,7 +34,8 @@ import java.util.*;
 public class IteratorTaskExecutor implements TaskExecutor {
 
     private final VariableResolver variableResolver;
-    private final List<TaskExecutor> taskExecutors; // For executing sub-tasks
+    private final List<TaskExecutor> taskExecutors;
+    private final ObjectMapper objectMapper;
 
     @Override
     public boolean canExecute(TaskType taskType) {
@@ -41,10 +51,11 @@ public class IteratorTaskExecutor implements TaskExecutor {
         }
 
         try {
-            // Resolve loopOver value
-            Object loopOverValue = variableResolver.resolveValue(params.getLoopOver(), context);
+            validateActions(params.getActions(), task.getTaskId());
 
-            // Execute based on type
+            Object resolved = variableResolver.resolveValue(params.getLoopOver(), context);
+            Object loopOverValue = coerceLoopOverValue(resolved);
+
             IteratorTaskExecutionData executionData = executeIteration(loopOverValue, params, execution, context);
 
             return TaskExecutionResult.builder()
@@ -67,21 +78,85 @@ public class IteratorTaskExecutor implements TaskExecutor {
         }
     }
 
+    private void validateActions(List<WorkflowTask> actions, String iteratorTaskId) {
+        if (actions == null || actions.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Iterator task " + iteratorTaskId + " requires at least one loop action");
+        }
+        Set<String> seenIds = new HashSet<>();
+        for (WorkflowTask action : actions) {
+            if (action.getTaskId() == null || action.getTaskId().isBlank()) {
+                throw new IllegalArgumentException(
+                        "Iterator task " + iteratorTaskId + " has a loop action without taskId");
+            }
+            if (!seenIds.add(action.getTaskId())) {
+                throw new IllegalArgumentException(
+                        "Iterator task " + iteratorTaskId + " has duplicate loop action id: "
+                                + action.getTaskId());
+            }
+            if (action.getType() == null
+                    || !IteratorTaskConstraints.ALLOWED_NESTED_ACTION_TYPES.contains(action.getType())) {
+                throw new IllegalArgumentException(
+                        "Iterator task " + iteratorTaskId + " disallows nested type "
+                                + action.getType() + " on action " + action.getTaskId());
+            }
+        }
+    }
+
+    private Object coerceLoopOverValue(Object value) {
+        if (value instanceof String str) {
+            String trimmed = str.trim();
+            if (trimmed.isEmpty()) {
+                throw new IllegalArgumentException("loopOver resolved to an empty string");
+            }
+            if (trimmed.startsWith("[") || trimmed.startsWith("{")) {
+                try {
+                    return objectMapper.readValue(trimmed, new TypeReference<Object>() {
+                    });
+                } catch (Exception e) {
+                    throw new IllegalArgumentException("loopOver string is not valid JSON: " + e.getMessage());
+                }
+            }
+            if (trimmed.matches("-?\\d+")) {
+                return Integer.parseInt(trimmed);
+            }
+            throw new IllegalArgumentException(
+                    "loopOver string must be JSON array/object, integer, or resolve to a list/map/number");
+        }
+        return value;
+    }
+
+    private void assertIterationCount(int count, String iteratorContext) {
+        if (count < 0) {
+            throw new IllegalArgumentException(
+                    iteratorContext + " iteration count must be non-negative, got " + count);
+        }
+        if (count > IteratorTaskConstraints.MAX_ITERATIONS) {
+            throw new IllegalArgumentException(
+                    iteratorContext + " exceeds maximum iterations ("
+                            + IteratorTaskConstraints.MAX_ITERATIONS + "): " + count);
+        }
+    }
+
     private IteratorTaskExecutionData executeIteration(Object loopOverValue,
             IteratorTaskParameters params,
             WorkflowExecution execution,
             ExecutionContext context) {
-        // Detect iteration type and execute accordingly
         if (loopOverValue instanceof List<?> list) {
+            assertIterationCount(list.size(), "loopOver array");
             return executeArrayIteration(list, params, execution, context);
-        } else if (loopOverValue instanceof Map<?, ?> map) {
-            return executeObjectIteration(map, params, execution, context);
-        } else if (loopOverValue instanceof Number number) {
-            return executeNumberIteration(number.intValue(), params, execution, context);
-        } else {
-            throw new IllegalArgumentException("loopOver must be an Array, Object, or Number. Got: "
-                    + (loopOverValue != null ? loopOverValue.getClass().getName() : "null"));
         }
+        if (loopOverValue instanceof Map<?, ?> map) {
+            assertIterationCount(map.size(), "loopOver map");
+            return executeObjectIteration(map, params, execution, context);
+        }
+        if (loopOverValue instanceof Number number) {
+            int count = number.intValue();
+            assertIterationCount(count, "loopOver count");
+            return executeNumberIteration(count, params, execution, context);
+        }
+        throw new IllegalArgumentException("loopOver must be an Array, Object, or Number. Got: "
+                + (loopOverValue != null ? loopOverValue.getClass().getName() : "null"));
     }
 
     private IteratorTaskExecutionData executeArrayIteration(List<?> items,
@@ -187,16 +262,17 @@ public class IteratorTaskExecutor implements TaskExecutor {
                 .build();
     }
 
-    /**
-     * Execute the sub-tasks (actions) for a single iteration.
-     */
     private Map<String, Object> executeActions(List<WorkflowTask> actions,
             WorkflowExecution execution,
             ExecutionContext context) {
         Map<String, Object> iterationOutputs = new HashMap<>();
 
-        if (actions == null || actions.isEmpty()) {
-            return iterationOutputs;
+        Set<String> actionTaskIds = new HashSet<>();
+        for (WorkflowTask action : actions) {
+            actionTaskIds.add(action.getTaskId());
+        }
+        for (String actionId : actionTaskIds) {
+            context.getTaskOutputs().remove(actionId);
         }
 
         for (WorkflowTask action : actions) {
@@ -211,10 +287,8 @@ public class IteratorTaskExecutor implements TaskExecutor {
                 throw new RuntimeException("Sub-task failed: " + result.getErrorMessage());
             }
 
-            // Store output for this action
             if (result.getOutput() != null) {
                 iterationOutputs.put(action.getTaskId(), result.getOutput());
-                // Also update context so subsequent actions can reference this output
                 context.getTaskOutputs().put(action.getTaskId(), result.getOutput());
             }
         }

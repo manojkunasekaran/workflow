@@ -69,7 +69,19 @@ public class HumanTaskExecutor implements TaskExecutor {
      * Initial execution — pauses the workflow and waits for human input.
      */
     private TaskExecutionResult pauseForHumanInput(WorkflowTask task) {
-        HumanTaskParameters params = (HumanTaskParameters) task.getParameters();
+        if (!(task.getParameters() instanceof HumanTaskParameters params)) {
+            return TaskExecutionResult.builder()
+                    .status(TaskExecutionResult.Status.FAILED)
+                    .errorMessage("Invalid parameters for Human task")
+                    .build();
+        }
+
+        if (params.getActions() == null || params.getActions().isEmpty()) {
+            return TaskExecutionResult.builder()
+                    .status(TaskExecutionResult.Status.FAILED)
+                    .errorMessage("Human task requires at least one action")
+                    .build();
+        }
 
         log.info("Human task '{}' requires input. Assignee: {}, Actions: {}",
                 params.getTitle(),

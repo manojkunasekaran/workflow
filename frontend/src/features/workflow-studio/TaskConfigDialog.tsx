@@ -140,14 +140,25 @@ export function TaskConfigDialog({
 
     const handleParametersChange = (parameters: Record<string, unknown>) => {
         if (!draft || !plugin) return;
-        const nextDraft = { ...draft, parameters };
+        const nextDraft = {
+            ...draft,
+            parameters: injectParameterType(plugin.type, parameters),
+        };
         const { errors: nextErrors } = validateTaskParameters(
             plugin,
             parameters,
             validationContext,
         );
         setDraft(nextDraft);
-        syncDraftToCanvas(nextDraft, nextErrors);
+        setErrors(nextErrors);
+        onDraftChange?.(nextDraft);
+    };
+
+    const handleDialogOpenChange = (nextOpen: boolean) => {
+        if (!nextOpen && draft && plugin) {
+            syncDraftToCanvas(draft, errors);
+        }
+        onOpenChange(nextOpen);
     };
 
     const handleDisplayNameChange = (displayName: string) => {
@@ -167,7 +178,7 @@ export function TaskConfigDialog({
     const unknownType = draft && !plugin;
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange} modal={false}>
+        <Dialog open={open} onOpenChange={handleDialogOpenChange} modal={false}>
             <DialogContent
                 data-testid="task-config-dialog"
                 blocking={false}
@@ -274,7 +285,7 @@ export function TaskConfigDialog({
                                     variant="ghost"
                                     size="icon"
                                     className={cn('h-8 w-8', STUDIO_GHOST_ICON_BUTTON_CLASS)}
-                                    onClick={() => onOpenChange(false)}
+                                    onClick={() => handleDialogOpenChange(false)}
                                     aria-label="Close"
                                 >
                                     <X className="h-4 w-4" />

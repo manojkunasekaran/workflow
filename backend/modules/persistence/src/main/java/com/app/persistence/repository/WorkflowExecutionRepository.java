@@ -45,5 +45,9 @@ public interface WorkflowExecutionRepository extends MongoRepository<WorkflowExe
             String workflowDefinitionId,
             WorkflowExecutionStatus status,
             Pageable pageable);
+
+    Page<WorkflowExecution> findByOrganizationIdAndTargetTaskIdIsNull(
+            String organizationId,
+            Pageable pageable);
 }
 

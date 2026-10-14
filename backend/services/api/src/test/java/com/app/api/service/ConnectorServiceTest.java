@@ -52,7 +52,7 @@ public class ConnectorServiceTest {
         tenantEntity = new ConnectorManifestEntity();
         tenantEntity.setId("ten-id");
         tenantEntity.setConnectorId("jira");
-        tenantEntity.setScope(ConnectorScope.TENANT);
+        tenantEntity.setScope(ConnectorScope.ORGANIZATION);
         tenantEntity.setOrganizationId("org-1");
         tenantEntity.setEnabled(true);
     }
@@ -70,20 +70,20 @@ public class ConnectorServiceTest {
 
     @Test
     void testFindById_TenantScopeOverride() {
-        when(repository.findByConnectorIdAndScopeAndOrganizationId("jira", ConnectorScope.TENANT, "org-1"))
+        when(repository.findByConnectorIdAndScopeAndOrganizationId("jira", ConnectorScope.ORGANIZATION, "org-1"))
                 .thenReturn(Optional.of(tenantEntity));
 
         Optional<ConnectorManifest> result = connectorRegistry.findById("jira", "org-1");
 
         assertTrue(result.isPresent());
-        assertEquals(ConnectorScope.TENANT, result.get().getScope());
+        assertEquals(ConnectorScope.ORGANIZATION, result.get().getScope());
         assertEquals("org-1", result.get().getOrganizationId());
     }
 
     @Test
     void testFindById_TenantDisabledFallbackToSystem() {
         tenantEntity.setEnabled(false);
-        when(repository.findByConnectorIdAndScopeAndOrganizationId("jira", ConnectorScope.TENANT, "org-1"))
+        when(repository.findByConnectorIdAndScopeAndOrganizationId("jira", ConnectorScope.ORGANIZATION, "org-1"))
                 .thenReturn(Optional.of(tenantEntity));
         when(repository.findByConnectorIdAndScopeAndOrganizationId("jira", ConnectorScope.SYSTEM, null))
                 .thenReturn(Optional.of(systemEntity));
@@ -121,7 +121,7 @@ public class ConnectorServiceTest {
         List<ConnectorManifest> result = connectorRegistry.listAll("org-1");
 
         assertEquals(1, result.size());
-        assertEquals(ConnectorScope.TENANT, result.get(0).getScope());
+        assertEquals(ConnectorScope.ORGANIZATION, result.get(0).getScope());
     }
 
     @Test
@@ -151,7 +151,7 @@ public class ConnectorServiceTest {
 
         assertNotNull(result.getId());
         assertEquals("new-id", result.getId());
-        assertEquals(ConnectorScope.TENANT, result.getScope());
+        assertEquals(ConnectorScope.ORGANIZATION, result.getScope());
         verify(repository).save(any(ConnectorManifestEntity.class));
     }
 

@@ -11,8 +11,15 @@ import com.app.common.entity.IntegrationCredential;
 import com.app.common.model.task.parameters.AgentsTaskParameters;
 import com.app.common.model.task.parameters.BranchTaskParameters;
 import com.app.common.model.task.parameters.ConnectorTaskParameters;
+import com.app.common.model.form.FormFieldDefinition;
+import com.app.common.model.form.FormPageDefinition;
+import com.app.common.model.form.FormSchema;
+import com.app.common.model.task.parameters.FormEndTaskParameters;
+import com.app.common.model.task.parameters.FormPageTaskParameters;
 import com.app.common.model.task.parameters.HumanTaskParameters;
 import com.app.common.model.task.parameters.JoinTaskParameters;
+import com.app.common.model.task.parameters.IteratorTaskConstraints;
+import com.app.common.model.task.parameters.IteratorTaskParameters;
 import com.app.common.model.task.parameters.JoinWaitPolicy;
 import com.app.common.model.task.parameters.McpToolTaskParameters;
 import com.app.common.model.task.parameters.WaitTaskParameters;
@@ -30,6 +37,7 @@ import com.app.common.model.trigger.WebhookConfig;
 import com.app.common.model.trigger.WebhookInboundConfig;
 import com.app.common.model.trigger.WebhookVerificationMode;
 import com.app.common.model.trigger.McpResponseMode;
+import com.app.common.model.trigger.FormTriggerConfig;
 import com.app.common.model.trigger.McpTriggerConfig;
 import com.app.persistence.connector.ConnectorRegistry;
 import com.app.persistence.repository.WorkflowDefinitionRepository;
@@ -97,6 +105,15 @@ public class WorkflowDefinitionValidator {
             } else if (task.getType() == TaskType.MCP_TOOL
                     && task.getParameters() instanceof McpToolTaskParameters params) {
                 validateMcpToolTask(task.getTaskId(), params);
+            } else if (task.getType() == TaskType.ITERATOR_TASK
+                    && task.getParameters() instanceof IteratorTaskParameters params) {
+                validateIteratorTask(task.getTaskId(), params);
+            } else if (task.getType() == TaskType.FORM_PAGE
+                    && task.getParameters() instanceof FormPageTaskParameters params) {
+                validateFormPageTask(task.getTaskId(), params);
+            } else if (task.getType() == TaskType.FORM_END
+                    && task.getParameters() instanceof FormEndTaskParameters params) {
+                validateFormEndTask(task.getTaskId(), params);
             }
         }
 
@@ -116,6 +133,69 @@ public class WorkflowDefinitionValidator {
         }
         if (trigger != null && trigger.getType() == TriggerType.MCP && trigger.getMcp() != null) {
             validateMcpTrigger(definition, trigger.getMcp());
+        }
+        if (trigger != null && trigger.getType() == TriggerType.FORM && trigger.getForm() != null) {
+            validateFormTrigger(definition, trigger.getForm());
+        }
+    }
+
+    void validateFormTrigger(WorkflowDefinition definition, FormTriggerConfig form) {
+        if (!form.isActive()) {
+            return;
+        }
+        if (form.getSlug() == null || form.getSlug().isBlank()) {
+            throw new ValidationException("Form trigger requires a slug when active");
+        }
+        String slug = form.getSlug().trim().toLowerCase();
+        if (!slug.matches("[a-z0-9]+(?:-[a-z0-9]+)*")) {
+            throw new ValidationException("Form slug must be lowercase letters, numbers, and hyphens only");
+        }
+        validateFormSchema("Form landing page", form.getLandingPage());
+
+        long formEndCount = definition.getTasks() == null
+                ? 0
+                : definition.getTasks().stream().filter(t -> t.getType() == TaskType.FORM_END).count();
+        if (formEndCount == 0) {
+            throw new ValidationException("Form workflows require at least one FORM_END task");
+        }
+    }
+
+    void validateFormPageTask(String taskId, FormPageTaskParameters params) {
+        validateFormSchema("FORM_PAGE task " + taskId, params.getPage());
+    }
+
+    void validateFormEndTask(String taskId, FormEndTaskParameters params) {
+        FormEndTaskParameters.EndType endType =
+                params.getEndType() != null ? params.getEndType() : FormEndTaskParameters.EndType.MESSAGE;
+        if (endType == FormEndTaskParameters.EndType.REDIRECT
+                && (params.getRedirectUrl() == null || params.getRedirectUrl().isBlank())) {
+            throw new ValidationException("FORM_END task " + taskId + " requires redirectUrl when endType is REDIRECT");
+        }
+        if (endType == FormEndTaskParameters.EndType.MESSAGE
+                && (params.getMessage() == null || params.getMessage().isBlank())) {
+            throw new ValidationException("FORM_END task " + taskId + " requires message when endType is MESSAGE");
+        }
+        if (endType == FormEndTaskParameters.EndType.CUSTOM_HTML
+                && (params.getCustomHtml() == null || params.getCustomHtml().isBlank())) {
+            throw new ValidationException("FORM_END task " + taskId + " requires customHtml when endType is CUSTOM_HTML");
+        }
+    }
+
+    void validateFormSchema(String label, FormSchema schema) {
+        if (schema == null || schema.getPages() == null || schema.getPages().isEmpty()) {
+            throw new ValidationException(label + " requires at least one page");
+        }
+        FormPageDefinition page = schema.firstPage();
+        if (page.getFields() == null || page.getFields().isEmpty()) {
+            throw new ValidationException(label + " requires at least one field");
+        }
+        for (FormFieldDefinition field : page.getFields()) {
+            if (field.getKey() == null || field.getKey().isBlank()) {
+                throw new ValidationException(label + " has a field without key");
+            }
+            if (field.getType() == null) {
+                throw new ValidationException(label + " field " + field.getKey() + " requires a type");
+            }
         }
     }
 
@@ -395,7 +475,83 @@ public class WorkflowDefinitionValidator {
         }
     }
 
+    private void validateIteratorTask(String taskId, IteratorTaskParameters params) {
+        if (params.getActions() == null || params.getActions().isEmpty()) {
+            throw new ValidationException(
+                    "Iterator task " + taskId + " must define at least one loop action");
+        }
+        Set<String> actionIds = new HashSet<>();
+        for (WorkflowTask action : params.getActions()) {
+            if (action.getTaskId() == null || action.getTaskId().isBlank()) {
+                throw new ValidationException(
+                        "Iterator task " + taskId + " loop action requires taskId");
+            }
+            if (!actionIds.add(action.getTaskId())) {
+                throw new ValidationException(
+                        "Iterator task " + taskId + " has duplicate loop action id: " + action.getTaskId());
+            }
+            if (action.getType() == null
+                    || !IteratorTaskConstraints.ALLOWED_NESTED_ACTION_TYPES.contains(action.getType())) {
+                throw new ValidationException(
+                        "Iterator task " + taskId + " disallows nested type " + action.getType()
+                                + " on action " + action.getTaskId());
+            }
+        }
+        assertStaticLoopOverWithinLimits(taskId, params.getLoopOver());
+    }
+
+    private void assertStaticLoopOverWithinLimits(String taskId, Object loopOver) {
+        if (loopOver == null) {
+            throw new ValidationException("Iterator task " + taskId + " requires loopOver");
+        }
+        if (loopOver instanceof String str) {
+            if (str.contains("{{")) {
+                return;
+            }
+            throw new ValidationException(
+                    "Iterator task " + taskId
+                            + " loopOver must be a list, map, number, or expression");
+        }
+        if (loopOver instanceof Number number) {
+            int count = number.intValue();
+            if (count < 0 || count > IteratorTaskConstraints.MAX_ITERATIONS) {
+                throw new ValidationException(
+                        "Iterator task " + taskId + " loopOver count must be between 0 and "
+                                + IteratorTaskConstraints.MAX_ITERATIONS);
+            }
+            return;
+        }
+        if (loopOver instanceof List<?> list) {
+            if (list.size() > IteratorTaskConstraints.MAX_ITERATIONS) {
+                throw new ValidationException(
+                        "Iterator task " + taskId + " loopOver list exceeds maximum size "
+                                + IteratorTaskConstraints.MAX_ITERATIONS);
+            }
+            return;
+        }
+        if (loopOver instanceof Map<?, ?> map) {
+            if (map.size() > IteratorTaskConstraints.MAX_ITERATIONS) {
+                throw new ValidationException(
+                        "Iterator task " + taskId + " loopOver map exceeds maximum entries "
+                                + IteratorTaskConstraints.MAX_ITERATIONS);
+            }
+            return;
+        }
+        throw new ValidationException(
+                "Iterator task " + taskId + " loopOver must be a list, map, number, or expression");
+    }
+
     private void validateAgentsTask(String taskId, AgentsTaskParameters params) {
+        if (params.getModel() == null || params.getModel().isBlank()) {
+            throw new ValidationException("Agents task " + taskId + " requires model");
+        }
+        if (params.getUserPrompt() == null || params.getUserPrompt().isBlank()) {
+            throw new ValidationException("Agents task " + taskId + " requires userPrompt");
+        }
+        if (params.getMaxLoops() != null && params.getMaxLoops() <= 0) {
+            throw new ValidationException("Agents task " + taskId + " maxLoops must be positive");
+        }
+
         if (params.getTools() == null || params.getTools().isEmpty()) {
             return;
         }

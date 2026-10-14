@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { connectorApi, type ConnectorManifest } from '@/api/connectorApi';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -36,16 +36,20 @@ export function ConnectorTaskConfigPanel({ parameters, onChange, errors }: Props
     const actionId   = (parameters.actionId   as string) || '';
     const credentialId = (parameters.credentialId as string) || '';
     const inputs = (parameters.inputs as Record<string, unknown>) || {};
+    const parametersRef = useRef(parameters);
+    parametersRef.current = parameters;
 
     useEffect(() => {
+        let cancelled = false;
         connectorApi.list().then(data => {
+            if (cancelled) return;
             setManifests(data.filter(m => m.taskType === 'CONNECTOR_TASK'));
             setLoading(false);
 
-            // Backfill connectorIcon for nodes saved before we tracked it
-            const currentConnectorId = (parameters.connectorId as string) || '';
-            const hasIcon = !!parameters.connectorIcon;
-            const currentActionId = (parameters.actionId as string) || '';
+            const latest = parametersRef.current;
+            const currentConnectorId = (latest.connectorId as string) || '';
+            const hasIcon = !!latest.connectorIcon;
+            const currentActionId = (latest.actionId as string) || '';
 
             if (currentConnectorId) {
                 const m = data.find(x => x.connectorId === currentConnectorId);
@@ -56,19 +60,19 @@ export function ConnectorTaskConfigPanel({ parameters, onChange, errors }: Props
                     if (iconSrc) updates.connectorIcon = iconSrc;
                 }
 
-                // Auto-select action: if no action chosen yet, pick the first one
-                // so input fields are immediately visible without an extra click.
                 if (!currentActionId && m?.actions && m.actions.length > 0) {
                     updates.actionId = m.actions[0].actionId;
                 }
 
                 if (Object.keys(updates).length > 0) {
-                    onChange({ ...parameters, ...updates });
+                    onChange({ ...parametersRef.current, ...updates });
                 }
             }
         });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+        return () => {
+            cancelled = true;
+        };
+    }, [onChange]);
 
     const selectedManifest = manifests.find(m => m.connectorId === connectorId);
     const selectedAction   = selectedManifest?.actions.find(a => a.actionId === actionId);

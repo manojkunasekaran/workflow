@@ -177,6 +177,18 @@ class WorkflowDefinitionValidatorTest {
     }
 
     @Test
+    void validateAgentsTask_requiresModelAndUserPrompt() {
+        AgentsTaskParameters params = new AgentsTaskParameters();
+        WorkflowDefinition definition = new WorkflowDefinition();
+        definition.setName("agents-workflow");
+        definition.setTasks(List.of(task("agent_1", TaskType.AGENTS_TASK, params, null)));
+
+        assertThatThrownBy(() -> validator.validate(definition))
+                .isInstanceOf(ValidationException.class)
+                .hasMessageContaining("requires model");
+    }
+
+    @Test
     void validateAgentsTask_rejectsMcpToolWithoutCredentialId() {
         WorkflowDefinition definition = agentsTaskDefinition(mcpTool(null, "search", null));
 
@@ -249,6 +261,7 @@ class WorkflowDefinitionValidatorTest {
     private static WorkflowDefinition agentsTaskDefinition(AgentsTaskParameters.AgentTool... tools) {
         AgentsTaskParameters params = new AgentsTaskParameters();
         params.setModel("gpt-4");
+        params.setUserPrompt("Do something");
         params.setTools(List.of(tools));
 
         WorkflowDefinition definition = new WorkflowDefinition();

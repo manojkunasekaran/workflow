@@ -1,5 +1,10 @@
 // Should read the rules before creating/updating the test files
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
+
+async function openSystemStatusTab(page: Page) {
+  await page.getByTestId('settings-tab-system').click();
+  await expect(page.getByTestId('system-status-section')).toBeVisible();
+}
 
 /**
  * Tests for the Settings page (/settings).
@@ -20,9 +25,81 @@ const HEALTH_DOWN = {
   components: { mongo: { status: 'DOWN' } },
 };
 
+const ORG_APPEARANCE_DEFAULT = {
+  accentPresetId: 'default',
+  logoUrl: null,
+  lockAccent: false,
+};
+
+const USER_APPEARANCE_DEFAULT = {
+  themeMode: 'system',
+  accentPresetId: 'default',
+  density: 'comfortable',
+  radiusPreset: 'md',
+};
+
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
+const MOCK_ORGANIZATIONS = [{ id: 'org-test-1', name: 'Test Organization' }];
+
 test.describe('Settings Page', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.route('**/auth/sign-in-options', (route) =>
+      route.fulfill({
+        json: {
+          mode: 'DEMO',
+          signInRequired: true,
+          demoAdminSignInAvailable: true,
+          demoUserSignInAvailable: true,
+          oauthSignInAvailable: false,
+        },
+      }),
+    );
+    await page.route('**/auth/me', (route) =>
+      route.fulfill({
+        json: {
+          userId: 'settings-e2e-user',
+          displayName: 'Demo Admin',
+          email: 'demo-admin@workflow360.local',
+          platformAdmin: true,
+          signInRequired: true,
+          authMode: 'DEMO',
+          activeOrganizationId: MOCK_ORGANIZATIONS[0].id,
+          organizations: [
+            {
+              id: MOCK_ORGANIZATIONS[0].id,
+              name: MOCK_ORGANIZATIONS[0].name,
+              role: 'ORGANIZATION_ADMIN',
+            },
+          ],
+        },
+      }),
+    );
+    await page.route('**/admin/organizations', (route) => {
+      if (route.request().method() === 'POST') {
+        const body = route.request().postDataJSON() as { name: string };
+        route.fulfill({
+          json: { id: 'org-new', name: body.name },
+        });
+        return;
+      }
+      route.fulfill({ json: MOCK_ORGANIZATIONS });
+    });
+    let userAppearance = { ...USER_APPEARANCE_DEFAULT };
+    await page.route('**/settings/org-appearance', (route) =>
+      route.fulfill({ json: ORG_APPEARANCE_DEFAULT }),
+    );
+    await page.route('**/users/me/appearance', async (route) => {
+      const req = route.request();
+      if (req.method() === 'PATCH') {
+        userAppearance = { ...userAppearance, ...req.postDataJSON() };
+        await route.fulfill({ json: userAppearance });
+        return;
+      }
+      await route.fulfill({ json: userAppearance });
+    });
+  });
+
   test.describe('Happy Path — Page Load', () => {
     test('[Happy] should display the Settings page heading', async ({ page }) => {
       await page.route('**/system/stats', (route) =>
@@ -53,7 +130,7 @@ test.describe('Settings Page', () => {
         route.fulfill({ json: HEALTH_UP }),
       );
       await page.goto('/settings');
-      await expect(page.getByTestId('system-status-section')).toBeVisible();
+      await openSystemStatusTab(page);
     });
   });
 
@@ -89,6 +166,57 @@ test.describe('Settings Page', () => {
       await expect(page.locator('html')).not.toHaveClass(/dark/);
     });
 
+    test('[Happy] compact density shrinks control height tokens', async ({ page }) => {
+      await page.route('**/system/stats', (route) =>
+        route.fulfill({ json: HEALTH_UP }),
+      );
+      await page.goto('/settings');
+      const comfortable = await page.evaluate(() =>
+        getComputedStyle(document.documentElement).getPropertyValue('--density-control-h').trim(),
+      );
+      await page.getByTestId('appearance-density-compact').click();
+      await expect(page.locator('html')).toHaveClass(/density-compact/);
+      await expect
+        .poll(async () =>
+          page.evaluate(() =>
+            getComputedStyle(document.documentElement).getPropertyValue('--density-control-h').trim(),
+          ),
+        )
+        .not.toBe(comfortable);
+    });
+
+    test('[Happy] selecting Blue accent preset updates --primary on html', async ({ page }) => {
+      await page.route('**/system/stats', (route) =>
+        route.fulfill({ json: HEALTH_UP }),
+      );
+      await page.goto('/settings');
+      const before = await page.evaluate(() =>
+        getComputedStyle(document.documentElement).getPropertyValue('--primary').trim(),
+      );
+      await page.getByTestId('appearance-preset-blue').click();
+      await expect
+        .poll(async () =>
+          page.evaluate(() =>
+            getComputedStyle(document.documentElement).getPropertyValue('--primary').trim(),
+          ),
+        )
+        .not.toBe(before);
+    });
+
+    test('[Happy] dark mode with accent preset still updates --primary', async ({ page }) => {
+      await page.route('**/system/stats', (route) =>
+        route.fulfill({ json: HEALTH_UP }),
+      );
+      await page.goto('/settings');
+      await page.getByTestId('theme-dark-btn').click();
+      await expect(page.locator('html')).toHaveClass(/dark/);
+      await page.getByTestId('appearance-preset-violet').click();
+      const primary = await page.evaluate(() =>
+        getComputedStyle(document.documentElement).getPropertyValue('--primary').trim(),
+      );
+      expect(primary).toMatch(/^26[0-9]\s/);
+    });
+
     test('[Happy] theme preference should persist across page navigations', async ({ page }) => {
       await page.route('**/system/stats', (route) =>
         route.fulfill({ json: HEALTH_UP }),
@@ -109,7 +237,8 @@ test.describe('Settings Page', () => {
         route.fulfill({ json: HEALTH_UP }),
       );
       await page.goto('/settings');
-      await expect(page.getByTestId('system-status-badge')).toHaveText('All Systems Operational');
+      await openSystemStatusTab(page);
+      await expect(page.getByTestId('system-status-badge')).toHaveText('All systems operational');
     });
   });
 
@@ -119,13 +248,14 @@ test.describe('Settings Page', () => {
         route.fulfill({ json: HEALTH_DOWN }),
       );
       await page.goto('/settings');
+      await openSystemStatusTab(page);
       await expect(page.getByTestId('system-status-badge')).toHaveText(/offline|degraded/i);
     });
 
     test('[Negative] should show degraded status when health API is unreachable (network error)', async ({ page }) => {
       await page.route('**/system/stats', (route) => route.abort());
       await page.goto('/settings');
-      // Should show degraded/offline, not crash
+      await openSystemStatusTab(page);
       await expect(page.getByTestId('system-status-badge')).toHaveText(/offline|degraded/i);
     });
   });

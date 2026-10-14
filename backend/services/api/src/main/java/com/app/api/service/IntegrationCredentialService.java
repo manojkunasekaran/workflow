@@ -7,7 +7,9 @@ import com.app.common.constant.IntegrationCredentialTypes;
 import com.app.common.entity.IntegrationCredential;
 import com.app.common.entity.McpTransport;
 import com.app.common.model.mcp.McpToolDescriptor;
+import com.app.api.context.OrganizationContext;
 import com.app.api.service.mcp.McpSettingsService;
+import com.app.api.service.organization.OrganizationAccess;
 import com.app.crypto.util.EncryptionService;
 import com.app.capability.mcp.api.McpToolDiscoveryService;
 import com.app.persistence.connector.ConnectorRegistry;
@@ -43,9 +45,7 @@ public class IntegrationCredentialService {
     private final RestTemplate restTemplate;
     private final McpToolDiscoveryService mcpToolDiscoveryService;
     private final McpSettingsService mcpSettingsService;
-    
-    // In a multi-tenant app, this would come from the security context
-    private static final String DEFAULT_ORG_ID = "default-org";
+    private final OrganizationAccess organizationAccess;
 
     public IntegrationCredential createCredential(@NonNull IntegrationCredential credential) {
         if (credential.getId() == null) {
@@ -55,9 +55,17 @@ public class IntegrationCredentialService {
         if (credential.getCredentialScope() == com.app.common.entity.CredentialScope.PLATFORM) {
             credential.setOrganizationId(null);
             credential.setUserId(null);
+        } else if (credential.getOrganizationId() != null && !credential.getOrganizationId().isBlank()) {
+            String presetOrg = credential.getOrganizationId().trim();
+            String contextOrg = OrganizationContext.getOrganizationId();
+            if (contextOrg != null && !contextOrg.isBlank()) {
+                organizationAccess.assertSameOrganization(presetOrg);
+            } else {
+                organizationAccess.assertOrganizationExists(presetOrg);
+            }
+            credential.setOrganizationId(presetOrg);
         } else {
-            credential.setOrganizationId(DEFAULT_ORG_ID); // In real app, from Context
-            // credential.setUserId(DEFAULT_USER_ID);
+            credential.setOrganizationId(organizationAccess.requireOrganizationId());
         }
 
         validateMcpFields(credential);
@@ -77,9 +85,7 @@ public class IntegrationCredentialService {
                 .orElseThrow(() -> new IllegalArgumentException("Credential not found"));
                 
         if (credential.getCredentialScope() != com.app.common.entity.CredentialScope.PLATFORM) {
-            if (!DEFAULT_ORG_ID.equals(credential.getOrganizationId())) {
-                throw new IllegalArgumentException("Credential not found or access denied");
-            }
+            organizationAccess.assertSameOrganization(credential.getOrganizationId());
         }
         return credential;
     }
@@ -132,13 +138,14 @@ public class IntegrationCredentialService {
     }
 
     public List<IntegrationCredential> getAllCredentials() {
-        return repository.findByOrganizationId(DEFAULT_ORG_ID).stream()
+        return repository.findByOrganizationId(organizationAccess.requireOrganizationId()).stream()
                 .map(this::maskCredentials)
                 .collect(Collectors.toList());
     }
 
     public List<IntegrationCredential> getCredentialsByConnector(@NonNull String connectorId) {
-        return repository.findByOrganizationIdAndConnectorId(DEFAULT_ORG_ID, connectorId).stream()
+        return repository.findByOrganizationIdAndConnectorId(
+                organizationAccess.requireOrganizationId(), connectorId).stream()
                 .map(this::maskCredentials)
                 .collect(Collectors.toList());
     }

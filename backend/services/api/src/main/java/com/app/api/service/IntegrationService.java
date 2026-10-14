@@ -1,6 +1,7 @@
 package com.app.api.service;
 
 import com.app.api.dto.AssignUseCaseRequest;
+import com.app.api.service.organization.OrganizationAccess;
 import com.app.api.dto.CreateIntegrationRequest;
 import com.app.api.dto.IntegrationResponse;
 import com.app.api.dto.UpdateIntegrationRequest;
@@ -27,9 +28,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class IntegrationService {
 
-    private static final String DEFAULT_ORG_ID = "default-org";
-
     private final IntegrationRepository integrationRepository;
+    private final OrganizationAccess organizationAccess;
     private final ConnectorManifestRepository connectorManifestRepository;
     private final WorkflowDefinitionRepository workflowDefinitionRepository;
 
@@ -48,7 +48,7 @@ public class IntegrationService {
                 .destinationConnectorId(request.getDestinationConnectorId())
                 .scope(request.getScope() != null ? request.getScope() : IntegrationScope.USER)
                 .status(IntegrationStatus.DRAFT)
-                .organizationId(DEFAULT_ORG_ID) // TODO: Extract organizationId from Spring Security context
+                .organizationId(organizationAccess.requireOrganizationId())
                 .tags(request.getTags())
                 .build();
 
@@ -57,20 +57,15 @@ public class IntegrationService {
     }
 
     public IntegrationResponse getIntegration(String id) {
-        IntegrationEntity entity = integrationRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Integration", id));
+        IntegrationEntity entity = requireIntegrationInOrganization(id);
         return toResponse(entity);
     }
 
     public List<IntegrationResponse> listIntegrations() {
-        List<IntegrationEntity> systemPublished = integrationRepository.findByScopeAndStatus(IntegrationScope.SYSTEM, IntegrationStatus.PUBLISHED);
-        // TODO: Extract organizationId from Spring Security context
-        List<IntegrationEntity> orgIntegrations = integrationRepository.findByOrganizationIdAndStatus(DEFAULT_ORG_ID, IntegrationStatus.DRAFT); // Wait, instruction says "all integrations for DEFAULT_ORG_ID"
-
-        // instruction says "all integrations for DEFAULT_ORG_ID"
-        List<IntegrationEntity> orgIntegrationsAll = integrationRepository.findAll().stream()
-                .filter(i -> DEFAULT_ORG_ID.equals(i.getOrganizationId()))
-                .collect(Collectors.toList());
+        String organizationId = organizationAccess.requireOrganizationId();
+        List<IntegrationEntity> systemPublished = integrationRepository.findByScopeAndStatus(
+                IntegrationScope.SYSTEM, IntegrationStatus.PUBLISHED);
+        List<IntegrationEntity> orgIntegrationsAll = integrationRepository.findByOrganizationId(organizationId);
 
         Set<String> seen = new HashSet<>();
         List<IntegrationEntity> combined = new ArrayList<>();
@@ -91,10 +86,7 @@ public class IntegrationService {
 
     @Transactional
     public IntegrationResponse updateIntegration(String id, UpdateIntegrationRequest request) {
-        IntegrationEntity entity = integrationRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Integration", id));
-        
-        // TODO: Enforce ownership check via security context (organizationId)
+        IntegrationEntity entity = requireIntegrationInOrganization(id);
 
         if (request.getName() != null) {
             entity.setName(request.getName());
@@ -112,8 +104,7 @@ public class IntegrationService {
 
     @Transactional
     public void publishIntegration(String id) {
-        IntegrationEntity entity = integrationRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Integration", id));
+        IntegrationEntity entity = requireIntegrationInOrganization(id);
         if (entity.getStatus() != IntegrationStatus.DRAFT) {
             throw new IllegalArgumentException("Only DRAFT integrations can be published");
         }
@@ -123,16 +114,14 @@ public class IntegrationService {
 
     @Transactional
     public void deprecateIntegration(String id) {
-        IntegrationEntity entity = integrationRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Integration", id));
+        IntegrationEntity entity = requireIntegrationInOrganization(id);
         entity.setStatus(IntegrationStatus.DEPRECATED);
         integrationRepository.save(entity);
     }
 
     @Transactional
     public void deleteIntegration(String id) {
-        IntegrationEntity entity = integrationRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Integration", id));
+        IntegrationEntity entity = requireIntegrationInOrganization(id);
         if (entity.getStatus() == IntegrationStatus.PUBLISHED || entity.getStatus() == IntegrationStatus.DEPRECATED) {
             throw new IllegalArgumentException("Only DRAFT integrations can be deleted");
         }
@@ -150,10 +139,10 @@ public class IntegrationService {
 
     @Transactional
     public IntegrationResponse assignUseCase(String integrationId, AssignUseCaseRequest request) {
-        IntegrationEntity integration = integrationRepository.findById(integrationId)
-                .orElseThrow(() -> new ResourceNotFoundException("Integration", integrationId));
+        IntegrationEntity integration = requireIntegrationInOrganization(integrationId);
 
-        WorkflowDefinition workflow = workflowDefinitionRepository.findById(request.getWorkflowId())
+        WorkflowDefinition workflow = workflowDefinitionRepository.findByIdAndOrganizationId(
+                        request.getWorkflowId(), organizationAccess.requireOrganizationId())
                 .orElseThrow(() -> new ResourceNotFoundException("Workflow", request.getWorkflowId()));
 
         if (workflow.getIntegrationId() != null && !workflow.getIntegrationId().equals(integrationId)) {
@@ -170,7 +159,8 @@ public class IntegrationService {
 
     @Transactional
     public void removeUseCase(String integrationId, String workflowId) {
-        WorkflowDefinition workflow = workflowDefinitionRepository.findById(workflowId)
+        WorkflowDefinition workflow = workflowDefinitionRepository.findByIdAndOrganizationId(
+                        workflowId, organizationAccess.requireOrganizationId())
                 .orElseThrow(() -> new ResourceNotFoundException("Workflow", workflowId));
 
         if (!integrationId.equals(workflow.getIntegrationId())) {
@@ -181,6 +171,11 @@ public class IntegrationService {
         workflow.setUseCaseTitle(null);
         workflow.setUseCaseDescription(null);
         workflowDefinitionRepository.save(workflow);
+    }
+
+    private IntegrationEntity requireIntegrationInOrganization(String id) {
+        return integrationRepository.findByIdAndOrganizationId(id, organizationAccess.requireOrganizationId())
+                .orElseThrow(() -> new ResourceNotFoundException("Integration", id));
     }
 
     private IntegrationResponse toResponse(IntegrationEntity entity) {

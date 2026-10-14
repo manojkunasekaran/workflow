@@ -13,7 +13,7 @@ export interface ConnectorAutosaveState {
 }
 
 interface ConnectorBuilderProps {
-    scope: 'SYSTEM' | 'TENANT';
+    scope: 'SYSTEM' | 'ORGANIZATION';
     manifest: ConnectorManifest;
     onManifestChange: (manifest: ConnectorManifest) => void;
     onAutosaveStateChange?: (state: ConnectorAutosaveState) => void;

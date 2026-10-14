@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { connectionApi } from '@/api/connectionApi';
 import type { IntegrationCredential } from '@/types/api';
 import { Button } from '@/components/ui/button';
@@ -32,11 +32,41 @@ export function ConnectionSelectField({
     const [credentials, setCredentials] = useState<IntegrationCredential[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const loadGenerationRef = useRef(0);
 
-    const loadCredentials = async () => {
+    useEffect(() => {
+        const loadId = ++loadGenerationRef.current;
+        const loadCredentials = async () => {
+            setIsLoading(true);
+            try {
+                const data = await connectionApi.getAll(connectorId);
+                if (loadId !== loadGenerationRef.current) {
+                    return;
+                }
+                let filtered = authType ? data.filter((c) => c.type === authType) : data;
+                if (filterType) {
+                    filtered = filtered.filter((c) => c.type === filterType);
+                }
+                setCredentials(filtered);
+            } catch (err) {
+                console.error('Failed to load credentials', err);
+            } finally {
+                if (loadId === loadGenerationRef.current) {
+                    setIsLoading(false);
+                }
+            }
+        };
+        void loadCredentials();
+    }, [connectorId, authType, filterType]);
+
+    const reloadCredentials = async () => {
+        const loadId = ++loadGenerationRef.current;
         setIsLoading(true);
         try {
             const data = await connectionApi.getAll(connectorId);
+            if (loadId !== loadGenerationRef.current) {
+                return;
+            }
             let filtered = authType ? data.filter((c) => c.type === authType) : data;
             if (filterType) {
                 filtered = filtered.filter((c) => c.type === filterType);
@@ -45,17 +75,15 @@ export function ConnectionSelectField({
         } catch (err) {
             console.error('Failed to load credentials', err);
         } finally {
-            setIsLoading(false);
+            if (loadId === loadGenerationRef.current) {
+                setIsLoading(false);
+            }
         }
     };
 
-    useEffect(() => {
-        loadCredentials();
-    }, [connectorId, authType]);
-
     const handleSave = async (cred: IntegrationCredential) => {
         const saved = cred.id ? await connectionApi.update(cred.id, cred) : await connectionApi.create(cred);
-        await loadCredentials();
+        await reloadCredentials();
         onChange(saved.id!);
         setIsDialogOpen(false);
     };
@@ -83,7 +111,7 @@ export function ConnectionSelectField({
                     onValueChange={onChange}
                     disabled={isLoading || credentials.length === 0}
                 >
-                    <SelectTrigger id={id} className={hasError ? "border-red-500" : ""}>
+                    <SelectTrigger id={id} className={hasError ? 'border-destructive' : ''}>
                         <SelectValue placeholder={
                             isLoading ? "Loading credentials..." : 
                             credentials.length === 0 ? "No credentials available" : 
@@ -96,14 +124,14 @@ export function ConnectionSelectField({
                                 <div className="flex items-center">
                                     <span>{cred.name}</span>
                                     {cred.connectedAs && <span className="ml-2 text-xs text-muted-foreground">({cred.connectedAs})</span>}
-                                    {cred.connectionStatus === 'EXPIRED' && <AlertCircle className="ml-2 h-3 w-3 text-red-500" />}
+                                    {cred.connectionStatus === 'EXPIRED' && <AlertCircle className="ml-2 h-3 w-3 text-destructive" />}
                                 </div>
                             </SelectItem>
                         ))}
                     </SelectContent>
                 </Select>
                 {hasError && (
-                    <p className="text-xs text-red-500 flex items-center">
+                    <p className="text-xs text-destructive flex items-center">
                         <AlertCircle className="h-3 w-3 mr-1" />
                         This credential has {selectedCred?.connectionStatus?.toLowerCase()}. Please re-authenticate it in Settings.
                     </p>
@@ -120,6 +148,12 @@ export function ConnectionSelectField({
                 onOpenChange={setIsDialogOpen}
                 preselectedConnectorId={connectorId}
                 onSave={handleSave}
+                onOAuthSuccess={async (result) => {
+                    await reloadCredentials();
+                    if (result.credentialId) {
+                        onChange(result.credentialId);
+                    }
+                }}
             />
         </div>
     );

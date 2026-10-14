@@ -24,6 +24,8 @@ import {
     appendJoinAtBranchEnd,
     appendTaskToChainOrBranch,
     applyStudioConnection,
+    buildCanvasTopologyFingerprint,
+    buildCanvasValidationSignature,
     definitionToFlow,
     findFirstTaskValidationError,
     flowToDefinition,
@@ -61,6 +63,8 @@ import {
 import { TriggerConfigDialog } from '@/features/workflow-studio/task-config/TriggerConfigDialog';
 import { AssignIntegrationDialog } from '@/features/workflow-studio/AssignIntegrationDialog';
 import { UseCaseInsightsSheet } from '@/features/integrations/components/UseCaseInsightsSheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { WorkflowFormSubmissionsPanel } from '@/features/forms/WorkflowFormSubmissionsPanel';
 
 export type StudioMode = 'design' | 'inspect';
 
@@ -86,6 +90,7 @@ export default function WorkflowStudioPage() {
     const [triggerDialogOpen, setTriggerDialogOpen] = useState(false);
     const [assignIntegrationOpen, setAssignIntegrationOpen] = useState(false);
     const [useCaseInsightsOpen, setUseCaseInsightsOpen] = useState(false);
+    const [formSubmissionsOpen, setFormSubmissionsOpen] = useState(false);
     const [configDraft, setConfigDraft] = useState<TaskNodeData | null>(null);
     const [pendingBranchWire, setPendingBranchWire] = useState<{
         sourceTaskId: string;
@@ -97,6 +102,7 @@ export default function WorkflowStudioPage() {
 
     const skipNextLoadRef = useRef(false);
     const loadGenerationRef = useRef(0);
+    const persistGenerationRef = useRef(0);
     const allowNavigationRef = useRef(false);
 
     const { nodes, edges, onNodesChange, onEdgesChange, setCanvasState, resetCanvas } =
@@ -237,6 +243,16 @@ export default function WorkflowStudioPage() {
         });
     }, [configDraft, configOpen, nodes]);
 
+    const canvasValidationSignature = useMemo(
+        () => buildCanvasValidationSignature(canvasNodes, edges),
+        [canvasNodes, edges],
+    );
+
+    const canvasTopologyFingerprint = useMemo(
+        () => buildCanvasTopologyFingerprint(nodes, edges),
+        [nodes, edges],
+    );
+
     const taskValidationErrors = useMemo(() => {
         const syncedNodes = syncAllIteratorLoopBodies(canvasNodes, edges);
         const workflowTasks = getTaskNodes(syncedNodes).map((node) => ({
@@ -262,7 +278,7 @@ export default function WorkflowStudioPage() {
             }
         }
         return errorsByTaskId;
-    }, [canvasNodes, creatingTask?.taskId, taskOrderForConfig, workflowTasksForConfig]);
+    }, [canvasValidationSignature, creatingTask?.taskId, taskOrderForConfig, workflowTasksForConfig]);
 
     const markDirty = useCallback(() => setIsDirty(true), []);
 
@@ -743,6 +759,14 @@ export default function WorkflowStudioPage() {
                 nextEdges = result.edges;
             } else {
                 nextNodes = updateTaskInChain(nodes, updated.taskId, updated);
+                const withIteratorSync = syncAllIteratorLoopBodies(nextNodes, nextEdges);
+                setCanvasState({ nodes: withIteratorSync, edges: nextEdges });
+                setCreatingTask(null);
+                setPendingBranchWire(null);
+                setPendingEdgeInsert(null);
+                setSelectedTaskId(updated.taskId);
+                markDirty();
+                return;
             }
 
             const synced = syncWorkflowLayout(nextNodes, nextEdges);
@@ -835,11 +859,18 @@ export default function WorkflowStudioPage() {
     }, [markDirty]);
 
     const handleSave = async () => {
-        const validationError = findFirstTaskValidationError(nodes, edges);
+        if (isSaving || isRunning) {
+            return;
+        }
+        const validationError = findFirstTaskValidationError(nodes, edges, {
+            creatingTaskId: creatingTask?.taskId ?? null,
+        });
         if (validationError) {
             setMessage(validationError);
             return;
         }
+
+        const generation = ++persistGenerationRef.current;
 
         try {
             setIsSaving(true);
@@ -849,6 +880,9 @@ export default function WorkflowStudioPage() {
             const saved = persistedId
                 ? await workflowApi.update(persistedId, definition)
                 : await workflowApi.create(definition);
+            if (generation !== persistGenerationRef.current) {
+                return;
+            }
             const savedId = saved.id ?? persistedId ?? null;
             setWorkflowId(savedId);
             setSavedDefinition(saved);
@@ -863,16 +897,25 @@ export default function WorkflowStudioPage() {
             console.error('Save failed', error);
             setMessage(getApiErrorMessage(error, 'Failed to save workflow'));
         } finally {
-            setIsSaving(false);
+            if (generation === persistGenerationRef.current) {
+                setIsSaving(false);
+            }
         }
     };
 
     const handleRun = async () => {
-        const validationError = findFirstTaskValidationError(nodes, edges);
+        if (isSaving || isRunning) {
+            return;
+        }
+        const validationError = findFirstTaskValidationError(nodes, edges, {
+            creatingTaskId: creatingTask?.taskId ?? null,
+        });
         if (validationError) {
             setMessage(validationError);
             return;
         }
+
+        const generation = ++persistGenerationRef.current;
 
         try {
             setIsRunning(true);
@@ -883,9 +926,13 @@ export default function WorkflowStudioPage() {
                 const saved = id
                     ? await workflowApi.update(id, definition)
                     : await workflowApi.create(definition);
+                if (generation !== persistGenerationRef.current) {
+                    return;
+                }
                 id = saved.id ?? id ?? null;
                 setWorkflowId(id);
                 setSavedDefinition(saved);
+                applyDefinition(saved);
                 setIsDirty(false);
                 if (isNew && id) {
                     skipNextLoadRef.current = true;
@@ -905,9 +952,13 @@ export default function WorkflowStudioPage() {
             console.error('Run failed', error);
             setMessage(getApiErrorMessage(error, 'Failed to run workflow'));
         } finally {
-            setIsRunning(false);
+            if (generation === persistGenerationRef.current) {
+                setIsRunning(false);
+            }
         }
     };
+
+    const isFormWorkflow = savedDefinition?.trigger?.type === 'FORM';
 
     if (isLoading) {
         return (
@@ -939,6 +990,8 @@ export default function WorkflowStudioPage() {
                         : undefined
                 }
                 hasIntegration={!!savedDefinition?.integrationId}
+                showFormSubmissions={isFormWorkflow && !!workflowId}
+                onOpenFormSubmissions={() => setFormSubmissionsOpen(true)}
             />
 
             {message && (
@@ -970,6 +1023,7 @@ export default function WorkflowStudioPage() {
                         key={workflowId ?? routeId ?? 'studio'}
                         nodes={canvasNodes}
                         edgeTopologyNodes={nodes}
+                        topologyFingerprint={canvasTopologyFingerprint}
                         chainEdges={edges}
                         triggerConfig={savedDefinition?.trigger}
                         taskValidationErrors={taskValidationErrors}
@@ -1055,6 +1109,17 @@ export default function WorkflowStudioPage() {
                     open={useCaseInsightsOpen}
                     onOpenChange={setUseCaseInsightsOpen}
                 />
+            ) : null}
+
+            {workflowId ? (
+                <Sheet open={formSubmissionsOpen} onOpenChange={setFormSubmissionsOpen}>
+                    <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
+                        <SheetHeader>
+                            <SheetTitle>Form submissions</SheetTitle>
+                        </SheetHeader>
+                        <WorkflowFormSubmissionsPanel workflowDefinitionId={workflowId} />
+                    </SheetContent>
+                </Sheet>
             ) : null}
 
             <ConfirmDialog

@@ -226,9 +226,10 @@ public class AgentsTaskExecutor implements TaskExecutor {
         int loopCount = 0;
         int[] mcpCallCount = new int[]{0};
         boolean pendingToolContinuation = false;
+        boolean toolCallsNotExecuted = false;
 
-        Integer promptTokens = 0;
-        Integer completionTokens = 0;
+        int[] promptTokensHolder = new int[]{0};
+        int[] completionTokensHolder = new int[]{0};
         String finalGeneratedText = "";
         Map<String, Object> lastResponseBody = null;
         boolean isStream = Boolean.TRUE.equals(params.getStream());
@@ -261,13 +262,21 @@ public class AgentsTaskExecutor implements TaskExecutor {
                         try {
                             LlmStreamChunk chunk = adapter.parseStreamChunk(line);
                             if (chunk != null) {
+                                if (chunk.getPromptTokens() != null) {
+                                    promptTokensHolder[0] = chunk.getPromptTokens();
+                                }
+                                if (chunk.getCompletionTokens() != null) {
+                                    completionTokensHolder[0] = chunk.getCompletionTokens();
+                                }
                                 if (chunk.getText() != null) {
                                     accumulatedText.append(chunk.getText());
                                     eventPublisher.publish(ExecutionEvent.chunk(execution.getId(), task.getTaskId(), chunk.getText()));
                                 }
                                 if (chunk.getToolCalls() != null) {
                                     for (ObjectNode tcDelta : chunk.getToolCalls()) {
-                                        int index = tcDelta.get("index").asInt();
+                                        int index = tcDelta.has("index") && !tcDelta.get("index").isNull()
+                                                ? tcDelta.get("index").asInt()
+                                                : toolCalls.size();
                                         while (toolCalls.size() <= index) {
                                             toolCalls.add(objectMapper.createObjectNode());
                                         }
@@ -302,6 +311,7 @@ public class AgentsTaskExecutor implements TaskExecutor {
                         
                         boolean executedAny = executeTools(toolCalls, params.getTools(), execution, context, messages, mcpContext, mcpCallCount);
                         if (!executedAny) {
+                            toolCallsNotExecuted = true;
                             pendingToolContinuation = false;
                             break;
                         }
@@ -316,8 +326,12 @@ public class AgentsTaskExecutor implements TaskExecutor {
                     LlmResponse llmResponse = adapter.parseResponse(response.body());
                     lastResponseBody = llmResponse.getRawResponseBody();
                     
-                    if (llmResponse.getPromptTokens() != null) promptTokens += llmResponse.getPromptTokens();
-                    if (llmResponse.getCompletionTokens() != null) completionTokens += llmResponse.getCompletionTokens();
+                    if (llmResponse.getPromptTokens() != null) {
+                        promptTokensHolder[0] += llmResponse.getPromptTokens();
+                    }
+                    if (llmResponse.getCompletionTokens() != null) {
+                        completionTokensHolder[0] += llmResponse.getCompletionTokens();
+                    }
 
                     if (llmResponse.getToolCalls() != null && !llmResponse.getToolCalls().isEmpty()) {
                         ObjectNode assistantMsg = objectMapper.createObjectNode();
@@ -331,6 +345,7 @@ public class AgentsTaskExecutor implements TaskExecutor {
 
                         boolean executedAny = executeTools(llmResponse.getToolCalls(), params.getTools(), execution, context, messages, mcpContext, mcpCallCount);
                         if (!executedAny) {
+                            toolCallsNotExecuted = true;
                             pendingToolContinuation = false;
                             break;
                         }
@@ -351,10 +366,15 @@ public class AgentsTaskExecutor implements TaskExecutor {
         }
 
         boolean loopExhausted = pendingToolContinuation && loopCount >= maxLoops;
-        String warning = loopExhausted
-                ? "Agent loop limit (" + maxLoops + ") reached while the model requested additional tool calls"
-                : null;
+        String warning = null;
+        if (loopExhausted) {
+            warning = "Agent loop limit (" + maxLoops + ") reached while the model requested additional tool calls";
+        } else if (toolCallsNotExecuted) {
+            warning = "Model requested tool calls but no agent tools were configured or executed";
+        }
 
+        int promptTokens = promptTokensHolder[0];
+        int completionTokens = completionTokensHolder[0];
         AgentsTaskExecutionData executionData = AgentsTaskExecutionData.builder()
                 .modelUsed(model)
                 .promptTokens(promptTokens)
@@ -381,7 +401,28 @@ public class AgentsTaskExecutor implements TaskExecutor {
         boolean executedAny = false;
         for (ObjectNode tc : toolCalls) {
             String toolCallId = tc.has("id") ? tc.get("id").asText() : "call_" + System.currentTimeMillis();
-            ObjectNode func = (ObjectNode) tc.get("function");
+            JsonNode funcNode = tc.get("function");
+            if (funcNode == null || !funcNode.isObject()) {
+                log.warn("Tool call {} missing function payload", toolCallId);
+                ObjectNode toolMessage = objectMapper.createObjectNode();
+                toolMessage.put("role", "tool");
+                toolMessage.put("tool_call_id", toolCallId);
+                toolMessage.put("content", "Error: Invalid tool call from model (missing function).");
+                messages.add(toolMessage);
+                executedAny = true;
+                continue;
+            }
+            ObjectNode func = (ObjectNode) funcNode;
+            if (!func.has("name") || func.get("name").isNull() || func.get("name").asText().isBlank()) {
+                log.warn("Tool call {} missing function name", toolCallId);
+                ObjectNode toolMessage = objectMapper.createObjectNode();
+                toolMessage.put("role", "tool");
+                toolMessage.put("tool_call_id", toolCallId);
+                toolMessage.put("content", "Error: Invalid tool call from model (missing tool name).");
+                messages.add(toolMessage);
+                executedAny = true;
+                continue;
+            }
             String name = func.get("name").asText();
             String arguments = func.has("arguments") ? func.get("arguments").asText() : "{}";
             

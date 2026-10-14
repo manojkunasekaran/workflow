@@ -1,7 +1,9 @@
 package com.app.api.service;
 
 import com.app.api.dto.HumanTaskResponse;
+import com.app.api.service.organization.OrganizationAccess;
 import com.app.common.constant.ExecutionType;
+import com.app.common.constant.TaskExecutionStatus;
 import com.app.common.constant.WorkflowExecutionStatus;
 import com.app.common.entity.WorkflowExecution;
 import com.app.common.entity.WorkflowTaskExecution;
@@ -40,6 +42,7 @@ public class WorkflowExecutionService {
     private final ExecutionSyncWaiter syncWaiter;
     private final HumanTaskResponseService humanTaskResponseService;
     private final WorkflowApiProperties properties;
+    private final OrganizationAccess organizationAccess;
 
     public WorkflowExecutionService(
             WorkflowExecutionRepository executionRepository,
@@ -48,7 +51,8 @@ public class WorkflowExecutionService {
             ExecutionMessageDispatcherRegistry messageDispatcherRegistry,
             ExecutionSyncWaiter syncWaiter,
             HumanTaskResponseService humanTaskResponseService,
-            WorkflowApiProperties properties) {
+            WorkflowApiProperties properties,
+            OrganizationAccess organizationAccess) {
         this.executionRepository = executionRepository;
         this.definitionRepository = definitionRepository;
         this.taskExecutionRepository = taskExecutionRepository;
@@ -56,6 +60,7 @@ public class WorkflowExecutionService {
         this.syncWaiter = syncWaiter;
         this.humanTaskResponseService = humanTaskResponseService;
         this.properties = properties;
+        this.organizationAccess = organizationAccess;
     }
 
     /**
@@ -67,6 +72,47 @@ public class WorkflowExecutionService {
         return triggerExecution(definitionId, inputs, executionType, TriggerType.MANUAL);
     }
 
+    public WorkflowExecution triggerExecutionForOrganization(
+            String definitionId,
+            String organizationId,
+            Map<String, VariableValue> inputs,
+            ExecutionType executionType,
+            TriggerType triggeredBy) {
+        var definition = definitionRepository.findByIdAndOrganizationId(definitionId, organizationId)
+                .orElseThrow(() -> new ResourceNotFoundException("WorkflowDefinition", definitionId));
+
+        WorkflowExecution execution = createQueuedExecution(definition, executionType, inputs, triggeredBy);
+        messageDispatcherRegistry.dispatch(executionType, execution.getId());
+        return execution;
+    }
+
+    public void resumeAfterFormStep(String executionId, String taskExecutionId) {
+        WorkflowExecution execution = executionRepository.findById(executionId)
+                .orElseThrow(() -> new ResourceNotFoundException("WorkflowExecution", executionId));
+
+        WorkflowTaskExecution taskExecution = taskExecutionRepository.findById(taskExecutionId)
+                .orElseThrow(() -> new ResourceNotFoundException("WorkflowTaskExecution", taskExecutionId));
+
+        if (!"FORM_PAGE".equals(taskExecution.getTaskType())) {
+            throw new ValidationException("Task is not a FORM_PAGE");
+        }
+        if (!TaskExecutionStatus.COMPLETED.equals(taskExecution.getStatus())) {
+            throw new ValidationException("Form step has not been submitted");
+        }
+        if (!WorkflowExecutionStatus.PAUSED.equals(execution.getStatus())) {
+            throw new ValidationException(
+                    "Execution is not PAUSED, current: " + execution.getStatus());
+        }
+        if (!taskExecution.getTaskDefinitionId().equals(execution.getCurrentTaskId())) {
+            throw new ValidationException("Task does not match the execution's current task");
+        }
+
+        execution.setStatus(WorkflowExecutionStatus.QUEUED);
+        execution.setEndTime(null);
+        executionRepository.save(execution);
+        messageDispatcherRegistry.dispatch(execution.getExecutionType(), executionId);
+    }
+
     /**
      * Trigger a workflow execution with an explicit trigger source.
      * This is the single entry-point used by the API controller, webhook controller,
@@ -75,7 +121,8 @@ public class WorkflowExecutionService {
     public WorkflowExecution triggerExecution(
             String definitionId, Map<String, VariableValue> inputs,
             ExecutionType executionType, TriggerType triggeredBy) {
-        var definition = definitionRepository.findById(definitionId)
+        var definition = definitionRepository.findByIdAndOrganizationId(
+                        definitionId, organizationAccess.requireOrganizationId())
                 .orElseThrow(() -> new ResourceNotFoundException("WorkflowDefinition", definitionId));
 
         WorkflowExecution execution = createQueuedExecution(
@@ -95,7 +142,8 @@ public class WorkflowExecutionService {
             Map<String, VariableValue> inputs,
             TriggerType triggeredBy,
             long timeoutSeconds) {
-        var definition = definitionRepository.findById(definitionId)
+        var definition = definitionRepository.findByIdAndOrganizationId(
+                        definitionId, organizationAccess.requireOrganizationId())
                 .orElseThrow(() -> new ResourceNotFoundException("WorkflowDefinition", definitionId));
 
         WorkflowExecution execution = createQueuedExecution(
@@ -113,6 +161,7 @@ public class WorkflowExecutionService {
         WorkflowExecution execution = new WorkflowExecution();
         execution.setWorkflowId(definitionId);
         execution.setWorkflowDefinitionId(definitionId);
+        execution.setOrganizationId(organizationAccess.requireOrganizationId());
         execution.setExecutionType(ExecutionType.SYNC);
         execution.setTargetTaskId(targetTaskId);
         execution.setTriggeredBy(TriggerType.MANUAL);
@@ -139,6 +188,7 @@ public class WorkflowExecutionService {
         WorkflowExecution execution = new WorkflowExecution();
         execution.setWorkflowId(definitionId);
         execution.setWorkflowDefinitionId(definitionId);
+        execution.setOrganizationId(definition.getOrganizationId());
         execution.setExecutionType(executionType);
         execution.setTriggeredBy(triggeredBy != null ? triggeredBy : TriggerType.MANUAL);
         execution.setStatus(WorkflowExecutionStatus.QUEUED);
@@ -153,12 +203,15 @@ public class WorkflowExecutionService {
     }
 
     public Page<WorkflowExecution> getAllExecutions(Pageable pageable) {
-        return executionRepository.findAll(pageable);
+        return executionRepository.findByOrganizationIdAndTargetTaskIdIsNull(
+                organizationAccess.requireOrganizationId(), pageable);
     }
 
     public WorkflowExecution getExecutionById(String id) {
-        return executionRepository.findById(id)
+        WorkflowExecution execution = executionRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("WorkflowExecution", id));
+        organizationAccess.assertSameOrganization(execution.getOrganizationId());
+        return execution;
     }
 
     public List<WorkflowTaskExecution> getTaskExecutions(String id) {

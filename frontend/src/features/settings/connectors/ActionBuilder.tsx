@@ -13,14 +13,7 @@ import {
     type ConnectorPresetViewMode,
 } from './ConnectorPresetListToolbar';
 import { cn } from '@/lib/utils';
-
-const METHOD_STYLES: Record<string, string> = {
-    GET:    'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20',
-    POST:   'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20',
-    PUT:    'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20',
-    PATCH:  'bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20',
-    DELETE: 'bg-destructive/10 text-destructive border border-destructive/20',
-};
+import { httpMethodBadgeClass } from './httpMethodBadgeStyles';
 
 interface ActionBuilderProps {
     actions: ConnectorAction[];
@@ -129,7 +122,7 @@ export default function ActionBuilder({ actions, onChange, readOnly = false }: A
                                     viewMode === 'grid' ? 'flex flex-col gap-2' : 'flex items-center gap-3',
                                 )}
                             >
-                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold tracking-wider ${METHOD_STYLES[action.method] || METHOD_STYLES.GET}`}>
+                                <span className={cn('px-2 py-0.5 rounded text-[10px] font-bold tracking-wider', httpMethodBadgeClass(action.method))}>
                                     {action.method}
                                 </span>
                                 <div className="flex flex-col truncate">

@@ -18,6 +18,9 @@ import {
 } from '@/components/ui/tooltip';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { OrganizationSwitcher } from '@/organization/OrganizationSwitcher';
+import { isSignedIn, useAuthStore } from '@/auth/authStore';
+import { Button } from '@/components/ui/button';
 
 const items = [
     { title: 'Home', url: '/', icon: Home },
@@ -56,6 +59,15 @@ function SidebarCollapseButton() {
 
 export function AppSidebar() {
     const location = useLocation();
+    const me = useAuthStore((s) => s.me);
+    const logout = useAuthStore((s) => s.logout);
+    const signedIn = isSignedIn(me);
+    const displayName = signedIn ? (me?.displayName || me?.email || 'User') : 'Not signed in';
+    const subtitle = signedIn
+        ? me?.platformAdmin
+            ? 'Platform admin'
+            : 'Member'
+        : '';
 
     return (
         <Sidebar collapsible="icon">
@@ -105,23 +117,51 @@ export function AppSidebar() {
                 </SidebarGroup>
             </SidebarContent>
 
+            <OrganizationSwitcher />
+
             <SidebarFooter className="border-t border-sidebar-border">
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton
                             size="lg"
                             className="cursor-default"
-                            tooltip="Guest User · Member"
+                            tooltip={`${displayName} · ${subtitle}`}
                         >
-                            <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-sidebar-accent ring-1 ring-sidebar-border">
-                                <User className="size-4" />
-                            </div>
+                            {signedIn && me?.pictureUrl ? (
+                                <img
+                                    src={me.pictureUrl}
+                                    alt=""
+                                    className="size-8 shrink-0 rounded-full object-cover ring-1 ring-sidebar-border"
+                                />
+                            ) : (
+                                <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-sidebar-accent ring-1 ring-sidebar-border">
+                                    <User className="size-4" />
+                                </div>
+                            )}
                             <div className="grid min-w-0 flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
-                                <span className="truncate font-medium">Guest User</span>
-                                <span className="truncate text-xs text-muted-foreground">Member</span>
+                                <span className="truncate font-medium">{displayName}</span>
+                                <span className="truncate text-xs text-muted-foreground">{subtitle}</span>
                             </div>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
+                    {signedIn ? (
+                        <SidebarMenuItem className="group-data-[collapsible=icon]:hidden px-2 pb-2">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="w-full"
+                                data-testid="sign-out-btn"
+                                onClick={() => {
+                                    void logout().then(() => {
+                                        window.location.href = '/login';
+                                    });
+                                }}
+                            >
+                                Sign out
+                            </Button>
+                        </SidebarMenuItem>
+                    ) : null}
                 </SidebarMenu>
             </SidebarFooter>
         </Sidebar>

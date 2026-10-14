@@ -6,7 +6,7 @@ import { PageHeader } from '@/layouts/PageHeader';
 import { Button } from '@/components/ui/button';
 
 interface ConnectorsPageProps {
-    scope?: 'SYSTEM' | 'TENANT';
+    scope?: 'SYSTEM' | 'ORGANIZATION';
 }
 
 export default function ConnectorsPage({ scope }: ConnectorsPageProps) {

@@ -1,6 +1,8 @@
 package com.app.common.connector;
 
 public enum ConnectorScope {
+    /** Platform-wide connector definition. */
     SYSTEM,
-    TENANT
+    /** Organization-specific connector override or custom app. */
+    ORGANIZATION
 }

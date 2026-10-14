@@ -17,5 +17,7 @@ public enum TaskType {
     MONGO_TASK,
     REDIS_TASK,
     NEO4J_TASK,
-    MCP_TOOL;
+    MCP_TOOL,
+    FORM_PAGE,
+    FORM_END;
 }

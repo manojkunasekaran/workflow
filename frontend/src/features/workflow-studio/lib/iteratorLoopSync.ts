@@ -2,10 +2,7 @@ import type { Edge } from '@xyflow/react';
 import type { WorkflowDefinition, WorkflowTask } from '@/types/api';
 import { BRANCH_LAYOUT } from '@/features/workflow-studio/constants/studioCanvas';
 import { migrateHumanTasksForCanvas } from '@/features/workflow-studio/task-type-schema/humanTask';
-import {
-    migrateIteratorTasksForCanvas,
-    restoreIteratorDoneFromLayout,
-} from '@/features/workflow-studio/task-type-schema/iteratorTask';
+import { restoreIteratorDoneFromLayout } from '@/features/workflow-studio/task-type-schema/iteratorTask';
 import { getTaskNodes, type StudioCanvasNode } from '@/features/workflow-studio/lib/canvasNodeUtils';
 import { ITER_LOOP_OUT } from '@/features/workflow-studio/lib/graphHandles';
 import { isBranchChainEdgeId } from '@/features/workflow-studio/lib/graphHandles';
@@ -164,13 +161,12 @@ export function buildIteratorLoopChainEdges(chainTaskIds: string[]): Edge[] {
 export function expandDefinitionForCanvas(definition: WorkflowDefinition): WorkflowDefinition {
     const withHumanRoutes = migrateHumanTasksForCanvas(definition);
     const withDoneRestored = restoreIteratorDoneFromLayout(withHumanRoutes);
-    const withLoopRoutes = migrateIteratorTasksForCanvas(withDoneRestored);
-    const topLevelIds = new Set(withLoopRoutes.tasks.map((task) => task.taskId));
+    const topLevelIds = new Set(withDoneRestored.tasks.map((task) => task.taskId));
     const extraTasks: WorkflowTask[] = [];
-    const layout = { ...(withLoopRoutes.layout ?? {}) };
-    const hasPersistedLayout = Object.keys(withLoopRoutes.layout ?? {}).length > 0;
+    const layout = { ...(withDoneRestored.layout ?? {}) };
+    const hasPersistedLayout = Object.keys(withDoneRestored.layout ?? {}).length > 0;
 
-    for (const task of withLoopRoutes.tasks) {
+    for (const task of withDoneRestored.tasks) {
         if (task.type !== 'ITERATOR_TASK') continue;
         const actions = parseIteratorActions(task.parameters?.actions);
         if (actions.length === 0) continue;
@@ -211,12 +207,12 @@ export function expandDefinitionForCanvas(definition: WorkflowDefinition): Workf
         }
     }
 
-    if (extraTasks.length === 0) return withLoopRoutes;
+    if (extraTasks.length === 0) return withDoneRestored;
 
     return {
-        ...withLoopRoutes,
-        tasks: [...withLoopRoutes.tasks, ...extraTasks],
-        layout: hasPersistedLayout ? layout : withLoopRoutes.layout,
+        ...withDoneRestored,
+        tasks: [...withDoneRestored.tasks, ...extraTasks],
+        layout: hasPersistedLayout ? layout : withDoneRestored.layout,
     };
 }
 

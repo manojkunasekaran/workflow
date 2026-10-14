@@ -76,13 +76,14 @@ const MOCK_TASK_EXECUTIONS = [
 const headers = { 'Access-Control-Allow-Origin': '*' };
 
 async function mockExecutionApis(page: Page) {
-  await page.route(
-    '**/rest/executions',
-    (route) => route.fulfill({ json: MOCK_EXECUTIONS_PAGE, headers }),
+  await page.route(/\/rest\/executions(\?|$)/, (route) =>
+    route.fulfill({ json: MOCK_EXECUTIONS_PAGE, headers }),
   );
-  await page.route(
-    '**/rest/workflows',
-    (route) => route.fulfill({ json: MOCK_WORKFLOWS, headers }),
+  await page.route('**/rest/workflows/wf-001', (route) =>
+    route.fulfill({ json: MOCK_DEFINITION, headers }),
+  );
+  await page.route('**/rest/workflows', (route) =>
+    route.fulfill({ json: MOCK_WORKFLOWS, headers }),
   );
 }
 
@@ -149,7 +150,7 @@ test.describe('Executions List Page', () => {
       await mockExecutionApis(page);
       await page.goto('/executions');
       // exec-002 is FAILED and its taskExecutionSummary has task_http as FAILED
-      await expect(page.getByTestId('execution-failed-step-exec-002')).toHaveText('task_http');
+      await expect(page.getByTestId('execution-failed-step-exec-002')).toContainText('HTTP');
     });
 
     test('[Happy] clicking a row should navigate to execution detail', async ({ page }) => {

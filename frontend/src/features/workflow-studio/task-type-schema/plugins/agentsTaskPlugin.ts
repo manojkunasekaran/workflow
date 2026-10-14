@@ -6,7 +6,7 @@ export const agentsTaskPlugin = defineTaskPlugin({
     type: 'AGENTS_TASK',
     label: 'AI Agent',
     icon: Bot,
-    accentColor: 'bg-purple-600',
+    accentColor: '#9333ea',
     defaultTaskId: 'agent_1',
     wiring: {
         outputs: [],

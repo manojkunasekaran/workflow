@@ -94,8 +94,31 @@ describe('Task Plugin Schemas & Validation Utils', () => {
     });
 
     it('G-012: static non-array value fails', () => {
+      const res = validateTaskParameters(iteratorTaskPlugin, {
+        loopOver: 'hello',
+        actions: [{ taskId: 't1', type: 'HTTP_TASK', parameters: { url: 'https://example.com' } }],
+      });
+      expect(res.valid).toBe(false);
+      expect(res.errors.loopOver).toBeTruthy();
+    });
+
+    it('G-012b: empty loopOver fails', () => {
       const res = validateTaskParameters(iteratorTaskPlugin, { loopOver: '' });
       expect(res.valid).toBe(false);
+    });
+
+    it('G-013b: execution summary uses successfulIterations from backend', () => {
+      const summary = iteratorTaskPlugin.executionSummary?.({
+        parameters: { loopOver: '[1,2,3]' },
+        executionData: {
+          totalIterations: 3,
+          successfulIterations: 3,
+          failedIterations: 0,
+        },
+        status: 'COMPLETED',
+        errorMessage: undefined,
+      });
+      expect(summary?.lines.find((l) => l.label === 'Progress')?.value).toBe('3 / 3');
     });
 
     it('G-013: {{$input.items}} expression passes', () => {

@@ -4,8 +4,9 @@ import { connectorApi, type ConnectorManifest } from '@/api/connectorApi';
 import type { IntegrationCredential } from '@/types/api';
 import { Button } from '@/components/ui/button';
 import { ErrorBanner } from '@/components/ui/error-banner';
-import { KeyRound, Plus, Server, ShieldCheck, Trash2, Edit2, Plug } from 'lucide-react';
+import { KeyRound, Plus, Trash2, Edit2 } from 'lucide-react';
 import { ConnectorConnectionPanel } from './ConnectorConnectionPanel';
+import { renderCredentialTypeIcon } from './credentialTypeIcon';
 import { EmptyState } from '@/components/ui/empty-state';
 import { LoaderState } from '@/components/ui/loader-state';
 import { SearchInput } from '@/components/ui/search-input';
@@ -105,19 +106,6 @@ export const CredentialsList = forwardRef<CredentialsListHandle, CredentialsList
         openCreate,
     }), [loadCredentials]);
 
-    const getTypeIcon = (type: string) => {
-        switch (type) {
-            case 'SMTP':
-                return <Server className="h-4 w-4 text-blue-500" />;
-            case 'BEARER_TOKEN':
-                return <KeyRound className="h-4 w-4 text-amber-500" />;
-            case 'MCP_SERVER':
-                return <Plug className="h-4 w-4 text-violet-500" />;
-            default:
-                return <ShieldCheck className="h-4 w-4 text-slate-500" />;
-        }
-    };
-
     const filteredCredentials = credentials.filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()) || c.type.toLowerCase().includes(searchQuery.toLowerCase()));
     const isAppScoped = Boolean(props.connectorId);
 
@@ -213,7 +201,7 @@ export const CredentialsList = forwardRef<CredentialsListHandle, CredentialsList
                                             </TableCell>
                                             <TableCell>
                                                 <div className="flex items-center gap-2">
-                                                    {getTypeIcon(cred.type)}
+                                                    {renderCredentialTypeIcon(cred.type)}
                                                     <span className="text-sm">{cred.type}</span>
                                                 </div>
                                             </TableCell>
@@ -225,7 +213,7 @@ export const CredentialsList = forwardRef<CredentialsListHandle, CredentialsList
                                                     <Edit2 className="h-4 w-4" />
                                                 </Button>
                                                 <Button variant="ghost" size="icon" onClick={() => handleDelete(cred.id)}>
-                                                    <Trash2 className="h-4 w-4 text-red-500" />
+                                                    <Trash2 className="h-4 w-4 text-destructive" />
                                                 </Button>
                                             </TableCell>
                                         </TableRow>
@@ -242,6 +230,9 @@ export const CredentialsList = forwardRef<CredentialsListHandle, CredentialsList
                 onOpenChange={setIsDialogOpen}
                 credential={selectedCred}
                 onSave={handleSave}
+                onOAuthSuccess={async () => {
+                    await loadCredentials();
+                }}
                 preselectedConnectorId={props.connectorId}
             />
         </div>

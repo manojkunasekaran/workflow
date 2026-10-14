@@ -1,22 +1,10 @@
-import { Edit2, Trash2, KeyRound, Server, ShieldCheck, Plug } from 'lucide-react';
+import { Edit2, Trash2 } from 'lucide-react';
+import { renderCredentialTypeIcon } from './credentialTypeIcon';
 import { Button } from '@/components/ui/button';
 import { type IntegrationCredential } from '@/types/api';
 import { type ConnectorManifest } from '@/api/connectorApi';
 import { ConnectorIconDisplay } from '@/features/integrations/components/ConnectorIconDisplay';
 
-
-const getTypeIcon = (type: string, className = "h-8 w-8") => {
-    switch (type) {
-        case 'SMTP':
-            return <Server className={`${className} text-blue-500`} />;
-        case 'BEARER_TOKEN':
-            return <KeyRound className={`${className} text-amber-500`} />;
-        case 'MCP_SERVER':
-            return <Plug className={`${className} text-violet-500`} />;
-        default:
-            return <ShieldCheck className={`${className} text-slate-500`} />;
-    }
-};
 
 export interface CredentialCardProps {
     credential: IntegrationCredential;
@@ -32,7 +20,7 @@ export function CredentialCard({ credential, connector, onEdit, onDelete }: Cred
                 {connector ? (
                     <ConnectorIconDisplay icon={connector.icon} name={connector.displayName} size="md" />
                 ) : (
-                    getTypeIcon(credential.type)
+                    renderCredentialTypeIcon(credential.type, 'h-8 w-8')
                 )}
                 <div className="flex flex-col">
                     <span className="font-bold text-base text-foreground leading-tight">{credential.name}</span>
@@ -46,7 +34,7 @@ export function CredentialCard({ credential, connector, onEdit, onDelete }: Cred
 
             <div className="mt-3">
                 <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium bg-muted text-muted-foreground">
-                    {connector && getTypeIcon(credential.type, "h-3 w-3")}
+                    {connector && renderCredentialTypeIcon(credential.type, 'h-3 w-3')}
                     {credential.type}
                 </span>
             </div>

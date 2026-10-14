@@ -45,7 +45,7 @@ public class AdminConnectorControllerTest {
         tenantManifest = new ConnectorManifest();
         tenantManifest.setId("ten-id");
         tenantManifest.setConnectorId("slack");
-        tenantManifest.setScope(ConnectorScope.TENANT);
+        tenantManifest.setScope(ConnectorScope.ORGANIZATION);
     }
 
     @Test

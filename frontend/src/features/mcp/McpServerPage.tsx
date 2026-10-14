@@ -214,8 +214,8 @@ export default function McpServerPage() {
                                                 </div>
 
                                                 {revealedToken && (
-                                                    <div className="rounded-md border border-amber-200 bg-amber-50 p-3 space-y-2">
-                                                        <div className="flex items-start gap-2 text-amber-800">
+                                                    <div className="rounded-md border border-warning/30 bg-warning-muted p-3 space-y-2">
+                                                        <div className="flex items-start gap-2 text-warning">
                                                             <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
                                                             <p className="text-xs">
                                                                 Copy this token now. It will not be shown again after you leave this page.

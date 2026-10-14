@@ -12,6 +12,9 @@ export const ITERATOR_NESTED_TYPES: StudioTaskType[] = [
     'DATA_TRANSFORM',
 ];
 
+/** Must match backend IteratorTaskConstraints.MAX_ITERATIONS */
+export const MAX_ITERATOR_ITERATIONS = 1000;
+
 export interface IteratorActionRow {
     taskId: string;
     type: StudioTaskType;
@@ -48,10 +51,35 @@ export function parseIteratorActions(value: unknown): IteratorActionRow[] {
 
         return {
             taskId: String(row.taskId ?? `loop_action_${index + 1}`),
-            type: ITERATOR_NESTED_TYPES.includes(type) ? type : 'HTTP_TASK',
+            type,
             parameters,
         };
     });
+}
+
+/** True when a static loopOver value cannot be iterated by the backend executor. */
+export function isInvalidStaticLoopOver(value: unknown): boolean {
+    const normalized = normalizeLoopOver(value);
+    if (normalized === undefined || normalized === null) {
+        return true;
+    }
+    if (typeof normalized === 'string') {
+        const trimmed = normalized.trim();
+        if (!trimmed) return true;
+        return !trimmed.includes('{{');
+    }
+    if (typeof normalized === 'number') {
+        return !Number.isFinite(normalized)
+            || normalized < 0
+            || normalized > MAX_ITERATOR_ITERATIONS;
+    }
+    if (Array.isArray(normalized)) {
+        return normalized.length > MAX_ITERATOR_ITERATIONS;
+    }
+    if (typeof normalized === 'object' && normalized !== null) {
+        return Object.keys(normalized as Record<string, unknown>).length > MAX_ITERATOR_ITERATIONS;
+    }
+    return true;
 }
 
 export function normalizeLoopOver(value: unknown): unknown {
@@ -132,17 +160,6 @@ export function restoreIteratorDoneFromLayout(
     return changed ? { ...definition, tasks } : definition;
 }
 
-function hasExplicitDoneRouting(
-    params: Record<string, unknown>,
-    layout: WorkflowDefinition['layout'],
-    taskId: string,
-): boolean {
-    if (readIteratorStudioDoneWire(layout, taskId) !== undefined) {
-        return true;
-    }
-    return Object.prototype.hasOwnProperty.call(params, 'doneNextTaskId');
-}
-
 function findWorkflowTask(context: TaskValidationContext | undefined, taskId: string) {
     return context?.workflowTasks.find((task) => task.taskId === taskId);
 }
@@ -162,39 +179,3 @@ export function validateLoopDonePath(
     }
 }
 
-/** Legacy linear workflows: infer Done wire from the next top-level task in the saved list. */
-export function migrateIteratorTasksForCanvas(definition: WorkflowDefinition): WorkflowDefinition {
-    const loopBodyIds = new Set<string>();
-    for (const task of definition.tasks) {
-        if (task.type !== 'ITERATOR_TASK') continue;
-        for (const action of parseIteratorActions(task.parameters?.actions)) {
-            loopBodyIds.add(action.taskId);
-        }
-    }
-
-    const layout = definition.layout ?? {};
-    let changed = false;
-    const tasks = definition.tasks.map((task, index, all) => {
-        if (task.type !== 'ITERATOR_TASK') return task;
-        const params = { ...(task.parameters as Record<string, unknown>) };
-        if (hasExplicitDoneRouting(params, layout, task.taskId)) {
-            return task;
-        }
-
-        for (let i = index + 1; i < all.length; i++) {
-            const next = all[i];
-            if (loopBodyIds.has(next.taskId)) continue;
-            changed = true;
-            return {
-                ...task,
-                parameters: injectParameterType('ITERATOR_TASK', {
-                    ...params,
-                    doneNextTaskId: next.taskId,
-                }),
-            };
-        }
-        return task;
-    });
-
-    return changed ? { ...definition, tasks } : definition;
-}

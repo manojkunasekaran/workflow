@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import ConnectorBuilder, { type ConnectorAutosaveState } from './ConnectorBuilder';
 import { ConnectorGeneralInfoCard } from './ConnectorGeneralInfoCard';
+import { ConnectorOAuthPlatformCard } from './ConnectorOAuthPlatformCard';
 import { EditConnectorGeneralDialog } from './EditConnectorGeneralDialog';
 import { connectorApi, type ConnectorManifest } from '@/api/connectorApi';
 import { PageHeader } from '@/layouts/PageHeader';
@@ -10,7 +11,7 @@ import { PageBreadcrumb } from '@/layouts/PageBreadcrumb';
 import { ErrorBanner } from '@/components/ui/error-banner';
 
 interface ConnectorBuilderPageProps {
-    scope: 'SYSTEM' | 'TENANT';
+    scope: 'SYSTEM' | 'ORGANIZATION';
 }
 
 export default function ConnectorBuilderPage({ scope }: ConnectorBuilderPageProps) {
@@ -156,6 +157,13 @@ export default function ConnectorBuilderPage({ scope }: ConnectorBuilderPageProp
                             connector={manifest}
                             onEdit={() => setGeneralDialogOpen(true)}
                         />
+
+                        {manifest.scope === 'SYSTEM' && manifest.authType === 'OAUTH2' ? (
+                            <ConnectorOAuthPlatformCard
+                                connectorId={manifest.connectorId}
+                                displayName={manifest.displayName}
+                            />
+                        ) : null}
 
                         <ConnectorBuilder
                             scope={scope}

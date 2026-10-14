@@ -47,15 +47,15 @@ const EMPTY_WORKFLOW = {
 };
 
 async function mockStudioApis(page: Page, workflow = WORKFLOW_WITH_SMTP) {
-    await page.route(`**/api/workflows/${workflow.id}`, (route) => {
-        if (route.request().method() === 'GET') {
+    await page.route(`**/rest/workflows/${workflow.id}`, (route) => {
+        if (route.request().method() === 'GET' || route.request().method() === 'PUT') {
             route.fulfill({ json: workflow });
         } else {
             route.fulfill({ json: { ...workflow } });
         }
     });
-    await page.route('**/api/executions/**', (route) =>
-        route.fulfill({ json: { id: 'exec-1', status: 'COMPLETED', tasks: [] } }),
+    await page.route('**/rest/executions**', (route) =>
+        route.fulfill({ json: { content: [], totalElements: 0 } }),
     );
 }
 
@@ -111,9 +111,9 @@ test.describe('SMTP Task Node — Config Dialog', () => {
         await smtpNode.click();
 
         // The config dialog should open — check for SMTP-specific fields
-        await expect(page.getByTestId('field-smtpHost')).toBeVisible();
-        await expect(page.getByTestId('field-to')).toBeVisible();
-        await expect(page.getByTestId('field-subject')).toBeVisible();
+        await expect(page.getByTestId('task-field-smtpHost')).toBeVisible();
+        await expect(page.getByTestId('task-field-to')).toBeVisible();
+        await expect(page.getByTestId('task-field-subject')).toBeVisible();
     });
 
     test('SMTP config dialog shows persisted values', async ({ page }) => {
@@ -124,10 +124,10 @@ test.describe('SMTP Task Node — Config Dialog', () => {
         await smtpNode.click();
 
         // The host value should be pre-filled from the saved definition
-        const hostInput = page.getByTestId('field-smtpHost');
+        const hostInput = page.getByTestId('task-field-smtpHost');
         await expect(hostInput).toHaveValue('smtp.gmail.com');
 
-        const toInput = page.getByTestId('field-to');
+        const toInput = page.getByTestId('task-field-to');
         await expect(toInput).toHaveValue('admin@myapp.com');
     });
 
@@ -139,12 +139,8 @@ test.describe('SMTP Task Node — Config Dialog', () => {
         const catalogToggle = page.getByRole('button', { name: /task catalog/i });
         await catalogToggle.click();
         await page.getByTestId('catalog-item-SMTP_TASK').click();
+        await expect(page.getByTestId('task-config-dialog')).toBeVisible();
 
-        // Try to save without filling required fields
-        const saveBtn = page.getByRole('button', { name: /save/i });
-        await saveBtn.click();
-
-        // Validation errors should appear
         await expect(page.getByText(/smtp host is required/i)).toBeVisible();
         await expect(page.getByText(/recipient.*required/i)).toBeVisible();
     });
@@ -156,78 +152,103 @@ test.describe('SMTP Task Node — Config Dialog', () => {
         const smtpNode = page.getByTestId('task-node-smtp_task_1');
         await smtpNode.click();
 
-        const passwordField = page.getByTestId('field-smtpPassword');
+        const passwordField = page.getByTestId('task-field-smtpPassword');
         await expect(passwordField).toHaveAttribute('placeholder', /\{\{/);
     });
 });
 
 test.describe('SMTP Task Node — Execution Summary', () => {
-    const EXECUTION_WITH_SMTP = {
-        id: 'exec-smtp-1',
-        status: 'COMPLETED',
+    const MOCK_SMTP_DEFINITION = {
+        id: 'wf-smtp-exec',
+        name: 'Alert Workflow',
         tasks: [
             {
                 taskId: 'smtp_task_1',
                 type: 'SMTP_TASK',
-                status: 'COMPLETED',
-                executionData: {
-                    taskType: 'SMTP_TASK',
-                    to: 'admin@myapp.com',
-                    subject: 'Workflow Alert',
-                    smtpHost: 'smtp.gmail.com',
-                    smtpPort: 587,
-                    fromAddress: 'alerts@myapp.com',
-                    status: 'SENT',
-                    sentAt: '2026-08-02T03:40:00Z',
-                },
+                parameters: WORKFLOW_WITH_SMTP.tasks[0].parameters,
             },
         ],
+        layout: {
+            'workflow-start': { x: 80, y: 240 },
+            smtp_task_1: { x: 280, y: 240 },
+        },
     };
 
+    const MOCK_SMTP_EXECUTION = {
+        id: 'exec-smtp-1',
+        workflowId: 'wf-smtp-exec',
+        status: 'COMPLETED',
+        startTime: '2026-08-02T03:40:00Z',
+        endTime: '2026-08-02T03:40:05Z',
+    };
+
+    const MOCK_SMTP_TASK_EXECUTIONS = [
+        {
+            id: 'te-smtp-1',
+            workflowExecutionId: 'exec-smtp-1',
+            taskDefinitionId: 'smtp_task_1',
+            taskType: 'SMTP_TASK',
+            status: 'COMPLETED',
+            executionData: {
+                taskType: 'SMTP_TASK',
+                to: 'admin@myapp.com',
+                subject: 'Workflow Alert',
+                smtpHost: 'smtp.gmail.com',
+                smtpPort: 587,
+                fromAddress: 'alerts@myapp.com',
+                status: 'SENT',
+                sentAt: '2026-08-02T03:40:00Z',
+            },
+        },
+    ];
+
+    async function mockSmtpExecutionApis(page: Page, taskExecutions = MOCK_SMTP_TASK_EXECUTIONS) {
+        await page.route('**/rest/executions/exec-smtp-1', (route) =>
+            route.fulfill({ json: MOCK_SMTP_EXECUTION }),
+        );
+        await page.route('**/rest/workflows/wf-smtp-exec', (route) =>
+            route.fulfill({ json: MOCK_SMTP_DEFINITION }),
+        );
+        await page.route('**/rest/executions/exec-smtp-1/tasks', (route) =>
+            route.fulfill({ json: taskExecutions }),
+        );
+        await page.route('**/rest/executions/exec-smtp-1/stream', (route) =>
+            route.fulfill({ status: 200, contentType: 'text/event-stream', body: '' }),
+        );
+    }
+
     test('execution summary shows SENT status with success styling', async ({ page }) => {
-        await page.route('**/api/executions/exec-smtp-1', (route) =>
-            route.fulfill({ json: EXECUTION_WITH_SMTP }),
-        );
-        await page.route('**/api/executions/exec-smtp-1/tasks', (route) =>
-            route.fulfill({ json: EXECUTION_WITH_SMTP.tasks }),
-        );
-
+        await mockSmtpExecutionApis(page);
         await page.goto('/executions/exec-smtp-1');
-        await page.getByTestId('task-step-smtp_task_1').click();
+        await expect(page.getByTestId('task-node-smtp_task_1')).toBeVisible({ timeout: 15_000 });
+        await page.getByTestId('task-node-smtp_task_1').click();
 
+        await expect(page.getByRole('dialog')).toBeVisible();
         await expect(page.getByText('SENT')).toBeVisible();
         await expect(page.getByText('admin@myapp.com')).toBeVisible();
         await expect(page.getByText('Workflow Alert')).toBeVisible();
     });
 
     test('execution summary shows error on failed send', async ({ page }) => {
-        const failedExecution = {
-            ...EXECUTION_WITH_SMTP,
-            status: 'FAILED',
-            tasks: [
-                {
-                    ...EXECUTION_WITH_SMTP.tasks[0],
+        const failedTasks = [
+            {
+                ...MOCK_SMTP_TASK_EXECUTIONS[0],
+                status: 'FAILED',
+                errorMessage: 'Connection refused: smtp.gmail.com:587',
+                executionData: {
+                    taskType: 'SMTP_TASK',
                     status: 'FAILED',
                     errorMessage: 'Connection refused: smtp.gmail.com:587',
-                    executionData: {
-                        taskType: 'SMTP_TASK',
-                        status: 'FAILED',
-                        errorMessage: 'Connection refused: smtp.gmail.com:587',
-                    },
                 },
-            ],
-        };
+            },
+        ];
 
-        await page.route('**/api/executions/exec-smtp-1', (route) =>
-            route.fulfill({ json: failedExecution }),
-        );
-        await page.route('**/api/executions/exec-smtp-1/tasks', (route) =>
-            route.fulfill({ json: failedExecution.tasks }),
-        );
-
+        await mockSmtpExecutionApis(page, failedTasks);
         await page.goto('/executions/exec-smtp-1');
-        await page.getByTestId('task-step-smtp_task_1').click();
+        await expect(page.getByTestId('task-node-smtp_task_1')).toBeVisible({ timeout: 15_000 });
+        await page.getByTestId('task-node-smtp_task_1').click();
 
+        await expect(page.getByRole('dialog')).toBeVisible();
         await expect(page.getByText(/connection refused/i)).toBeVisible();
     });
 });

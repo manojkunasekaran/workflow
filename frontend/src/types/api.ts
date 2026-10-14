@@ -1,3 +1,5 @@
+import type { FormTriggerConfig } from '@/types/form';
+
 export const TaskType = {
     HTTP_TASK: 'HTTP_TASK',
     SCRIPT_TASK: 'SCRIPT_TASK',
@@ -16,6 +18,8 @@ export const TaskType = {
     NEO4J_TASK: 'NEO4J_TASK',
     DB_TASK: 'DB_TASK',
     MCP_TOOL: 'MCP_TOOL',
+    FORM_PAGE: 'FORM_PAGE',
+    FORM_END: 'FORM_END',
 } as const;
 
 export type TaskType = typeof TaskType[keyof typeof TaskType];
@@ -50,7 +54,7 @@ export interface VariableValue {
     value?: unknown;
 }
 
-export type TriggerType = 'MANUAL' | 'WEBHOOK' | 'SCHEDULE' | 'POLL' | 'MCP';
+export type TriggerType = 'MANUAL' | 'WEBHOOK' | 'SCHEDULE' | 'POLL' | 'MCP' | 'FORM';
 
 export type McpResponseMode = 'TASK_OUTPUT' | 'EXECUTION_ID';
 
@@ -161,6 +165,7 @@ export interface TriggerConfig {
     schedule?: ScheduleConfig;
     poll?: PollConfig;
     mcp?: McpTriggerConfig;
+    form?: FormTriggerConfig;
 }
 
 export interface WorkflowDefinition {

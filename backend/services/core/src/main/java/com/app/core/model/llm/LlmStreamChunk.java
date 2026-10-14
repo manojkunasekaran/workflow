@@ -11,4 +11,7 @@ import java.util.List;
 public class LlmStreamChunk {
     private String text;
     private List<ObjectNode> toolCalls;
+    /** Present on providers that include usage in the final SSE chunk (e.g. OpenAI with stream_options). */
+    private Integer promptTokens;
+    private Integer completionTokens;
 }
