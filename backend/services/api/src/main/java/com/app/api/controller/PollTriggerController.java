@@ -5,6 +5,7 @@ import com.app.api.dto.PollReprocessResult;
 import com.app.api.dto.PollStateResponse;
 import com.app.api.dto.PollTestResult;
 import com.app.api.service.poll.PollExecutionService;
+import com.app.api.service.organization.OrganizationAccess;
 import com.app.common.entity.TriggerPollLog;
 import com.app.common.entity.WorkflowDefinition;
 import com.app.common.exception.ResourceNotFoundException;
@@ -28,6 +29,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * Poll trigger test and state endpoints.
+ *
+ * <p>All operations are scoped to the caller's active organization via
+ * {@link OrganizationAccess#assertSameOrganization} to prevent cross-tenant IDOR.
  */
 @RestController
 @RequestMapping("/workflows/{id}/trigger/poll")
@@ -36,23 +40,20 @@ public class PollTriggerController {
 
     private final WorkflowDefinitionRepository definitionRepository;
     private final PollExecutionService pollExecutionService;
+    private final OrganizationAccess organizationAccess;
 
     @PostMapping("/test")
     public ResponseEntity<PollTestResult> testPoll(@PathVariable("id") String workflowId) {
-        WorkflowDefinition definition = definitionRepository.findById(workflowId)
-                .orElseThrow(() -> new ResourceNotFoundException("WorkflowDefinition", workflowId));
+        WorkflowDefinition definition = requireDefinitionInOrganization(workflowId);
         validatePollTrigger(definition);
-
         PollTestResult result = pollExecutionService.testPoll(workflowId);
         return ResponseEntity.status(HttpStatus.OK).body(result);
     }
 
     @GetMapping("/state")
     public PollStateResponse getPollState(@PathVariable("id") String workflowId) {
-        WorkflowDefinition definition = definitionRepository.findById(workflowId)
-                .orElseThrow(() -> new ResourceNotFoundException("WorkflowDefinition", workflowId));
+        WorkflowDefinition definition = requireDefinitionInOrganization(workflowId);
         validatePollTrigger(definition);
-
         return pollExecutionService.getPollState(workflowId);
     }
 
@@ -60,10 +61,8 @@ public class PollTriggerController {
     public PollReprocessResult reprocessPoll(
             @PathVariable("id") String workflowId,
             @RequestBody PollReprocessRequest request) {
-        WorkflowDefinition definition = definitionRepository.findById(workflowId)
-                .orElseThrow(() -> new ResourceNotFoundException("WorkflowDefinition", workflowId));
+        WorkflowDefinition definition = requireDefinitionInOrganization(workflowId);
         validatePollTrigger(definition);
-
         return pollExecutionService.reprocessItems(workflowId, request);
     }
 
@@ -71,11 +70,21 @@ public class PollTriggerController {
     public Page<TriggerPollLog> getPollLogs(
             @PathVariable("id") String workflowId,
             @PageableDefault(size = 20, sort = "polledAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        WorkflowDefinition definition = requireDefinitionInOrganization(workflowId);
+        validatePollTrigger(definition);
+        return pollExecutionService.getPollLogs(workflowId, pageable);
+    }
+
+    /**
+     * Fetches the workflow definition and asserts it belongs to the caller's active organization.
+     * Throws {@link ResourceNotFoundException} if not found or if the organization does not match
+     * (the org-mismatch case deliberately returns 404 to prevent ID enumeration).
+     */
+    private WorkflowDefinition requireDefinitionInOrganization(String workflowId) {
         WorkflowDefinition definition = definitionRepository.findById(workflowId)
                 .orElseThrow(() -> new ResourceNotFoundException("WorkflowDefinition", workflowId));
-        validatePollTrigger(definition);
-
-        return pollExecutionService.getPollLogs(workflowId, pageable);
+        organizationAccess.assertSameOrganization(definition.getOrganizationId());
+        return definition;
     }
 
     private void validatePollTrigger(WorkflowDefinition definition) {

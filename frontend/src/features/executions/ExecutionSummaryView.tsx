@@ -7,8 +7,8 @@ interface ExecutionSummaryViewProps {
 
 const toneClass: Record<NonNullable<ExecutionSummaryLine['tone']>, string> = {
     default: 'text-foreground',
-    success: 'text-green-700',
-    warning: 'text-amber-700',
+    success: 'text-success',
+    warning: 'text-warning',
     danger: 'text-destructive',
 };
 

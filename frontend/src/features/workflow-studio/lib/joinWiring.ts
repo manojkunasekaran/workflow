@@ -298,9 +298,11 @@ export function stripLegacyBranchNextTaskId(nodes: StudioCanvasNode[]): StudioCa
     const next = nodes.map((node) => {
         if (node.type !== 'task' || (node.data as TaskNodeData).type !== 'BRANCH') return node;
         const branchData = node.data as TaskNodeData;
-        if (branchData.parameters.nextTaskId == null) return node;
+        if (branchData.parameters.nextTaskId == null && !('joinTaskId' in branchData.parameters)) {
+            return node;
+        }
         changed = true;
-        const { nextTaskId: _removed, ...rest } = branchData.parameters;
+        const { nextTaskId: _removed, joinTaskId: _joinRemoved, ...rest } = branchData.parameters;
         return {
             ...node,
             data: {

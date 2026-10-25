@@ -97,14 +97,14 @@ export function AssignIntegrationDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Assign to Integration</DialogTitle>
+      <DialogContent className="sm:max-w-md p-6">
+        <DialogHeader className="space-y-1.5 pb-2">
+          <DialogTitle className="text-base font-semibold leading-none tracking-tight">Assign to Integration</DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-4 pt-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Integration <span className="text-destructive">*</span></label>
+        <div className="space-y-4 py-2">
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-foreground">Integration <span className="text-destructive">*</span></label>
             <Select value={selectedIntegrationId} onValueChange={setSelectedIntegrationId} disabled={isLoadingIntegrations}>
               <SelectTrigger>
                 <SelectValue placeholder={isLoadingIntegrations ? 'Loading...' : 'Select integration'} />
@@ -119,19 +119,20 @@ export function AssignIntegrationDialog({
             </Select>
           </div>
           
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Use Case Title <span className="text-destructive">*</span></label>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-foreground">Use Case Title <span className="text-destructive">*</span></label>
             <Input 
               value={useCaseTitle} 
               onChange={(e) => setUseCaseTitle(e.target.value)} 
               placeholder="e.g. Sync Contacts"
+              className="h-9 text-xs"
             />
           </div>
           
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Use Case Description</label>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-foreground">Use Case Description</label>
             <textarea 
-              className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-xs ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               value={useCaseDescription}
               onChange={(e) => setUseCaseDescription(e.target.value)}
               placeholder="Optional description"
@@ -141,15 +142,16 @@ export function AssignIntegrationDialog({
           {error && <div className="text-sm text-destructive">{error}</div>}
         </div>
         
-        <DialogFooter className="pt-2">
+        <DialogFooter className="pt-4 flex items-center justify-end gap-2">
           {currentIntegrationId && (
-            <Button variant="ghost" className="mr-auto text-destructive" onClick={handleRemove} disabled={isSubmitting}>
+            <Button variant="ghost" size="sm" className="mr-auto text-destructive" onClick={handleRemove} disabled={isSubmitting}>
               Remove from Integration
             </Button>
           )}
-          <Button variant="outline" onClick={onClose} disabled={isSubmitting}>Cancel</Button>
-          <Button onClick={handleSubmit} disabled={isSubmitting}>
-            {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Assign'}
+          <Button variant="outline" size="sm" onClick={onClose} disabled={isSubmitting}>Cancel</Button>
+          <Button size="sm" onClick={handleSubmit} disabled={isSubmitting}>
+            {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : null}
+            Assign
           </Button>
         </DialogFooter>
       </DialogContent>

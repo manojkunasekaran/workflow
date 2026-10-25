@@ -173,6 +173,17 @@ public class WorkflowSchedulerService {
 
     private void triggerWorkflow(String workflowId) {
         try {
+            WorkflowDefinition definition = definitionRepository.findById(workflowId)
+                    .orElse(null);
+            if (definition == null) {
+                log.warn("Cannot trigger scheduled workflow {}: definition not found", workflowId);
+                return;
+            }
+            if (definition.getOrganizationId() == null || definition.getOrganizationId().isBlank()) {
+                log.warn("Cannot trigger scheduled workflow {}: definition has no organizationId", workflowId);
+                return;
+            }
+
             String lockName = "wf-schedule-" + workflowId + "-" + (System.currentTimeMillis() / 60000);
 
             LockConfiguration lockConfig = new LockConfiguration(
@@ -182,9 +193,10 @@ public class WorkflowSchedulerService {
                     apiProperties.getScheduler().getLockAtLeastFor());
 
             lockingTaskExecutor.executeWithLock((Runnable) () -> {
-                executionService.triggerExecution(
-                        workflowId, null, ExecutionType.ASYNC, TriggerType.SCHEDULE);
-                log.info("Schedule-triggered workflow execution: workflowId={}", workflowId);
+                executionService.triggerExecutionForOrganization(
+                        workflowId, definition.getOrganizationId(), null, ExecutionType.ASYNC, TriggerType.SCHEDULE);
+                log.info("Schedule-triggered workflow execution: workflowId={}, orgId={}",
+                        workflowId, definition.getOrganizationId());
             }, lockConfig);
         } catch (Exception e) {
             log.error("Failed to schedule-trigger workflow {}: {}", workflowId, e.getMessage(), e);

@@ -7,6 +7,7 @@ export interface TaskFieldOption {
 /** JSON-serializable field kinds — safe to load from backend later. */
 export type TaskFieldType =
     | 'text'
+    | 'password'
     | 'textarea'
     | 'number'
     | 'select'
@@ -24,7 +25,8 @@ export type TaskFieldType =
     | 'wiredRef'
     | 'inboundList'
     | 'waitDuration'
-    | 'credential';
+    | 'credential'
+    | 'formSchema';
 
 /** How many inbounds a JOIN waits for before continuing. */
 export type JoinWaitPolicy = 'ALL' | 'ANY' | 'QUORUM';

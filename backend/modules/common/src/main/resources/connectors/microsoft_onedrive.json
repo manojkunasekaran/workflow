@@ -291,14 +291,14 @@
                 {
                     "key": "name",
                     "label": "Copy Name",
-                    "type": false,
+                    "type": "STRING",
                     "required": true,
                     "supportsExpression": true
                 },
                 {
                     "key": "parentReferenceId",
                     "label": "Destination Folder ID",
-                    "type": false,
+                    "type": "STRING",
                     "required": true,
                     "supportsExpression": true
                 }

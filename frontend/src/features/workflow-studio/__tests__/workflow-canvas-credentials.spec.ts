@@ -42,15 +42,15 @@ async function mockStudioApis(page: any) {
   await page.route('**/rest/workflows/wf-task-001', (route: any) => {
     route.fulfill({ json: MOCK_WORKFLOW });
   });
+  await page.route('**/rest/executions**', (route: any) => {
+    route.fulfill({ json: { content: [], totalElements: 0 } });
+  });
   
-  await page.route('**/api/v1/connectors', (route: any) => {
+  await page.route('**/rest/connectors', (route: any) => {
     route.fulfill({ status: 200, json: [MOCK_CONNECTOR] });
   });
 
-  await page.route('**/api/v1/connections?connectorId=test-conn', (route: any) => {
-    route.fulfill({ status: 200, json: [] });
-  });
-  await page.route('**/api/v1/connections', (route: any) => {
+  await page.route('**/rest/credentials**', (route: any) => {
     route.fulfill({ status: 200, json: [] });
   });
 }
@@ -63,10 +63,9 @@ test.describe('Workflow Canvas Credentials', () => {
 
   test('should open add connection dialog scoped to the connector', async ({ page }) => {
     // Click the node on the canvas to open the task config panel
-    await page.getByText('Test Connector').click();
-
-    // Verify task config panel is open by looking for the Connection label
-    await expect(page.getByText('Connection', { exact: false })).toBeVisible();
+    await page.getByTestId('task-node-task_1').click();
+    await expect(page.getByTestId('task-config-dialog')).toBeVisible();
+    await expect(page.getByText('Connection', { exact: true })).toBeVisible();
 
     // Click the "New" button in the ConnectionSelectField
     await page.getByRole('button', { name: 'New' }).click();

@@ -3,6 +3,7 @@ package com.app.common.entity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
@@ -25,6 +26,10 @@ import com.app.common.model.variable.VariableValue;
 public class WorkflowExecution extends Auditable {
     @Id
     private String id;
+
+    @Indexed
+    private String organizationId;
+
     private String workflowId;
     private String workflowDefinitionId;
     private ExecutionType executionType;

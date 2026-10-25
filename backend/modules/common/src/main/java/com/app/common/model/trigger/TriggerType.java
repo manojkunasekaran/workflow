@@ -13,5 +13,7 @@ public enum TriggerType {
     /** Platform polls an HTTP endpoint on a schedule and triggers on data changes. */
     POLL,
     /** External MCP clients invoke a registered tool to start this workflow. */
-    MCP
+    MCP,
+    /** Public or authenticated form submission starts the workflow. */
+    FORM
 }

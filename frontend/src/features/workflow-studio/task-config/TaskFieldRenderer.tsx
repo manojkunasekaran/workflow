@@ -3,6 +3,8 @@ import { BranchListField } from '@/features/workflow-studio/task-config/BranchLi
 import { InboundListField } from '@/features/workflow-studio/task-config/InboundListField';
 import { ConditionalBranchListField } from '@/features/workflow-studio/task-config/ConditionalBranchListField';
 import { HumanActionListField } from '@/features/workflow-studio/task-config/HumanActionListField';
+import { FormSchemaBuilder } from '@/features/forms/builder/FormSchemaBuilder';
+import { Label } from '@/components/ui/label';
 import { WaitDurationField } from '@/features/workflow-studio/task-config/WaitDurationField';
 import { ToolsListField } from '@/features/workflow-studio/task-config/ToolsListField';
 import { McpToolsPickerField } from '@/features/workflow-studio/task-config/McpToolsPickerField';
@@ -196,7 +198,7 @@ export function TaskFieldRenderer({
                 <p
                     className={
                         wired
-                            ? 'rounded-md border border-sky-500/30 bg-sky-50 px-3 py-2 text-xs text-sky-900'
+                            ? 'rounded-md border border-info/30 bg-info-muted px-3 py-2 text-xs text-info'
                             : 'rounded-md border border-dashed border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground'
                     }
                 >
@@ -302,6 +304,17 @@ export function TaskFieldRenderer({
                 onChange={(branches) => update(branches)}
                 errors={fieldErrors}
             />
+        );
+    }
+
+    if (field.type === 'formSchema') {
+        return (
+            <div className="space-y-2">
+                {field.label ? <Label>{field.label}</Label> : null}
+                {field.description ? <p className="text-xs text-muted-foreground">{field.description}</p> : null}
+                <FormSchemaBuilder value={value} onChange={(schema) => update(schema)} />
+                {error ? <p className="text-xs text-destructive">{error}</p> : null}
+            </div>
         );
     }
 
@@ -429,6 +442,31 @@ export function TaskFieldRenderer({
                 </div>
                 {error && <p className="text-xs text-destructive">{error}</p>}
             </div>
+        );
+    }
+
+    if (field.type === 'password') {
+        return (
+            <VariableInput
+                fieldKey={field.key}
+                label={field.label}
+                value={value}
+                onChange={(next) => update(next)}
+                placeholder={field.placeholder}
+                error={error}
+                description={field.description}
+            >
+                <Input
+                    data-testid={`task-field-${field.key}`}
+                    id={field.key}
+                    type="password"
+                    autoComplete="off"
+                    value={String(value ?? '')}
+                    onChange={(e) => update(e.target.value)}
+                    placeholder={field.placeholder}
+                    className="text-sm font-mono"
+                />
+            </VariableInput>
         );
     }
 

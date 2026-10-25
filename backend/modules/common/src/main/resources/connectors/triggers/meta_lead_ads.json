@@ -55,7 +55,7 @@
       ],
       "preset": {
         "poll": {
-          "semantics": "UPDATED_ITEMS",
+          "semantics": "UPDATED",
           "http": {
             "method": "GET",
             "url": "https://graph.facebook.com/v21.0/{pageId}/leadgen_forms?limit=100&fields=id,name,status,leads_count"

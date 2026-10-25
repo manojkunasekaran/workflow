@@ -46,6 +46,12 @@ class WorkflowDefinitionServiceTest {
     @Mock
     private WorkflowExecutionRepository executionRepository;
 
+    @Mock
+    private com.app.api.service.organization.OrganizationAccess organizationAccess;
+
+    @Mock
+    private com.app.api.service.form.FormRegistrationService formRegistrationService;
+
     @InjectMocks
     private WorkflowDefinitionService service;
 
@@ -53,6 +59,7 @@ class WorkflowDefinitionServiceTest {
 
     @BeforeEach
     void setUp() {
+        when(organizationAccess.requireOrganizationId()).thenReturn("platform-admin-org");
         pollWorkflow = buildPollWorkflow("def-1");
     }
 
@@ -67,7 +74,7 @@ class WorkflowDefinitionServiceTest {
 
     @Test
     void updateWorkflowDefinition_updatesInPlaceAndSyncsTriggers() {
-        when(repository.findById("def-1")).thenReturn(Optional.of(pollWorkflow));
+        when(repository.findByIdAndOrganizationId("def-1", "platform-admin-org")).thenReturn(Optional.of(pollWorkflow));
         when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         WorkflowDefinition updated = buildPollWorkflow("def-1");
@@ -83,17 +90,17 @@ class WorkflowDefinitionServiceTest {
 
     @Test
     void getAllWorkflowDefinitions_returnsAllWorkflows() {
-        when(repository.findAll()).thenReturn(List.of(pollWorkflow));
+        when(repository.findByOrganizationId("platform-admin-org")).thenReturn(List.of(pollWorkflow));
 
         List<WorkflowDefinition> result = service.getAllWorkflowDefinitions();
 
         assertThat(result).containsExactly(pollWorkflow);
-        verify(repository).findAll();
+        verify(repository).findByOrganizationId("platform-admin-org");
     }
 
     @Test
     void getWorkflowDefinitionById_returnsDefinitionById() {
-        when(repository.findById("def-1")).thenReturn(Optional.of(pollWorkflow));
+        when(repository.findByIdAndOrganizationId("def-1", "platform-admin-org")).thenReturn(Optional.of(pollWorkflow));
 
         Optional<WorkflowDefinition> result = service.getWorkflowDefinitionById("def-1");
 

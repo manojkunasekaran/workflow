@@ -39,7 +39,7 @@ export function normalizeConnectorManifest(manifest: ConnectorManifest): Connect
 
 export async function persistConnectorManifest(
     manifest: ConnectorManifest,
-    scope: 'SYSTEM' | 'TENANT',
+    scope: 'SYSTEM' | 'ORGANIZATION',
 ): Promise<ConnectorManifest> {
     const payload = normalizeConnectorManifest(manifest);
     const effectiveScope = manifest.scope || scope;

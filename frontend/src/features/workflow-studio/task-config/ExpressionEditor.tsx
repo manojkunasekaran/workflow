@@ -2,7 +2,7 @@
  * ExpressionEditor.tsx
  *
  * A premium textarea that:
- *  - Highlights `{{ ... }}` expressions with a violet pill style (via a transparent
+ *  - Highlights `{{ ... }}` expressions with a primary pill style (via a transparent
  *    overlay div trick — the textarea stays editable but an overlay div renders the
  *    highlighted version below it using pointer-events:none).
  *  - Shows the DataExplorer popover anchored to the right of the field whenever the
@@ -148,8 +148,7 @@ export function ExpressionEditor({
                     className={cn(
                         'pointer-events-none absolute inset-0 overflow-hidden whitespace-pre-wrap break-words rounded-md px-3 py-2 text-transparent',
                         mono ? 'font-mono text-xs' : 'text-sm',
-                        '[&_.expression-pill]:rounded [&_.expression-pill]:bg-violet-100 [&_.expression-pill]:text-violet-700',
-                        '[&_.expression-pill]:dark:bg-violet-900/40 [&_.expression-pill]:dark:text-violet-400',
+                        '[&_.expression-pill]:rounded [&_.expression-pill]:bg-primary/10 [&_.expression-pill]:text-primary',
                         // Same line-height/padding as the textarea
                         'leading-relaxed',
                     )}

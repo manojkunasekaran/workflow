@@ -63,11 +63,8 @@ test.describe('Task Plugin Configurations & Validation', () => {
       await expect(page.getByTestId('workflow-name-input')).toHaveValue('Task Config Testing Workflow');
     });
 
-    test('[Happy] mode toggles switch between Design and Inspect modes', async ({ page }) => {
-      await expect(page.getByTestId('mode-design-toggle')).toBeVisible();
-      await page.getByTestId('mode-inspect-toggle').click();
-      await expect(page.getByTestId('run-workflow-btn')).toBeDisabled();
-      await page.getByTestId('mode-design-toggle').click();
+    test('[Happy] run workflow control is available in design mode', async ({ page }) => {
+      await expect(page.getByTestId('run-workflow-btn')).toBeVisible();
       await expect(page.getByTestId('run-workflow-btn')).not.toBeDisabled();
     });
   });
@@ -75,7 +72,7 @@ test.describe('Task Plugin Configurations & Validation', () => {
   test.describe('Negative Path', () => {
     test('[Negative] entering an invalid workflow name placeholder does not crash page', async ({ page }) => {
       await page.getByTestId('workflow-name-input').fill('');
-      await expect(page.getByTestId('draft-badge')).toBeVisible();
+      await expect(page.getByTestId('unsaved-badge')).toBeVisible();
     });
   });
 

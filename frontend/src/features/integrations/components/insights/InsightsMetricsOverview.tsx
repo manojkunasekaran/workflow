@@ -43,8 +43,8 @@ export function InsightsMetricsOverview({
 
                 <div
                     className={cn(
-                        'rounded-xl border border-emerald-200/80 bg-emerald-50/35 dark:border-emerald-900/55 dark:bg-emerald-950/25',
-                        'p-4 flex flex-col gap-3 border-l-4 border-l-emerald-500',
+                        'rounded-xl border border-success/30 bg-success-muted',
+                        'p-4 flex flex-col gap-3 border-l-4 border-l-success',
                         !compact && 'lg:col-span-1',
                     )}
                 >
@@ -52,13 +52,13 @@ export function InsightsMetricsOverview({
                         <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
                             Success rate
                         </span>
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-success/15 text-success">
                             <TrendingUp className="h-4 w-4" aria-hidden />
                         </div>
                     </div>
                     <span
                         data-testid={`${testIdPrefix}-success-rate`}
-                        className="text-2xl font-semibold tabular-nums text-emerald-800 dark:text-emerald-300"
+                        className="text-2xl font-semibold tabular-nums text-success"
                     >
                         {successLabel}
                     </span>

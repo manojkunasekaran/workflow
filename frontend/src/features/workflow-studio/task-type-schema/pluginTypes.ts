@@ -25,6 +25,7 @@ export const STUDIO_TASK_TYPES = [
     'NEO4J_TASK',
     'DB_TASK',
     'MCP_TOOL',
+    'FORM',
 ] as const;
 
 export type StudioTaskType = (typeof STUDIO_TASK_TYPES)[number];

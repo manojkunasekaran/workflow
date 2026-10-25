@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, Loader2, RefreshCw } from 'lucide-react';
 import { mcpSettingsApi, type McpAuditLogEntry } from '@/api/mcpSettingsApi';
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { ErrorBanner } from '@/components/ui/error-banner';
 import {
     Table,
     TableBody,
@@ -24,9 +25,11 @@ export function McpAuditLogSection() {
     const [page, setPage] = useState(0);
     const [totalElements, setTotalElements] = useState(0);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     const loadLogs = useCallback(async (pageIndex = 0) => {
         setLoading(true);
+        setError(null);
         try {
             const response = await mcpSettingsApi.getLogs(pageIndex, PAGE_SIZE);
             setLogs(response.content ?? []);
@@ -36,6 +39,7 @@ export function McpAuditLogSection() {
             console.error('Failed to load MCP audit logs', err);
             setLogs([]);
             setTotalElements(0);
+            setError("Unable to load MCP audit logs. Please try again.");
         } finally {
             setLoading(false);
         }
@@ -60,19 +64,26 @@ export function McpAuditLogSection() {
                 </Button>
             </div>
 
-            <div className="rounded-xl border bg-card text-card-foreground shadow-sm p-8 flex flex-col gap-6 overflow-hidden">
-                {loading && logs.length === 0 ? (
-                    <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground py-12">
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                        Loading audit logs...
-                    </div>
-                ) : logs.length === 0 ? (
-                    <div className="flex items-center justify-center py-12">
-                        <p className="text-sm text-muted-foreground">No MCP audit entries yet.</p>
-                    </div>
-                ) : (
-                    <div className="rounded-md border overflow-x-auto">
-                        <Table>
+            {error ? (
+                <ErrorBanner
+                    data-testid="mcp-audit-error"
+                    message={error}
+                    onRetry={() => void loadLogs(page)}
+                />
+            ) : (
+                <div className="rounded-xl border bg-card text-card-foreground shadow-sm p-8 flex flex-col gap-6 overflow-hidden">
+                    {loading && logs.length === 0 ? (
+                        <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground py-12">
+                            <Loader2 className="h-5 w-5 animate-spin" />
+                            Loading audit logs...
+                        </div>
+                    ) : logs.length === 0 ? (
+                        <div className="flex items-center justify-center py-12">
+                            <p className="text-sm text-muted-foreground">No MCP audit entries yet.</p>
+                        </div>
+                    ) : (
+                        <div className="rounded-md border overflow-x-auto">
+                            <Table>
                             <TableHeader>
                                 <TableRow className="hover:bg-transparent">
                                     <TableHead className="py-4">Timestamp</TableHead>
@@ -156,6 +167,7 @@ export function McpAuditLogSection() {
                     </div>
                 )}
             </div>
+            )}
         </div>
     );
 }

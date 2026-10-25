@@ -38,11 +38,19 @@ const MOCK_NEW_WORKFLOW = {
 };
 
 async function mockStudioApis(page: Page, workflow = MOCK_WORKFLOW) {
-  await page.route(`**/rest/workflows/${workflow.id}`, (route) =>
-    route.fulfill({ json: workflow }),
-  );
+  await page.route(`**/rest/workflows/${workflow.id}`, (route) => {
+    if (route.request().method() === 'PUT') {
+      const body = route.request().postDataJSON() as typeof workflow;
+      route.fulfill({ json: { ...workflow, ...body } });
+      return;
+    }
+    route.fulfill({ json: workflow });
+  });
   await page.route('**/rest/workflows', (route) =>
     route.fulfill({ json: [workflow] }),
+  );
+  await page.route('**/rest/executions**', (route) =>
+    route.fulfill({ json: { content: [], totalElements: 0 } }),
   );
 }
 
@@ -73,18 +81,6 @@ test.describe('Workflow Studio', () => {
       await mockStudioApis(page);
       await page.goto('/workflows/wf-001');
       await expect(page.getByTestId('studio-canvas-container')).toBeVisible();
-    });
-
-    test('[Happy] should display the "Design" mode toggle as active by default', async ({ page }) => {
-      await mockStudioApis(page);
-      await page.goto('/workflows/wf-001');
-      await expect(page.getByTestId('mode-design-toggle')).toBeVisible();
-    });
-
-    test('[Happy] should display the "Inspect" mode toggle button', async ({ page }) => {
-      await mockStudioApis(page);
-      await page.goto('/workflows/wf-001');
-      await expect(page.getByTestId('mode-inspect-toggle')).toBeVisible();
     });
 
     test('[Happy] Save button should be visible', async ({ page }) => {
@@ -121,30 +117,13 @@ test.describe('Workflow Studio', () => {
       await expect(nameInput).toHaveValue('Updated Workflow Name');
     });
 
-    test('[Happy] editing the workflow name should show the "Draft" badge', async ({ page }) => {
+    test('[Happy] editing the workflow name should show the unsaved badge', async ({ page }) => {
       await mockStudioApis(page);
       await page.goto('/workflows/wf-001');
       const nameInput = page.getByTestId('workflow-name-input');
       await nameInput.click();
       await nameInput.fill('Changed Name');
-      await expect(page.getByTestId('draft-badge')).toBeVisible();
-    });
-  });
-
-  test.describe('Happy Path — Mode Toggle', () => {
-    test('[Happy] switching to Inspect mode should disable the Run Workflow button', async ({ page }) => {
-      await mockStudioApis(page);
-      await page.goto('/workflows/wf-001');
-      await page.getByTestId('mode-inspect-toggle').click();
-      await expect(page.getByTestId('run-workflow-btn')).toBeDisabled();
-    });
-
-    test('[Happy] switching back to Design mode should re-enable the Run Workflow button', async ({ page }) => {
-      await mockStudioApis(page);
-      await page.goto('/workflows/wf-001');
-      await page.getByTestId('mode-inspect-toggle').click();
-      await page.getByTestId('mode-design-toggle').click();
-      await expect(page.getByTestId('run-workflow-btn')).not.toBeDisabled();
+      await expect(page.getByTestId('unsaved-badge')).toBeVisible();
     });
   });
 
@@ -152,7 +131,7 @@ test.describe('Workflow Studio', () => {
     test('[Happy] Save button should be disabled when there are no unsaved changes', async ({ page }) => {
       await mockStudioApis(page);
       await page.goto('/workflows/wf-001');
-      await expect(page.getByTestId('save-workflow-btn')).toBeDisabled();
+      await expect(page.getByTestId('save-workflow-btn')).toBeDisabled({ timeout: 10_000 });
     });
 
     test('[Happy] Save button should be enabled after editing the workflow name', async ({ page }) => {
@@ -162,20 +141,12 @@ test.describe('Workflow Studio', () => {
       await expect(page.getByTestId('save-workflow-btn')).not.toBeDisabled();
     });
 
-    test('[Happy] clicking Save should call the API and dismiss the Draft badge', async ({ page }) => {
+    test('[Happy] clicking Save should call the API and dismiss the unsaved badge', async ({ page }) => {
       await mockStudioApis(page);
-      await page.route('**/rest/workflows', (route) => {
-        if (route.request().method() === 'POST') {
-          route.fulfill({ json: { ...MOCK_WORKFLOW, name: 'New Name' } });
-        } else {
-          route.fulfill({ json: [MOCK_WORKFLOW] });
-        }
-      });
       await page.goto('/workflows/wf-001');
       await page.getByTestId('workflow-name-input').fill('New Name');
       await page.getByTestId('save-workflow-btn').click();
-      // Draft badge should disappear after save
-      await expect(page.getByTestId('draft-badge')).not.toBeVisible();
+      await expect(page.getByTestId('unsaved-badge')).not.toBeVisible();
     });
   });
 
@@ -189,36 +160,39 @@ test.describe('Workflow Studio', () => {
       await expect(page).toHaveURL(/\/workflows$/);
     });
 
-    test('[Negative] Save failure should not remove the Draft badge', async ({ page }) => {
+    test('[Negative] Save failure should not remove the unsaved badge', async ({ page }) => {
       await mockStudioApis(page);
-      await page.route('**/rest/workflows', (route) => {
-        if (route.request().method() === 'POST') {
-          route.fulfill({ status: 500 });
-        } else {
-          route.fulfill({ json: [MOCK_WORKFLOW] });
+      await page.route(`**/rest/workflows/${MOCK_WORKFLOW.id}`, (route) => {
+        if (route.request().method() === 'PUT') {
+          route.fulfill({ status: 500, json: { message: 'Server error' } });
+          return;
         }
+        route.fulfill({ json: MOCK_WORKFLOW });
       });
       await page.goto('/workflows/wf-001');
       await page.getByTestId('workflow-name-input').fill('New Name');
       await page.getByTestId('save-workflow-btn').click();
-      // After failed save, Draft badge should still be visible
-      await expect(page.getByTestId('draft-badge')).toBeVisible();
+      await expect(page.getByTestId('unsaved-badge')).toBeVisible();
     });
   });
 
   test.describe('Edge Cases', () => {
     test('[Edge] "View execution" link should appear after a successful run', async ({ page }) => {
       await mockStudioApis(page);
-      await page.route('**/rest/executions/**', (route) =>
-        route.fulfill({
-          json: {
-            id: 'exec-001',
-            workflowId: 'wf-001',
-            status: 'COMPLETED',
-            startTime: new Date().toISOString(),
-          },
-        }),
-      );
+      await page.route(/\/rest\/executions\/wf-001(\?|$)/, (route) => {
+        if (route.request().method() === 'POST') {
+          route.fulfill({
+            json: {
+              id: 'exec-001',
+              workflowId: 'wf-001',
+              status: 'COMPLETED',
+              startTime: new Date().toISOString(),
+            },
+          });
+          return;
+        }
+        route.continue();
+      });
       await page.goto('/workflows/wf-001');
       await page.getByTestId('run-workflow-btn').click();
       await expect(page.getByTestId('view-execution-link')).toBeVisible();

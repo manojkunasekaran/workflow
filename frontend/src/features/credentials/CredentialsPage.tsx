@@ -38,7 +38,7 @@ export default function CredentialsPage() {
                 }
             />
 
-            <div className="flex-1 overflow-auto p-6">
+            <div className="flex-1 overflow-auto p-[var(--density-page-p)]">
                 <CredentialsList ref={listRef} />
             </div>
         </div>

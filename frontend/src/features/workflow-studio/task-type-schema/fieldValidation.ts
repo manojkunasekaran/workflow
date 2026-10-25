@@ -8,6 +8,7 @@ const COMPOSITE_FIELD_TYPES = new Set([
     'iteratorActionList',
     'wiredRef',
     'waitDuration',
+    'formSchema',
 ]);
 
 function isEmptyValue(value: unknown): boolean {

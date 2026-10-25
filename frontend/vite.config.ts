@@ -7,19 +7,17 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
+      "@": path.resolve(import.meta.dirname, "./src"),
     },
   },
   server: {
     host: true,
+    port: 5173,
     watch: {
       usePolling: true,
     },
-    proxy: {
-      '/rest': {
-        target: process.env.VITE_API_TARGET || 'http://localhost:8080',
-        changeOrigin: true,
-      },
+    hmr: {
+      clientPort: 5173,
     },
   },
 })

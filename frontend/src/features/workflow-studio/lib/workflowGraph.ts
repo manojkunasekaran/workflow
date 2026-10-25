@@ -248,11 +248,10 @@ export function definitionToFlow(
 ): { nodes: StudioCanvasNode[]; edges: Edge[] } {
     const expanded = expandDefinitionForCanvas(definition);
 
-    const storedLayout = definition.layout ?? {};
+    const mergedLayout = { ...(definition.layout ?? {}), ...(expanded.layout ?? {}) };
+    const storedLayout = mergedLayout;
     const resolvedPositions = { ...storedLayout, ...positions };
-    const hasStoredLayout =
-        Object.keys(storedLayout).length > 0 &&
-        definition.tasks.every((task) => storedLayout[task.taskId] != null);
+    const hasStoredLayout = Object.keys(storedLayout).length > 0;
 
     const startPosition = resolvedPositions[WORKFLOW_START_ID];
 
@@ -911,9 +910,39 @@ export function validateWorkflowTasks(nodes: StudioCanvasNode[]): string | null 
     return null;
 }
 
+/** Stable key for validation — ignores node positions (drag-only updates). */
+export function buildCanvasValidationSignature(
+    nodes: StudioCanvasNode[],
+    edges: Edge[],
+): string {
+    const syncedNodes = syncAllIteratorLoopBodies(nodes, edges);
+    const taskPart = getTaskNodes(syncedNodes)
+        .map(
+            (node) =>
+                `${node.id}:${node.data.type}:${JSON.stringify(node.data.parameters)}`,
+        )
+        .join('|');
+    const edgePart = edges
+        .map(
+            (edge) =>
+                `${edge.id}:${edge.source}:${edge.target}:${edge.sourceHandle ?? ''}:${edge.targetHandle ?? ''}`,
+        )
+        .join('|');
+    return `${taskPart}#${edgePart}`;
+}
+
+/** Stable key for route/display edge rebuild — ignores positions. */
+export function buildCanvasTopologyFingerprint(
+    nodes: StudioCanvasNode[],
+    edges: Edge[],
+): string {
+    return buildCanvasValidationSignature(nodes, edges);
+}
+
 export function findFirstTaskValidationError(
     nodes: StudioCanvasNode[],
     edges: Edge[],
+    options?: { creatingTaskId?: string | null },
 ): string | null {
     const syncedNodes = syncRouteParamsFromEdges(
         syncAllIteratorLoopBodies(nodes, edges),
@@ -940,11 +969,13 @@ export function findFirstTaskValidationError(
         if (!plugin) {
             return `Unknown task type on "${label}"`;
         }
+        const isNewTask =
+            options?.creatingTaskId != null && data.taskId === options.creatingTaskId;
         const { errors } = validateTaskParameters(plugin, data.parameters, {
             workflowTasks,
             taskOrder,
             currentTaskId: data.taskId,
-            isNewTask: false,
+            isNewTask,
         });
         if (Object.keys(errors).length > 0) {
             const summary = summarizeValidationErrors(errors) ?? 'Invalid configuration';

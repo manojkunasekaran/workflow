@@ -19,6 +19,12 @@ import com.app.common.model.trigger.McpResponseMode;
 import com.app.common.model.trigger.McpTriggerConfig;
 import com.app.common.model.trigger.TriggerConfig;
 import com.app.common.model.trigger.TriggerType;
+import com.app.common.model.form.FormFieldDefinition;
+import com.app.common.model.form.FormFieldType;
+import com.app.common.model.form.FormPageDefinition;
+import com.app.common.model.form.FormSchema;
+import com.app.common.model.task.parameters.FormTaskParameters;
+import com.app.common.model.trigger.FormTriggerConfig;
 import com.app.persistence.connector.ConnectorRegistry;
 import com.app.persistence.repository.IntegrationCredentialRepository;
 import com.app.persistence.repository.WorkflowDefinitionRepository;
@@ -177,6 +183,18 @@ class WorkflowDefinitionValidatorTest {
     }
 
     @Test
+    void validateAgentsTask_requiresModelAndUserPrompt() {
+        AgentsTaskParameters params = new AgentsTaskParameters();
+        WorkflowDefinition definition = new WorkflowDefinition();
+        definition.setName("agents-workflow");
+        definition.setTasks(List.of(task("agent_1", TaskType.AGENTS_TASK, params, null)));
+
+        assertThatThrownBy(() -> validator.validate(definition))
+                .isInstanceOf(ValidationException.class)
+                .hasMessageContaining("requires model");
+    }
+
+    @Test
     void validateAgentsTask_rejectsMcpToolWithoutCredentialId() {
         WorkflowDefinition definition = agentsTaskDefinition(mcpTool(null, "search", null));
 
@@ -249,6 +267,7 @@ class WorkflowDefinitionValidatorTest {
     private static WorkflowDefinition agentsTaskDefinition(AgentsTaskParameters.AgentTool... tools) {
         AgentsTaskParameters params = new AgentsTaskParameters();
         params.setModel("gpt-4");
+        params.setUserPrompt("Do something");
         params.setTools(List.of(tools));
 
         WorkflowDefinition definition = new WorkflowDefinition();
@@ -365,5 +384,78 @@ class WorkflowDefinitionValidatorTest {
         definition.setName("Test");
         definition.setTasks(List.of(task("task_1", TaskType.HTTP_TASK, new HttpTaskParameters(), null)));
         return definition;
+    }
+
+    @Test
+    void validateFormTrigger_acceptsActiveTriggerWithoutCanvasTasks() {
+        WorkflowDefinition definition = minimalDefinition();
+        definition.setTrigger(TriggerConfig.builder()
+                .type(TriggerType.FORM)
+                .form(FormTriggerConfig.builder()
+                        .active(true)
+                        .slug("my-feedback-form")
+                        .landingPage(validFormSchema())
+                        .build())
+                .build());
+
+        assertThatCode(() -> validator.validate(definition)).doesNotThrowAnyException();
+    }
+
+    @Test
+    void validateFormTask_requiresValidSchema() {
+        FormTaskParameters params = FormTaskParameters.builder()
+                .page(null)
+                .build();
+
+        assertThatThrownBy(() -> validator.validateFormTask("form_1", params))
+                .isInstanceOf(ValidationException.class)
+                .hasMessageContaining("requires at least one page");
+    }
+
+    @Test
+    void validateFormTask_validatesEndTypeDetails() {
+        FormTaskParameters redirectParams = FormTaskParameters.builder()
+                .page(validFormSchema())
+                .endType(FormTaskParameters.EndType.REDIRECT)
+                .redirectUrl("")
+                .build();
+
+        assertThatThrownBy(() -> validator.validateFormTask("form_end", redirectParams))
+                .isInstanceOf(ValidationException.class)
+                .hasMessageContaining("requires redirectUrl");
+
+        FormTaskParameters messageParams = FormTaskParameters.builder()
+                .page(validFormSchema())
+                .endType(FormTaskParameters.EndType.MESSAGE)
+                .message("   ")
+                .build();
+
+        assertThatThrownBy(() -> validator.validateFormTask("form_end", messageParams))
+                .isInstanceOf(ValidationException.class)
+                .hasMessageContaining("requires message");
+
+        FormTaskParameters customHtmlParams = FormTaskParameters.builder()
+                .page(validFormSchema())
+                .endType(FormTaskParameters.EndType.CUSTOM_HTML)
+                .customHtml(null)
+                .build();
+
+        assertThatThrownBy(() -> validator.validateFormTask("form_end", customHtmlParams))
+                .isInstanceOf(ValidationException.class)
+                .hasMessageContaining("requires customHtml");
+    }
+
+    private static FormSchema validFormSchema() {
+        FormFieldDefinition field = new FormFieldDefinition();
+        field.setKey("email");
+        field.setType(FormFieldType.TEXT);
+
+        FormPageDefinition page = new FormPageDefinition();
+        page.setPageId("page_1");
+        page.setFields(List.of(field));
+
+        FormSchema schema = new FormSchema();
+        schema.setPages(List.of(page));
+        return schema;
     }
 }

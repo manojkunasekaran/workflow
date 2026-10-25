@@ -42,6 +42,10 @@ test.describe('AGENTS_TASK End-to-End Features', () => {
     });
 
     test('[Happy] should configure AGENTS_TASK properties and wire an HTTP tool correctly', async ({ page }) => {
+        await page.getByRole('button', { name: /open task catalog/i }).click();
+        await expect(page.getByTestId('task-catalog-list')).toBeVisible();
+        await expect(page.getByTestId('catalog-item-AGENTS_TASK')).toBeVisible({ timeout: 15_000 });
+
         // 1. Drag & Drop AGENTS_TASK
         await page.dragAndDrop('[data-testid="catalog-item-AGENTS_TASK"]', '.react-flow__pane', {
             targetPosition: { x: 300, y: 150 }

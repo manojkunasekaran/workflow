@@ -6,6 +6,7 @@ export const TRIGGER_TYPE_LABELS: Record<TriggerType, string> = {
     SCHEDULE: 'On a schedule',
     POLL: 'Check for changes',
     MCP: 'MCP tool',
+    FORM: 'Form',
 };
 
 export const TRIGGER_TYPE_HELPERS: Partial<Record<TriggerType, string>> = {

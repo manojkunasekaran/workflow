@@ -1,6 +1,9 @@
 package com.app.api.service;
 
+import com.app.api.service.form.FormRegistrationService;
+import com.app.api.service.organization.OrganizationAccess;
 import com.app.api.validation.WorkflowDefinitionValidator;
+import com.app.common.exception.ResourceNotFoundException;
 import com.app.common.entity.WorkflowDefinition;
 import com.app.persistence.repository.WorkflowDefinitionRepository;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +28,8 @@ public class WorkflowDefinitionService {
     private final TriggerActivationService triggerActivationService;
     private final WorkflowExecutionService executionService;
     private final WorkflowExecutionRepository executionRepository;
+    private final OrganizationAccess organizationAccess;
+    private final FormRegistrationService formRegistrationService;
 
     /**
      * Create a new workflow with a stable id. Triggers are activated immediately on save.
@@ -35,6 +40,7 @@ public class WorkflowDefinitionService {
         if (definition.getId() == null) {
             definition.setId(UUID.randomUUID().toString());
         }
+        definition.setOrganizationId(organizationAccess.requireOrganizationId());
         WorkflowDefinition saved = repository.save(definition);
         syncTriggersAfterSave(saved, true);
         return saved;
@@ -47,8 +53,7 @@ public class WorkflowDefinitionService {
     public WorkflowDefinition updateWorkflowDefinition(@NonNull String id, @NonNull WorkflowDefinition definition) {
         validator.validate(definition);
 
-        WorkflowDefinition existing = repository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("WorkflowDefinition not found with ID: " + id));
+        WorkflowDefinition existing = requireWorkflowInOrganization(id);
 
         existing.setName(definition.getName());
         existing.setTasks(definition.getTasks());
@@ -69,6 +74,7 @@ public class WorkflowDefinitionService {
     private void syncTriggersAfterSave(WorkflowDefinition saved, boolean isCreate) {
         try {
             triggerActivationService.sync(saved);
+            formRegistrationService.syncFromWorkflowDefinition(saved);
         } catch (RuntimeException ex) {
             log.error("Trigger sync failed for workflow {}", saved.getId(), ex);
             if (isCreate) {
@@ -84,21 +90,29 @@ public class WorkflowDefinitionService {
     }
 
     public List<WorkflowDefinition> getAllWorkflowDefinitions() {
-        return repository.findAll();
+        return repository.findByOrganizationId(organizationAccess.requireOrganizationId());
     }
 
     public Optional<WorkflowDefinition> getWorkflowDefinitionById(@NonNull String id) {
-        return repository.findById(id);
+        return repository.findByIdAndOrganizationId(id, organizationAccess.requireOrganizationId());
     }
 
     public void deleteWorkflowDefinition(@NonNull String id) {
+        requireWorkflowInOrganization(id);
         triggerActivationService.deactivate(id);
+        formRegistrationService.deleteForWorkflowDefinition(id);
         repository.deleteById(id);
+    }
+
+    private WorkflowDefinition requireWorkflowInOrganization(String id) {
+        return repository.findByIdAndOrganizationId(id, organizationAccess.requireOrganizationId())
+                .orElseThrow(() -> new ResourceNotFoundException("WorkflowDefinition", id));
     }
 
     public com.app.api.dto.TestNodeResponse testNode(com.app.api.dto.TestNodeRequest request) {
         WorkflowDefinition draft = request.getDraftDefinition();
         draft.setId("draft_" + UUID.randomUUID().toString());
+        draft.setOrganizationId(organizationAccess.requireOrganizationId());
         repository.save(draft);
 
         try {

@@ -6,7 +6,7 @@ import { PageHeader } from '@/layouts/PageHeader';
 import { Button } from '@/components/ui/button';
 
 interface ConnectorsPageProps {
-    scope?: 'SYSTEM' | 'TENANT';
+    scope?: 'SYSTEM' | 'ORGANIZATION';
 }
 
 export default function ConnectorsPage({ scope }: ConnectorsPageProps) {
@@ -44,7 +44,7 @@ export default function ConnectorsPage({ scope }: ConnectorsPageProps) {
                 }
             />
 
-            <div className="flex-1 overflow-auto p-6 flex flex-col gap-4">
+            <div className="flex-1 overflow-auto p-[var(--density-page-p)] flex flex-col gap-[var(--density-section-gap)]">
                 <ConnectorList ref={listRef} scope={scope} />
             </div>
         </div>

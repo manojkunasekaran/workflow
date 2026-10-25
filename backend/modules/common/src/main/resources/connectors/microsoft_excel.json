@@ -338,7 +338,7 @@
                 {
                     "key": "applyTo",
                     "label": "Apply To",
-                    "type": false,
+                    "type": "STRING",
                     "required": true,
                     "supportsExpression": true,
                     "defaultValue": "All"

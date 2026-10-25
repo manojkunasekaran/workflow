@@ -1,15 +1,17 @@
 package com.app.api.job;
 
+import com.app.api.oauth.OAuthClientCredentials;
+import com.app.api.oauth.OAuthHttpForm;
+import com.app.api.service.ConnectorOAuthPlatformService;
 import com.app.common.connector.ConnectorManifest;
 import com.app.common.connector.OAuth2Config;
 import com.app.common.entity.IntegrationCredential;
+import com.app.crypto.util.EncryptionService;
 import com.app.persistence.connector.ConnectorRegistry;
 import com.app.persistence.repository.IntegrationCredentialRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -21,8 +23,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-
-import org.springframework.core.env.Environment;
 
 /**
  * Scheduled background job that proactively refreshes expiring OAuth2 tokens.
@@ -49,7 +49,8 @@ public class OAuthTokenRefreshJob {
     private final IntegrationCredentialRepository credentialRepository;
     private final ConnectorRegistry connectorRegistry;
     private final RestTemplate restTemplate;
-    private final Environment environment;
+    private final EncryptionService encryptionService;
+    private final ConnectorOAuthPlatformService platformOAuthService;
 
     @Scheduled(fixedDelayString = "PT15M", initialDelayString = "PT1M")
     @SchedulerLock(name = "oauth_token_refresh", lockAtMostFor = "PT10M", lockAtLeastFor = "PT1M")
@@ -87,72 +88,75 @@ public class OAuthTokenRefreshJob {
     }
 
     private void refreshCredential(IntegrationCredential credential) {
-        Map<String, String> currentCreds = credential.getCredentials();
+        Map<String, String> encrypted = credential.getCredentials();
+        if (encrypted == null || encrypted.isEmpty()) {
+            return;
+        }
+        Map<String, String> plainCreds = encryptionService.decryptMap(encrypted);
 
-        // Skip credentials that have no refresh_token — nothing we can do
-        if (currentCreds == null || !currentCreds.containsKey("refresh_token")) {
+        if (!plainCreds.containsKey("refresh_token")) {
             log.debug("Credential '{}' has no refresh_token, skipping refresh.", credential.getId());
-            // Clear tokenExpiresAt so this credential never appears in the query again
             credential.setTokenExpiresAt(null);
             credentialRepository.save(credential);
             return;
         }
 
-        Optional<ConnectorManifest> manifestOpt = connectorRegistry.findById(credential.getConnectorId());
+        Optional<ConnectorManifest> manifestOpt = connectorRegistry.findById(
+                credential.getConnectorId(), credential.getOrganizationId());
+        if (manifestOpt.isEmpty()) {
+            manifestOpt = connectorRegistry.findById(credential.getConnectorId());
+        }
         if (manifestOpt.isEmpty() || manifestOpt.get().getOauth2Config() == null) {
-            log.warn("No OAuth2 manifest found for connector '{}', cannot refresh credential '{}'.",
-                    credential.getConnectorId(), credential.getId());
+            log.warn(
+                    "No OAuth2 manifest found for connector '{}', cannot refresh credential '{}'.",
+                    credential.getConnectorId(),
+                    credential.getId());
             return;
         }
 
         OAuth2Config oauth2Config = manifestOpt.get().getOauth2Config();
-        String refreshToken = currentCreds.get("refresh_token");
-        
-        String clientId = environment.getProperty("workflow.connectors." + credential.getConnectorId() + ".client-id");
-        String clientSecret = environment.getProperty("workflow.connectors." + credential.getConnectorId() + ".client-secret");
+        OAuthClientCredentials.Resolved client = OAuthClientCredentials.resolve(
+                credential,
+                plainCreds,
+                platformOAuthService.resolveManagedClient(credential.getConnectorId()));
 
         Map<String, String> body = new HashMap<>();
         body.put("grant_type", "refresh_token");
-        body.put("refresh_token", refreshToken);
-        if (clientId != null && clientSecret != null) {
-            body.put("client_id", clientId);
-            body.put("client_secret", clientSecret);
+        body.put("refresh_token", plainCreds.get("refresh_token"));
+        if (client.clientId() != null && client.clientSecret() != null) {
+            body.put("client_id", client.clientId());
+            body.put("client_secret", client.clientSecret());
         }
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Accept", "application/json");
-        headers.set("Content-Type", "application/x-www-form-urlencoded");
-
-        HttpEntity<Map<String, String>> request = new HttpEntity<>(body, headers);
 
         @SuppressWarnings("unchecked")
         ResponseEntity<Map> response = restTemplate.exchange(
-                oauth2Config.getTokenUrl(), HttpMethod.POST, request, Map.class);
+                oauth2Config.getTokenUrl(), HttpMethod.POST, OAuthHttpForm.postEntity(body), Map.class);
 
         @SuppressWarnings("unchecked")
         Map<String, Object> tokenResponse = response.getBody();
 
         if (tokenResponse == null || !tokenResponse.containsKey("access_token")) {
-            log.error("Token refresh for credential '{}' returned invalid response: {}",
-                    credential.getId(), tokenResponse);
+            log.error(
+                    "Token refresh for credential '{}' returned invalid response: {}",
+                    credential.getId(),
+                    tokenResponse);
             credential.setConnectionStatus(com.app.common.entity.ConnectionStatus.EXPIRED);
             credentialRepository.save(credential);
             return;
         }
 
-        // Merge refreshed fields back into the stored credential map
-        Map<String, String> updatedCreds = new HashMap<>(currentCreds);
-        tokenResponse.forEach((k, v) -> updatedCreds.put(k, String.valueOf(v)));
-        credential.setCredentials(updatedCreds);
+        tokenResponse.forEach((k, v) -> plainCreds.put(k, String.valueOf(v)));
+        credential.setCredentials(encryptionService.encryptMap(plainCreds));
 
-        // Update expiry
         Object expiresIn = tokenResponse.get("expires_in");
         if (expiresIn instanceof Number) {
             credential.setTokenExpiresAt(Instant.now().plusSeconds(((Number) expiresIn).longValue()));
         }
 
         credentialRepository.save(credential);
-        log.info("Successfully refreshed OAuth2 token for credential '{}' (connector: {}).",
-                credential.getId(), credential.getConnectorId());
+        log.info(
+                "Successfully refreshed OAuth2 token for credential '{}' (connector: {}).",
+                credential.getId(),
+                credential.getConnectorId());
     }
 }

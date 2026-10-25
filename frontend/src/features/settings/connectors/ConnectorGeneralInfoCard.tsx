@@ -13,10 +13,6 @@ export interface ConnectorGeneralInfoCardProps {
 
 export function ConnectorGeneralInfoCard({ connector, onEdit }: ConnectorGeneralInfoCardProps) {
     const scopeLabel = connector.scope === 'SYSTEM' ? 'Official' : 'Custom';
-    const scopeClass =
-        connector.scope === 'SYSTEM'
-            ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
-            : 'bg-secondary text-secondary-foreground';
 
     return (
         <div className="rounded-xl border bg-card text-card-foreground shadow-sm p-6 mb-8">
@@ -29,7 +25,15 @@ export function ConnectorGeneralInfoCard({ connector, onEdit }: ConnectorGeneral
                             {connector.baseUrl || 'No base URL configured'}
                         </p>
                         <div className="flex flex-wrap gap-2 mt-3">
-                            <StatusBadge className={cn('border-none', scopeClass)}>{scopeLabel}</StatusBadge>
+                            <StatusBadge
+                                variant={connector.scope === 'SYSTEM' ? 'info' : undefined}
+                                className={cn(
+                                    'border-none',
+                                    connector.scope !== 'SYSTEM' && 'bg-secondary text-secondary-foreground',
+                                )}
+                            >
+                                {scopeLabel}
+                            </StatusBadge>
                             {connector.category ? (
                                 <StatusBadge className="border-none bg-secondary text-secondary-foreground">
                                     {connector.category}

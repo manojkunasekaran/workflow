@@ -32,6 +32,9 @@ public class AdminConnectorControllerTest {
     @MockBean
     private ConnectorRegistry connectorRegistry;
 
+    @MockBean
+    private com.app.api.service.auth.PlatformAdminAccess platformAdminAccess;
+
     private ConnectorManifest systemManifest;
     private ConnectorManifest tenantManifest;
 
@@ -45,7 +48,7 @@ public class AdminConnectorControllerTest {
         tenantManifest = new ConnectorManifest();
         tenantManifest.setId("ten-id");
         tenantManifest.setConnectorId("slack");
-        tenantManifest.setScope(ConnectorScope.TENANT);
+        tenantManifest.setScope(ConnectorScope.ORGANIZATION);
     }
 
     @Test

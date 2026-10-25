@@ -43,7 +43,17 @@ export function writeFieldValue(
 }
 
 export function keyValueToRows(value: unknown): Array<{ key: string; value: string }> {
-    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    if (Array.isArray(value)) {
+        const rows = value
+            .filter((entry) => entry && typeof entry === 'object')
+            .map((entry) => {
+                const row = entry as { key?: unknown; value?: unknown };
+                return { key: String(row.key ?? ''), value: String(row.value ?? '') };
+            })
+            .filter((row) => row.key.trim());
+        return rows.length > 0 ? rows : [{ key: '', value: '' }];
+    }
+    if (!value || typeof value !== 'object') {
         return [{ key: '', value: '' }];
     }
     const rows = Object.entries(value as Record<string, string>).map(([key, val]) => ({

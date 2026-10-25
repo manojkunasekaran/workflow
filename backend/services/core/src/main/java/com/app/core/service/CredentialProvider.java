@@ -28,9 +28,8 @@ public class CredentialProvider {
     }
 
     public Optional<IntegrationCredential> resolveCredential(String credentialId, String connectorId, com.app.core.model.ExecutionContext context) {
-        // Mocking org extraction - in real app comes from ExecutionContext (which should hold tenant info)
-        String orgId = "default-org"; 
-        String userId = "default-user";
+        String orgId = context != null ? context.getOrganizationId() : null;
+        String userId = context != null ? context.getUserId() : null;
 
         IntegrationCredential credential = null;
 
@@ -41,11 +40,15 @@ public class CredentialProvider {
             if (credential != null) {
                 // Access Check
                 if (credential.getCredentialScope() == com.app.common.entity.CredentialScope.PLATFORM) {
-                    // Platform credentials can be used by anyone
-                } else if (!orgId.equals(credential.getOrganizationId())) {
+                    // Platform credentials can be used across any organization
+                } else if (credential.getOrganizationId() != null && orgId != null && !orgId.equals(credential.getOrganizationId())) {
                     log.warn("Security violation: Attempted to use credential from another org. Cred: {}, Request Org: {}", credentialId, orgId);
                     return Optional.empty(); // Deny access
-                } else if (credential.getCredentialScope() == com.app.common.entity.CredentialScope.PERSONAL && !userId.equals(credential.getUserId())) {
+                } else if (credential.getOrganizationId() != null && (orgId == null || orgId.isBlank())) {
+                    log.warn("Security violation: Attempted to use org credential without organization context. Cred: {}", credentialId);
+                    return Optional.empty(); // Deny access
+                } else if (credential.getCredentialScope() == com.app.common.entity.CredentialScope.PERSONAL 
+                        && credential.getUserId() != null && (userId == null || !userId.equals(credential.getUserId()))) {
                     log.warn("Security violation: Attempted to use personal credential of another user.");
                     return Optional.empty(); // Deny access
                 }
@@ -54,10 +57,12 @@ public class CredentialProvider {
         
         // 2. Fallback logic if explicit credential not provided or not found
         if (credential == null && connectorId != null) {
-            // Try ORG_SHARED first
-            credential = repository.findByOrganizationIdAndConnectorId(orgId, connectorId).stream()
-                .filter(c -> c.getCredentialScope() == com.app.common.entity.CredentialScope.ORG_SHARED)
-                .findFirst().orElse(null);
+            // Try ORG_SHARED first if tenant organization context is present
+            if (orgId != null && !orgId.isBlank()) {
+                credential = repository.findByOrganizationIdAndConnectorId(orgId, connectorId).stream()
+                    .filter(c -> c.getCredentialScope() == com.app.common.entity.CredentialScope.ORG_SHARED)
+                    .findFirst().orElse(null);
+            }
                 
             // Then try PLATFORM
             if (credential == null) {

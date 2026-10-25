@@ -162,7 +162,7 @@ export default function WorkflowJsonEditor() {
             <div className="border-b border-border/60 bg-card/50 backdrop-blur-sm">
                 <div className="flex items-center justify-between px-6 py-4">
                     <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-lg">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-lg">
                             <FileJson className="h-5 w-5" />
                         </div>
                         <div>
@@ -193,7 +193,7 @@ export default function WorkflowJsonEditor() {
                             onClick={handleRun}
                             disabled={isSaving || isRunning || !workflowId}
                             size="sm"
-                            className="bg-green-600 hover:bg-green-700"
+                            className="bg-success hover:bg-success/90 text-success-foreground"
                         >
                             {isRunning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
                             Run
@@ -204,8 +204,8 @@ export default function WorkflowJsonEditor() {
                 {/* Status Messages */}
                 {message && (
                     <div className={`px-6 py-2 text-sm flex items-center gap-2 ${message.type === 'success'
-                        ? 'bg-green-500/10 text-green-600 border-t border-green-500/20'
-                        : 'bg-red-500/10 text-red-600 border-t border-red-500/20'
+                        ? 'bg-success-muted text-success border-t border-success/30'
+                        : 'bg-danger-muted text-danger border-t border-danger/30'
                         }`}>
                         {message.type === 'success' ? <CheckCircle className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
                         {message.text}
@@ -213,7 +213,7 @@ export default function WorkflowJsonEditor() {
                 )}
 
                 {parseError && (
-                    <div className="px-6 py-2 text-sm flex items-center gap-2 bg-orange-500/10 text-orange-600 border-t border-orange-500/20">
+                    <div className="px-6 py-2 text-sm flex items-center gap-2 bg-warning-muted text-warning border-t border-warning/30">
                         <AlertCircle className="h-4 w-4" />
                         {parseError}
                     </div>
@@ -235,7 +235,7 @@ export default function WorkflowJsonEditor() {
                     <Textarea
                         value={jsonContent}
                         onChange={(e) => handleJsonChange(e.target.value)}
-                        className="flex-1 font-mono text-sm resize-none bg-zinc-950 text-zinc-100 border-zinc-800 focus:border-blue-500"
+                        className="flex-1 font-mono text-sm resize-none bg-zinc-950 text-zinc-100 border-zinc-800 focus:border-primary"
                         placeholder="Paste your workflow JSON here..."
                         spellCheck={false}
                     />
@@ -256,9 +256,9 @@ export default function WorkflowJsonEditor() {
                                     </div>
                                     <div className="flex justify-between">
                                         <span className="text-muted-foreground">Status:</span>
-                                        <span className={`font-medium ${lastExecution.status === 'COMPLETED' ? 'text-green-500' :
-                                            lastExecution.status === 'FAILED' ? 'text-red-500' :
-                                                'text-yellow-500'
+                                        <span className={`font-medium ${lastExecution.status === 'COMPLETED' ? 'text-success' :
+                                            lastExecution.status === 'FAILED' ? 'text-destructive' :
+                                                'text-warning'
                                             }`}>
                                             {lastExecution.status}
                                         </span>

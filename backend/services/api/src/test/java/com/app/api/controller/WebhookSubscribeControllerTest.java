@@ -39,6 +39,8 @@ class WebhookSubscribeControllerTest {
     private WorkflowDefinitionRepository definitionRepository;
     @Mock
     private WebhookSubscribeService subscribeService;
+    @Mock
+    private com.app.api.service.organization.OrganizationAccess organizationAccess;
 
     @InjectMocks
     private WebhookSubscribeController controller;
@@ -50,6 +52,7 @@ class WebhookSubscribeControllerTest {
         workflowDefinition = new WorkflowDefinition();
         workflowDefinition.setId("wf-sub-1");
         workflowDefinition.setName("Subscribe Workflow");
+        workflowDefinition.setOrganizationId("org-1");
         workflowDefinition.setTrigger(TriggerConfig.builder()
                 .type(TriggerType.WEBHOOK)
                 .webhook(WebhookConfig.builder()

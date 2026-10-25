@@ -62,7 +62,7 @@ export interface ConnectorListHandle {
 }
 
 interface ConnectorListProps {
-    scope?: 'SYSTEM' | 'TENANT';
+    scope?: 'SYSTEM' | 'ORGANIZATION';
 }
 
 const ConnectorList = forwardRef<ConnectorListHandle, ConnectorListProps>(function ConnectorList(
@@ -71,7 +71,7 @@ const ConnectorList = forwardRef<ConnectorListHandle, ConnectorListProps>(functi
 ) {
     const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
-    const [activeTab, setActiveTab] = useState<'all' | 'system' | 'tenant'>('all');
+    const [activeTab, setActiveTab] = useState<'all' | 'system' | 'organization'>('all');
     const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
     const [allConnectors, setAllConnectors] = useState<ConnectorManifest[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -101,7 +101,7 @@ const ConnectorList = forwardRef<ConnectorListHandle, ConnectorListProps>(functi
     const connectors = allConnectors.filter((connector) => {
         // Tab filter
         if (activeTab === 'system' && connector.scope !== 'SYSTEM') return false;
-        if (activeTab === 'tenant' && connector.scope !== 'TENANT') return false;
+        if (activeTab === 'organization' && connector.scope !== 'ORGANIZATION') return false;
 
         // Search filter
         if (searchQuery) {
@@ -166,8 +166,8 @@ const ConnectorList = forwardRef<ConnectorListHandle, ConnectorListProps>(functi
                                 <Button 
                                     variant="ghost" 
                                     size="sm" 
-                                    className={cn("h-8", activeTab === 'tenant' && "bg-background shadow-sm")} 
-                                    onClick={() => setActiveTab('tenant')}
+                                    className={cn("h-8", activeTab === 'organization' && "bg-background shadow-sm")} 
+                                    onClick={() => setActiveTab('organization')}
                                 >
                                     My Apps
                                 </Button>
@@ -197,13 +197,13 @@ const ConnectorList = forwardRef<ConnectorListHandle, ConnectorListProps>(functi
                         <div className="overflow-hidden rounded-lg border border-border bg-card">
                     <table className="w-full text-left">
                         <thead className="border-b border-border bg-muted/50">
-                            <tr>
-                                <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-muted-foreground w-12"></th>
-                                <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">Name</th>
-                                <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-muted-foreground hidden md:table-cell">Category</th>
-                                <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">Type</th>
-                                <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-muted-foreground hidden sm:table-cell">Auth Type</th>
-                                <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-muted-foreground text-right"></th>
+                            <tr className="h-[var(--density-table-head-h)]">
+                                <th className="px-4 py-[var(--density-table-cell-p)] text-xs font-medium uppercase tracking-wider text-muted-foreground w-12"></th>
+                                <th className="px-4 py-[var(--density-table-cell-p)] text-xs font-medium uppercase tracking-wider text-muted-foreground">Name</th>
+                                <th className="px-4 py-[var(--density-table-cell-p)] text-xs font-medium uppercase tracking-wider text-muted-foreground hidden md:table-cell">Category</th>
+                                <th className="px-4 py-[var(--density-table-cell-p)] text-xs font-medium uppercase tracking-wider text-muted-foreground">Type</th>
+                                <th className="px-4 py-[var(--density-table-cell-p)] text-xs font-medium uppercase tracking-wider text-muted-foreground hidden sm:table-cell">Auth Type</th>
+                                <th className="px-4 py-[var(--density-table-cell-p)] text-xs font-medium uppercase tracking-wider text-muted-foreground text-right"></th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-border">
@@ -214,10 +214,10 @@ const ConnectorList = forwardRef<ConnectorListHandle, ConnectorListProps>(functi
                                     className="transition-colors hover:bg-muted/30 group cursor-pointer"
                                     onClick={() => navigate(`/apps/${connector.connectorId}`)}
                                 >
-                                    <td className="px-4 py-3 align-middle">
+                                    <td className="px-4 py-[var(--density-table-cell-p)] align-middle">
                                         <ConnectorIcon icon={connector.icon} name={connector.displayName} size="sm" className="h-8 w-8" />
                                     </td>
-                                    <td className="px-4 py-3 align-middle">
+                                    <td className="px-4 py-[var(--density-table-cell-p)] align-middle">
                                         <div className="font-medium text-sm text-foreground flex items-center gap-2">
                                             {connector.displayName}
                                             {connector.scope === 'SYSTEM' ? (
@@ -227,24 +227,24 @@ const ConnectorList = forwardRef<ConnectorListHandle, ConnectorListProps>(functi
                                             )}
                                         </div>
                                     </td>
-                                    <td className="px-4 py-3 align-middle hidden md:table-cell">
+                                    <td className="px-4 py-[var(--density-table-cell-p)] align-middle hidden md:table-cell">
                                         {connector.category ? (
                                             <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-muted text-muted-foreground">
                                                 {connector.category}
                                             </span>
                                         ) : (
-                                            <span className="text-xs text-muted-foreground/50">?"</span>
+                                            <span className="text-xs text-muted-foreground/50">—</span>
                                         )}
                                     </td>
-                                    <td className="px-4 py-3 align-middle text-sm text-muted-foreground">
+                                    <td className="px-4 py-[var(--density-table-cell-p)] align-middle text-sm text-muted-foreground">
                                         <span className="px-2 py-1 text-xs rounded-full bg-muted">
                                             {getTaskTypeLabel(connector.taskType)}
                                         </span>
                                     </td>
-                                    <td className="px-4 py-3 align-middle text-sm text-muted-foreground hidden sm:table-cell">
+                                    <td className="px-4 py-[var(--density-table-cell-p)] align-middle text-sm text-muted-foreground hidden sm:table-cell">
                                         {resolveAuthLabel(connector.authType)}
                                     </td>
-                                    <td className="px-4 py-3 align-middle text-right">
+                                    <td className="px-4 py-[var(--density-table-cell-p)] align-middle text-right">
                                         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>

@@ -6,7 +6,7 @@ import type { WorkflowTaskExecution } from '@/api/executionApi';
 describe('executionNodeStatus (H-028 to H-033)', () => {
   describe('executionNodeBorderClass', () => {
     it('H-028: COMPLETED maps to completed visual state', () => {
-      expect(executionNodeBorderClass('COMPLETED')).toBe('border-green-500');
+      expect(executionNodeBorderClass('COMPLETED')).toBe('border-success');
     });
 
     it('H-029: FAILED maps to failed visual state', () => {
@@ -14,7 +14,7 @@ describe('executionNodeStatus (H-028 to H-033)', () => {
     });
 
     it('H-030: RUNNING maps to running visual state', () => {
-      expect(executionNodeBorderClass('RUNNING')).toBe('border-amber-400');
+      expect(executionNodeBorderClass('RUNNING')).toBe('border-warning');
     });
 
     it('H-031: QUEUED or PENDING maps to pending visual state (undefined border)', () => {
@@ -24,7 +24,7 @@ describe('executionNodeStatus (H-028 to H-033)', () => {
     });
 
     it('H-032: PAUSED maps to paused visual state', () => {
-      expect(executionNodeBorderClass('PAUSED')).toBe('border-sky-400');
+      expect(executionNodeBorderClass('PAUSED')).toBe('border-info');
     });
 
     it('H-033: unknown status string maps to idle (undefined border)', () => {

@@ -14,7 +14,8 @@ function validateBranchParameters(
     errors: TaskParameterErrors,
     context?: TaskValidationContext,
 ): void {
-    if ('joinTaskId' in parameters) {
+    const legacyJoin = parameters.joinTaskId;
+    if (legacyJoin != null && String(legacyJoin).trim() !== '') {
         errors.joinTaskId = 'joinTaskId is no longer supported; wire paths directly to JOIN';
     }
 

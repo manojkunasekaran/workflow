@@ -4,7 +4,9 @@ import com.app.api.dto.ApiErrorResponse;
 import com.app.api.exception.McpInboundException;
 import com.app.api.exception.WebhookInboundException;
 import com.app.common.constant.ResponseStatus;
+import com.app.common.exception.AccessDeniedException;
 import com.app.common.exception.ResourceNotFoundException;
+import com.app.common.exception.UnauthorizedException;
 import com.app.common.exception.ValidationException;
 
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +30,30 @@ public class GlobalExceptionHandler {
                 .message(ex.getMessage())
                 .build();
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+    }
+
+    @ExceptionHandler(UnauthorizedException.class)
+    public ResponseEntity<ApiErrorResponse> handleUnauthorized(UnauthorizedException ex) {
+        log.warn("Unauthorized: {}", ex.getMessage());
+        ApiErrorResponse response = ApiErrorResponse.builder()
+                .status(ResponseStatus.FAILURE)
+                .errorCode("UNAUTHORIZED")
+                .error("Unauthorized")
+                .message(ex.getMessage())
+                .build();
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiErrorResponse> handleAccessDenied(AccessDeniedException ex) {
+        log.warn("Forbidden: {}", ex.getMessage());
+        ApiErrorResponse response = ApiErrorResponse.builder()
+                .status(ResponseStatus.FAILURE)
+                .errorCode("FORBIDDEN")
+                .error("Forbidden")
+                .message(ex.getMessage())
+                .build();
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
     }
 
     @ExceptionHandler(ValidationException.class)

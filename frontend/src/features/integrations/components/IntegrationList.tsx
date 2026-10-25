@@ -149,7 +149,7 @@ export const IntegrationList = forwardRef<IntegrationListHandle, IntegrationList
             </div>
         ) : (
             <div className="rounded-lg border border-border bg-card overflow-hidden divide-y divide-border flex flex-col">
-                <div className="flex items-center gap-4 px-4 py-2 border-b border-border bg-muted/50">
+                <div className="flex items-center gap-4 px-4 h-[var(--density-table-head-h)] border-b border-border bg-muted/50">
                     <div className="w-[120px] shrink-0 text-xs font-medium uppercase tracking-wider text-muted-foreground">
                         Connector
                     </div>

@@ -57,7 +57,7 @@ export function TabsList({ className, ...props }: React.HTMLAttributes<HTMLDivEl
     return (
         <div
             className={cn(
-                'inline-flex h-10 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground',
+                'inline-flex h-[var(--density-tabs-h)] items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground',
                 className
             )}
             role="tablist"

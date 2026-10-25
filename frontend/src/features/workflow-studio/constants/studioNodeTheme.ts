@@ -13,6 +13,7 @@ export const TASK_ACCENT_COLORS: Record<StudioTaskType, string> = {
     JOIN: '#059669',
     WAIT: '#2563eb',
     DATA_TRANSFORM: '#7c3aed',
+    FORM: '#0d9488',
     SMTP_TASK: '#0891b2',
     CONNECTOR_TASK: '#ec4899',
     AGENTS_TASK: '#8b5cf6',
@@ -33,6 +34,7 @@ export function resolveTaskAccentColor(type: string): string {
     return TASK_ACCENT_COLORS[type as StudioTaskType] ?? DEFAULT_TASK_ACCENT_COLOR;
 }
 
+/** Matches STUDIO_CANVAS_HEX.nodeBorderDefault / --edge-color */
 export const STUDIO_NODE_DEFAULT_BORDER_CLASS = 'border-[#94a3b8]';
 
 export type StudioNodeBorderState = {

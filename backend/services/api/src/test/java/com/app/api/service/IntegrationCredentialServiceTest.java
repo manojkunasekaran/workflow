@@ -47,6 +47,9 @@ public class IntegrationCredentialServiceTest {
     @Mock
     private McpSettingsService mcpSettingsService;
 
+    @Mock
+    private com.app.api.service.organization.OrganizationAccess organizationAccess;
+
     @InjectMocks
     private IntegrationCredentialService service;
 
@@ -54,9 +57,11 @@ public class IntegrationCredentialServiceTest {
 
     @BeforeEach
     void setUp() {
+        lenient().when(organizationAccess.requireOrganizationId()).thenReturn("platform-admin-org");
+
         credential = new IntegrationCredential();
         credential.setId("cred-123");
-        credential.setOrganizationId("default-org");
+        credential.setOrganizationId("platform-admin-org");
         credential.setName("Test Cred");
         credential.setType("SMTP");
         
@@ -79,7 +84,7 @@ public class IntegrationCredentialServiceTest {
         IntegrationCredential result = service.createCredential(credential);
 
         assertNotNull(result.getId());
-        assertEquals("default-org", result.getOrganizationId());
+        assertEquals("platform-admin-org", result.getOrganizationId());
         
         // Ensure result is masked
         assertNotNull(result.getCredentials());
@@ -93,7 +98,7 @@ public class IntegrationCredentialServiceTest {
     void updateCredential_shouldEncryptOnlyUnmaskedFields() {
         IntegrationCredential existing = new IntegrationCredential();
         existing.setId("cred-123");
-        existing.setOrganizationId("default-org");
+        existing.setOrganizationId("platform-admin-org");
         existing.setName("Old Name");
         
         Map<String, String> existingCreds = new HashMap<>();
@@ -127,8 +132,8 @@ public class IntegrationCredentialServiceTest {
 
     @Test
     void getAllCredentials_shouldReturnMaskedList() {
-        credential.setOrganizationId("default-org");
-        when(repository.findByOrganizationId("default-org")).thenReturn(List.of(credential));
+        credential.setOrganizationId("platform-admin-org");
+        when(repository.findByOrganizationId("platform-admin-org")).thenReturn(List.of(credential));
         
         List<IntegrationCredential> results = service.getAllCredentials();
         

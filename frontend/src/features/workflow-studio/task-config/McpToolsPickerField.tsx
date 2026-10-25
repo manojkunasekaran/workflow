@@ -77,17 +77,28 @@ export function McpToolsPickerField({
         setLoadError(null);
         try {
             const cred = await connectionApi.getById(credentialId);
+            if (credentialId !== pickerCredentialId) {
+                return;
+            }
             setCredentialName(cred.name);
             setCredentialNames((prev) => ({ ...prev, [credentialId]: cred.name }));
             const tools = await connectionApi.listMcpTools(credentialId);
+            if (credentialId !== pickerCredentialId) {
+                return;
+            }
             setRemoteTools(tools);
         } catch (error) {
+            if (credentialId !== pickerCredentialId) {
+                return;
+            }
             setRemoteTools([]);
             setLoadError(error instanceof Error ? error.message : 'Failed to load MCP tools');
         } finally {
-            setIsLoading(false);
+            if (credentialId === pickerCredentialId) {
+                setIsLoading(false);
+            }
         }
-    }, []);
+    }, [pickerCredentialId]);
 
     useEffect(() => {
         if (pickerCredentialId) {
@@ -185,7 +196,7 @@ export function McpToolsPickerField({
                                         className={cn(
                                             'flex items-start gap-2.5 rounded-md border p-2.5 cursor-pointer transition-colors',
                                             checked
-                                                ? 'border-purple-500/40 bg-purple-50/50'
+                                                ? 'border-primary/40 bg-primary/10'
                                                 : 'border-border bg-background hover:bg-muted/30',
                                         )}
                                     >

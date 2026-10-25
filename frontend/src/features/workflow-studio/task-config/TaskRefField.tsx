@@ -44,7 +44,7 @@ export function TaskRefField({
             />
             {description && <p className="text-[11px] text-muted-foreground">{description}</p>}
             {required && candidates.length === 0 && (
-                <p className="text-[11px] text-amber-700">No matching tasks in this workflow yet.</p>
+                <p className="text-[11px] text-warning">No matching tasks in this workflow yet.</p>
             )}
             {error && <p className="text-xs text-destructive">{error}</p>}
         </div>

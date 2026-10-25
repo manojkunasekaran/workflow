@@ -313,7 +313,7 @@ export default function ExecutionsList() {
                 }
             />
 
-            <div className="flex flex-1 flex-col overflow-hidden p-6">
+            <div className="flex flex-1 flex-col overflow-hidden p-[var(--density-page-p)]">
                 {error ? (
                     <ErrorBanner
                         data-testid="executions-error-banner"
@@ -335,29 +335,29 @@ export default function ExecutionsList() {
                             style={{ height: '100%' }}
                             components={virtuosoTableComponents}
                             fixedHeaderContent={() => (
-                                <tr className="border-b border-border bg-muted/50">
-                                    <th className="w-[24%] px-4 py-3 text-left text-xs font-medium uppercase text-muted-foreground">
+                                <tr className="border-b border-border bg-muted/50 h-[var(--density-table-head-h)]">
+                                    <th className="w-[24%] px-4 py-[var(--density-table-cell-p)] text-left text-xs font-medium uppercase text-muted-foreground">
                                         Workflow
                                     </th>
-                                    <th className="w-[12%] px-4 py-3 text-left text-xs font-medium uppercase text-muted-foreground">
+                                    <th className="w-[12%] px-4 py-[var(--density-table-cell-p)] text-left text-xs font-medium uppercase text-muted-foreground">
                                         Status
                                     </th>
-                                    <th className="w-[10%] px-4 py-3 text-left text-xs font-medium uppercase text-muted-foreground">
+                                    <th className="w-[10%] px-4 py-[var(--density-table-cell-p)] text-left text-xs font-medium uppercase text-muted-foreground">
                                         Trigger
                                     </th>
-                                    <th className="w-[9%] px-4 py-3 text-left text-xs font-medium uppercase text-muted-foreground">
+                                    <th className="w-[9%] px-4 py-[var(--density-table-cell-p)] text-left text-xs font-medium uppercase text-muted-foreground">
                                         Progress
                                     </th>
-                                    <th className="w-[15%] px-4 py-3 text-left text-xs font-medium uppercase text-muted-foreground">
+                                    <th className="w-[15%] px-4 py-[var(--density-table-cell-p)] text-left text-xs font-medium uppercase text-muted-foreground">
                                         Started
                                     </th>
-                                    <th className="w-[10%] px-4 py-3 text-left text-xs font-medium uppercase text-muted-foreground">
+                                    <th className="w-[10%] px-4 py-[var(--density-table-cell-p)] text-left text-xs font-medium uppercase text-muted-foreground">
                                         Duration
                                     </th>
-                                    <th className="w-[16%] px-4 py-3 text-left text-xs font-medium uppercase text-muted-foreground">
+                                    <th className="w-[16%] px-4 py-[var(--density-table-cell-p)] text-left text-xs font-medium uppercase text-muted-foreground">
                                         Current / Failed Step
                                     </th>
-                                    <th className="w-[4%] px-4 py-3" />
+                                    <th className="w-[4%] px-4 py-[var(--density-table-cell-p)]" />
                                 </tr>
                             )}
                             fixedFooterContent={() => (
@@ -391,7 +391,7 @@ export default function ExecutionsList() {
                                     <>
                                         <td
                                             data-testid={`execution-row-${execution.id}`}
-                                            className="border-b border-border px-4 py-3"
+                                            className="border-b border-border px-4 py-[var(--density-table-cell-p)]"
                                         >
                                             <div
                                                 data-testid={`execution-workflow-name-${execution.id}`}
@@ -402,38 +402,38 @@ export default function ExecutionsList() {
                                         </td>
                                         <td
                                             data-testid={`execution-status-cell-${execution.id}`}
-                                            className="border-b border-border px-4 py-3"
+                                            className="border-b border-border px-4 py-[var(--density-table-cell-p)]"
                                         >
                                             <ExecutionStatusBadge status={execution.status} size="lg" />
                                         </td>
-                                        <td className="border-b border-border px-4 py-3 text-sm text-muted-foreground">
+                                        <td className="border-b border-border px-4 py-[var(--density-table-cell-p)] text-sm text-muted-foreground">
                                             {triggerLabel(execution)}
                                         </td>
-                                        <td className="border-b border-border px-4 py-3 text-sm text-muted-foreground">
+                                        <td className="border-b border-border px-4 py-[var(--density-table-cell-p)] text-sm text-muted-foreground">
                                             {renderProgress(execution, definitions, failedDefinitionIds)}
                                         </td>
                                         <td
                                             data-testid={`execution-timestamp-${execution.id}`}
-                                            className="border-b border-border px-4 py-3 text-sm text-muted-foreground"
+                                            className="border-b border-border px-4 py-[var(--density-table-cell-p)] text-sm text-muted-foreground"
                                         >
                                             {formatExecutionTimestamp(execution.startTime)}
                                         </td>
                                         <td
                                             data-testid={`execution-duration-${execution.id}`}
-                                            className="border-b border-border px-4 py-3 text-sm text-muted-foreground"
+                                            className="border-b border-border px-4 py-[var(--density-table-cell-p)] text-sm text-muted-foreground"
                                         >
                                             {duration}
                                         </td>
                                         <td
                                             data-testid={`execution-failed-step-${execution.id}`}
-                                            className="border-b border-border px-4 py-3 text-sm text-muted-foreground"
+                                            className="border-b border-border px-4 py-[var(--density-table-cell-p)] text-sm text-muted-foreground"
                                         >
                                             <div className="truncate">
                                                 {renderStepLabel(execution, definitions, failedDefinitionIds)}
                                             </div>
                                         </td>
                                         <td
-                                            className="border-b border-border px-4 py-3"
+                                            className="border-b border-border px-4 py-[var(--density-table-cell-p)]"
                                             onClick={(event) => event.stopPropagation()}
                                         >
                                             <div className="flex items-center justify-end gap-1">

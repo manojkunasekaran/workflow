@@ -1,0 +1,70 @@
+{
+  "name": "nested-branch-single-join",
+  "graph": {
+    "tasks": {
+      "branch_outer": {
+        "type": "BRANCH",
+        "parameters": {
+          "branches": [
+            { "branchName": "Path A", "startTaskId": "A" },
+            { "branchName": "Path Inner", "startTaskId": "branch_inner" },
+            { "branchName": "Path E", "startTaskId": "E" }
+          ]
+        }
+      },
+      "branch_inner": {
+        "type": "BRANCH",
+        "parameters": {
+          "branches": [
+            { "branchName": "Path C", "startTaskId": "C" },
+            { "branchName": "Path D", "startTaskId": "D" }
+          ]
+        }
+      },
+      "A": { "type": "HTTP_TASK", "parameters": {} },
+      "C": { "type": "HTTP_TASK", "parameters": {} },
+      "D": { "type": "HTTP_TASK", "parameters": {} },
+      "E": { "type": "HTTP_TASK", "parameters": {} },
+      "join_shared": {
+        "type": "JOIN",
+        "parameters": {
+          "inboundTaskIds": ["A", "C", "D", "E"],
+          "waitPolicy": "ALL",
+          "mergeMode": "PASS_THROUGH",
+          "nextTaskId": "NextStep"
+        }
+      },
+      "NextStep": { "type": "HTTP_TASK", "parameters": {} }
+    },
+    "chainOut": {},
+    "joinInbounds": {
+      "join_shared": ["A", "C", "D", "E"]
+    }
+  },
+  "expectations": {
+    "resolveJoinInbounds": {
+      "join_shared": ["A", "C", "D", "E"]
+    },
+    "resolveBranchPaths": {
+      "branch_outer": [
+        { "branchIndex": 0, "startTaskId": "A", "tipTaskId": "A" },
+        { "branchIndex": 1, "startTaskId": "branch_inner", "tipTaskId": "branch_inner" },
+        { "branchIndex": 2, "startTaskId": "E", "tipTaskId": "E" }
+      ],
+      "branch_inner": [
+        { "branchIndex": 0, "startTaskId": "C", "tipTaskId": "C" },
+        { "branchIndex": 1, "startTaskId": "D", "tipTaskId": "D" }
+      ]
+    },
+    "isLeafInbound": {
+      "join_shared:A": true,
+      "join_shared:C": true,
+      "join_shared:D": true,
+      "join_shared:E": true,
+      "join_shared:branch_inner": false
+    },
+    "collectSpawnTree": {
+      "branch_outer": ["branch_outer", "A", "branch_inner", "C", "D", "E"]
+    }
+  }
+}

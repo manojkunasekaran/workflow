@@ -9,12 +9,14 @@ import { credentialApi } from '@/api/credentialApi';
 import { mcpSettingsApi } from '@/api/mcpSettingsApi';
 import type { IntegrationCredential, McpTransport } from '@/types/api';
 import { ShieldCheck, ExternalLink, Loader2, Search, ArrowLeft, Blocks, KeyRound, UserRound, Mail, Plug } from 'lucide-react';
+import { connectOAuthInPopup, getOAuthCallbackRedirectUrl } from '@/lib/oauthConnect';
 
 interface ConnectorConnectionPanelProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     credential?: IntegrationCredential;
     onSave: (cred: IntegrationCredential) => Promise<void>;
+    onOAuthSuccess?: (result: { credentialId?: string }) => void | Promise<void>;
     preselectedConnectorId?: string;
 }
 
@@ -28,7 +30,7 @@ const CUSTOM_AUTH_OPTIONS = [
 type GenericAuthType = 'SMTP' | 'BEARER_TOKEN' | 'BASIC_AUTH' | 'MCP_SERVER';
 type McpAuthType = 'NONE' | 'BEARER' | 'BASIC' | 'CUSTOM_HEADER';
 
-export function ConnectorConnectionPanel({ open, onOpenChange, credential, onSave, preselectedConnectorId }: ConnectorConnectionPanelProps) {
+export function ConnectorConnectionPanel({ open, onOpenChange, credential, onSave, onOAuthSuccess, preselectedConnectorId }: ConnectorConnectionPanelProps) {
     const [connectors, setConnectors] = useState<ConnectorManifest[]>([]);
     
     // Auth selection state
@@ -60,6 +62,8 @@ export function ConnectorConnectionPanel({ open, onOpenChange, credential, onSav
     const [customClientSecret, setCustomClientSecret] = useState('');
     const [customScopes, setCustomScopes] = useState('');
     const [allowedDomains, setAllowedDomains] = useState('');
+    const [oauthError, setOauthError] = useState<string | null>(null);
+    const [isOAuthConnecting, setIsOAuthConnecting] = useState(false);
 
     useEffect(() => {
         if (open) {
@@ -234,36 +238,36 @@ export function ConnectorConnectionPanel({ open, onOpenChange, credential, onSav
         }
     };
 
-    const handleOAuthConnect = async () => {
+    const handleOAuthConnect = () => {
         if (!selectedConnector) return;
+        setOauthError(null);
+        setIsOAuthConnecting(true);
 
-        let url = '/api/v1/oauth/' + selectedConnector.connectorId + '/authorize';
-        if (oauthMode === 'CUSTOM') {
-            const params = new URLSearchParams();
-            if (customClientId) params.append('clientId', customClientId);
-            if (customClientSecret) params.append('clientSecret', customClientSecret);
-            if (customScopes) params.append('scopes', customScopes);
-            if (allowedDomains) params.append('allowedDomains', allowedDomains);
-            url += '?' + params.toString();
-        }
-
-        const width = 600;
-        const height = 700;
-        const left = window.screen.width / 2 - width / 2;
-        const top = window.screen.height / 2 - height / 2;
-        window.open(
-            url,
-            'oauth_popup',
-            'width=' + width + ',height=' + height + ',top=' + top + ',left=' + left
-        );
-
-        const handleMessage = (event: MessageEvent) => {
-            if (event.data.type === 'OAUTH_SUCCESS') {
-                window.removeEventListener('message', handleMessage);
-                onOpenChange(false);
-            }
-        };
-        window.addEventListener('message', handleMessage);
+        connectOAuthInPopup({
+            connectorId: selectedConnector.connectorId,
+            mode: oauthMode,
+            custom:
+                oauthMode === 'CUSTOM'
+                    ? {
+                          clientId: customClientId,
+                          clientSecret: customClientSecret,
+                          scopes: customScopes,
+                          allowedDomains,
+                      }
+                    : undefined,
+            onSuccess: async (result) => {
+                setIsOAuthConnecting(false);
+                try {
+                    await onOAuthSuccess?.({ credentialId: result.credentialId });
+                } finally {
+                    onOpenChange(false);
+                }
+            },
+            onError: (message) => {
+                setIsOAuthConnecting(false);
+                setOauthError(message);
+            },
+        });
     };
 
     const getDialogDescription = () => {
@@ -402,6 +406,9 @@ export function ConnectorConnectionPanel({ open, onOpenChange, credential, onSav
                                 {/* OAUTH2 FORM */}
                                 {selectedConnector && selectedConnector.authType === 'OAUTH2' && (
                                     <div className="space-y-4 pt-4 border-t">
+                                        {oauthError && (
+                                            <p className="text-xs text-destructive bg-destructive/5 rounded p-2">{oauthError}</p>
+                                        )}
                                         <div className="space-y-1.5">
                                             <Label>Setup credential</Label>
                                             <Select value={oauthMode} onValueChange={(val: 'MANAGED'|'CUSTOM') => setOauthMode(val)}>
@@ -409,7 +416,7 @@ export function ConnectorConnectionPanel({ open, onOpenChange, credential, onSav
                                                     <SelectValue />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    <SelectItem value="MANAGED">Managed OAuth2 (recommended)</SelectItem>
+                                                    <SelectItem value="MANAGED">Managed OAuth2 (platform admin configures app credentials)</SelectItem>
                                                     <SelectItem value="CUSTOM">Custom OAuth2 (Bring your own app)</SelectItem>
                                                 </SelectContent>
                                             </Select>
@@ -422,7 +429,7 @@ export function ConnectorConnectionPanel({ open, onOpenChange, credential, onSav
                                                     <div className="flex">
                                                         <Input 
                                                             readOnly 
-                                                            value={window.location.origin + '/rest/oauth/callback'} 
+                                                            value={getOAuthCallbackRedirectUrl()} 
                                                             className="bg-muted text-muted-foreground"
                                                         />
                                                     </div>
@@ -641,7 +648,7 @@ export function ConnectorConnectionPanel({ open, onOpenChange, credential, onSav
                                                             {isVerifying ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Verifying...</> : 'Verify Connection'}
                                                         </Button>
                                                         {verifyMessage && (
-                                                            <p className={`text-xs ${verifyMessage.includes('failed') ? 'text-red-600' : 'text-emerald-600'}`}>
+                                                            <p className={`text-xs ${verifyMessage.includes('failed') ? 'text-destructive' : 'text-success'}`}>
                                                                 {verifyMessage}
                                                             </p>
                                                         )}
@@ -664,15 +671,19 @@ export function ConnectorConnectionPanel({ open, onOpenChange, credential, onSav
                 {!isSelectorMode && (
                     <DialogFooter className="px-6 py-4 border-t bg-muted/10 sm:justify-between">
                         <div className="flex items-center text-xs text-muted-foreground">
-                            <ShieldCheck className="h-4 w-4 mr-1.5 text-emerald-500" />
+                            <ShieldCheck className="h-4 w-4 mr-1.5 text-success" />
                             Credentials securely encrypted
                         </div>
                         {(selectedConnector || selectedGenericAuth) ? (
                             <div className="flex gap-2">
                                 <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
                                 {selectedConnector?.authType === 'OAUTH2' ? (
-                                    <Button onClick={handleOAuthConnect} className="gap-2">
-                                        <img src={selectedConnector.icon} alt="" className="w-4 h-4 bg-primary-foreground rounded-sm p-[1px]" />
+                                    <Button onClick={handleOAuthConnect} disabled={isOAuthConnecting} className="gap-2">
+                                        {isOAuthConnecting ? (
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                        ) : (
+                                            <img src={selectedConnector.icon} alt="" className="w-4 h-4 bg-primary-foreground rounded-sm p-[1px]" />
+                                        )}
                                         {selectedConnector.connectionSetup?.buttonLabel || `Sign in with ${selectedConnector.displayName}`}
                                     </Button>
                                 ) : (

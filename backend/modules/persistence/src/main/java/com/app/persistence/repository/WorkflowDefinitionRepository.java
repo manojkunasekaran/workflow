@@ -8,4 +8,10 @@ import com.app.common.entity.WorkflowDefinition;
 @Repository
 public interface WorkflowDefinitionRepository extends MongoRepository<WorkflowDefinition, String> {
     java.util.List<WorkflowDefinition> findByIntegrationId(String integrationId);
+
+    java.util.List<WorkflowDefinition> findByOrganizationId(String organizationId);
+
+    long countByOrganizationId(String organizationId);
+
+    java.util.Optional<WorkflowDefinition> findByIdAndOrganizationId(String id, String organizationId);
 }

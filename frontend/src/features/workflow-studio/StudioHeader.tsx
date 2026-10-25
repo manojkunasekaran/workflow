@@ -1,4 +1,4 @@
-import { ArrowLeft, BarChart3, ExternalLink, History, MoreVertical, Play, Puzzle } from 'lucide-react';
+import { ArrowLeft, BarChart3, ClipboardList, ExternalLink, History, MoreVertical, Play, Puzzle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { PageHeader } from '@/layouts/PageHeader';
@@ -23,6 +23,8 @@ interface StudioHeaderProps {
     onAssignIntegration: () => void;
     onViewUseCaseInsights?: () => void;
     hasIntegration?: boolean;
+    onOpenFormSubmissions?: () => void;
+    showFormSubmissions?: boolean;
 }
 
 export function StudioHeader({
@@ -38,6 +40,8 @@ export function StudioHeader({
     onAssignIntegration,
     onViewUseCaseInsights,
     hasIntegration,
+    onOpenFormSubmissions,
+    showFormSubmissions,
 }: StudioHeaderProps) {
 
     return (
@@ -90,10 +94,22 @@ export function StudioHeader({
                     >
                         {isSaving ? 'Saving...' : 'Save'}
                     </Button>
-                    <Button data-testid="run-workflow-btn" size="sm" onClick={onRun} disabled={isRunning}>
+                    <Button data-testid="run-workflow-btn" size="sm" onClick={onRun} disabled={isRunning || isSaving}>
                         <Play className="h-4 w-4 fill-current" />
                         {isRunning ? 'Running...' : 'Run Workflow'}
                     </Button>
+                    {showFormSubmissions && onOpenFormSubmissions ? (
+                        <Button
+                            data-testid="form-submissions-btn"
+                            variant="outline"
+                            size="sm"
+                            onClick={onOpenFormSubmissions}
+                            className={STUDIO_OUTLINE_BUTTON_CLASS}
+                        >
+                            <ClipboardList className="h-4 w-4" />
+                            Submissions
+                        </Button>
+                    ) : null}
                     {lastExecutionId ? (
                         <Button data-testid="view-execution-link" variant="outline" size="sm" asChild className={STUDIO_OUTLINE_BUTTON_CLASS}>
                             <Link to={`/executions/${lastExecutionId}`}>

@@ -11,6 +11,7 @@ import com.app.common.model.task.WorkflowTask;
 import com.app.common.model.trigger.TriggerConfig;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -26,6 +27,9 @@ import com.app.common.constant.CollectionNames;
 public class WorkflowDefinition extends Auditable {
     @Id
     private String id;
+
+    @Indexed
+    private String organizationId;
 
     private String name;
     private List<WorkflowTask> tasks;

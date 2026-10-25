@@ -20,6 +20,7 @@ import {
 import { Loader2 } from 'lucide-react';
 import type { IntegrationCredential } from '@/types/api';
 import { connectorApi, type ConnectorManifest } from '@/api/connectorApi';
+import { connectOAuthInPopup } from '@/lib/oauthConnect';
 
 interface CredentialDialogProps {
     open: boolean;
@@ -42,38 +43,13 @@ export function CredentialDialog({ open, onOpenChange, credential, onSave }: Cre
     // so the credentials list refreshes.
     const handleOAuthConnect = (cId: string, displayName: string) => {
         setOauthError(null);
-        const width = 600;
-        const height = 700;
-        const left = Math.round(window.screenX + (window.outerWidth - width) / 2);
-        const top = Math.round(window.screenY + (window.outerHeight - height) / 2);
-        const popup = window.open(
-            `/api/v1/oauth/${cId}/authorize`,
-            `oauth_${cId}`,
-            `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`,
-        );
-
-        const handleMessage = (event: MessageEvent) => {
-            // Only accept messages from the same origin
-            if (event.origin !== window.location.origin) return;
-            if (event.data?.type === 'OAUTH_SUCCESS') {
-                window.removeEventListener('message', handleMessage);
-                popup?.close();
-                onOpenChange(false); // Close dialog — parent should refresh credentials list
-            } else if (event.data?.type === 'OAUTH_ERROR') {
-                window.removeEventListener('message', handleMessage);
-                popup?.close();
-                setOauthError(event.data.message ?? `Failed to connect with ${displayName}. Please try again.`);
-            }
-        };
-        window.addEventListener('message', handleMessage);
-
-        // Cleanup listener if popup is closed manually
-        const pollClosed = setInterval(() => {
-            if (popup?.closed) {
-                clearInterval(pollClosed);
-                window.removeEventListener('message', handleMessage);
-            }
-        }, 500);
+        connectOAuthInPopup({
+            connectorId: cId,
+            mode: 'MANAGED',
+            onSuccess: () => onOpenChange(false),
+            onError: (message) =>
+                setOauthError(message ?? `Failed to connect with ${displayName}. Please try again.`),
+        });
     };
 
     useEffect(() => {

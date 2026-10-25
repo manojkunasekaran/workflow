@@ -52,7 +52,7 @@
           "subscribeHttp": {
             "method": "POST",
             "url": "https://api.zoom.us/v2/webhooks",
-            "body": "{\"subscription_name\":\"Workflow360 meeting started\",\"event\":\"meeting.started\",\"endpoint_url\":\"{{callbackUrl}}\"}"
+            "body": "{\"subscription_name\":\"Workflow meeting started\",\"event\":\"meeting.started\",\"endpoint_url\":\"{{callbackUrl}}\"}"
           },
           "unsubscribeHttp": {
             "method": "DELETE",
@@ -80,7 +80,7 @@
           "subscribeHttp": {
             "method": "POST",
             "url": "https://api.zoom.us/v2/webhooks",
-            "body": "{\"subscription_name\":\"Workflow360 meeting ended\",\"event\":\"meeting.ended\",\"endpoint_url\":\"{{callbackUrl}}\"}"
+            "body": "{\"subscription_name\":\"Workflow meeting ended\",\"event\":\"meeting.ended\",\"endpoint_url\":\"{{callbackUrl}}\"}"
           },
           "unsubscribeHttp": {
             "method": "DELETE",
@@ -108,7 +108,7 @@
           "subscribeHttp": {
             "method": "POST",
             "url": "https://api.zoom.us/v2/webhooks",
-            "body": "{\"subscription_name\":\"Workflow360 recording completed\",\"event\":\"recording.completed\",\"endpoint_url\":\"{{callbackUrl}}\"}"
+            "body": "{\"subscription_name\":\"Workflow recording completed\",\"event\":\"recording.completed\",\"endpoint_url\":\"{{callbackUrl}}\"}"
           },
           "unsubscribeHttp": {
             "method": "DELETE",

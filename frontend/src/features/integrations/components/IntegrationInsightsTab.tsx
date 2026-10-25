@@ -151,10 +151,10 @@ export const IntegrationInsightsTab = forwardRef<
                                                 failedRuns={row.failedRuns}
                                             />
                                         </TableCell>
-                                        <TableCell className="text-right tabular-nums text-red-600 dark:text-red-400">
+                                        <TableCell className="text-right tabular-nums text-danger">
                                             {row.failedRuns}
                                         </TableCell>
-                                        <TableCell className="text-right tabular-nums text-amber-700 dark:text-amber-400">
+                                        <TableCell className="text-right tabular-nums text-warning">
                                             {row.inProgressRuns}
                                         </TableCell>
                                         <TableCell className="text-muted-foreground text-sm whitespace-nowrap">

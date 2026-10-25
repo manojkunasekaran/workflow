@@ -1,10 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, Check, Copy, Loader2, RefreshCw, Activity, Settings } from 'lucide-react';
+import { AlertTriangle, Check, Copy, Loader2, Activity, Settings, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
 import { mcpSettingsApi, type McpSettingsResponse } from '@/api/mcpSettingsApi';
 import { McpAuditLogSection } from '@/features/settings/components/McpAuditLogSection';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { PageHeader } from '@/layouts/PageHeader';
+import { ErrorBanner } from '@/components/ui/error-banner';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 
 const TABS = [
@@ -12,8 +18,8 @@ const TABS = [
     { id: 'audit', label: 'Audit Logs', icon: Activity },
 ] as const;
 
-function buildMcpConfig(globalEndpointUrl: string, bearerToken: string): string {
-    const url = globalEndpointUrl.replace(/\/$/, '');
+function buildMcpConfig(globalEndpointUrl?: string, bearerToken?: string): string {
+    const url = (globalEndpointUrl || '').replace(/\/$/, '');
     return JSON.stringify(
         {
             mcpServers: {
@@ -34,17 +40,37 @@ export default function McpServerPage() {
     const [activeTab, setActiveTab] = useState<typeof TABS[number]['id']>('config');
     const [settings, setSettings] = useState<McpSettingsResponse | null>(null);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
     const [regenerating, setRegenerating] = useState(false);
     const [revealedToken, setRevealedToken] = useState<string | null>(null);
     const [copiedKey, setCopiedKey] = useState<string | null>(null);
+    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+        try {
+            return localStorage.getItem('mcp_sub_sidebar_collapsed') === 'true';
+        } catch {
+            return false;
+        }
+    });
+
+    const toggleSidebar = () => {
+        setIsSidebarCollapsed((prev) => {
+            const next = !prev;
+            try {
+                localStorage.setItem('mcp_sub_sidebar_collapsed', String(next));
+            } catch {}
+            return next;
+        });
+    };
 
     const load = useCallback(async () => {
         setLoading(true);
+        setError(null);
         try {
             setSettings(await mcpSettingsApi.get());
         } catch (err) {
             console.error('Failed to load MCP settings', err);
+            setError("Unable to load MCP server settings. Please try again.");
         } finally {
             setLoading(false);
         }
@@ -100,41 +126,93 @@ export default function McpServerPage() {
 
     return (
         <div className="flex h-full flex-col bg-background">
-            <PageHeader title={<h1 className="text-sm font-semibold">MCP Server</h1>} />
-            <div className="flex-1 overflow-hidden p-6">
-                <div className="mx-auto max-w-6xl h-full w-full flex flex-col md:flex-row gap-8 min-h-0">
+            <PageHeader
+                title={<h1 className="text-sm font-semibold">MCP Server</h1>}
+            />
+            <div className="flex-1 overflow-hidden p-[var(--density-page-p)]">
+                <div className="mx-auto max-w-6xl h-full w-full flex flex-col md:flex-row gap-[var(--density-section-gap)] min-h-0">
                     
-                    <aside className="w-full md:w-52 shrink-0">
-                        <nav className="flex md:flex-col gap-1 overflow-x-auto p-1 bg-muted rounded-lg">
+                    <aside
+                        className={cn(
+                            'group relative transition-all duration-200 shrink-0',
+                            isSidebarCollapsed ? 'w-full md:w-16' : 'w-full md:w-56',
+                        )}
+                    >
+                        {/* Hover-revealed collapse/expand button on the outer right edge */}
+                        <button
+                            type="button"
+                            data-testid="mcp-sidebar-toggle-btn"
+                            onClick={toggleSidebar}
+                            className="absolute -right-3 top-4 z-20 hidden md:flex h-6 w-6 items-center justify-center rounded-full border bg-background shadow-sm text-muted-foreground hover:text-foreground hover:bg-accent opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity cursor-pointer"
+                            title={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                            aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                        >
+                            {isSidebarCollapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
+                        </button>
+
+                        <nav className="relative flex md:flex-col gap-1.5 overflow-x-auto p-1.5 bg-muted/60 rounded-xl border border-border/50">
+                            {!isSidebarCollapsed && (
+                                <div className="hidden md:flex items-center px-2 pt-1 pb-1">
+                                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/80">
+                                        Server
+                                    </span>
+                                </div>
+                            )}
                             {TABS.map((tab) => {
                                 const Icon = tab.icon;
                                 const isActive = activeTab === tab.id;
                                 return (
-                                    <button
-                                        key={tab.id}
-                                        onClick={() => setActiveTab(tab.id)}
-                                        className={cn(
-                                            'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors whitespace-nowrap',
-                                            isActive
-                                                ? 'bg-background text-foreground shadow-sm'
-                                                : 'text-muted-foreground hover:bg-background/50 hover:text-foreground'
+                                    <Tooltip key={tab.id} delayDuration={isSidebarCollapsed ? 100 : 999999}>
+                                        <TooltipTrigger asChild>
+                                            <button
+                                                type="button"
+                                                data-testid={`mcp-tab-${tab.id}`}
+                                                onClick={() => setActiveTab(tab.id)}
+                                                className={cn(
+                                                    'w-full flex items-center rounded-lg py-[var(--density-sidebar-item-py)] text-sm font-medium transition-all whitespace-nowrap min-h-[var(--density-sidebar-item-h)]',
+                                                    isSidebarCollapsed ? 'justify-center px-0' : 'gap-3 px-3',
+                                                    isActive
+                                                        ? 'bg-background text-foreground shadow-sm font-semibold'
+                                                        : 'text-muted-foreground hover:bg-background/50 hover:text-foreground'
+                                                )}
+                                            >
+                                                <Icon
+                                                    className={cn(
+                                                        'h-4 w-4 shrink-0',
+                                                        isActive ? 'text-primary' : 'text-muted-foreground'
+                                                    )}
+                                                />
+                                                {!isSidebarCollapsed && (
+                                                    <div className="text-left min-w-0">
+                                                        <div>{tab.label}</div>
+                                                    </div>
+                                                )}
+                                            </button>
+                                        </TooltipTrigger>
+                                        {isSidebarCollapsed && (
+                                            <TooltipContent side="right">
+                                                {tab.label}
+                                            </TooltipContent>
                                         )}
-                                    >
-                                        <Icon className="h-4 w-4" />
-                                        {tab.label}
-                                    </button>
+                                    </Tooltip>
                                 );
                             })}
                         </nav>
                     </aside>
 
                     <div className="flex-1 min-w-0 h-full overflow-y-auto pr-2 pb-6">
-                        {loading || !settings ? (
+                        {loading ? (
                             <div className="flex items-center justify-center p-12 text-sm text-muted-foreground">
                                 <Loader2 className="h-6 w-6 animate-spin mr-2" />
                                 Loading MCP server settings...
                             </div>
-                        ) : (
+                        ) : error ? (
+                            <ErrorBanner
+                                data-testid="mcp-server-error"
+                                message={error}
+                                onRetry={load}
+                            />
+                        ) : settings ? (
                             <>
                                 {activeTab === 'config' && (
                                     <section className="animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -214,8 +292,8 @@ export default function McpServerPage() {
                                                 </div>
 
                                                 {revealedToken && (
-                                                    <div className="rounded-md border border-amber-200 bg-amber-50 p-3 space-y-2">
-                                                        <div className="flex items-start gap-2 text-amber-800">
+                                                    <div className="rounded-md border border-warning/30 bg-warning-muted p-3 space-y-2">
+                                                        <div className="flex items-start gap-2 text-warning">
                                                             <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
                                                             <p className="text-xs">
                                                                 Copy this token now. It will not be shown again after you leave this page.
@@ -293,7 +371,7 @@ export default function McpServerPage() {
                                     </section>
                                 )}
                             </>
-                        )}
+                        ) : null}
                     </div>
                 </div>
             </div>
