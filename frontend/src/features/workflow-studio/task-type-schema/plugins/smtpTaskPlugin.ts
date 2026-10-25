@@ -1,6 +1,7 @@
 import { Mail } from 'lucide-react';
 import { defineTaskPlugin } from '../pluginTypes';
 import { formatPrimitive, recordFromUnknown } from '@/features/executions/lib/executionSummaryUtils';
+import { isExpression } from '@/features/workflow-studio/lib/variableExplorer';
 
 export const smtpTaskPlugin = defineTaskPlugin({
     type: 'SMTP_TASK',
@@ -59,10 +60,9 @@ export const smtpTaskPlugin = defineTaskPlugin({
         {
             key: 'smtpPassword',
             label: 'Password',
-            type: 'text',
-            mono: true,
+            type: 'password',
             placeholder: '{{$variables.smtpPassword}}',
-            description: 'SMTP password or app-specific password. Use a workflow variable to keep it out of the definition.',
+            description: 'Use an SMTP credential, or a {{ expression }} reference — literal passwords are not saved.',
             hideIf: (p) => !!p.credentialId,
         },
         // ── From ──────────────────────────────────────────────────────────────
@@ -132,10 +132,32 @@ export const smtpTaskPlugin = defineTaskPlugin({
         },
     ],
 
+    normalize(parameters) {
+        const next = { ...parameters };
+        if (next.credentialId) {
+            delete next.smtpHost;
+            delete next.smtpPort;
+            delete next.security;
+            delete next.smtpUsername;
+            delete next.smtpPassword;
+        } else {
+            const pwd = next.smtpPassword;
+            if (typeof pwd === 'string' && pwd.trim() && !isExpression(pwd)) {
+                delete next.smtpPassword;
+            }
+        }
+        return next;
+    },
+
     validate(parameters, _context, errors) {
         if (!parameters.credentialId) {
             if (!parameters.smtpHost || String(parameters.smtpHost).trim() === '') {
                 errors.smtpHost = 'SMTP host is required';
+            }
+            const pwd = parameters.smtpPassword;
+            if (typeof pwd === 'string' && pwd.trim() && !isExpression(pwd)) {
+                errors.smtpPassword =
+                    'Use an SMTP credential or a {{ expression }} — do not store a literal password';
             }
         }
         if (!parameters.to || String(parameters.to).trim() === '') {

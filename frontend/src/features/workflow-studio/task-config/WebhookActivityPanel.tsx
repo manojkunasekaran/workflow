@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { CheckCircle2, Copy, Loader2, RefreshCw, ShieldX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -22,6 +22,7 @@ import {
     type WebhookStateResponse,
 } from '@/api/webhookTriggerApi';
 import { isTriggerNotReadyError } from '@/features/workflow-studio/task-config/triggerActivityUtils';
+import { activityMessageToneClass } from '@/features/workflow-studio/task-config/activityMessageTone';
 
 const PAGE_SIZE = 10;
 
@@ -57,10 +58,12 @@ export function WebhookActivityPanel({ workflowId, onStateLoaded }: WebhookActiv
     const [notReady, setNotReady] = useState(false);
 
     const canLoad = !!workflowId && workflowId !== 'NEW_WORKFLOW';
+    const loadGenerationRef = useRef(0);
 
     const loadActivity = useCallback(async (pageIndex = 0) => {
         if (!canLoad || !workflowId) return;
 
+        const loadId = ++loadGenerationRef.current;
         setLoading(true);
         setNotReady(false);
         try {
@@ -68,11 +71,17 @@ export function WebhookActivityPanel({ workflowId, onStateLoaded }: WebhookActiv
                 webhookTriggerApi.getWebhookState(workflowId),
                 webhookTriggerApi.getLogs(workflowId, pageIndex, PAGE_SIZE),
             ]);
+            if (loadId !== loadGenerationRef.current) {
+                return;
+            }
             onStateLoaded?.(state);
             setLogs(logsPage.content);
             setTotalElements(logsPage.totalElements);
             setPage(pageIndex);
         } catch (err: unknown) {
+            if (loadId !== loadGenerationRef.current) {
+                return;
+            }
             if (isTriggerNotReadyError(err)) {
                 setNotReady(true);
                 setLogs([]);
@@ -157,7 +166,7 @@ export function WebhookActivityPanel({ workflowId, onStateLoaded }: WebhookActiv
                                                         {formatTimestamp(log.timestamp)}
                                                     </TableCell>
                                                     <TableCell>
-                                                        <span className={cnStatusTone(status.tone)}>
+                                                        <span className={deliveryStatusToneClass(status.tone)}>
                                                             {status.tone === 'success' && <CheckCircle2 className="h-3.5 w-3.5" />}
                                                             {status.tone === 'danger' && <ShieldX className="h-3.5 w-3.5" />}
                                                             {status.tone === 'muted' && <Copy className="h-3.5 w-3.5" />}
@@ -214,9 +223,9 @@ export function WebhookActivityPanel({ workflowId, onStateLoaded }: WebhookActiv
     );
 }
 
-function cnStatusTone(tone: 'success' | 'muted' | 'danger'): string {
+function deliveryStatusToneClass(tone: 'success' | 'muted' | 'danger'): string {
     const base = 'inline-flex items-center gap-1 text-xs';
-    if (tone === 'success') return `${base} text-green-600 dark:text-green-400`;
-    if (tone === 'danger') return `${base} text-destructive`;
-    return `${base} text-muted-foreground`;
+    if (tone === 'success') return activityMessageToneClass('success', base);
+    if (tone === 'danger') return activityMessageToneClass('error', base);
+    return activityMessageToneClass('default', base);
 }

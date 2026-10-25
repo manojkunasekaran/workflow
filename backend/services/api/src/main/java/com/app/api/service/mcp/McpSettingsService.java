@@ -1,6 +1,7 @@
 package com.app.api.service.mcp;
 
 import com.app.api.config.properties.WorkflowApiProperties;
+import com.app.api.service.organization.OrganizationAccess;
 import com.app.api.dto.McpRegenerateTokenResponse;
 import com.app.api.dto.McpSettingsResponse;
 import com.app.api.dto.McpSettingsUpdateRequest;
@@ -25,11 +26,11 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class McpSettingsService {
 
-    static final String DEFAULT_ORG_ID = "default-org";
     static final String SETTINGS_KEY = "mcp";
     private static final String TOKEN_PREFIX = "mcp_";
 
     private final OrganizationRepository organizationRepository;
+    private final OrganizationAccess organizationAccess;
     private final WorkflowApiProperties apiProperties;
     private final ObjectMapper objectMapper;
     private final EncryptionService encryptionService;
@@ -105,8 +106,12 @@ public class McpSettingsService {
     }
 
     private McpSettings loadSettings() {
-        Organization org = organizationRepository.findById(DEFAULT_ORG_ID)
-                .orElseGet(this::createDefaultOrganization);
+        Organization org;
+        try {
+            org = organizationAccess.requireOrganization();
+        } catch (ValidationException ex) {
+            return defaultSettings();
+        }
 
         Object raw = org.getSettings() != null ? org.getSettings().get(SETTINGS_KEY) : null;
         if (raw == null) {
@@ -116,8 +121,7 @@ public class McpSettingsService {
     }
 
     private void saveSettings(McpSettings settings) {
-        Organization org = organizationRepository.findById(DEFAULT_ORG_ID)
-                .orElseGet(this::createDefaultOrganization);
+        Organization org = organizationAccess.requireOrganization();
 
         Map<String, Object> settingsMap = org.getSettings() != null
                 ? new HashMap<>(org.getSettings())
@@ -125,14 +129,6 @@ public class McpSettingsService {
         settingsMap.put(SETTINGS_KEY, settings);
         org.setSettings(settingsMap);
         organizationRepository.save(org);
-    }
-
-    private Organization createDefaultOrganization() {
-        Organization org = new Organization();
-        org.setId(DEFAULT_ORG_ID);
-        org.setName("Default Organization");
-        org.setSettings(new HashMap<>());
-        return organizationRepository.save(org);
     }
 
     private McpSettings defaultSettings() {

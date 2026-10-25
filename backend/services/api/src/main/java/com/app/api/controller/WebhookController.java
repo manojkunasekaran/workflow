@@ -59,8 +59,12 @@ public class WebhookController {
 
         Map<String, VariableValue> inputs = convertPayloadToInputs(payload);
 
-        WorkflowExecution execution = executionService.triggerExecution(
-                workflowId, inputs, ExecutionType.ASYNC, TriggerType.WEBHOOK);
+        WorkflowExecution execution = executionService.triggerExecutionForOrganization(
+                workflowId,
+                definition.getOrganizationId(),
+                inputs,
+                ExecutionType.ASYNC,
+                TriggerType.WEBHOOK);
 
         log.info("Webhook triggered workflow: workflowId={}, executionId={}",
                 workflowId, execution.getId());

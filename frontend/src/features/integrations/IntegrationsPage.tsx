@@ -47,7 +47,7 @@ export default function IntegrationsPage() {
                 } 
             />
             
-            <div className="flex-1 overflow-auto p-6">
+            <div className="flex-1 overflow-auto p-[var(--density-page-p)]">
                 <IntegrationList ref={listRef} />
             </div>
 

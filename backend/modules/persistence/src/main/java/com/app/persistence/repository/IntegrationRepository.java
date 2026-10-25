@@ -12,6 +12,7 @@ import java.util.Optional;
 @Repository
 public interface IntegrationRepository extends MongoRepository<IntegrationEntity, String> {
     List<IntegrationEntity> findByOrganizationIdAndStatus(String organizationId, IntegrationStatus status);
+    List<IntegrationEntity> findByOrganizationId(String organizationId);
     List<IntegrationEntity> findByScope(IntegrationScope scope);
     List<IntegrationEntity> findByScopeAndStatus(IntegrationScope scope, IntegrationStatus status);
     Optional<IntegrationEntity> findByIdAndOrganizationId(String id, String organizationId);

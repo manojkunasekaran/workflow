@@ -44,7 +44,7 @@ function tileOffset() {
 
 function labelOffset(iconBoxHeight: number, iconSize: number) {
     const belowTile = Math.max(0, iconBoxHeight - iconSize);
-    return N8N_NODE_LAYOUT.labelGap - belowTile;
+    return Math.max(4, N8N_NODE_LAYOUT.labelGap - belowTile);
 }
 
 export function StudioNodeShell({

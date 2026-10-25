@@ -7,11 +7,14 @@ import com.app.common.model.mcp.McpToolDescriptor;
 import com.app.common.model.task.TaskType;
 import com.app.common.model.task.WorkflowTask;
 import com.app.common.model.task.execution.AgentsTaskExecutionData;
+import com.app.common.model.task.execution.TaskExecutionResult;
 import com.app.common.model.task.parameters.AgentsTaskParameters;
+import com.app.common.model.task.parameters.HttpTaskParameters;
 import com.app.core.executors.llm.LlmProviderAdapter;
 import com.app.core.model.ExecutionContext;
 import com.app.core.service.CredentialProvider;
 import com.app.core.service.VariableResolver;
+import com.app.core.service.WorkflowEngine;
 import com.app.execution.events.ExecutionEventPublisher;
 import com.app.capability.mcp.api.McpToolDiscoveryService;
 import com.app.capability.mcp.api.McpToolInvoker;
@@ -33,6 +36,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyMap;
@@ -56,12 +60,14 @@ class AgentsTaskExecutorTest {
     private McpToolDiscoveryService mcpToolDiscoveryService;
     @Mock
     private McpToolInvoker mcpToolInvoker;
+    @Mock
+    private WorkflowEngine workflowEngine;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private AgentsTaskExecutor executor;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
         executor = new AgentsTaskExecutor(
                 credentialProvider,
                 variableResolver,
@@ -70,6 +76,27 @@ class AgentsTaskExecutorTest {
                 adapters,
                 mcpToolDiscoveryService,
                 mcpToolInvoker);
+        var workflowEngineField = AgentsTaskExecutor.class.getDeclaredField("workflowEngine");
+        workflowEngineField.setAccessible(true);
+        workflowEngineField.set(executor, workflowEngine);
+    }
+
+    @Test
+    void canExecute_onlyAgentsTask() {
+        assertThat(executor.canExecute(TaskType.AGENTS_TASK)).isTrue();
+        assertThat(executor.canExecute(TaskType.HTTP_TASK)).isFalse();
+    }
+
+    @Test
+    void execute_rejectsInvalidParameters() {
+        WorkflowTask task = new WorkflowTask();
+        task.setTaskId("agent-1");
+        task.setType(TaskType.AGENTS_TASK);
+        task.setParameters(new HttpTaskParameters());
+
+        assertThatThrownBy(() -> executor.execute(task, new WorkflowExecution(), context()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Invalid parameters");
     }
 
     @Test
@@ -185,6 +212,132 @@ class AgentsTaskExecutorTest {
                 .containsEntry("loopExhausted", true)
                 .containsEntry("warning", data.getWarning())
                 .containsEntry("generatedText", "partial answer");
+    }
+
+    @Test
+    void executeTools_returnsFalseWhenNoToolsConfigured() throws Exception {
+        ExecutionContext executionContext = context();
+        List<ObjectNode> messages = new ArrayList<>();
+        ObjectNode toolCall = objectMapper.createObjectNode();
+        toolCall.put("id", "call-1");
+        ObjectNode function = toolCall.putObject("function");
+        function.put("name", "missing_tool");
+        function.put("arguments", "{}");
+
+        AgentsTaskParameters params = new AgentsTaskParameters();
+        Object mcpContext = invokePrefetchMcpTools(params, executionContext);
+
+        boolean executed = invokeExecuteTools(
+                List.of(toolCall),
+                List.of(),
+                new WorkflowExecution(),
+                executionContext,
+                messages,
+                mcpContext,
+                new int[]{0});
+
+        assertThat(executed).isFalse();
+        assertThat(messages).isEmpty();
+    }
+
+    @Test
+    void executeTools_invokesSubTaskForTaskTool() throws Exception {
+        ExecutionContext executionContext = context();
+        WorkflowTask httpTask = new WorkflowTask();
+        httpTask.setTaskId("http_1");
+        httpTask.setType(TaskType.HTTP_TASK);
+        httpTask.setParameters(new HttpTaskParameters());
+        executionContext.getWorkflowDefinition().setTasks(List.of(httpTask));
+
+        AgentsTaskParameters.AgentTool toolDef = new AgentsTaskParameters.AgentTool();
+        toolDef.setSourceType(AgentsTaskParameters.AgentToolSource.TASK);
+        toolDef.setName("fetch");
+        toolDef.setTargetTaskId("http_1");
+
+        when(workflowEngine.executeSubTask(eq(httpTask), any(), eq(executionContext)))
+                .thenReturn(TaskExecutionResult.builder()
+                        .status(TaskExecutionResult.Status.COMPLETED)
+                        .output(Map.of("status", 200))
+                        .build());
+
+        List<ObjectNode> messages = new ArrayList<>();
+        ObjectNode toolCall = objectMapper.createObjectNode();
+        toolCall.put("id", "call-2");
+        ObjectNode function = toolCall.putObject("function");
+        function.put("name", "fetch");
+        function.put("arguments", "{\"url\":\"https://example.com\"}");
+
+        AgentsTaskParameters params = new AgentsTaskParameters();
+        Object mcpContext = invokePrefetchMcpTools(params, executionContext);
+
+        boolean executed = invokeExecuteTools(
+                List.of(toolCall),
+                List.of(toolDef),
+                new WorkflowExecution(),
+                executionContext,
+                messages,
+                mcpContext,
+                new int[]{0});
+
+        assertThat(executed).isTrue();
+        assertThat(messages.get(0).get("content").asText()).contains("200");
+        verify(workflowEngine).executeSubTask(eq(httpTask), any(), eq(executionContext));
+    }
+
+    @Test
+    void executeTools_handlesMalformedToolCallWithoutNpe() throws Exception {
+        ExecutionContext executionContext = context();
+        AgentsTaskParameters.AgentTool toolDef = new AgentsTaskParameters.AgentTool();
+        toolDef.setSourceType(AgentsTaskParameters.AgentToolSource.TASK);
+        toolDef.setName("fetch");
+        toolDef.setTargetTaskId("http_1");
+
+        List<ObjectNode> messages = new ArrayList<>();
+        ObjectNode toolCall = objectMapper.createObjectNode();
+        toolCall.put("id", "call-bad");
+
+        AgentsTaskParameters params = new AgentsTaskParameters();
+        Object mcpContext = invokePrefetchMcpTools(params, executionContext);
+
+        boolean executed = invokeExecuteTools(
+                List.of(toolCall),
+                List.of(toolDef),
+                new WorkflowExecution(),
+                executionContext,
+                messages,
+                mcpContext,
+                new int[]{0});
+
+        assertThat(executed).isTrue();
+        assertThat(messages.get(0).get("content").asText()).contains("missing function");
+    }
+
+    @Test
+    void executeTools_reportsMissingMcpCredential() throws Exception {
+        ExecutionContext executionContext = context();
+        AgentsTaskParameters params = new AgentsTaskParameters();
+        AgentsTaskParameters.AgentTool toolDef = mcpTool("missing-cred", "search");
+        params.setTools(List.of(toolDef));
+        Object mcpContext = invokePrefetchMcpTools(params, executionContext);
+
+        List<ObjectNode> messages = new ArrayList<>();
+        ObjectNode toolCall = objectMapper.createObjectNode();
+        toolCall.put("id", "call-1");
+        ObjectNode function = toolCall.putObject("function");
+        function.put("name", "mcp__search");
+        function.put("arguments", "{}");
+
+        invokeExecuteTools(
+                List.of(toolCall),
+                List.of(toolDef),
+                new WorkflowExecution(),
+                executionContext,
+                messages,
+                mcpContext,
+                new int[]{0});
+
+        assertThat(messages.get(0).get("content").asText()).contains("MCP credential");
+        verify(mcpToolInvoker, never()).callTool(any(), anyMap(), any(), anyMap(), anyInt());
     }
 
     @Test

@@ -45,6 +45,7 @@ services:
       - VITE_API_TARGET=http://api:8080
     volumes:
       - ./frontend:/app
+      - ./test-fixtures:/test-fixtures
       - /app/node_modules
     restart: unless-stopped
     networks:

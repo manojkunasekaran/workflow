@@ -21,7 +21,8 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
         @JsonSubTypes.Type(value = MongoTaskParameters.class, name = "MONGO_TASK"),
         @JsonSubTypes.Type(value = RedisTaskParameters.class, name = "REDIS_TASK"),
         @JsonSubTypes.Type(value = Neo4jTaskParameters.class, name = "NEO4J_TASK"),
-        @JsonSubTypes.Type(value = McpToolTaskParameters.class, name = "MCP_TOOL")
+        @JsonSubTypes.Type(value = McpToolTaskParameters.class, name = "MCP_TOOL"),
+        @JsonSubTypes.Type(value = FormTaskParameters.class, name = "FORM")
 })
 
 public interface TaskParameters {

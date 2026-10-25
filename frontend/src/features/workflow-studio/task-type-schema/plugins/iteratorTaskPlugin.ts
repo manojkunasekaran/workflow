@@ -1,11 +1,12 @@
 import { Repeat } from 'lucide-react';
 import {
     ITERATOR_NESTED_TYPES,
+    MAX_ITERATOR_ITERATIONS,
+    isInvalidStaticLoopOver,
     normalizeIteratorActionsForApi,
     normalizeLoopOver,
     parseIteratorActions,
     validateLoopDonePath,
-    type IteratorActionRow,
 } from '../iteratorTask';
 import { defineTaskPlugin, type TaskTypePlugin } from '../pluginTypes';
 import { normalizeOptionalTaskRef } from '../taskRefs';
@@ -55,6 +56,11 @@ function validateIteratorActions(
             continue;
         }
 
+        const configuredOnCanvas = context?.workflowTasks.some((t) => t.taskId === action.taskId);
+        if (configuredOnCanvas) {
+            continue;
+        }
+
         const nestedPlugin = nestedPluginByType.get(action.type);
         if (!nestedPlugin) continue;
 
@@ -90,6 +96,9 @@ export const iteratorTaskPlugin = defineTaskPlugin({
         const loopOver = parameters.loopOver;
         if (loopOver === undefined || loopOver === null || String(loopOver).trim() === '') {
             errors.loopOver = 'Loop source is required';
+        } else if (isInvalidStaticLoopOver(loopOver)) {
+            errors.loopOver =
+                `Loop source must be a list, map, number (0–${MAX_ITERATOR_ITERATIONS}), or {{ expression }}`;
         }
         validateIteratorActions(parameters, errors, context);
         validateLoopDonePath(parameters, errors, context);
@@ -98,7 +107,7 @@ export const iteratorTaskPlugin = defineTaskPlugin({
         const next = { ...parameters };
         next.loopOver = normalizeLoopOver(next.loopOver);
         if (Array.isArray(next.actions)) {
-            next.actions = normalizeIteratorActionsForApi(next.actions as IteratorActionRow[]);
+            next.actions = normalizeIteratorActionsForApi(parseIteratorActions(next.actions));
         }
         const done = next.doneNextTaskId;
         next.doneNextTaskId = normalizeOptionalTaskRef(done);
@@ -112,20 +121,16 @@ export const iteratorTaskPlugin = defineTaskPlugin({
             secondary: done ? 'Done path connected' : 'Done path not connected',
         };
     },
-    executionSummary({ parameters, executionData, status }) {
+    executionSummary({ parameters, executionData }) {
         const data = recordFromUnknown(executionData);
         const total = data?.totalIterations;
-        const completed = data?.completedIterations;
+        const successful = data?.successfulIterations;
         const failed = data?.failedIterations;
-        const current = data?.currentIndex;
-        const loopOver = formatPrimitive(data?.loopOver ?? parameters.loopOver);
-        const isRunning = status.toUpperCase() === 'RUNNING';
+        const loopOver = formatPrimitive(parameters.loopOver);
         const progressValue =
-            completed != null && total != null && typeof total === 'number' && total > 0
-                ? `${String(completed)} / ${String(total)}`
-                : isRunning && current != null
-                  ? `Index ${String(current)}`
-                  : formatPrimitive(completed);
+            typeof successful === 'number' && typeof total === 'number' && total > 0
+                ? `${successful} / ${total}`
+                : formatPrimitive(successful);
         return {
             lines: [
                 { label: 'Loop over', value: loopOver },
@@ -135,7 +140,7 @@ export const iteratorTaskPlugin = defineTaskPlugin({
                     tone:
                         typeof failed === 'number' && failed > 0
                             ? 'warning'
-                            : completed != null && total != null
+                            : typeof successful === 'number' && typeof total === 'number'
                               ? 'success'
                               : 'default',
                 },

@@ -50,10 +50,9 @@ export const humanTaskPlugin = defineTaskPlugin({
         {
             key: 'formSchema',
             label: 'Extra fields for reviewer (optional)',
-            type: 'json',
+            type: 'formSchema',
             defaultValue: null,
-            description:
-                'Ask the reviewer to fill in more than Approve/Reject — e.g. a comment, reason, or dropdown. Leave empty if buttons alone are enough. Advanced users: JSON schema defining those fields.',
+            description: 'Collect structured input when the reviewer responds (comments, dropdowns, etc.).',
         },
     ],
     validate(parameters, context, errors) {

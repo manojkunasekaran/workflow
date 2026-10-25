@@ -111,7 +111,7 @@ export interface VerifyAction {
 
 export interface ConnectorManifest {
     id?: string;
-    scope?: 'SYSTEM' | 'TENANT';
+    scope?: 'SYSTEM' | 'ORGANIZATION';
     organizationId?: string;
     connectorId: string;
     displayName: string;
@@ -151,7 +151,7 @@ export interface ConnectorTestResult {
 // ─── API Client ──────────────────────────────────────────────────────────────
 
 export const connectorApi = {
-    // Tenant-scoped — lists system + tenant connectors merged, CRUD on TENANT only
+    // Organization-scoped — lists system + organization connectors merged, CRUD on ORGANIZATION only
     list: async (): Promise<ConnectorManifest[]> =>
         (await axios.get(`${API_BASE_URL}/connectors`)).data,
 
@@ -185,4 +185,21 @@ export const connectorApi = {
     adminDelete: async (connectorId: string): Promise<void> => {
         await axios.delete(`${API_BASE_URL}/admin/connectors/${connectorId}`);
     },
+
+    adminGetOAuthPlatform: async (connectorId: string): Promise<ConnectorOAuthPlatformConfig> =>
+        (await axios.get(`${API_BASE_URL}/admin/connectors/${connectorId}/oauth-platform`)).data,
+
+    adminSaveOAuthPlatform: async (
+        connectorId: string,
+        config: ConnectorOAuthPlatformConfig,
+    ): Promise<ConnectorOAuthPlatformConfig> =>
+        (await axios.put(`${API_BASE_URL}/admin/connectors/${connectorId}/oauth-platform`, config)).data,
 };
+
+export interface ConnectorOAuthPlatformConfig {
+    connectorId: string;
+    clientId?: string;
+    clientSecret?: string;
+    enabled: boolean;
+    configured: boolean;
+}

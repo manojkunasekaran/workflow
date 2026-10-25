@@ -128,7 +128,7 @@ function TaskNodeComponent({ data, selected }: NodeProps & { data: TaskNodeData 
     const label = hideLabel ? undefined : (title === typeLabel ? typeLabel : title);
 
     return (
-        <div className="relative">
+        <div className="relative" data-testid={`task-node-${data.taskId}`}>
             {executionStatus ? (
                 <ExecutionStatusBadge
                     status={executionStatus.status}

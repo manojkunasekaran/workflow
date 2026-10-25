@@ -35,7 +35,12 @@ public class DataTransformTaskExecutor implements TaskExecutor {
 
     @Override
     public TaskExecutionResult execute(WorkflowTask task, WorkflowExecution execution, ExecutionContext context) {
-        DataTransformTaskParameters params = (DataTransformTaskParameters) task.getParameters();
+        if (!(task.getParameters() instanceof DataTransformTaskParameters params)) {
+            return TaskExecutionResult.builder()
+                    .status(TaskExecutionResult.Status.FAILED)
+                    .errorMessage("Invalid parameters for Data Transform task")
+                    .build();
+        }
         log.info("Executing Data Transform task: {} with operation {}", task.getTaskId(), params.getOperation());
 
         try {

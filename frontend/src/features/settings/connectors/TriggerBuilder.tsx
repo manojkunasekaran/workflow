@@ -30,8 +30,8 @@ import {
 import { cn } from '@/lib/utils';
 
 const TRIGGER_TYPE_STYLES: Record<string, string> = {
-    POLL: 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20',
-    WEBHOOK: 'bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20',
+    POLL: 'bg-info-muted text-info border border-info/30',
+    WEBHOOK: 'bg-muted text-muted-foreground border border-border',
 };
 
 const SEMANTICS_OPTIONS: Array<{ value: PollEventSemantics; label: string }> = [

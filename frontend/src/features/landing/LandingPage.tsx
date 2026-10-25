@@ -29,8 +29,8 @@ export default function LandingPage() {
     return (
         <div className="flex h-full flex-col studio-dot-grid">
             <PageHeader title={<h1 data-testid="overview-heading" className="text-sm font-semibold">Overview</h1>} />
-            <div className="flex-1 flex items-center justify-center p-6">
-                <div className="grid w-full max-w-5xl gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div className="flex-1 flex items-center justify-center p-[var(--density-page-p)]">
+                <div className="grid w-full max-w-5xl gap-[var(--density-section-gap)] md:grid-cols-2 lg:grid-cols-3">
                     {options.map((option) => (
                         <button
                             data-testid={`landing-card-${option.title.toLowerCase()}`}

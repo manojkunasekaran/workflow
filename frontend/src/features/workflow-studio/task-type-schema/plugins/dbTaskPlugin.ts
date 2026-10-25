@@ -1,12 +1,34 @@
 import { Database } from 'lucide-react';
 import { defineTaskPlugin } from '../pluginTypes';
 import { formatPrimitive, recordFromUnknown } from '@/features/executions/lib/executionSummaryUtils';
+type DbQueryParamRow = { key: string; value: string };
+
+function keyValueToDbQueryList(value: unknown): DbQueryParamRow[] {
+    if (Array.isArray(value)) {
+        return value
+            .filter((entry) => entry && typeof entry === 'object')
+            .map((entry) => {
+                const row = entry as { key?: unknown; value?: unknown };
+                return {
+                    key: String(row.key ?? '').trim(),
+                    value: String(row.value ?? ''),
+                };
+            })
+            .filter((row) => row.key.length > 0);
+    }
+    if (value && typeof value === 'object') {
+        return Object.entries(value as Record<string, string>)
+            .filter(([key]) => key.trim())
+            .map(([key, val]) => ({ key: key.trim(), value: String(val) }));
+    }
+    return [];
+}
 
 export const dbTaskPlugin = defineTaskPlugin({
     type: 'DB_TASK',
     label: 'SQL Database',
     icon: Database,
-    accentColor: '#047857', // bg-emerald-700
+    accentColor: '#047857',
     defaultTaskId: 'sql_task',
     fields: [
         {
@@ -103,6 +125,17 @@ export const dbTaskPlugin = defineTaskPlugin({
             defaultValue: 30,
         },
     ],
+
+    normalize(parameters) {
+        const next = { ...parameters };
+        if (next.parameters != null) {
+            next.parameters = keyValueToDbQueryList(next.parameters);
+        }
+        if (next.conditionParameters != null) {
+            next.conditionParameters = keyValueToDbQueryList(next.conditionParameters);
+        }
+        return next;
+    },
 
     validate(parameters, _context, errors) {
         if (!parameters.credentialId) {

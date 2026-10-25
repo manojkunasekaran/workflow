@@ -144,7 +144,9 @@ public class WorkflowEngine {
                 execution.getTriggerInputs(),
                 execution.getTaskOutputs(),
                 execution.getId(),
-                definition);
+                definition,
+                execution.getOrganizationId() != null ? execution.getOrganizationId() : definition.getOrganizationId(),
+                execution.getCreatedBy());
 
         WorkflowGraph graph = WorkflowTopologyResolver.graphFromDefinition(definition);
         JoinBarrier joinBarrier = new JoinBarrier();

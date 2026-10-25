@@ -1,5 +1,8 @@
 package com.app.api.service.auth;
 
+import com.app.api.oauth.OAuthClientCredentials;
+import com.app.api.oauth.OAuthHttpForm;
+import com.app.api.service.ConnectorOAuthPlatformService;
 import com.app.common.connector.ConnectorAuthType;
 import com.app.common.connector.ConnectorManifest;
 import com.app.common.connector.OAuth2Config;
@@ -9,8 +12,6 @@ import com.app.persistence.connector.ConnectorRegistry;
 import com.app.persistence.repository.IntegrationCredentialRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.env.Environment;
-import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
@@ -30,14 +31,13 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class CredentialAuthResolver {
 
-    private static final String DEFAULT_ORG_ID = "default-org";
     private static final long REFRESH_WINDOW_SECONDS = 300L;
 
     private final IntegrationCredentialRepository credentialRepository;
     private final ConnectorRegistry connectorRegistry;
     private final EncryptionService encryptionService;
     private final RestTemplate restTemplate;
-    private final Environment environment;
+    private final ConnectorOAuthPlatformService platformOAuthService;
 
     public void applyAuth(String credentialId, HttpHeaders headers) {
         if (credentialId == null || credentialId.isBlank()) {
@@ -55,7 +55,7 @@ public class CredentialAuthResolver {
         refreshOAuthIfNeeded(credential, creds);
 
         if (credential.getConnectorId() != null && !credential.getConnectorId().isBlank()) {
-            connectorRegistry.findById(credential.getConnectorId(), DEFAULT_ORG_ID)
+            connectorRegistry.findById(credential.getConnectorId(), credential.getOrganizationId())
                     .ifPresent(manifest -> applyManifestAuth(manifest, creds, headers));
             return;
         }
@@ -83,7 +83,7 @@ public class CredentialAuthResolver {
             return;
         }
 
-        connectorRegistry.findById(credential.getConnectorId(), DEFAULT_ORG_ID)
+        connectorRegistry.findById(credential.getConnectorId(), credential.getOrganizationId())
                 .ifPresent(manifest -> refreshOAuthToken(credential, creds, manifest));
     }
 
@@ -97,26 +97,25 @@ public class CredentialAuthResolver {
             return;
         }
 
-        String clientId = environment.getProperty(
-                "workflow.connectors." + credential.getConnectorId() + ".client-id");
-        String clientSecret = environment.getProperty(
-                "workflow.connectors." + credential.getConnectorId() + ".client-secret");
+        OAuthClientCredentials.Resolved client = OAuthClientCredentials.resolve(
+                credential,
+                creds,
+                platformOAuthService.resolveManagedClient(credential.getConnectorId()));
 
         Map<String, String> body = new HashMap<>();
         body.put("grant_type", "refresh_token");
         body.put("refresh_token", creds.get("refresh_token"));
-        if (clientId != null && clientSecret != null) {
-            body.put("client_id", clientId);
-            body.put("client_secret", clientSecret);
+        if (client.clientId() != null && client.clientSecret() != null) {
+            body.put("client_id", client.clientId());
+            body.put("client_secret", client.clientSecret());
         }
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Accept", "application/json");
-        headers.set("Content-Type", "application/x-www-form-urlencoded");
 
         try {
             ResponseEntity<Map> response = restTemplate.exchange(
-                    oauth2Config.getTokenUrl(), HttpMethod.POST, new HttpEntity<>(body, headers), Map.class);
+                    oauth2Config.getTokenUrl(),
+                    HttpMethod.POST,
+                    OAuthHttpForm.postEntity(body),
+                    Map.class);
             Map<String, Object> tokenResponse = response.getBody();
             if (tokenResponse == null || !tokenResponse.containsKey("access_token")) {
                 log.warn("OAuth refresh for credential '{}' returned no access_token", credential.getId());
@@ -128,6 +127,7 @@ public class CredentialAuthResolver {
             if (expiresIn instanceof Number) {
                 credential.setTokenExpiresAt(Instant.now().plusSeconds(((Number) expiresIn).longValue()));
             }
+            credential.setCredentials(encryptionService.encryptMap(creds));
             credentialRepository.save(credential);
             log.info("Refreshed OAuth token for credential '{}'", credential.getId());
         } catch (Exception e) {

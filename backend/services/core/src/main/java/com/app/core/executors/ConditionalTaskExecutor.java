@@ -2,6 +2,7 @@ package com.app.core.executors;
 
 import com.app.common.entity.WorkflowExecution;
 import com.app.common.model.rule.ConditionEvaluation;
+import com.app.common.model.rule.ConditionEvaluationKind;
 import com.app.common.model.rule.EvaluationResult;
 import com.app.common.model.task.WorkflowTask;
 import com.app.common.model.task.execution.ConditionalTaskExecutionData;
@@ -63,7 +64,31 @@ public class ConditionalTaskExecutor implements TaskExecutor {
                         break;
                     }
                 } catch (Exception e) {
-                    log.error("Error evaluating branch '{}': {}", branch.getName(), e.getMessage());
+                    String branchName = branch.getName() != null ? branch.getName() : "unnamed";
+                    log.error("Error evaluating branch '{}': {}", branchName, e.getMessage(), e);
+                    allEvaluations.add(ConditionEvaluation.builder()
+                            .kind(ConditionEvaluationKind.EXPRESSION)
+                            .branchName(branchName)
+                            .branchIndex(branchIndex)
+                            .source(branch.getExpression())
+                            .error(e.getMessage())
+                            .matched(false)
+                            .build());
+
+                    ConditionalTaskExecutionData executionData = ConditionalTaskExecutionData.builder()
+                            .evaluations(allEvaluations)
+                            .matchedBranch(matchedBranch)
+                            .nextTaskId(nextTaskId)
+                            .branchesEvaluated(branchesEvaluated)
+                            .totalBranches(params.getBranches() != null ? params.getBranches().size() : 0)
+                            .build();
+
+                    return TaskExecutionResult.builder()
+                            .status(TaskExecutionResult.Status.FAILED)
+                            .errorMessage("Error evaluating branch '" + branchName + "': " + e.getMessage())
+                            .executionData(executionData)
+                            .output(buildOutput(executionData))
+                            .build();
                 }
             }
         }

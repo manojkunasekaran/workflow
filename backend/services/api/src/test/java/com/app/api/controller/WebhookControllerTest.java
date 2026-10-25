@@ -61,7 +61,7 @@ class WebhookControllerTest {
         workflowDefinition.setTrigger(trigger);
 
         when(definitionRepository.findById("wf-123")).thenReturn(Optional.of(workflowDefinition));
-        when(executionService.triggerExecution(eq("wf-123"), any(), eq(ExecutionType.ASYNC), eq(TriggerType.WEBHOOK)))
+        when(executionService.triggerExecutionForOrganization(eq("wf-123"), any(), any(), eq(ExecutionType.ASYNC), eq(TriggerType.WEBHOOK)))
                 .thenReturn(workflowExecution);
 
         Map<String, Object> payload = new HashMap<>();
@@ -73,7 +73,7 @@ class WebhookControllerTest {
         // Assert
         assertEquals(HttpStatus.ACCEPTED, response.getStatusCode());
         assertEquals(workflowExecution, response.getBody());
-        verify(executionService).triggerExecution(eq("wf-123"), any(), eq(ExecutionType.ASYNC), eq(TriggerType.WEBHOOK));
+        verify(executionService).triggerExecutionForOrganization(eq("wf-123"), any(), any(), eq(ExecutionType.ASYNC), eq(TriggerType.WEBHOOK));
     }
 
     @Test

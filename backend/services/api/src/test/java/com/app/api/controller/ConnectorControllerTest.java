@@ -3,6 +3,8 @@ package com.app.api.controller;
 import com.app.api.dto.ConnectorTestRequest;
 import com.app.api.dto.ConnectorTestResult;
 import com.app.api.service.ConnectorTestService;
+import com.app.api.service.organization.OrganizationAccess;
+import com.app.persistence.repository.OrganizationRepository;
 import com.app.common.connector.ConnectorManifest;
 import com.app.common.connector.ConnectorScope;
 import com.app.persistence.connector.ConnectorRegistry;
@@ -10,6 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
@@ -26,6 +29,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(ConnectorController.class)
+@AutoConfigureMockMvc(addFilters = false)
 public class ConnectorControllerTest {
 
     @Autowired
@@ -40,17 +44,25 @@ public class ConnectorControllerTest {
     @MockBean
     private ConnectorTestService connectorTestService;
 
+    @MockBean
+    private OrganizationAccess organizationAccess;
+
+    @MockBean
+    private OrganizationRepository organizationRepository;
+
     private ConnectorManifest tenantManifest;
     private ConnectorManifest systemManifest;
 
-    private static final String DEFAULT_ORG_ID = "default-org";
+    private static final String DEFAULT_ORG_ID = "platform-admin-org";
 
     @BeforeEach
     void setUp() {
+        when(organizationAccess.requireOrganizationId()).thenReturn(DEFAULT_ORG_ID);
+        when(organizationRepository.existsById(DEFAULT_ORG_ID)).thenReturn(true);
         tenantManifest = new ConnectorManifest();
         tenantManifest.setId("id-1");
         tenantManifest.setConnectorId("slack");
-        tenantManifest.setScope(ConnectorScope.TENANT);
+        tenantManifest.setScope(ConnectorScope.ORGANIZATION);
         tenantManifest.setOrganizationId(DEFAULT_ORG_ID);
 
         systemManifest = new ConnectorManifest();
@@ -97,12 +109,11 @@ public class ConnectorControllerTest {
             return m;
         });
 
-        mockMvc.perform(post("/connectors")
-                .contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/connectors")                .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(newManifest)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value("new-id"))
-                .andExpect(jsonPath("$.scope").value("TENANT"))
+                .andExpect(jsonPath("$.scope").value("ORGANIZATION"))
                 .andExpect(jsonPath("$.organizationId").value(DEFAULT_ORG_ID));
     }
 
@@ -114,8 +125,7 @@ public class ConnectorControllerTest {
         ConnectorManifest updatedManifest = new ConnectorManifest();
         updatedManifest.setConnectorId("slack");
 
-        mockMvc.perform(put("/connectors/slack")
-                .contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(put("/connectors/slack")                .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(updatedManifest)))
                 .andExpect(status().isOk());
         
@@ -129,8 +139,7 @@ public class ConnectorControllerTest {
         ConnectorManifest updatedManifest = new ConnectorManifest();
         updatedManifest.setConnectorId("jira");
 
-        mockMvc.perform(put("/connectors/jira")
-                .contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(put("/connectors/jira")                .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(updatedManifest)))
                 .andExpect(result -> assertTrue(result.getResolvedException() instanceof IllegalArgumentException));
     }
@@ -138,13 +147,12 @@ public class ConnectorControllerTest {
     @Test
     void testUpdateConnector_WrongOrg_Rejects() throws Exception {
         ConnectorManifest otherOrgManifest = new ConnectorManifest();
-        otherOrgManifest.setScope(ConnectorScope.TENANT);
+        otherOrgManifest.setScope(ConnectorScope.ORGANIZATION);
         otherOrgManifest.setOrganizationId("other-org");
 
         when(connectorRegistry.findById("slack", DEFAULT_ORG_ID)).thenReturn(Optional.of(otherOrgManifest));
 
-        mockMvc.perform(put("/connectors/slack")
-                .contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(put("/connectors/slack")                .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(new ConnectorManifest())))
                 .andExpect(result -> assertTrue(result.getResolvedException() instanceof IllegalArgumentException));
     }
@@ -176,8 +184,7 @@ public class ConnectorControllerTest {
         
         when(connectorTestService.testAction(eq("slack"), any(ConnectorTestRequest.class))).thenReturn(result);
 
-        mockMvc.perform(post("/connectors/slack/test")
-                .contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/connectors/slack/test")                .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));

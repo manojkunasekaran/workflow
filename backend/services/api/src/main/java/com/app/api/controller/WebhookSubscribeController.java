@@ -2,6 +2,7 @@ package com.app.api.controller;
 
 import com.app.api.dto.WebhookSubscribeStateResponse;
 import com.app.api.dto.WebhookSubscribeTestResult;
+import com.app.api.service.organization.OrganizationAccess;
 import com.app.api.service.webhook.WebhookSubscribeService;
 import com.app.common.entity.TriggerWebhookLog;
 import com.app.common.entity.WorkflowDefinition;
@@ -25,6 +26,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * Managed webhook subscribe trigger test and state endpoints.
+ *
+ * <p>All operations are scoped to the caller's active organization via
+ * {@link OrganizationAccess#assertSameOrganization} to prevent cross-tenant IDOR.
  */
 @RestController
 @RequestMapping("/workflows/{id}/trigger/subscribe")
@@ -33,23 +37,20 @@ public class WebhookSubscribeController {
 
     private final WorkflowDefinitionRepository definitionRepository;
     private final WebhookSubscribeService subscribeService;
+    private final OrganizationAccess organizationAccess;
 
     @PostMapping("/test")
     public ResponseEntity<WebhookSubscribeTestResult> testSubscribe(@PathVariable("id") String workflowId) {
-        WorkflowDefinition definition = definitionRepository.findById(workflowId)
-                .orElseThrow(() -> new ResourceNotFoundException("WorkflowDefinition", workflowId));
+        WorkflowDefinition definition = requireDefinitionInOrganization(workflowId);
         validateSubscribeTrigger(definition);
-
         WebhookSubscribeTestResult result = subscribeService.testSubscribe(workflowId);
         return ResponseEntity.status(HttpStatus.OK).body(result);
     }
 
     @GetMapping("/state")
     public WebhookSubscribeStateResponse getSubscribeState(@PathVariable("id") String workflowId) {
-        WorkflowDefinition definition = definitionRepository.findById(workflowId)
-                .orElseThrow(() -> new ResourceNotFoundException("WorkflowDefinition", workflowId));
+        WorkflowDefinition definition = requireDefinitionInOrganization(workflowId);
         validateSubscribeTrigger(definition);
-
         return subscribeService.getSubscribeState(workflowId);
     }
 
@@ -57,11 +58,20 @@ public class WebhookSubscribeController {
     public Page<TriggerWebhookLog> getSubscribeLogs(
             @PathVariable("id") String workflowId,
             @PageableDefault(size = 20, sort = "timestamp", direction = Sort.Direction.DESC) Pageable pageable) {
+        WorkflowDefinition definition = requireDefinitionInOrganization(workflowId);
+        validateSubscribeTrigger(definition);
+        return subscribeService.getSubscribeLogs(workflowId, pageable);
+    }
+
+    /**
+     * Fetches the workflow definition and asserts it belongs to the caller's active organization.
+     * Returns 404 on org mismatch to prevent ID enumeration.
+     */
+    private WorkflowDefinition requireDefinitionInOrganization(String workflowId) {
         WorkflowDefinition definition = definitionRepository.findById(workflowId)
                 .orElseThrow(() -> new ResourceNotFoundException("WorkflowDefinition", workflowId));
-        validateSubscribeTrigger(definition);
-
-        return subscribeService.getSubscribeLogs(workflowId, pageable);
+        organizationAccess.assertSameOrganization(definition.getOrganizationId());
+        return definition;
     }
 
     private void validateSubscribeTrigger(WorkflowDefinition definition) {

@@ -2,6 +2,7 @@ package com.app.api.service.mcp;
 
 import com.app.api.config.properties.WorkflowApiProperties;
 import com.app.api.dto.McpSettingsUpdateRequest;
+import com.app.api.service.organization.OrganizationAccess;
 import com.app.common.entity.Organization;
 import com.app.common.exception.ValidationException;
 import com.app.common.model.trigger.McpExposureMode;
@@ -16,7 +17,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.HashMap;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -35,23 +35,28 @@ class McpSettingsServiceTest {
     private OrganizationRepository organizationRepository;
 
     @Mock
+    private OrganizationAccess organizationAccess;
+
+    @Mock
     private EncryptionService encryptionService;
 
     private McpSettingsService service;
+    private Organization org;
 
     @BeforeEach
     void setUp() {
         WorkflowApiProperties properties = new WorkflowApiProperties();
-        service = new McpSettingsService(organizationRepository, properties, new ObjectMapper(), encryptionService);
+        service = new McpSettingsService(
+                organizationRepository, organizationAccess, properties, new ObjectMapper(), encryptionService);
+        org = new Organization();
+        org.setId("org-1");
+        org.setSettings(new HashMap<>());
+        when(organizationAccess.requireOrganization()).thenReturn(org);
     }
 
     @Test
-    void getSettings_returnsDefaultsWhenOrgMissing() {
-        when(organizationRepository.findById(McpSettingsService.DEFAULT_ORG_ID)).thenReturn(Optional.empty());
-        when(organizationRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-
+    void getSettings_returnsDefaultsWhenMissing() {
         var response = service.getSettings();
-
         assertFalse(response.isEnabled());
         assertEquals(McpExposureMode.BOTH, response.getExposureMode());
         assertEquals("/mcp", response.getGlobalEndpointPath());
@@ -59,11 +64,6 @@ class McpSettingsServiceTest {
 
     @Test
     void updateSettings_persistsEnabledFlag() {
-        Organization org = new Organization();
-        org.setId(McpSettingsService.DEFAULT_ORG_ID);
-        org.setSettings(new HashMap<>());
-
-        when(organizationRepository.findById(McpSettingsService.DEFAULT_ORG_ID)).thenReturn(Optional.of(org));
         when(organizationRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(encryptionService.encrypt(any())).thenReturn("enc_token");
         when(encryptionService.decrypt("enc_token")).thenReturn("mcp_testtoken1234");
@@ -86,25 +86,13 @@ class McpSettingsServiceTest {
 
     @Test
     void updateSettings_rejectsEnableWithoutToken() {
-        Organization org = new Organization();
-        org.setId(McpSettingsService.DEFAULT_ORG_ID);
-        org.setSettings(new HashMap<>());
-
-        when(organizationRepository.findById(McpSettingsService.DEFAULT_ORG_ID)).thenReturn(Optional.of(org));
-
         McpSettingsUpdateRequest request = new McpSettingsUpdateRequest();
         request.setEnabled(true);
-
         assertThrows(ValidationException.class, () -> service.updateSettings(request));
     }
 
     @Test
     void regenerateToken_returnsPlaintextAndPersistsEncrypted() {
-        Organization org = new Organization();
-        org.setId(McpSettingsService.DEFAULT_ORG_ID);
-        org.setSettings(new HashMap<>());
-
-        when(organizationRepository.findById(McpSettingsService.DEFAULT_ORG_ID)).thenReturn(Optional.of(org));
         when(organizationRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(encryptionService.encrypt(any())).thenAnswer(inv -> "enc_" + inv.getArgument(0));
 

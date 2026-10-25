@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import {
     buildWorkflowGraphFromContract,
@@ -37,7 +37,22 @@ interface ContractFixture {
     };
 }
 
-const contractDir = resolve(__dirname, '../../../../../../test-fixtures/workflow-topology');
+function resolveContractDir(): string {
+    const candidates = [
+        resolve(__dirname, '../../../../../../test-fixtures/workflow-topology'),
+        '/test-fixtures/workflow-topology',
+        resolve(__dirname, '../../../../../test-fixtures/workflow-topology'),
+    ];
+    const found = candidates.find((dir) => existsSync(dir));
+    if (!found) {
+        throw new Error(
+            `test-fixtures/workflow-topology not found. Tried:\n${candidates.join('\n')}`,
+        );
+    }
+    return found;
+}
+
+const contractDir = resolveContractDir();
 const fixtures = readdirSync(contractDir)
     .filter((file) => file.endsWith('.json'))
     .map((file) => {

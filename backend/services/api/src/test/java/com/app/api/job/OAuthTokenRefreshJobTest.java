@@ -3,6 +3,9 @@ package com.app.api.job;
 import com.app.common.connector.ConnectorManifest;
 import com.app.common.connector.OAuth2Config;
 import com.app.common.entity.IntegrationCredential;
+import com.app.api.oauth.OAuthClientCredentials;
+import com.app.api.service.ConnectorOAuthPlatformService;
+import com.app.crypto.util.EncryptionService;
 import com.app.persistence.connector.ConnectorRegistry;
 import com.app.persistence.repository.IntegrationCredentialRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -19,6 +22,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.Optional;
+
 import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
@@ -28,6 +33,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -44,6 +50,10 @@ class OAuthTokenRefreshJobTest {
     private ConnectorRegistry connectorRegistry;
     @Mock
     private RestTemplate restTemplate;
+    @Mock
+    private EncryptionService encryptionService;
+    @Mock
+    private ConnectorOAuthPlatformService platformOAuthService;
 
     @InjectMocks
     private OAuthTokenRefreshJob refreshJob;
@@ -66,6 +76,8 @@ class OAuthTokenRefreshJobTest {
         creds.put("access_token", "old-token");
         creds.put("refresh_token", "refresh-token-123");
         credential.setCredentials(creds);
+        lenient().when(encryptionService.decryptMap(any())).thenAnswer(inv -> inv.getArgument(0));
+        lenient().when(encryptionService.encryptMap(any())).thenAnswer(inv -> inv.getArgument(0));
 
         manifest = new ConnectorManifest();
         manifest.setConnectorId("slack");
@@ -79,7 +91,10 @@ class OAuthTokenRefreshJobTest {
     void refreshExpiringTokens_shouldSuccessfullyRefreshTokens() {
         when(credentialRepository.findByTokenTypeAndTokenExpiresAtBefore(eq("oauth2"), any(Instant.class)))
                 .thenReturn(List.of(credential));
+        when(connectorRegistry.findById("slack", null)).thenReturn(Optional.empty());
         when(connectorRegistry.findById("slack")).thenReturn(Optional.of(manifest));
+        when(platformOAuthService.resolveManagedClient("slack"))
+                .thenReturn(Optional.of(new OAuthClientCredentials.Resolved("cid", "csecret")));
 
         Map<String, Object> tokenResponse = new HashMap<>();
         tokenResponse.put("access_token", "new-token");
@@ -126,7 +141,10 @@ class OAuthTokenRefreshJobTest {
     void refreshExpiringTokens_shouldHandleApiErrorsGracefully() {
         when(credentialRepository.findByTokenTypeAndTokenExpiresAtBefore(eq("oauth2"), any(Instant.class)))
                 .thenReturn(List.of(credential));
+        when(connectorRegistry.findById("slack", null)).thenReturn(Optional.empty());
         when(connectorRegistry.findById("slack")).thenReturn(Optional.of(manifest));
+        when(platformOAuthService.resolveManagedClient("slack"))
+                .thenReturn(Optional.of(new OAuthClientCredentials.Resolved("cid", "csecret")));
 
         when(restTemplate.exchange(anyString(), any(), any(), eq(Map.class)))
                 .thenThrow(new RuntimeException("API is down"));

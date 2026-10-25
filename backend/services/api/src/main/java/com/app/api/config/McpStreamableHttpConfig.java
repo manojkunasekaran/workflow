@@ -33,10 +33,14 @@ public class McpStreamableHttpConfig {
     }
 
     private String resolveEndpointPath(McpSettingsService mcpSettingsService) {
-        String path = mcpSettingsService.getEffectiveSettings().getGlobalEndpointPath();
-        if (path == null || path.isBlank()) {
+        try {
+            String path = mcpSettingsService.getEffectiveSettings().getGlobalEndpointPath();
+            if (path == null || path.isBlank()) {
+                return "/mcp";
+            }
+            return path.startsWith("/") ? path : "/" + path;
+        } catch (Exception ex) {
             return "/mcp";
         }
-        return path.startsWith("/") ? path : "/" + path;
     }
 }

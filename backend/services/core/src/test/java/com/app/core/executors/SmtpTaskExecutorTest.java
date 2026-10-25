@@ -22,6 +22,7 @@ import org.springframework.mail.javamail.JavaMailSenderImpl;
 
 import java.util.UUID;
 import java.util.Map;
+import java.util.Properties;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -78,10 +79,11 @@ class SmtpTaskExecutorTest {
     @Test
     void execute_happyPath_sendsEmailAndReturnsCompleted() {
         // Arrange variable resolver to return inputs as-is for simplicity
-        when(variableResolver.resolveString(anyString(), eq(context))).thenAnswer(i -> i.getArgument(0));
+        when(variableResolver.resolveString(any(), any())).thenAnswer(i -> i.getArgument(0));
 
         try (MockedConstruction<JavaMailSenderImpl> mocked = Mockito.mockConstruction(JavaMailSenderImpl.class,
-                (mockSender, context) -> {
+                (mockSender, ctx) -> {
+                    when(mockSender.getJavaMailProperties()).thenReturn(new Properties());
                     MimeMessage mockMessage = mock(MimeMessage.class);
                     when(mockSender.createMimeMessage()).thenReturn(mockMessage);
                 })) {
@@ -112,8 +114,7 @@ class SmtpTaskExecutorTest {
     void execute_missingRequiredField_returnsFailedWithoutSending() {
         // Arrange
         params.setSmtpHost(""); // Invalid
-        when(variableResolver.resolveString(anyString(), eq(context))).thenAnswer(i -> i.getArgument(0));
-        when(variableResolver.resolveString(eq(""), eq(context))).thenReturn("");
+        when(variableResolver.resolveString(any(), any())).thenAnswer(i -> i.getArgument(0));
 
         try (MockedConstruction<JavaMailSenderImpl> mocked = Mockito.mockConstruction(JavaMailSenderImpl.class)) {
             // Act
@@ -134,10 +135,11 @@ class SmtpTaskExecutorTest {
     @Test
     void execute_mailSenderThrowsException_returnsFailed() {
         // Arrange
-        when(variableResolver.resolveString(anyString(), eq(context))).thenAnswer(i -> i.getArgument(0));
+        when(variableResolver.resolveString(any(), any())).thenAnswer(i -> i.getArgument(0));
 
         try (MockedConstruction<JavaMailSenderImpl> mocked = Mockito.mockConstruction(JavaMailSenderImpl.class,
                 (mockSender, ctx) -> {
+                    when(mockSender.getJavaMailProperties()).thenReturn(new Properties());
                     MimeMessage mockMessage = mock(MimeMessage.class);
                     when(mockSender.createMimeMessage()).thenReturn(mockMessage);
                     doThrow(new RuntimeException("Connection refused")).when(mockSender).send(any(MimeMessage.class));
@@ -163,10 +165,11 @@ class SmtpTaskExecutorTest {
         params.setSmtpPassword(null);
         params.setBodyFormat("HTML");
         
-        when(variableResolver.resolveString(any(), eq(context))).thenAnswer(i -> i.getArgument(0));
+        when(variableResolver.resolveString(any(), any())).thenAnswer(i -> i.getArgument(0));
 
         try (MockedConstruction<JavaMailSenderImpl> mocked = Mockito.mockConstruction(JavaMailSenderImpl.class,
                 (mockSender, ctx) -> {
+                    when(mockSender.getJavaMailProperties()).thenReturn(new Properties());
                     MimeMessage mockMessage = mock(MimeMessage.class);
                     when(mockSender.createMimeMessage()).thenReturn(mockMessage);
                 })) {
@@ -190,11 +193,7 @@ class SmtpTaskExecutorTest {
     void execute_withCredentialId_resolvesFromCredentialProvider() {
         // Arrange
         params.setCredentialId("cred-123");
-        when(variableResolver.resolveString(eq("cred-123"), eq(context))).thenReturn("cred-123");
-        when(variableResolver.resolveString(anyString(), eq(context))).thenAnswer(i -> {
-            String arg = i.getArgument(0);
-            return "cred-123".equals(arg) ? "cred-123" : arg; // let other fields pass through
-        });
+        when(variableResolver.resolveString(any(), any())).thenAnswer(i -> i.getArgument(0));
         
         Map<String, String> decryptedCreds = Map.of(
             "host", "vault.smtp.com",
@@ -203,10 +202,11 @@ class SmtpTaskExecutorTest {
             "password", "vault-pass",
             "security", "SSL"
         );
-        when(credentialProvider.resolveCredentials("cred-123", null, null)).thenReturn(java.util.Optional.of(decryptedCreds));
+        when(credentialProvider.resolveCredentials(eq("cred-123"), any(), any())).thenReturn(java.util.Optional.of(decryptedCreds));
 
         try (MockedConstruction<JavaMailSenderImpl> mocked = Mockito.mockConstruction(JavaMailSenderImpl.class,
                 (mockSender, ctx) -> {
+                    when(mockSender.getJavaMailProperties()).thenReturn(new Properties());
                     MimeMessage mockMessage = mock(MimeMessage.class);
                     when(mockSender.createMimeMessage()).thenReturn(mockMessage);
                 })) {

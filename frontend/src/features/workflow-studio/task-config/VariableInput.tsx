@@ -91,7 +91,7 @@ export function VariableInput({
                                     className={cn(
                                         'flex items-center gap-1 rounded px-1.5 py-[1px] text-[10px] font-medium transition-colors',
                                         explorerOpen
-                                            ? 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-400'
+                                            ? 'bg-primary/10 text-primary'
                                             : 'text-muted-foreground hover:text-foreground',
                                     )}
                                 >
@@ -130,7 +130,7 @@ export function VariableInput({
                                 className={cn(
                                     'flex items-center gap-1 rounded px-1.5 py-[1px] text-[10px] font-medium transition-colors',
                                     mode === 'expression'
-                                        ? 'bg-violet-100 text-violet-700 shadow-sm dark:bg-violet-900/40 dark:text-violet-400'
+                                        ? 'bg-primary/10 text-primary shadow-sm'
                                         : 'text-muted-foreground hover:text-foreground',
                                 )}
                             >

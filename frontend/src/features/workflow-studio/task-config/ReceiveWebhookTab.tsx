@@ -18,6 +18,7 @@ import {
     SubscribeTriggerTab,
 } from '@/features/workflow-studio/task-config/SubscribeTriggerTab';
 import { WEBHOOK_DELIVERY_LABELS } from '@/features/workflow-studio/constants/triggerCopy';
+import { CALLOUT_WARNING_SM } from '@/features/workflow-studio/task-config/jsonPreviewStyles';
 import type {
     WebhookConfig,
     WebhookDeliveryMode,
@@ -34,10 +35,10 @@ const VERIFICATION_OPTIONS: Array<{ value: WebhookVerificationMode; label: strin
 export function createDefaultWebhookConfig(): WebhookConfig {
     return {
         deliveryMode: 'PASSIVE',
-        active: true,
+        active: false,
         method: 'POST',
         inbound: {
-            verificationMode: 'NONE',
+            verificationMode: 'HEADER_SECRET',
             ignoreDuplicates: true,
         },
     };
@@ -193,13 +194,13 @@ export function ReceiveWebhookTab({
             <div className="space-y-2">
                 <Label>Your webhook URL</Label>
                 {!canLoadUrl ? (
-                    <div className="flex items-center justify-between rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-amber-800">
+                    <div className="flex items-center justify-between rounded-md border border-warning/30 bg-warning-muted px-3 py-2 text-warning">
                         <p className="text-xs">Save the workflow to generate your URL.</p>
                         {onForceSave && (
                             <Button
                                 size="sm"
                                 variant="outline"
-                                className="h-7 text-xs border-amber-300 bg-amber-100 hover:bg-amber-200 text-amber-900"
+                                className="h-7 text-xs border-warning/30 bg-warning-muted hover:bg-warning-muted/80 text-warning"
                                 onClick={() => void handleForceSave()}
                                 disabled={isSaving}
                             >
@@ -243,7 +244,7 @@ export function ReceiveWebhookTab({
                                 variant="outline"
                                 onClick={handleCopyUrl}
                             >
-                                {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                                {copied ? <Check className="h-4 w-4 text-success" /> : <Copy className="h-4 w-4" />}
                             </Button>
                         </div>
                         <p className="text-xs text-muted-foreground">
@@ -287,7 +288,7 @@ export function ReceiveWebhookTab({
                             ))}
                         </div>
                         {verificationMode === 'NONE' && (
-                            <p className="text-xs text-amber-700 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-md p-2">
+                            <p className={CALLOUT_WARNING_SM}>
                                 Without verification, anyone who knows the URL can trigger this workflow.
                             </p>
                         )}

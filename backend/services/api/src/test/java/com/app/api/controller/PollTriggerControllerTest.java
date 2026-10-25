@@ -37,6 +37,8 @@ class PollTriggerControllerTest {
     private WorkflowDefinitionRepository definitionRepository;
     @Mock
     private PollExecutionService pollExecutionService;
+    @Mock
+    private com.app.api.service.organization.OrganizationAccess organizationAccess;
 
     @InjectMocks
     private PollTriggerController pollTriggerController;
@@ -48,6 +50,7 @@ class PollTriggerControllerTest {
         workflowDefinition = new WorkflowDefinition();
         workflowDefinition.setId("wf-poll-1");
         workflowDefinition.setName("Poll Workflow");
+        workflowDefinition.setOrganizationId("org-1");
         workflowDefinition.setTrigger(TriggerConfig.builder()
                 .type(TriggerType.POLL)
                 .poll(PollConfig.builder().active(true).build())

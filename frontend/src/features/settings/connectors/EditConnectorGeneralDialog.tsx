@@ -30,7 +30,7 @@ export interface EditConnectorGeneralDialogProps {
     open: boolean;
     onClose: () => void;
     mode: 'create' | 'edit';
-    scope: 'SYSTEM' | 'TENANT';
+    scope: 'SYSTEM' | 'ORGANIZATION';
     connector: ConnectorManifest | null;
     onSaved: (connector: ConnectorManifest) => void;
 }

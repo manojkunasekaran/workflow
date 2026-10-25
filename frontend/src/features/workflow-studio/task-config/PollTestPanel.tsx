@@ -17,6 +17,12 @@ import {
     DialogTrigger,
 } from '@/components/ui/dialog';
 import { pollTriggerApi, type PollTestResult } from '@/api/pollTriggerApi';
+import {
+    CALLOUT_WARNING,
+    JSON_PREVIEW_NUMBER,
+    JSON_PREVIEW_STRING,
+    jsonBooleanClass,
+} from './jsonPreviewStyles';
 
 function JsonNode({ data, depth = 0 }: { data: unknown; depth?: number }) {
     const [expanded, setExpanded] = useState(depth < 2);
@@ -26,13 +32,13 @@ function JsonNode({ data, depth = 0 }: { data: unknown; depth?: number }) {
         return <span className="text-muted-foreground">null</span>;
     }
     if (typeof data === 'boolean') {
-        return <span className={data ? 'text-green-500' : 'text-red-500'}>{String(data)}</span>;
+        return <span className={jsonBooleanClass(data)}>{String(data)}</span>;
     }
     if (typeof data === 'number') {
-        return <span className="text-blue-500">{data}</span>;
+        return <span className={JSON_PREVIEW_NUMBER}>{data}</span>;
     }
     if (typeof data === 'string') {
-        return <span className="text-amber-600 dark:text-amber-400">"{data}"</span>;
+        return <span className={JSON_PREVIEW_STRING}>"{data}"</span>;
     }
     if (Array.isArray(data)) {
         return (
@@ -181,7 +187,7 @@ export function PollTestPanel({ workflowId }: PollTestPanelProps) {
                             <div className="flex items-center justify-between text-sm">
                                 <span className="flex items-center gap-1.5 font-medium">
                                     {result.success ? (
-                                        <CheckCircle2 className="h-4 w-4 text-green-500" />
+                                        <CheckCircle2 className="h-4 w-4 text-success" />
                                     ) : (
                                         <XCircle className="h-4 w-4 text-destructive" />
                                     )}
@@ -200,7 +206,7 @@ export function PollTestPanel({ workflowId }: PollTestPanelProps) {
                             )}
 
                             {result.warning && (
-                                <p className="text-sm text-amber-700 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-md p-3">
+                                <p className={CALLOUT_WARNING}>
                                     {result.warning}
                                 </p>
                             )}

@@ -42,6 +42,8 @@ class ConnectorTestServiceTest {
     @Mock
     private ConnectorRegistry connectorRegistry;
     @Mock
+    private com.app.api.service.organization.OrganizationAccess organizationAccess;
+    @Mock
     private IntegrationCredentialRepository credentialRepository;
     @Mock
     private EncryptionService encryptionService;
@@ -60,6 +62,7 @@ class ConnectorTestServiceTest {
 
     @BeforeEach
     void setUp() {
+        when(organizationAccess.requireOrganizationId()).thenReturn("platform-admin-org");
         request = new ConnectorTestRequest();
         request.setActionId("get_user");
         request.setCredentialId("cred-1");
@@ -87,7 +90,7 @@ class ConnectorTestServiceTest {
 
     @Test
     void testAction_shouldReturnSuccessfulResult() throws Exception {
-        when(connectorRegistry.findById("dummy", "default-org")).thenReturn(Optional.of(manifest));
+        when(connectorRegistry.findById("dummy", "platform-admin-org")).thenReturn(Optional.of(manifest));
         when(credentialRepository.findById("cred-1")).thenReturn(Optional.of(credential));
         when(encryptionService.decryptMap(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -112,7 +115,7 @@ class ConnectorTestServiceTest {
 
     @Test
     void testAction_shouldReturnErrorResultOnHttpClientException() throws Exception {
-        when(connectorRegistry.findById("dummy", "default-org")).thenReturn(Optional.of(manifest));
+        when(connectorRegistry.findById("dummy", "platform-admin-org")).thenReturn(Optional.of(manifest));
         when(credentialRepository.findById("cred-1")).thenReturn(Optional.of(credential));
         when(encryptionService.decryptMap(any())).thenAnswer(inv -> inv.getArgument(0));
 

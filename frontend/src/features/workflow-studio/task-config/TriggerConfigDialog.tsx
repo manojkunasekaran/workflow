@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Play, Webhook, Clock, RefreshCw, Plug, X } from 'lucide-react';
+import { Play, Webhook, Clock, RefreshCw, Plug, FormInput, X } from 'lucide-react';
 import {
     Dialog,
     DialogContent,
@@ -31,6 +31,8 @@ import {
     McpTriggerTab,
 } from '@/features/workflow-studio/task-config/McpTriggerTab';
 import { TRIGGER_TYPE_LABELS } from '@/features/workflow-studio/constants/triggerCopy';
+import { createDefaultFormTriggerConfig, FormTriggerTab } from '@/features/workflow-studio/task-config/FormTriggerTab';
+import type { FormTriggerConfig } from '@/types/form';
 import type {
     McpTriggerConfig,
     PollConfig,
@@ -58,6 +60,7 @@ function buildTriggerConfig(state: {
     timezone: string;
     poll: PollConfig;
     mcp: McpTriggerConfig;
+    form: FormTriggerConfig;
 }): TriggerConfig {
     return {
         type: state.type,
@@ -68,6 +71,7 @@ function buildTriggerConfig(state: {
                 : undefined,
         poll: state.type === 'POLL' ? state.poll : undefined,
         mcp: state.type === 'MCP' ? state.mcp : undefined,
+        form: state.type === 'FORM' ? state.form : undefined,
     };
 }
 
@@ -77,6 +81,7 @@ const TRIGGER_TABS: Array<{ type: TriggerType; icon: typeof Play }> = [
     { type: 'SCHEDULE', icon: Clock },
     { type: 'POLL', icon: RefreshCw },
     { type: 'MCP', icon: Plug },
+    { type: 'FORM', icon: FormInput },
 ];
 
 export function TriggerConfigDialog({
@@ -99,6 +104,7 @@ export function TriggerConfigDialog({
 
     const [poll, setPoll] = useState<PollConfig>(config?.poll ?? createDefaultPollConfig());
     const [mcp, setMcp] = useState<McpTriggerConfig>(config?.mcp ?? createDefaultMcpConfig());
+    const [form, setForm] = useState<FormTriggerConfig>(config?.form ?? createDefaultFormTriggerConfig());
 
     useEffect(() => {
         if (open) {
@@ -109,8 +115,9 @@ export function TriggerConfigDialog({
             setTimezone(config?.schedule?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone);
             setPoll(config?.poll ?? createDefaultPollConfig());
             setMcp(config?.mcp ?? createDefaultMcpConfig());
+            setForm(config?.form ?? createDefaultFormTriggerConfig());
         }
-    }, [open]);
+    }, [open, config]);
 
     const emitSave = (updates: Partial<{
         type: TriggerType;
@@ -120,6 +127,7 @@ export function TriggerConfigDialog({
         timezone: string;
         poll: PollConfig;
         mcp: McpTriggerConfig;
+        form: FormTriggerConfig;
     }>) => {
         const nextState = {
             type,
@@ -129,6 +137,7 @@ export function TriggerConfigDialog({
             timezone,
             poll,
             mcp,
+            form,
             ...updates,
         };
 
@@ -139,6 +148,7 @@ export function TriggerConfigDialog({
         if ('timezone' in updates) setTimezone(nextState.timezone);
         if ('poll' in updates) setPoll(nextState.poll);
         if ('mcp' in updates) setMcp(nextState.mcp);
+        if ('form' in updates) setForm(nextState.form);
 
         onSave(buildTriggerConfig(nextState));
     };
@@ -152,7 +162,10 @@ export function TriggerConfigDialog({
         <Dialog open={open} onOpenChange={onOpenChange} modal={false}>
             <DialogContent
                 blocking={false}
-                className="flex max-h-[90vh] flex-col p-0 sm:max-w-2xl"
+                className={cn(
+                    "flex max-h-[90vh] flex-col p-0 transition-[max-width] duration-200",
+                    type === 'FORM' ? "sm:max-w-4xl lg:max-w-5xl w-full" : "sm:max-w-2xl"
+                )}
                 onOpenAutoFocus={(event) => event.preventDefault()}
                 onInteractOutside={(event) => event.preventDefault()}
                 onPointerDownOutside={(event) => event.preventDefault()}
@@ -320,6 +333,13 @@ export function TriggerConfigDialog({
                             mcp={mcp}
                             tasks={tasks}
                             onChange={(nextMcp) => emitSave({ mcp: nextMcp })}
+                        />
+                    )}
+
+                    {type === 'FORM' && (
+                        <FormTriggerTab
+                            config={form}
+                            onChange={(nextForm) => emitSave({ form: nextForm })}
                         />
                     )}
                 </div>

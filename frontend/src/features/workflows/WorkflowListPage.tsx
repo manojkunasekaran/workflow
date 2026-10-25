@@ -10,6 +10,7 @@ import { Hint } from '@/components/ui/hint';
 import { ArrowRight, Loader2, Plus, RefreshCw, Workflow } from 'lucide-react';
 import { SearchInput } from '@/components/ui/search-input';
 import { ViewToggle } from '@/components/ui/view-toggle';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { WorkflowCard } from './components/WorkflowCard';
 
 export default function WorkflowListPage() {
@@ -80,7 +81,7 @@ export default function WorkflowListPage() {
                 }
             />
 
-            <div className="flex-1 overflow-auto p-6">
+            <div className="flex-1 overflow-auto p-[var(--density-page-p)]">
                 {error ? (
                     <ErrorBanner data-testid="workflow-list-error" message={error} />
                 ) : null}
@@ -122,45 +123,45 @@ export default function WorkflowListPage() {
                         </div>
                     ) : (
                     <div data-testid="workflow-table-container" className="overflow-hidden rounded-lg border border-border bg-card">
-                        <table className="w-full">
-                            <thead className="border-b border-border bg-muted/50">
-                                <tr>
-                                    <th className="px-4 py-3 text-left text-xs font-medium uppercase text-muted-foreground">
+                        <Table>
+                            <TableHeader className="bg-muted/50">
+                                <TableRow>
+                                    <TableHead className="px-4 text-xs font-medium uppercase text-muted-foreground">
                                         Name
-                                    </th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium uppercase text-muted-foreground">
+                                    </TableHead>
+                                    <TableHead className="px-4 text-xs font-medium uppercase text-muted-foreground">
                                         Tasks
-                                    </th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium uppercase text-muted-foreground">
+                                    </TableHead>
+                                    <TableHead className="px-4 text-xs font-medium uppercase text-muted-foreground">
                                         Updated
-                                    </th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium uppercase text-muted-foreground">
+                                    </TableHead>
+                                    <TableHead className="px-4 text-xs font-medium uppercase text-muted-foreground">
                                         ID
-                                    </th>
-                                    <th className="px-4 py-3" />
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-border">
+                                    </TableHead>
+                                    <TableHead className="px-4" />
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
                                 {filteredWorkflows.map((workflow) => (
-                                    <tr
+                                    <TableRow
                                         key={workflow.id}
                                         data-testid={`workflow-row-${workflow.id}`}
                                         className="cursor-pointer transition-colors hover:bg-muted/30"
                                         onClick={() => navigate(`/workflows/${workflow.id}`)}
                                     >
-                                        <td data-testid={`workflow-name-${workflow.id}`} className="px-4 py-3 text-sm font-medium text-foreground">
+                                        <TableCell data-testid={`workflow-name-${workflow.id}`} className="px-4 font-medium text-foreground">
                                             {workflow.name}
-                                        </td>
-                                        <td data-testid={`task-count-${workflow.id}`} className="px-4 py-3 text-sm text-muted-foreground">
+                                        </TableCell>
+                                        <TableCell data-testid={`task-count-${workflow.id}`} className="px-4 text-muted-foreground">
                                             {workflow.tasks?.length ?? 0}
-                                        </td>
-                                        <td data-testid={`updated-at-${workflow.id}`} className="px-4 py-3 text-sm text-muted-foreground">
+                                        </TableCell>
+                                        <TableCell data-testid={`updated-at-${workflow.id}`} className="px-4 text-muted-foreground">
                                             {formatDate(workflow.updatedAt ?? workflow.createdAt)}
-                                        </td>
-                                        <td data-testid={`workflow-id-${workflow.id}`} className="px-4 py-3 font-mono text-xs text-muted-foreground">
+                                        </TableCell>
+                                        <TableCell data-testid={`workflow-id-${workflow.id}`} className="px-4 font-mono text-xs text-muted-foreground">
                                             {workflow.id ? `${workflow.id.substring(0, 8)}…` : '—'}
-                                        </td>
-                                        <td className="px-4 py-3">
+                                        </TableCell>
+                                        <TableCell className="px-4">
                                             <div className="flex items-center justify-end gap-1">
                                                 <Hint content={`Open ${workflow.name}`}>
                                                     <Button
@@ -183,11 +184,11 @@ export default function WorkflowListPage() {
                                                     </Button>
                                                 </Hint>
                                             </div>
-                                        </td>
-                                    </tr>
+                                        </TableCell>
+                                    </TableRow>
                                 ))}
-                            </tbody>
-                        </table>
+                            </TableBody>
+                        </Table>
                     </div>
                     )
                 ) : null}

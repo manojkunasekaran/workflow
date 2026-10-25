@@ -1,6 +1,7 @@
 package com.app.api.service;
 
 import com.app.api.dto.ConnectorTestRequest;
+import com.app.api.service.organization.OrganizationAccess;
 import com.app.api.dto.ConnectorTestResult;
 import com.app.common.connector.ConnectorAction;
 import com.app.common.connector.ConnectorAuthType;
@@ -47,17 +48,16 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class ConnectorTestService {
 
-    // In a future multi-tenant sprint, replace with SecurityContextHolder lookup.
-    private static final String DEFAULT_ORG_ID = "default-org";
-
     private final ConnectorRegistry connectorRegistry;
+    private final OrganizationAccess organizationAccess;
     private final IntegrationCredentialRepository credentialRepository;
     private final EncryptionService encryptionService;
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
 
     public ConnectorTestResult testAction(String connectorId, ConnectorTestRequest request) {
-        ConnectorManifest manifest = connectorRegistry.findById(connectorId, DEFAULT_ORG_ID)
+        ConnectorManifest manifest = connectorRegistry.findById(
+                        connectorId, organizationAccess.requireOrganizationId())
                 .orElseThrow(() -> new ResourceNotFoundException("ConnectorManifest", connectorId));
 
         ConnectorAction action = manifest.getActions().stream()

@@ -35,5 +35,8 @@ public class TriggerConfig {
 
     /** MCP server trigger config. Only relevant when type = MCP. */
     private McpTriggerConfig mcp;
+
+    /** Form trigger config. Only relevant when type = FORM. */
+    private FormTriggerConfig form;
 }
 

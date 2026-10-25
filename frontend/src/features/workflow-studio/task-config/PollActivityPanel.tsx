@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import {
     AlertTriangle,
     CheckCircle2,
@@ -53,10 +53,12 @@ export function PollActivityPanel({ workflowId, onStateLoaded }: PollActivityPan
     const [reprocessMessage, setReprocessMessage] = useState<string | null>(null);
 
     const canLoad = !!workflowId && workflowId !== 'NEW_WORKFLOW';
+    const loadGenerationRef = useRef(0);
 
     const loadActivity = useCallback(async (pageIndex = 0) => {
         if (!canLoad || !workflowId) return;
 
+        const loadId = ++loadGenerationRef.current;
         setLoading(true);
         setNotReady(false);
         try {
@@ -64,11 +66,17 @@ export function PollActivityPanel({ workflowId, onStateLoaded }: PollActivityPan
                 pollTriggerApi.getPollState(workflowId),
                 pollTriggerApi.getLogs(workflowId, pageIndex, PAGE_SIZE),
             ]);
+            if (loadId !== loadGenerationRef.current) {
+                return;
+            }
             onStateLoaded?.(state);
             setLogs(logsPage.content);
             setTotalElements(logsPage.totalElements);
             setPage(pageIndex);
         } catch (err: unknown) {
+            if (loadId !== loadGenerationRef.current) {
+                return;
+            }
             if (isTriggerNotReadyError(err)) {
                 setNotReady(true);
                 setLogs([]);
@@ -234,12 +242,12 @@ export function PollActivityPanel({ workflowId, onStateLoaded }: PollActivityPan
                                                                         {log.error}
                                                                     </span>
                                                                 ) : log.reprocess ? (
-                                                                    <span className="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400">
+                                                                    <span className="inline-flex items-center gap-1 text-xs text-info">
                                                                         <RotateCcw className="h-3.5 w-3.5" />
                                                                         Reprocess
                                                                     </span>
                                                                 ) : log.triggeredExecution ? (
-                                                                    <span className="inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+                                                                    <span className="inline-flex items-center gap-1 text-xs text-success">
                                                                         <CheckCircle2 className="h-3.5 w-3.5" />
                                                                         Triggered
                                                                     </span>

@@ -30,7 +30,12 @@ public class ScriptTaskExecutor implements TaskExecutor {
 
     @Override
     public TaskExecutionResult execute(WorkflowTask task, WorkflowExecution execution, ExecutionContext context) {
-        ScriptTaskParameters params = (ScriptTaskParameters) task.getParameters();
+        if (!(task.getParameters() instanceof ScriptTaskParameters params)) {
+            return TaskExecutionResult.builder()
+                    .status(TaskExecutionResult.Status.FAILED)
+                    .errorMessage("Invalid parameters for Script task")
+                    .build();
+        }
         log.info("Executing script task: {}", task.getTaskId());
 
         try {

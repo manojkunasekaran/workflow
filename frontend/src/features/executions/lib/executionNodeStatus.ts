@@ -34,17 +34,17 @@ export function buildExecutionNodeStatusMap(
 export function executionNodeBorderClass(status: string): string | undefined {
     switch (status.toUpperCase()) {
         case 'COMPLETED':
-            return 'border-green-500';
+            return 'border-success';
         case 'FAILED':
             return 'border-destructive';
         case 'RUNNING':
-            return 'border-amber-400';
+            return 'border-warning';
         case 'PAUSED':
-            return 'border-sky-400';
+            return 'border-info';
         case 'SKIPPED':
             return 'border-muted-foreground/40';
         case 'BRANCHED':
-            return 'border-violet-400';
+            return 'border-primary';
         default:
             return undefined;
     }

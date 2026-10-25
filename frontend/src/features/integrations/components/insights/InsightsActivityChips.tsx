@@ -27,14 +27,14 @@ export function InsightsActivityChips({ metrics, testId }: InsightsActivityChips
                 </span>
             </span>
             {metrics.inProgressRuns > 0 ? (
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200/80 bg-amber-50/60 px-3 py-1 text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-200">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-warning/30 bg-warning-muted px-3 py-1 text-xs text-warning-foreground">
                     <Loader2 className="h-3.5 w-3.5 shrink-0" />
                     <span className="font-medium tabular-nums">{metrics.inProgressRuns}</span>
                     in progress
                 </span>
             ) : null}
             {metrics.completedRuns > 0 ? (
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200/80 bg-emerald-50/60 px-3 py-1 text-xs text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-200">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-success/30 bg-success-muted px-3 py-1 text-xs text-success-foreground">
                     <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
                     <span className="font-medium tabular-nums">{metrics.completedRuns}</span>
                     completed

@@ -42,6 +42,11 @@ public class OpenAiProviderAdapter implements LlmProviderAdapter {
         if (ctx.getTemperature() != null) requestBody.put("temperature", ctx.getTemperature());
         if (ctx.getMaxTokens() != null) requestBody.put("max_tokens", ctx.getMaxTokens());
         requestBody.put("stream", ctx.isStream());
+        if (ctx.isStream()) {
+            ObjectNode streamOptions = objectMapper.createObjectNode();
+            streamOptions.put("include_usage", true);
+            requestBody.set("stream_options", streamOptions);
+        }
 
         if (ctx.getTools() != null && !ctx.getTools().isEmpty()) {
             ArrayNode toolsArray = requestBody.putArray("tools");
@@ -118,6 +123,17 @@ public class OpenAiProviderAdapter implements LlmProviderAdapter {
         }
 
         JsonNode chunk = objectMapper.readTree(line.substring(6));
+        if (chunk.has("usage") && !chunk.get("usage").isNull()) {
+            JsonNode usage = chunk.get("usage");
+            LlmStreamChunk.LlmStreamChunkBuilder builder = LlmStreamChunk.builder();
+            if (usage.has("prompt_tokens")) {
+                builder.promptTokens(usage.get("prompt_tokens").asInt());
+            }
+            if (usage.has("completion_tokens")) {
+                builder.completionTokens(usage.get("completion_tokens").asInt());
+            }
+            return builder.build();
+        }
         if (chunk.has("choices") && chunk.get("choices").isArray() && chunk.get("choices").size() > 0) {
             JsonNode delta = chunk.get("choices").get(0).get("delta");
             if (delta != null) {

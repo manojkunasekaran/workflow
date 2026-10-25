@@ -126,7 +126,7 @@ function SourceSection({ source, search, onSelect }: SourceSectionProps) {
                 <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
                         {source.isGlobal && (
-                            <span className="rounded bg-violet-100 px-1 py-0.5 font-mono text-[9px] font-semibold text-violet-700 dark:bg-violet-900/40 dark:text-violet-400">
+                            <span className="rounded bg-primary/10 px-1 py-0.5 font-mono text-[9px] font-semibold text-primary">
                                 global
                             </span>
                         )}

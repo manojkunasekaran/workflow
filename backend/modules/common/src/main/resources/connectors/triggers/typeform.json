@@ -72,7 +72,7 @@
           "type": "STRING",
           "required": true,
           "supportsExpression": false,
-          "defaultValue": "workflow360"
+          "defaultValue": "workflow"
         }
       ],
       "preset": {

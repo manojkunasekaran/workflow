@@ -34,6 +34,36 @@ describe('Navigation Layout Unit Tests', () => {
       expect(intLink).toBeInTheDocument();
       expect(screen.getByTestId('nav-link-credentials')).toBeInTheDocument();
       expect(screen.getByTestId('nav-link-settings')).toBeInTheDocument();
+
+      // Brand name must be "Workflow" with subtle subtitle "Make automations" and not "Flow"
+      const logoLink = screen.getByTestId('nav-logo-link');
+      expect(logoLink).toHaveAttribute('href', '/');
+      expect(logoLink.textContent).toContain('Workflow');
+      expect(logoLink.textContent).toContain('Make automations');
+      expect(logoLink.textContent).not.toBe('Flow');
+      expect(logoLink.querySelector('svg')).toBeInTheDocument();
+
+      const collapseBtn = screen.getByTestId('sidebar-collapse-btn');
+      expect(collapseBtn).toBeInTheDocument();
+      expect(collapseBtn.className).toContain('ml-auto');
+    });
+
+    it('renders expand button overlaid on top of logo when sidebar is collapsed', () => {
+      render(
+        <MemoryRouter>
+          <SidebarProvider defaultOpen={false}>
+            <AppSidebar />
+          </SidebarProvider>
+        </MemoryRouter>
+      );
+
+      const collapseBtn = screen.getByTestId('sidebar-collapse-btn');
+      expect(collapseBtn).toBeInTheDocument();
+      expect(collapseBtn.className).toContain('absolute');
+      expect(collapseBtn.className).toContain('inset-0');
+      expect(collapseBtn.className).toContain('group-hover/header:opacity-100');
+      expect(collapseBtn.className).toContain('z-10');
+      expect(collapseBtn).toHaveAttribute('aria-label', 'Expand sidebar');
     });
   });
 

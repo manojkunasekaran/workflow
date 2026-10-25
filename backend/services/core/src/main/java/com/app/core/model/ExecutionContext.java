@@ -64,6 +64,16 @@ public class ExecutionContext {
     private String workflowExecutionId;
 
     /**
+     * Organization ID associated with the execution (multi-tenant scope).
+     */
+    private String organizationId;
+
+    /**
+     * User ID associated with the execution (if triggered by a user).
+     */
+    private String userId;
+
+    /**
      * Active workflow definition for this run (routing, metadata, variables).
      */
     private transient WorkflowDefinition workflowDefinition;
@@ -81,17 +91,43 @@ public class ExecutionContext {
             Map<String, Object> taskOutputs,
             String executionId,
             WorkflowDefinition workflowDefinition) {
+        String orgId = workflowDefinition != null ? workflowDefinition.getOrganizationId() : null;
+        return fromExecution(triggerInputs, taskOutputs, executionId, workflowDefinition, orgId, null);
+    }
+
+    public static ExecutionContext fromExecution(
+            Map<String, VariableValue> triggerInputs,
+            Map<String, Object> taskOutputs,
+            String executionId,
+            WorkflowDefinition workflowDefinition,
+            String organizationId,
+            String userId) {
         Map<String, VariableValue> workflowVariables = workflowDefinition != null && workflowDefinition.getVariables() != null
                 ? workflowDefinition.getVariables()
                 : new HashMap<>();
+        String resolvedOrgId = organizationId != null && !organizationId.isBlank()
+                ? organizationId
+                : (workflowDefinition != null ? workflowDefinition.getOrganizationId() : null);
         return ExecutionContext.builder()
                 .triggerInputs(triggerInputs != null ? triggerInputs : new HashMap<>())
                 .workflowVariables(workflowVariables)
                 .taskOutputs(taskOutputs != null ? taskOutputs : new HashMap<>())
                 .workflowExecutionId(executionId)
+                .organizationId(resolvedOrgId)
+                .userId(userId)
                 .executionTime(Instant.now())
                 .workflowDefinition(workflowDefinition)
                 .build();
+    }
+
+    /**
+     * Resolves organizationId from the explicit field or falls back to the workflow definition.
+     */
+    public String getOrganizationId() {
+        if (organizationId != null && !organizationId.isBlank()) {
+            return organizationId;
+        }
+        return workflowDefinition != null ? workflowDefinition.getOrganizationId() : null;
     }
 
     /**
@@ -227,6 +263,8 @@ public class ExecutionContext {
                 .environmentVariables(parent.getEnvironmentVariables())
                 .loopVariables(new HashMap<>())
                 .workflowExecutionId(parent.getWorkflowExecutionId())
+                .organizationId(parent.getOrganizationId())
+                .userId(parent.getUserId())
                 .executionTime(parent.getExecutionTime())
                 .workflowDefinition(parent.getWorkflowDefinition())
                 .branchId(branchId)

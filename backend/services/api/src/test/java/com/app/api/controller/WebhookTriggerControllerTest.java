@@ -34,6 +34,8 @@ class WebhookTriggerControllerTest {
     private WorkflowDefinitionRepository definitionRepository;
     @Mock
     private WebhookInboundExecutionService inboundExecutionService;
+    @Mock
+    private com.app.api.service.organization.OrganizationAccess organizationAccess;
 
     @InjectMocks
     private WebhookTriggerController controller;
@@ -45,6 +47,7 @@ class WebhookTriggerControllerTest {
         workflowDefinition = new WorkflowDefinition();
         workflowDefinition.setId("wf-webhook-1");
         workflowDefinition.setName("Webhook WF");
+        workflowDefinition.setOrganizationId("org-1");
         workflowDefinition.setTrigger(TriggerConfig.builder()
                 .type(TriggerType.WEBHOOK)
                 .webhook(WebhookConfig.builder().active(true).build())

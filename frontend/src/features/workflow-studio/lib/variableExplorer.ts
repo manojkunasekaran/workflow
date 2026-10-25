@@ -75,7 +75,7 @@ const TASK_OUTPUT_SCHEMAS: Record<string, Record<string, VariableSchemaNode>> = 
     },
     ITERATOR_TASK: {
         totalIterations: { type: 'number', label: 'Total iterations' },
-        completedIterations: { type: 'number', label: 'Completed iterations' },
+        successfulIterations: { type: 'number', label: 'Successful iterations' },
         failedIterations: { type: 'number', label: 'Failed iterations' },
         results: { type: 'array', label: 'All iteration results' },
     },
@@ -194,7 +194,9 @@ export function getAncestorTaskNodes(
     );
 
     const visited = new Set<string>();
+    const enqueued = new Set<string>();
     const queue: string[] = [targetNodeId];
+    enqueued.add(targetNodeId);
     const ancestors: StudioCanvasNode[] = [];
 
     while (queue.length > 0) {
@@ -207,7 +209,8 @@ export function getAncestorTaskNodes(
             if (edge.target !== current) continue;
             const sourceId = edge.source;
             if (!sourceId || visited.has(sourceId) || sourceId === WORKFLOW_START_ID) continue;
-            if (!queue.includes(sourceId)) {
+            if (!enqueued.has(sourceId)) {
+                enqueued.add(sourceId);
                 queue.push(sourceId);
             }
         }

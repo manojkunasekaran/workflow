@@ -59,4 +59,62 @@ public class CredentialProviderTest {
         assertTrue(result.isPresent());
         assertEquals("secret", result.get().getCredentials().get("password"));
     }
+
+    @Test
+    void resolveCredential_withMatchingOrganization_shouldReturnCredential() {
+        IntegrationCredential credential = new IntegrationCredential();
+        credential.setId("cred-tenant");
+        credential.setOrganizationId("org-alpha");
+        credential.setCredentials(Map.of("token", "enc_tok123"));
+
+        when(repository.findById("cred-tenant")).thenReturn(Optional.of(credential));
+        when(encryptionService.decryptMap(anyMap())).thenAnswer(inv -> Map.of("token", "tok123"));
+
+        com.app.core.model.ExecutionContext context = com.app.core.model.ExecutionContext.builder()
+                .organizationId("org-alpha")
+                .build();
+
+        Optional<IntegrationCredential> result = provider.resolveCredential("cred-tenant", null, context);
+
+        assertTrue(result.isPresent());
+        assertEquals("tok123", result.get().getCredentials().get("token"));
+    }
+
+    @Test
+    void resolveCredential_withMismatchedOrganization_shouldDenyAccess() {
+        IntegrationCredential credential = new IntegrationCredential();
+        credential.setId("cred-tenant");
+        credential.setOrganizationId("org-alpha");
+        credential.setCredentials(Map.of("token", "enc_tok123"));
+
+        when(repository.findById("cred-tenant")).thenReturn(Optional.of(credential));
+
+        com.app.core.model.ExecutionContext context = com.app.core.model.ExecutionContext.builder()
+                .organizationId("org-beta")
+                .build();
+
+        Optional<IntegrationCredential> result = provider.resolveCredential("cred-tenant", null, context);
+
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void resolveCredential_withPlatformScope_shouldAllowAccessAcrossOrgs() {
+        IntegrationCredential credential = new IntegrationCredential();
+        credential.setId("cred-platform");
+        credential.setCredentialScope(com.app.common.entity.CredentialScope.PLATFORM);
+        credential.setCredentials(Map.of("apiKey", "enc_platKey"));
+
+        when(repository.findById("cred-platform")).thenReturn(Optional.of(credential));
+        when(encryptionService.decryptMap(anyMap())).thenAnswer(inv -> Map.of("apiKey", "platKey"));
+
+        com.app.core.model.ExecutionContext context = com.app.core.model.ExecutionContext.builder()
+                .organizationId("org-any")
+                .build();
+
+        Optional<IntegrationCredential> result = provider.resolveCredential("cred-platform", null, context);
+
+        assertTrue(result.isPresent());
+        assertEquals("platKey", result.get().getCredentials().get("apiKey"));
+    }
 }

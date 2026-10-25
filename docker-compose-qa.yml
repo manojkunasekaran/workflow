@@ -28,7 +28,7 @@ services:
       - "5432:5432"
 
   # ── Test runners ────────────────────────────────────────────────────────────
-  # Shared fixtures live at repo-root test-fixtures/ (not mounted on dev compose).
+  # Shared fixtures live at repo-root test-fixtures/ (also mounted on dev frontend for unit tests).
 
   qa-build-libs:
     build:
@@ -50,6 +50,15 @@ services:
       - maven-repo:/root/.m2
     entrypoint: ["sh", "-c"]
     command: ["mvn -N install -DskipTests && mvn -f modules/pom.xml test"]
+    restart: "no"
+
+  qa-frontend-colors:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./frontend:/app
+    entrypoint: ["sh", "./scripts/check-feature-colors.sh"]
     restart: "no"
 
   qa-frontend-unit:

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { connectionApi } from '@/api/connectionApi';
 import type { IntegrationCredential } from '@/types/api';
 import { Button } from '@/components/ui/button';
+import { StatusBadge } from '@/components/ui/status-badge';
 import { ErrorBanner } from '@/components/ui/error-banner';
 import { Loader2, Plus, KeyRound, Trash2, Edit2 } from 'lucide-react';
 import { ConnectorConnectionPanel } from './ConnectorConnectionPanel';
@@ -30,7 +31,7 @@ export function ConnectionsList() {
         } catch (err) {
             console.error('Failed to load connections', err);
             setCredentials([]);
-            setError("We couldn't load connections right now.");
+            setError("Unable to load connections right now. Please try again.");
         } finally {
             setIsLoading(false);
         }
@@ -73,11 +74,29 @@ export function ConnectionsList() {
 
 
     const renderStatusBadge = (status?: string) => {
-        if (!status || status === 'UNKNOWN') return <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-800">Unknown</span>;
-        if (status === 'ACTIVE') return <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-green-100 text-green-800">Active</span>;
-        if (status === 'EXPIRED') return <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-800">Expired</span>;
-        if (status === 'REVOKED') return <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-red-100 text-red-800">Revoked</span>;
+        if (!status || status === 'UNKNOWN') {
+            return <StatusBadge variant="neutral" size="sm" className="rounded-full normal-case tracking-normal">Unknown</StatusBadge>;
+        }
+        if (status === 'ACTIVE') {
+            return <StatusBadge variant="success" size="sm" className="rounded-full normal-case tracking-normal">Active</StatusBadge>;
+        }
+        if (status === 'EXPIRED') {
+            return <StatusBadge variant="warning" size="sm" className="rounded-full normal-case tracking-normal">Expired</StatusBadge>;
+        }
+        if (status === 'REVOKED') {
+            return <StatusBadge variant="danger" size="sm" className="rounded-full normal-case tracking-normal">Revoked</StatusBadge>;
+        }
         return null;
+    };
+
+    const renderScopeBadge = (scope?: string) => {
+        if (scope === 'PLATFORM') {
+            return <StatusBadge variant="info" size="sm" className="rounded-full normal-case tracking-normal">Platform</StatusBadge>;
+        }
+        if (scope === 'ORG_SHARED') {
+            return <StatusBadge variant="info" size="sm" className="rounded-full normal-case tracking-normal">Shared</StatusBadge>;
+        }
+        return <StatusBadge variant="neutral" size="sm" className="rounded-full normal-case tracking-normal">Personal</StatusBadge>;
     };
 
     return (
@@ -93,7 +112,7 @@ export function ConnectionsList() {
             </div>
 
             {error ? (
-                <ErrorBanner data-testid="connections-list-error" message={error} />
+                <ErrorBanner data-testid="connections-list-error" message={error} onRetry={loadCredentials} />
             ) : null}
 
             {!error ? (
@@ -124,9 +143,7 @@ export function ConnectionsList() {
                                     <TableCell className="font-medium">
                                         <div className="flex items-center gap-2">
                                             {cred.name}
-                                            {cred.credentialScope === 'PLATFORM' && <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-purple-100 text-purple-800">Platform</span>}
-                                            {cred.credentialScope === 'ORG_SHARED' && <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800">Shared</span>}
-                                            {(!cred.credentialScope || cred.credentialScope === 'PERSONAL') && <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-slate-100 text-slate-800">Personal</span>}
+                                            {renderScopeBadge(cred.credentialScope)}
                                         </div>
                                         {cred.connectedAs && <div className="text-xs text-muted-foreground mt-1">{cred.connectedAs}</div>}
                                     </TableCell>
@@ -141,7 +158,7 @@ export function ConnectionsList() {
                                             <Edit2 className="h-4 w-4" />
                                         </Button>
                                         <Button variant="ghost" size="icon" onClick={() => handleDelete(cred.id)}>
-                                            <Trash2 className="h-4 w-4 text-red-500" />
+                                            <Trash2 className="h-4 w-4 text-destructive" />
                                         </Button>
                                     </TableCell>
                                 </TableRow>
@@ -157,6 +174,9 @@ export function ConnectionsList() {
                 onOpenChange={setIsDialogOpen}
                 credential={selectedCred}
                 onSave={handleSave}
+                onOAuthSuccess={async () => {
+                    await loadCredentials();
+                }}
             />
         </div>
     );

@@ -199,7 +199,7 @@ export default function IntegrationDetailPage() {
                         />
                     }
                 />
-                <div className="flex-1 overflow-auto p-6">
+                <div className="flex-1 overflow-auto p-[var(--density-page-p)]">
                     {error ? <ErrorBanner message={error} /> : <ErrorBanner message="Integration not found." />}
                     <Button variant="outline" className="mt-4" onClick={handleNavigateBack}>
                         Back to Integrations
@@ -211,15 +211,15 @@ export default function IntegrationDetailPage() {
 
     const getStatusColor = (status: string) => {
         switch (status) {
-            case 'DRAFT': return 'bg-amber-100 text-amber-800 hover:bg-amber-100/80 dark:bg-amber-900/30 dark:text-amber-300';
-            case 'PUBLISHED': return 'bg-green-100 text-green-800 hover:bg-green-100/80 dark:bg-green-900/30 dark:text-green-300';
+            case 'DRAFT': return 'bg-warning-muted text-warning hover:bg-warning-muted/80';
+            case 'PUBLISHED': return 'bg-success-muted text-success hover:bg-success-muted/80';
             case 'DEPRECATED': return 'bg-destructive/10 text-destructive hover:bg-destructive/20';
             default: return 'bg-muted text-muted-foreground';
         }
     };
 
     const getScopeColor = (scope: string) => {
-        if (scope === 'SYSTEM') return 'bg-blue-100 text-blue-800 hover:bg-blue-100/80 dark:bg-blue-900/30 dark:text-blue-300';
+        if (scope === 'SYSTEM') return 'bg-info-muted text-info hover:bg-info-muted/80';
         return 'bg-secondary text-secondary-foreground';
     };
 
@@ -246,8 +246,8 @@ export default function IntegrationDetailPage() {
                 }
             />
             
-            <div className="flex-1 overflow-auto p-6 space-y-8">
-                <div className="rounded-xl border bg-card text-card-foreground shadow-sm p-6">
+            <div className="flex-1 overflow-auto p-[var(--density-page-p)] space-y-[var(--density-section-gap)]">
+                <div className="rounded-xl border bg-card text-card-foreground shadow-sm p-[var(--density-card-p)]">
                     <div className="flex items-start justify-between gap-4">
                         <div className="flex items-center gap-6">
                             <div className="flex items-center gap-3">

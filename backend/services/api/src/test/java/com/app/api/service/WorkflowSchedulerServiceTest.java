@@ -21,10 +21,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.app.common.constant.ExecutionType;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -179,5 +183,25 @@ class WorkflowSchedulerServiceTest {
                         .build())
                 .build());
         return wf;
+    }
+
+    @Test
+    void testTriggerWorkflow_ExecutesForOrganization() {
+        WorkflowDefinition wf = new WorkflowDefinition();
+        wf.setId("wf-sched-1");
+        wf.setOrganizationId("org-sched-1");
+
+        when(definitionRepository.findById("wf-sched-1")).thenReturn(Optional.of(wf));
+        doAnswer(inv -> {
+            Runnable r = inv.getArgument(0);
+            r.run();
+            return null;
+        }).when(lockingTaskExecutor).executeWithLock(any(Runnable.class), any());
+
+        org.springframework.test.util.ReflectionTestUtils.invokeMethod(
+                schedulerService, "triggerWorkflow", "wf-sched-1");
+
+        verify(executionService).triggerExecutionForOrganization(
+                "wf-sched-1", "org-sched-1", null, ExecutionType.ASYNC, TriggerType.SCHEDULE);
     }
 }

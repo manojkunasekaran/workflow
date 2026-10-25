@@ -12,11 +12,13 @@ describe('StatusBadge Component', () => {
     
     // It should render text
     expect(container).toHaveTextContent(/COMPLETED/i);
-    expect(container.firstChild).toHaveClass('text-green-700');
-    
+    expect(container.firstChild).toHaveClass('text-success');
+    expect(container.firstChild).toHaveClass('bg-success-muted');
+
     // Test different status
     rerender(<StatusBadge variant="danger">FAILED</StatusBadge>);
     expect(container).toHaveTextContent(/FAILED/i);
-    expect(container.firstChild).toHaveClass('text-red-700');
+    expect(container.firstChild).toHaveClass('text-danger');
+    expect(container.firstChild).toHaveClass('bg-danger-muted');
   });
 });

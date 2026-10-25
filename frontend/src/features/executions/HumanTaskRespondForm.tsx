@@ -1,4 +1,11 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { FormRenderer } from '@/features/forms/FormRenderer';
+import {
+    hasRespondableFields,
+    normalizeFormSchema,
+    singlePageSchema,
+    validateFormPage,
+} from '@/features/forms/lib/formSchemaUtils';
 import { Loader2, UserCheck, AlertTriangle } from 'lucide-react';
 import { executionApi } from '@/api/executionApi';
 import type { WorkflowTaskExecution } from '@/api/executionApi';
@@ -22,8 +29,15 @@ export function HumanTaskRespondForm({
     onSuccess,
 }: HumanTaskRespondFormProps) {
     const [respondedBy, setRespondedBy] = useState('');
+    const [formAnswers, setFormAnswers] = useState<Record<string, unknown>>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    const extraFieldsPage = useMemo(() => {
+        const schema = normalizeFormSchema(task.parameters?.formSchema);
+        return singlePageSchema(schema);
+    }, [task.parameters?.formSchema]);
+    const showExtraFields = hasRespondableFields(extraFieldsPage);
 
     const actions = resolveHumanActions(task, taskExecution);
     const description = String(task.parameters?.description ?? '').trim();
@@ -35,6 +49,13 @@ export function HumanTaskRespondForm({
             setError('Enter your name before responding.');
             return;
         }
+        if (showExtraFields) {
+            const validationError = validateFormPage(extraFieldsPage, formAnswers);
+            if (validationError) {
+                setError(validationError);
+                return;
+            }
+        }
 
         try {
             setIsSubmitting(true);
@@ -42,6 +63,7 @@ export function HumanTaskRespondForm({
             await executionApi.respondToHumanTask(executionId, taskExecution.id, {
                 actionId,
                 respondedBy: name,
+                formData: showExtraFields ? formAnswers : undefined,
             });
             onSuccess();
         } catch (err) {
@@ -53,15 +75,15 @@ export function HumanTaskRespondForm({
     };
 
     return (
-        <div data-testid="human-task-respond-form" className="overflow-hidden rounded-lg border border-amber-300/70 bg-amber-50/60 dark:border-amber-700/40 dark:bg-amber-950/20">
+        <div data-testid="human-task-respond-form" className="overflow-hidden rounded-lg border border-warning/30 bg-warning-muted/60">
             {/* Header */}
-            <div className="flex items-center gap-2.5 border-b border-amber-200/80 bg-amber-100/60 px-3 py-2.5 dark:border-amber-800/40 dark:bg-amber-900/20">
-                <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+            <div className="flex items-center gap-2.5 border-b border-warning/30 bg-warning-muted px-3 py-2.5">
+                <AlertTriangle className="h-4 w-4 shrink-0 text-warning" />
                 <div className="min-w-0">
-                    <p className="text-xs font-semibold text-amber-900 dark:text-amber-200">
+                    <p className="text-xs font-semibold text-warning">
                         Action required · {title}
                     </p>
-                    <p className="text-[11px] text-amber-700/80 dark:text-amber-400/80">
+                    <p className="text-[11px] text-warning/80">
                         This step is waiting for a human decision.
                     </p>
                 </div>
@@ -70,13 +92,13 @@ export function HumanTaskRespondForm({
             <div className="space-y-3 p-3">
                 {/* Description */}
                 {description ? (
-                    <p className="text-xs text-amber-900/80 dark:text-amber-200/70">{description}</p>
+                    <p className="text-xs text-warning/90">{description}</p>
                 ) : null}
 
                 {/* Responder name */}
                 <div className="space-y-1">
                     <label
-                        className="flex items-center gap-1.5 text-[11px] font-medium text-amber-900 dark:text-amber-200"
+                        className="flex items-center gap-1.5 text-[11px] font-medium text-warning"
                         htmlFor="responded-by"
                     >
                         <UserCheck className="h-3 w-3" />
@@ -93,6 +115,17 @@ export function HumanTaskRespondForm({
                     />
                 </div>
 
+                {showExtraFields ? (
+                    <FormRenderer
+                        page={extraFieldsPage}
+                        answers={formAnswers}
+                        onAnswersChange={setFormAnswers}
+                        hideSubmitButton
+                        disabled={isSubmitting}
+                        onSubmit={() => undefined}
+                    />
+                ) : null}
+
                 {/* Action buttons */}
                 <div className="flex flex-wrap gap-2">
                     {actions.map((action) => {
@@ -108,7 +141,7 @@ export function HumanTaskRespondForm({
                                 className={cn(
                                     'h-7 text-xs',
                                     isRejected &&
-                                        'border-red-300 text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/30',
+                                        'border-danger/30 text-destructive hover:bg-danger-muted',
                                 )}
                                 onClick={() => void submit(action.id)}
                             >
@@ -121,7 +154,7 @@ export function HumanTaskRespondForm({
 
                 {/* Error message */}
                 {error ? (
-                    <p data-testid="human-task-error-msg" className="text-[11px] text-red-600 dark:text-red-400">{error}</p>
+                    <p data-testid="human-task-error-msg" className="text-[11px] text-destructive">{error}</p>
                 ) : null}
             </div>
         </div>
