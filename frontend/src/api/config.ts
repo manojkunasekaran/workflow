@@ -17,6 +17,11 @@ export function getApiBaseUrl(): string {
     return envUrl;
   }
 
+  // If a path was not specified
+  if (!envUrl) {
+    return "/rest";
+  }
+
   // If an absolute URL was configured (e.g. 'http://localhost:8080/rest' or 'http://127.0.0.1:8080/rest')
   if (envUrl) {
     try {
